@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>首页</title>
+    <title>你的第一篇博客</title>
   
     <meta name="author" content="Firstname Lastname">
 
@@ -77,38 +77,13 @@
     <div class="container">
 
       <div class="content">
-        
-<div class="page-header">
-  <h1>首页 </h1>
+        <div class="page-header">
+  <h1>你的第一篇博客 </h1>
 </div>
 
 <div class="row">
-  <div class="span12">
-    
-<h2>Gor已经为了编译成功了</h2>
-<p>
-  这段文字位于pages/index.html ,使用以下命令获取帮助或访问gor官网
-</p>
-<pre><code>$ gor help</code></pre>
-
-
-<h2>最近更新</h2>
-
-
-<div class="post">
-  <h3 class="title"><a href="/default/abc/">abc</a> <span class="date">2013-03-27</span></h3>
-
-  
-
-  <div class="more">
-    <a href="/default/abc/" class="btn">read more..</a>
-  </div>
-</div>
-
-<div class="post">
-  <h3 class="title"><a href="/2012/new-born.html">你的第一篇博客</a> <span class="date">2012-12-22</span></h3>
-
-  <h1>感谢你使用Gor编写博客</h1>
+  <div class="span8">
+    <h1>感谢你使用Gor编写博客</h1>
 
 <h2>本文位于 posts/first-blog.md , 你可以任何删掉,修改这个文件</h2>
 
@@ -128,12 +103,105 @@
 <pre><code>gor post 文章标题
 </code></pre>
 
+<h2>编译你的博客,并预览之</h2>
 
-  <div class="more">
-    <a href="/2012/new-born.html" class="btn">read more..</a>
+<pre><code>gor compile #编译
+gor http
+</code></pre>
+
+<p>然后打开你的浏览器,访问 <a href="http://127.0.0.1:8080">http://127.0.0.1:8080</a> 来预览</p>
+
+<h2>你将使用Markdown来编写博客</h2>
+
+<p><a href="http://wowubuntu.com/markdown/">Markdown 语法中文版</a> 能让你快速入门其语法</p>
+
+<p>相信<a href="http://markdownpad.com">MarkdownPad</a>或<a href="http://code.google.com/p/liteide/">liteide</a>会是你的编写博客的好帮手</p>
+
+<h2>如果你打算部署到github的pages上</h2>
+
+<ol>
+<li>申请github帐户</li>
+<li>新建一个库 username.github.com 即你的用户名命名的地址</li>
+<li>将compiled目录,作为根路径,提交上去github.com上</li>
+<li>稍等几分钟, 你即可通过 <a href="http://username.github.com">http://username.github.com</a> 访问到</li>
+</ol>
+
+<h2>附上git教程 <a href="http://gitbook.liuhui998.com/">GitBook中文版</a></h2>
+
+<p>一般来说,你只需要几个简单的git命令就足以应付大部分需求(仅示例)</p>
+
+<pre><code>git clone git://github.com/wendal/wendal.net.git
+git add -A
+git commit -m &quot;...&quot;
+git pull
+git push
+</code></pre>
+
+<h2>用gor编写博客将会是一件很开心的事,如果有任何意见或建议,欢迎到 <a href="http://github.com/wendal/gor">gor的官网</a> 提交issue</h2>
+
+<h1>祝你使用愉快</h1>
+
+    <hr>
+    <div class="pagination">
+      <ul>
+        <ul>
+          
+            <li class="prev"><a href="/default/abc/" title="abc">&larr; Previous</a></li>
+          
+          
+
+            <li><a href="/archive">Archive</a></li>
+
+          
+          
+            <li class="next disabled"><a>Next &rarr;</a>
+          
+        </ul>
+      </ul>
+    </div>
+    <hr>
+    
+<div id="disqus_thread"></div>
+<script>
+    var disqus_developer = 1;
+    var disqus_shortname = 'jekyllbootstrap'; // required: replace example with your forum shortname
+    /* * * DON'T EDIT BELOW THIS LINE * * */
+    (function() {
+        var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+        dsq.src = 'http://' + disqus_shortname + '.disqus.com/embed.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+<a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+
   </div>
-</div>
-
+  
+  <div class="span4">
+    <h4>Published</h4>
+    <div class="date"><span>2012-12-22</span></div>
+    <br>
+    <h4>Categories</h4>
+    <ul class="tag_box">
+    
+      <li>
+  <a href="/categories/#Gor-ref">Gor <span>1</span></a>
+</li>
+    
+      <li>
+  <a href="/categories/#Blog-ref">Blog <span>1</span></a>
+</li>
+    
+    </ul>
+    <br>
+    <h4>Tags</h4>
+    <ul class="tag_box">
+    
+      <li>
+  <a href="/tags/#Gor-ref">Gor <span>1</span></a>
+</li>
+    
+    </ul>
   </div>
 </div>
 
