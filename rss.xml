@@ -3,7 +3,36 @@
   <channel>
     <title>Blog Title2</title>
     <link>http://sample.com</link>
-    <pubDate>2013-03-27 03:06:00 +0800</pubDate>
+    <pubDate>2013-06-12 09:25:00 +0800</pubDate>
+    <item>
+      <title>todos</title>
+      <link>http://sample.com/default/todos/</link>
+      <pubDate>2013-06-12 12:00:00 +0800</pubDate>
+      <description>&lt;h1&gt;my Todos @2013&lt;/h1&gt;
+
+&lt;h2&gt;a web site&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;teamguts projects&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2&gt;a project components&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;fancyBox&lt;/li&gt;
+&lt;li&gt;bootstrap&lt;/li&gt;
+&lt;li&gt;pjax?&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2&gt;What&amp;rsquo;s done&lt;/h2&gt;
+
+&lt;ul&gt;
+&lt;li&gt;grails-pjax&lt;/li&gt;
+&lt;li&gt;grails-wmd&lt;/li&gt;
+&lt;li&gt;grails-kindeditor&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+    </item>
     <item>
       <title>abc</title>
       <link>http://sample.com/default/abc/</link>

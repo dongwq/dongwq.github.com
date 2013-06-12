@@ -4,6 +4,11 @@
 		<loc>http://sample.com/</loc>
 	</url>
 	<url>
+		<loc>http://sample.com/default/todos/</loc>
+		<lastmod>2013-06-12</lastmod>
+		<changefreq>weekly</changefreq>
+	</url>
+	<url>
 		<loc>http://sample.com/default/abc/</loc>
 		<lastmod>2013-03-27</lastmod>
 		<changefreq>weekly</changefreq>
