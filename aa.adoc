@@ -6,3 +6,12 @@ class groovy
 
 ----
 
+
+[source, groovy]
+----
+class groovy
+
+----
+
+
+
