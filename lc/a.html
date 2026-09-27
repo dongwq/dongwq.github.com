@@ -251,12 +251,20 @@ tr.st2 { background:#f2fbf4; }
 
 <script>
 // ====== 预设题单列表（url 支持绝对/相对路径）======
-const PRESETS = [
-  { key:'builtin-bitwise', name:'位运算（默认）', builtin:true, desc:'内置 · 灵茶山艾府' },
-  { key:'bitwise',        name:'位运算题单',      url:'./data/bitwise.json',        desc:'相对路径 ./data/bitwise.json' },
-  { key:'binary-search',  name:'二分题单',        url:'./data/binary-search.json',  desc:'相对路径 ./data/binary-search.json' },
-  { key:'graph',          name:'图论题单',        url:'./data/graph.json',          desc:'相对路径 ./data/graph.json' },
-  { key:'dp',             name:'动态规划题单',    url:'./data/dp.json',             desc:'相对路径 ./data/dp.json' }
+const PRESETS = const PRESETS = [
+  // { key:'builtin-bitwise', name:'位运算（默认）', builtin:true, desc:'内置 · 灵茶山艾府' },
+   { key:'trees',        name:'树与二叉树',      url:'./studyplan/trees.json',        desc:'' },
+  { key:'sliding_window',        name:'滑动窗口',      url:'./studyplan/sliding_window.json',        desc:'' },
+  { key:'binary_search',        name:'二分题单',      url:'./studyplan/binary_search.json',        desc:'' },
+  { key:'greedy',        name:'贪心',      url:'./studyplan/greedy.json',        desc:'' },
+  { key:'grid',        name:'网格',      url:'./studyplan/grid.json',        desc:'' },
+  { key:'data_structure',        name:'数据结构题单',      url:'./studyplan/data_structure.json',        desc:'' },
+  { key:'bitwise_operations',        name:'位运算',      url:'./studyplan/bitwise_operations.json',        desc:'' },
+  { key:'dynamic_programming',        name:'动态规划',      url:'./studyplan/dynamic_programming.json',        desc:'' },
+ { key:'string',        name:'字符串',      url:'./studyplan/string.json',        desc:'' },
+ { key:'graph',        name:'图论',      url:'./studyplan/graph.json',        desc:'' },
+ { key:'math',        name:'数学相关',      url:'./studyplan/math.json',        desc:'' },
+ { key:'monotonic_stack',        name:'单调栈',      url:'./studyplan/monotonic_stack.json',        desc:'' }
 ];
 
 // ====== 内置默认题单数据 ======
