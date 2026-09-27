@@ -220,13 +220,13 @@ tr.st2 { background:#f2fbf4; }
       <div class="main-content">
 
         <div class="url-bar">
-          <span class="sf-label">🔗 题单 JSON 链接：</span>
+         <!--  <span class="sf-label">🔗 题单 JSON 链接：</span>
           <input class="url-input" id="jsonUrl" placeholder="./data/bitwise.json 或 https://example.com/xxx.json（也支持 ?json=参数）">
           <button class="load-btn" id="loadBtn">加载 URL</button>
           <label class="default-btn load-file">本地 JSON
             <input type="file" id="jsonFile" accept=".json,application/json">
           </label>
-          <button class="default-btn" id="defaultBtn">恢复默认题单</button>
+          <button class="default-btn" id="defaultBtn">恢复默认题单</button> -->
           <div class="load-status" id="loadStatus"></div>
           <div class="load-help">支持相对路径（如 <code>./data/bitwise.json</code>、<code>data/dp.json</code>、<code>/api/list.json</code>），相对于当前页面地址解析。跨域 URL 需目标服务器允许 CORS。</div>
         </div>
@@ -275,11 +275,20 @@ tr.st2 { background:#f2fbf4; }
 // url 可为绝对（http(s)://…）或相对（./data/x.json, data/x.json, /api/x.json）
 const PRESETS = [
   { key:'builtin-bitwise', name:'位运算（默认）', builtin:true, desc:'内置 · 灵茶山艾府' },
-  { key:'bitwise',        name:'树与二叉树',      url:'./studyplan/trees.json',        desc:'相对路径 ./data/bitwise.json' },
-  { key:'binary-search',  name:'二分题单',        url:'./studyplan/binary_search.json',  desc:'相对路径 ./data/binary-search.json' },
-  { key:'graph',          name:'图论题单',        url:'./data/graph.json',          desc:'相对路径 ./data/graph.json' },
-  { key:'dp',             name:'动态规划题单',    url:'./data/dp.json',             desc:'相对路径 ./data/dp.json' }
+   { key:'trees',        name:'树与二叉树',      url:'./studyplan/trees.json',        desc:'相对路径 ./data/trees.json' },
+  { key:'sliding_window',        name:'滑动窗口',      url:'./studyplan/sliding_window.json',        desc:'相对路径 ./data/sliding_window.json' },
+  { key:'binary_search',        name:'二分题单',      url:'./studyplan/binary_search.json',        desc:'相对路径 ./data/binary_search.json' },
+  { key:'greedy',        name:'贪心',      url:'./studyplan/greedy.json',        desc:'相对路径 ./data/greedy.json' },
+  { key:'grid',        name:'网格',      url:'./studyplan/grid.json',        desc:'相对路径 ./data/grid.json' },
+  { key:'data_structure',        name:'数据结构题单',      url:'./studyplan/data_structure.json',        desc:'相对路径 ./data/data_structure.json' },
+  { key:'bitwise_operations',        name:'位运算',      url:'./studyplan/bitwise_operations.json',        desc:'相对路径 ./data/bitwise.json' },
+  { key:'dynamic_programming',        name:'动态规划',      url:'./studyplan/dynamic_programming.json',        desc:'相对路径 ./data/dynamic_programming.json' },
+ { key:'string',        name:'字符串',      url:'./studyplan/string.json',        desc:'相对路径 ./data/string.json' },
+ { key:'graph',        name:'图论',      url:'./studyplan/graph.json',        desc:'相对路径 ./data/graph.json' },
+ { key:'math',        name:'数学相关',      url:'./studyplan/math.json',        desc:'相对路径 ./data/math.json' },
+ { key:'monotonic_stack',        name:'单调栈',      url:'./studyplan/monotonic_stack.json',        desc:'相对路径 ./data/monotonic_stack.json' }
 ];
+
 
 // ====== 内置默认题单数据 ======
 const DEFAULT_DATA = {
