@@ -8,8 +8,8 @@
 <style>
 * { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif; }
 body { background:linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%); min-height:100vh; color:#333; }
-.layout { display:flex; max-width:1450px; margin:0 auto; gap:16px; padding:16px; align-items:flex-start; }
-.sidebar { width:230px; flex-shrink:0; background:#fff; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,.08); position:sticky; top:16px; max-height:calc(100vh - 32px); overflow-y:auto; padding:14px 0; }
+.layout { display:flex; max-width:1450px; margin:0 auto; gap:14px; padding:12px; align-items:flex-start; }
+.sidebar { width:230px; flex-shrink:0; background:#fff; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,.08); position:sticky; top:12px; max-height:calc(100vh - 24px); overflow-y:auto; padding:14px 0; }
 .sidebar h3 { font-size:.85rem; color:#868e96; padding:0 14px 8px; border-bottom:1px solid #eef2f7; letter-spacing:1px; }
 .nav-item { display:flex; justify-content:space-between; align-items:center; padding:7px 14px; font-size:.85rem; color:#2c3e50; cursor:pointer; transition:all .15s; border-left:3px solid transparent; }
 .nav-item:hover { background:#f6f9fc; }
@@ -22,22 +22,25 @@ body { background:linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%); min-height:10
 .nav-prog i { display:block; height:100%; background:#37b24d; width:0; transition:width .3s; }
 .main { flex:1; min-width:0; }
 .container { background:#fff; border-radius:15px; box-shadow:0 10px 30px rgba(0,0,0,.1); overflow:hidden; }
-header { background:linear-gradient(135deg,#4A90E2 0%,#50E3C2 100%); color:#fff; padding:22px; text-align:center; position:relative; }
-h1 { font-size:1.5rem; margin-bottom:6px; }
-.subtitle { font-size:.9rem; opacity:.9; }
-.subtitle a { color:#fff; }
-.stats-bar { display:flex; justify-content:center; gap:12px; margin-top:14px; flex-wrap:wrap; }
-.stat-item { background:rgba(255,255,255,.2); padding:7px 14px; border-radius:10px; text-align:center; min-width:78px; }
-.stat-value { font-size:1.3rem; font-weight:bold; }
-.stat-label { font-size:.75rem; opacity:.9; }
 
-.preset-menu { position:absolute; top:14px; right:14px; z-index:50; }
-.preset-btn { display:flex; align-items:center; gap:8px; padding:7px 14px; border-radius:20px; border:1px solid rgba(255,255,255,.45); background:rgba(255,255,255,.18); color:#fff; font-size:.82rem; cursor:pointer; backdrop-filter:blur(4px); transition:all .15s; max-width:280px; }
+/* 紧凑头部 */
+header { background:linear-gradient(135deg,#4A90E2 0%,#50E3C2 100%); color:#fff; padding:10px 14px; position:relative; }
+.header-row { display:flex; align-items:center; gap:12px; }
+h1 { font-size:1.05rem; font-weight:600; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.subtitle { font-size:.75rem; opacity:.85; display:none; }
+.stats-bar { display:flex; gap:6px; margin-left:auto; flex-shrink:0; align-items:center; }
+.stat-item { background:rgba(255,255,255,.2); padding:3px 9px; border-radius:8px; text-align:center; min-width:52px; line-height:1.15; }
+.stat-value { font-size:.9rem; font-weight:bold; }
+.stat-label { font-size:.62rem; opacity:.9; }
+
+/* 右上角题单下拉菜单 */
+.preset-menu { position:relative; flex-shrink:0; }
+.preset-btn { display:flex; align-items:center; gap:6px; padding:5px 12px; border-radius:20px; border:1px solid rgba(255,255,255,.45); background:rgba(255,255,255,.18); color:#fff; font-size:.78rem; cursor:pointer; backdrop-filter:blur(4px); transition:all .15s; max-width:220px; }
 .preset-btn:hover { background:rgba(255,255,255,.3); }
-.preset-btn .ptitle { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px; }
-.preset-btn .caret { font-size:.65rem; opacity:.9; transition:transform .2s; }
+.preset-btn .ptitle { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px; }
+.preset-btn .caret { font-size:.6rem; opacity:.9; transition:transform .2s; }
 .preset-menu.open .preset-btn .caret { transform:rotate(180deg); }
-.preset-list { position:absolute; top:calc(100% + 6px); right:0; min-width:320px; max-width:min(92vw,420px); max-height:65vh; overflow-y:auto; background:#fff; color:#2c3e50; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.18); border:1px solid #eef2f7; padding:6px; display:none; }
+.preset-list { position:absolute; top:calc(100% + 6px); right:0; min-width:320px; max-width:min(92vw,420px); max-height:65vh; overflow-y:auto; background:#fff; color:#2c3e50; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.18); border:1px solid #eef2f7; padding:6px; display:none; z-index:200; }
 .preset-menu.open .preset-list { display:block; }
 .preset-list .grp-title { font-size:.72rem; color:#868e96; padding:8px 10px 4px; letter-spacing:.4px; }
 .preset-item { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:9px 10px; border-radius:8px; cursor:pointer; font-size:.83rem; transition:background .12s; }
@@ -56,44 +59,33 @@ h1 { font-size:1.5rem; margin-bottom:6px; }
 .preset-custom input:focus { border-color:#4A90E2; }
 .preset-custom .hint { font-size:.68rem; color:#adb5bd; margin-top:4px; }
 
-.main-content { padding:18px; }
-.url-bar { display:flex; gap:8px; margin-bottom:14px; padding:10px 14px; background:#f6f9fc; border-radius:10px; border:1px solid #eef2f7; align-items:center; flex-wrap:wrap; }
-.sf-label { font-size:.82rem; font-weight:600; color:#2c3e50; }
-.url-input { flex:1; min-width:220px; padding:7px 12px; border:1px solid #ced4da; border-radius:20px; font-size:.82rem; outline:none; }
-.url-input:focus { border-color:#4A90E2; }
-.load-btn { padding:7px 18px; border-radius:20px; border:none; background:#4A90E2; color:#fff; font-size:.82rem; cursor:pointer; }
-.load-btn:hover { background:#3576c4; }
-.load-btn:disabled { background:#adb5bd; cursor:wait; }
-.default-btn { padding:7px 14px; border-radius:20px; border:1px solid #dee2e6; background:#fff; color:#495057; font-size:.82rem; cursor:pointer; }
-.default-btn:hover { border-color:#4A90E2; color:#4A90E2; }
-.load-status { font-size:.8rem; width:100%; min-height:16px; }
-.load-status.ok { color:#2b8a3e; } .load-status.err { color:#c92a2a; }
-.filter-bar { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
-.filter-btn { padding:6px 14px; border-radius:20px; border:none; background:#e9ecef; color:#495057; cursor:pointer; font-size:.85rem; transition:all .2s; }
+.main-content { padding:14px; }
+.filter-bar { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+.filter-btn { padding:5px 12px; border-radius:20px; border:none; background:#e9ecef; color:#495057; cursor:pointer; font-size:.82rem; transition:all .2s; }
 .filter-btn.active { background:#4A90E2; color:#fff; }
 .filter-btn:hover { transform:translateY(-1px); }
-.search-box { flex:1; min-width:170px; padding:7px 14px; border:1px solid #ced4da; border-radius:20px; font-size:.85rem; outline:none; }
+.search-box { flex:1; min-width:170px; padding:6px 14px; border:1px solid #ced4da; border-radius:20px; font-size:.82rem; outline:none; }
 .search-box:focus { border-color:#4A90E2; }
-.reset-btn { background:#f8d7da; color:#721c24; padding:6px 14px; border-radius:20px; border:none; font-size:.85rem; cursor:pointer; }
-.score-filter { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:14px; padding:10px 14px; background:#f6f9fc; border-radius:10px; border:1px solid #eef2f7; }
-.score-chip { padding:4px 12px; border-radius:16px; border:1px solid #dee2e6; background:#fff; font-size:.78rem; color:#495057; cursor:pointer; transition:all .15s; }
+.reset-btn { background:#f8d7da; color:#721c24; padding:5px 12px; border-radius:20px; border:none; font-size:.82rem; cursor:pointer; }
+.score-filter { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:12px; padding:8px 12px; background:#f6f9fc; border-radius:10px; border:1px solid #eef2f7; }
+.score-chip { padding:3px 11px; border-radius:16px; border:1px solid #dee2e6; background:#fff; font-size:.76rem; color:#495057; cursor:pointer; transition:all .15s; }
 .score-chip:hover { border-color:#4A90E2; color:#4A90E2; }
 .score-chip.active { background:#4A90E2; border-color:#4A90E2; color:#fff; }
 .score-range { display:flex; align-items:center; gap:5px; margin-left:auto; }
 .score-range input { width:70px; padding:4px 8px; border:1px solid #ced4da; border-radius:8px; font-size:.8rem; outline:none; }
 .score-range span { font-size:.8rem; color:#868e96; }
-.score-unknown { display:flex; align-items:center; gap:4px; font-size:.78rem; color:#495057; cursor:pointer; user-select:none; }
+.score-unknown { display:flex; align-items:center; gap:4px; font-size:.76rem; color:#495057; cursor:pointer; user-select:none; }
 .score-unknown input { accent-color:#4A90E2; cursor:pointer; }
-.chapter { background:#fff; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,.05); margin-bottom:14px; overflow:hidden; scroll-margin-top:16px; }
-.chapter-header { background:linear-gradient(90deg,#4A90E2 0%,#50E3C2 100%); color:#fff; padding:12px 18px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none; }
+.chapter { background:#fff; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,.05); margin-bottom:12px; overflow:hidden; scroll-margin-top:14px; }
+.chapter-header { background:linear-gradient(90deg,#4A90E2 0%,#50E3C2 100%); color:#fff; padding:10px 16px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none; }
 .chapter-header .arrow { transition:transform .25s; font-size:.8rem; margin-right:8px; display:inline-block; }
 .chapter.open > .chapter-header .arrow { transform:rotate(90deg); }
 .chapter-header:hover { filter:brightness(1.05); }
-.chapter-title { font-size:1.05rem; font-weight:600; }
-.chapter-count { background:rgba(255,255,255,.25); padding:3px 12px; border-radius:20px; font-size:.8rem; }
-.chapter-body { display:none; padding:14px; }
+.chapter-title { font-size:1rem; font-weight:600; }
+.chapter-count { background:rgba(255,255,255,.25); padding:2px 10px; border-radius:20px; font-size:.76rem; }
+.chapter-body { display:none; padding:12px; }
 .chapter.open > .chapter-body { display:block; }
-.section { margin-top:10px; border:1px solid #eef2f7; border-radius:10px; overflow:hidden; scroll-margin-top:16px; }
+.section { margin-top:10px; border:1px solid #eef2f7; border-radius:10px; overflow:hidden; scroll-margin-top:14px; }
 .section:first-of-type { margin-top:0; }
 .section-header { background:#f6f9fc; padding:9px 14px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none; border-left:3px solid #4A90E2; }
 .section-header:hover { background:#eef4fb; }
@@ -127,14 +119,16 @@ td { padding:6px 8px; font-size:.85rem; vertical-align:middle; }
 tr.st1 { background:#fff9ec; }
 tr.st2 { background:#f2fbf4; }
 .empty-tip { text-align:center; color:#adb5bd; font-size:.85rem; padding:40px 0; }
-.toast { position:fixed; bottom:20px; right:20px; background:#333; color:#fff; padding:10px 18px; border-radius:8px; opacity:0; transform:translateY(60px); transition:all .3s; z-index:3000; font-size:.85rem; }
+.toast { position:fixed; bottom:20px; right:20px; background:#333; color:#fff; padding:10px 18px; border-radius:8px; opacity:0; transform:translateY(60px); transition:all .3s; z-index:3000; font-size:.85rem; max-width:min(90vw,420px); line-height:1.4; }
 .toast.show { opacity:1; transform:translateY(0); }
+.toast.err { background:#c92a2a; }
+.toast.ok  { background:#2b8a3e; }
 .menu-toggle { display:none; position:fixed; left:14px; bottom:14px; z-index:1000; width:46px; height:46px; border-radius:50%; border:none; background:#4A90E2; color:#fff; font-size:1.2rem; cursor:pointer; box-shadow:0 4px 12px rgba(0,0,0,.25); }
 .sidebar-mask { display:none; }
 @media (max-width:900px){
-  .layout { padding:10px; }
+  .layout { padding:8px; }
   .container{border-radius:10px}
-  .main-content{padding:12px}
+  .main-content{padding:10px}
   .ptitle{min-width:0;overflow-wrap:anywhere}
   .pid{min-width:48px}
   .status-cells{white-space:normal;text-align:right}
@@ -144,9 +138,11 @@ tr.st2 { background:#f2fbf4; }
   .sidebar-mask.show { display:block; position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:1000; }
   .menu-toggle { display:block; }
   td{padding:5px 4px;font-size:.78rem} .status-btn{padding:2px 6px;font-size:.7rem}
-  .preset-btn .ptitle { max-width:100px; }
-  header { padding:18px 14px; }
-  h1 { font-size:1.15rem; padding-right:100px; }
+  .preset-btn .ptitle { max-width:90px; }
+  h1 { font-size:.9rem; }
+  .stat-item { padding:2px 7px; min-width:44px; }
+  .stat-value { font-size:.8rem; }
+  .stat-label { font-size:.58rem; }
 }
 
 .summary img{display:block;max-width:100%;height:auto;max-height:420px;object-fit:contain;margin:8px 0;border-radius:8px;background:#fff}
@@ -166,12 +162,7 @@ tr.st2 { background:#f2fbf4; }
 .summary table th{background:#f1f5f9;font-weight:600;color:#2c3e50;white-space:nowrap}
 .summary table tr:nth-child(even) td{background:#fafbfc}
 .summary table tr:hover td{background:#f8fbff}
-.load-file{position:relative;overflow:hidden}
-.load-file input{position:absolute;inset:0;opacity:0;cursor:pointer}
-.load-help{font-size:.75rem;color:#868e96;width:100%;line-height:1.5}
 @media (max-width:900px){
-  .url-input{min-width:180px}
-  .url-bar .load-btn,.url-bar .default-btn{flex:0 0 auto}
   .summary img{max-height:300px}
   .summary table{display:block;overflow-x:auto;white-space:nowrap}
 }
@@ -197,39 +188,27 @@ tr.st2 { background:#f2fbf4; }
   <div class="main">
     <div class="container">
       <header>
-        <h1 id="pageTitle">🎯 算法题单刷题追踪器</h1>
-        <p class="subtitle" id="pageSubtitle">标记进度保存在本地，刷新不丢失</p>
+        <div class="header-row">
+          <h1 id="pageTitle">🎯 算法题单刷题追踪器</h1>
+          <div class="stats-bar">
+            <div class="stat-item"><div class="stat-value" id="st-total">0</div><div class="stat-label">总题</div></div>
+            <div class="stat-item"><div class="stat-value" id="st-done">0</div><div class="stat-label">已会</div></div>
+            <div class="stat-item"><div class="stat-value" id="st-review">0</div><div class="stat-label">复习</div></div>
+            <div class="stat-item"><div class="stat-value" id="st-todo">0</div><div class="stat-label">未开始</div></div>
+            <div class="stat-item"><div class="stat-value" id="st-rate">0%</div><div class="stat-label">完成率</div></div>
+          </div>
 
-        <div class="preset-menu" id="presetMenu">
-          <button class="preset-btn" id="presetBtn" aria-haspopup="listbox" aria-expanded="false">
-            <span>📂</span>
-            <span class="ptitle" id="presetCurrent">默认题单</span>
-            <span class="caret">▼</span>
-          </button>
-          <div class="preset-list" id="presetList" role="listbox"></div>
-        </div>
-
-        <div class="stats-bar">
-          <div class="stat-item"><div class="stat-value" id="st-total">0</div><div class="stat-label">总题数</div></div>
-          <div class="stat-item"><div class="stat-value" id="st-done">0</div><div class="stat-label">已学会</div></div>
-          <div class="stat-item"><div class="stat-value" id="st-review">0</div><div class="stat-label">需复习</div></div>
-          <div class="stat-item"><div class="stat-value" id="st-todo">0</div><div class="stat-label">未开始</div></div>
-          <div class="stat-item"><div class="stat-value" id="st-rate">0%</div><div class="stat-label">完成率</div></div>
+          <div class="preset-menu" id="presetMenu">
+            <button class="preset-btn" id="presetBtn" aria-haspopup="listbox" aria-expanded="false">
+              <span>📂</span>
+              <span class="ptitle" id="presetCurrent">默认题单</span>
+              <span class="caret">▼</span>
+            </button>
+            <div class="preset-list" id="presetList" role="listbox"></div>
+          </div>
         </div>
       </header>
       <div class="main-content">
-
-        <div class="url-bar">
-          <span class="sf-label">🔗 题单 JSON 链接：</span>
-          <input class="url-input" id="jsonUrl" placeholder="./data/bitwise.json 或 https://example.com/xxx.json（也支持 ?json=参数）">
-          <button class="load-btn" id="loadBtn">加载 URL</button>
-          <label class="default-btn load-file">本地 JSON
-            <input type="file" id="jsonFile" accept=".json,application/json">
-          </label>
-          <button class="default-btn" id="defaultBtn">恢复默认题单</button>
-          <div class="load-status" id="loadStatus"></div>
-          <div class="load-help">支持相对路径（如 <code>./data/bitwise.json</code>、<code>data/dp.json</code>、<code>/api/list.json</code>），相对于当前页面地址解析。跨域 URL 需目标服务器允许 CORS。</div>
-        </div>
 
         <div class="filter-bar">
           <button class="filter-btn active" data-f="all">全部</button>
@@ -242,7 +221,7 @@ tr.st2 { background:#f2fbf4; }
         </div>
 
         <div class="score-filter">
-          <span class="sf-label">🎚 难度分：</span>
+          <span class="sf-label" style="font-size:.82rem;font-weight:600;color:#2c3e50">🎚 难度分：</span>
           <button class="score-chip active" data-min="0" data-max="99999">全部</button>
           <button class="score-chip" data-min="0" data-max="1400">&lt;1400</button>
           <button class="score-chip" data-min="1400" data-max="1700">1400-1700</button>
@@ -271,24 +250,22 @@ tr.st2 { background:#f2fbf4; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js" crossorigin="anonymous"></script>
 
 <script>
-// ====== 预设题单列表 ======
-// url 可为绝对（http(s)://…）或相对（./data/x.json, data/x.json, /api/x.json）
+// ====== 预设题单列表（url 支持绝对/相对路径）======
 const PRESETS = [
-  { key:'builtin-bitwise', name:'位运算（默认）', builtin:true, desc:'内置 · 灵茶山艾府' },
-   { key:'trees',        name:'树与二叉树',      url:'./studyplan/trees.json',        desc:'相对路径 ./data/trees.json' },
-  { key:'sliding_window',        name:'滑动窗口',      url:'./studyplan/sliding_window.json',        desc:'相对路径 ./data/sliding_window.json' },
-  { key:'binary_search',        name:'二分题单',      url:'./studyplan/binary_search.json',        desc:'相对路径 ./data/binary_search.json' },
-  { key:'greedy',        name:'贪心',      url:'./studyplan/greedy.json',        desc:'相对路径 ./data/greedy.json' },
-  { key:'grid',        name:'网格',      url:'./studyplan/grid.json',        desc:'相对路径 ./data/grid.json' },
-  { key:'data_structure',        name:'数据结构题单',      url:'./studyplan/data_structure.json',        desc:'相对路径 ./data/data_structure.json' },
-  { key:'bitwise_operations',        name:'位运算',      url:'./studyplan/bitwise_operations.json',        desc:'相对路径 ./data/bitwise.json' },
-  { key:'dynamic_programming',        name:'动态规划',      url:'./studyplan/dynamic_programming.json',        desc:'相对路径 ./data/dynamic_programming.json' },
- { key:'string',        name:'字符串',      url:'./studyplan/string.json',        desc:'相对路径 ./data/string.json' },
- { key:'graph',        name:'图论',      url:'./studyplan/graph.json',        desc:'相对路径 ./data/graph.json' },
- { key:'math',        name:'数学相关',      url:'./studyplan/math.json',        desc:'相对路径 ./data/math.json' },
- { key:'monotonic_stack',        name:'单调栈',      url:'./studyplan/monotonic_stack.json',        desc:'相对路径 ./data/monotonic_stack.json' }
+  // { key:'builtin-bitwise', name:'位运算（默认）', builtin:true, desc:'内置 · 灵茶山艾府' },
+   { key:'trees',        name:'树与二叉树',      url:'./studyplan/trees.json',        desc:'' },
+  { key:'sliding_window',        name:'滑动窗口',      url:'./studyplan/sliding_window.json',        desc:'' },
+  { key:'binary_search',        name:'二分题单',      url:'./studyplan/binary_search.json',        desc:'' },
+  { key:'greedy',        name:'贪心',      url:'./studyplan/greedy.json',        desc:'' },
+  { key:'grid',        name:'网格',      url:'./studyplan/grid.json',        desc:'' },
+  { key:'data_structure',        name:'数据结构题单',      url:'./studyplan/data_structure.json',        desc:'' },
+  { key:'bitwise_operations',        name:'位运算',      url:'./studyplan/bitwise_operations.json',        desc:'' },
+  { key:'dynamic_programming',        name:'动态规划',      url:'./studyplan/dynamic_programming.json',        desc:'' },
+ { key:'string',        name:'字符串',      url:'./studyplan/string.json',        desc:'' },
+ { key:'graph',        name:'图论',      url:'./studyplan/graph.json',        desc:'' },
+ { key:'math',        name:'数学相关',      url:'./studyplan/math.json',        desc:'' },
+ { key:'monotonic_stack',        name:'单调栈',      url:'./studyplan/monotonic_stack.json',        desc:'' }
 ];
-
 
 // ====== 内置默认题单数据 ======
 const DEFAULT_DATA = {
@@ -450,7 +427,6 @@ const LS_URL='quiz_tracker_url_v2';
 const LS_PRESET='quiz_tracker_preset_v1';
 let DATA=null, KEY='', st={};
 let currentPresetKey = null;
-let currentSourceId = null;
 
 function hashStr(s){
   let h=2166136261;
@@ -474,7 +450,6 @@ function loadProgress(key){
 function boot(d, presetKey=null, url=null){
   DATA=d;
   currentPresetKey = presetKey;
-  currentSourceId = presetKey || url || ('data:'+hashStr(JSON.stringify(d)));
   KEY = progressKey(presetKey, url, d);
   st = loadProgress(KEY);
   render();
@@ -536,8 +511,6 @@ function render(){
   cEl.innerHTML=''; navEl.innerHTML='';
   document.title=DATA.title.replace(/&amp;/g,'&')+' · 刷题追踪器';
   document.getElementById('pageTitle').innerHTML='🎯 '+DATA.title;
-  document.getElementById('pageSubtitle').innerHTML=
-    (DATA.src?`题单来源：<a href="${esc(DATA.src)}" target="_blank">原帖链接</a> · `:'')+'标记进度保存在本地，刷新不丢失';
   if(DATA.problems.length){
     const rootBox=document.createElement('div');
     rootBox.className='chapter open'; rootBox.id='ch-root';
@@ -616,7 +589,7 @@ cEl.addEventListener('click',e=>{
   [...cell.children].forEach((b,i)=>b.classList.toggle('on',i===s));
   const tr=cell.closest('tr');
   tr.dataset.st=s; tr.className='st'+(s||'');
-  showToast(`「${pid}」状态：${NAMES[s]}`);
+  showToast(`「${pid}」状态：${NAMES[s]}`,'ok');
   updateStats(); updateNav(); applyFilter();
   renderPresetList();
 });
@@ -686,42 +659,38 @@ function updateStats(){
   document.getElementById('st-rate').textContent=n?Math.round(done/n*100)+'%':'0%';
 }
 
-// ================= URL / 本地 JSON 读入 =================
-const urlInput=document.getElementById('jsonUrl'),
-      loadBtn=document.getElementById('loadBtn'),
-      loadStatus=document.getElementById('loadStatus'),
-      jsonFile=document.getElementById('jsonFile');
-
-function setStatus(t,cls){
-  loadStatus.textContent=t;
-  loadStatus.className='load-status '+(cls||'');
+// ================= Toast（唯一状态提示）=================
+let toastTimer;
+function showToast(msg, type){
+  const t=document.getElementById('toast');
+  t.textContent=(type==='err'?'✗ ':'✓ ')+msg;
+  t.className='toast show'+(type==='err'?' err':type==='ok'?' ok':'');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{ t.className='toast'; }, type==='err'?4000:2200);
 }
 
-// 判断是否为可接受的 URL 形式：绝对 http(s)、相对路径、根路径、协议相对 //host
+// ================= URL 加载（供菜单调用）=================
+const LS_URL_KEY = LS_URL;
+
 function isLoadableURL(s){
   if(!s) return false;
   if(/^https?:\/\//i.test(s)) return true;
-  if(/^\/\//.test(s)) return true;                 // 协议相对
-  if(/^\.\.?\//.test(s)) return true;              // ./ ../ 开头
-  if(/^\//.test(s)) return true;                   // 根路径
-  if(/^[a-zA-Z0-9._~%\-]+\//.test(s)) return true; // data/xxx.json
-  if(/\.json(\?|#|$)/i.test(s)) return true;       // 单文件 xxx.json
+  if(/^\/\//.test(s)) return true;
+  if(/^\.\.?\//.test(s)) return true;
+  if(/^\//.test(s)) return true;
+  if(/^[a-zA-Z0-9._~%\-]+\//.test(s)) return true;
+  if(/\.json(\?|#|$)/i.test(s)) return true;
   return false;
 }
-
-// 把相对/绝对 URL 统一解析成绝对 URL 字符串（用于 fetch 和进度 key）
 function resolveURL(u){
   const raw = String(u||'').trim();
   if(!raw) return '';
   try{
-    // 以当前页面地址为基准解析（相对路径、根路径都能正确处理）
     const abs = new URL(raw, location.href).href;
     if(!/^https?:/i.test(abs)) return '';
     return abs;
   }catch(e){ return ''; }
 }
-
-// GitHub blob -> raw（保留），再走绝对化
 function normalizeJsonUrl(url){
   let s = String(url||'').trim();
   if(!s) return s;
@@ -731,7 +700,6 @@ function normalizeJsonUrl(url){
       const parts=u.pathname.split('/').filter(Boolean);
       if(parts.length>=4){
         const raw = `https://raw.githubusercontent.com/${parts[0]}/${parts[1]}/${parts.slice(3).join('/')}`;
-        // 保留原有 query/hash
         return raw + (u.search||'') + (u.hash||'');
       }
     }
@@ -739,45 +707,38 @@ function normalizeJsonUrl(url){
   }catch(e){ return s; }
 }
 
-async function loadData(raw, { presetKey=null, url=null, sourceLabel='数据' } = {}){
+async function loadData(raw, { presetKey=null, url=null } = {}){
   const d=normalizeData(raw);
   const cnt=countProblems(d);
   if(!cnt) throw new Error('数据中没有题目');
   resetFilterUI();
   boot(d, presetKey, url);
-  const srcDesc = presetKey ? `预设：${presetKey}` : (url ? 'URL' : '本地/内联');
-  setStatus(`✔ 加载成功：${d.title.replace(/&amp;/g,'&')}（${cnt} 题） · 来源：${srcDesc}${sourceLabel?` · ${sourceLabel}`:''}`,'ok');
-  showToast(`已加载题单（${cnt} 题）`);
+  showToast(`已加载「${d.title.replace(/&amp;/g,'&')}」（${cnt} 题）`,'ok');
   return true;
 }
 
 async function loadFromURL(url, { presetKey=null, silent=false } = {}){
   const rawInput = String(url||'').trim();
   if(!rawInput){
-    if(!silent) setStatus('❌ 请输入 JSON 地址（绝对或相对路径均可）','err');
+    if(!silent) showToast('请输入 JSON 地址（绝对或相对路径均可）','err');
     return false;
   }
   if(!isLoadableURL(rawInput)){
-    if(!silent) setStatus('❌ 地址格式无法识别。示例：./data/x.json、data/x.json、/api/x.json、https://host/x.json','err');
+    if(!silent) showToast('地址格式无法识别，示例：./data/x.json、data/x.json、/api/x.json','err');
     return false;
   }
-
-  // 解析成绝对 URL（相对路径以当前页面为基准）
   let absUrl = resolveURL(rawInput);
   if(!absUrl){
-    if(!silent) setStatus('❌ 无法解析地址（请检查路径是否正确）','err');
+    if(!silent) showToast('无法解析地址，请检查路径是否正确','err');
     return false;
   }
-  // GitHub blob → raw
   absUrl = normalizeJsonUrl(absUrl);
   if(!/^https?:\/\//i.test(absUrl)){
-    if(!silent) setStatus('❌ 解析后的地址不是 http(s) 协议，无法加载','err');
+    if(!silent) showToast('解析后的地址不是 http(s) 协议，无法加载','err');
     return false;
   }
 
-  loadBtn.disabled=true; loadBtn.textContent='加载中…';
-  if(!silent) setStatus('⏳ 正在拉取 JSON：'+absUrl,'');
-
+  if(!silent) showToast('正在加载 '+rawInput+' …');
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),15000);
   try{
@@ -787,54 +748,30 @@ async function loadFromURL(url, { presetKey=null, silent=false } = {}){
     if(!text.trim()) throw new Error('服务器返回空内容');
     let raw;
     try{ raw=JSON.parse(text.replace(/^\uFEFF/,'')); }
-    catch(e){ throw new Error('返回内容不是合法 JSON（请确认地址指向 .json 文件，而不是网页）'); }
+    catch(e){ throw new Error('返回内容不是合法 JSON'); }
 
-    // 进度隔离：presetKey 优先；否则用绝对 URL 做 key
-    await loadData(raw, { presetKey, url: absUrl, sourceLabel:'远程 JSON' });
+    await loadData(raw, { presetKey, url: absUrl });
 
     if(presetKey){
       localStorage.setItem(LS_PRESET, presetKey);
-      localStorage.removeItem(LS_URL);
-      // 输入框里保留用户原始输入（相对路径更好看），便于再次加载
-      urlInput.value = rawInput;
+      localStorage.removeItem(LS_URL_KEY);
     }else{
-      localStorage.setItem(LS_URL, absUrl);
+      localStorage.setItem(LS_URL_KEY, absUrl);
       localStorage.removeItem(LS_PRESET);
-      urlInput.value = absUrl;
     }
     return true;
   }catch(e){
     let msg = e.message;
     if(e.name==='AbortError') msg = '请求超时（15 秒）';
     else if(/Failed to fetch|NetworkError/i.test(msg)){
-      msg = '网络请求失败。常见原因：相对路径错误（404）、跨域（CORS）被拒、页面为 https 而目标为 http、或服务器未正确返回 JSON';
+      msg = '网络请求失败（404 / CORS / 协议不匹配）';
     }
-    if(!silent) setStatus('❌ 加载失败：'+msg+'。可改用“本地 JSON”加载。','err');
-    else showToast('加载失败：'+msg);
+    if(!silent) showToast('加载失败：'+msg,'err');
     return false;
   }finally{
     clearTimeout(timer);
-    loadBtn.disabled=false; loadBtn.textContent='加载 URL';
   }
 }
-
-loadBtn.onclick=()=>loadFromURL(urlInput.value);
-urlInput.addEventListener('keydown',e=>{ if(e.key==='Enter') loadFromURL(urlInput.value); });
-
-jsonFile.addEventListener('change',async e=>{
-  const file=e.target.files?.[0];
-  if(!file) return;
-  try{
-    setStatus('⏳ 正在读取本地 JSON…','');
-    const text=await file.text();
-    await loadData(text, { presetKey:null, url:null, sourceLabel:`本地：${file.name}` });
-    localStorage.removeItem(LS_URL);
-    localStorage.removeItem(LS_PRESET);
-    urlInput.value='';
-  }catch(err){
-    setStatus('❌ 本地 JSON 加载失败：'+err.message,'err');
-  }finally{ e.target.value=''; }
-});
 
 // ================= 右上角下拉菜单 =================
 const presetMenu = document.getElementById('presetMenu');
@@ -855,7 +792,6 @@ function renderPresetList(){
     item.className = 'preset-item' + (currentPresetKey===p.key ? ' active' : '');
     item.setAttribute('role','option');
 
-    // 进度概览：优先用 presetKey 查，其次用解析后的绝对 URL 查
     let prog = getProgressSummary(p.key, null);
     if(!prog && p.url){
       const abs = normalizeJsonUrl(resolveURL(p.url));
@@ -882,7 +818,7 @@ function renderPresetList(){
   const custom = document.createElement('div');
   custom.className = 'preset-custom';
   custom.innerHTML = `
-    <input type="url" id="presetCustomUrl" placeholder="JSON 地址（相对/绝对均可），回车加载">
+    <input type="url" id="presetCustomUrl" placeholder="JSON 地址（相对/绝对），回车加载">
     <div class="hint">例如：./data/dp.json、data/graph.json、/api/list.json、https://host/x.json</div>
   `;
   presetList.appendChild(custom);
@@ -902,17 +838,15 @@ async function selectPreset(p){
   if(p.builtin){
     resetFilterUI();
     boot(normalizeData(JSON.parse(JSON.stringify(DEFAULT_DATA))), p.key, null);
-    setStatus(`✔ 已加载内置题单：${p.name}`,'ok');
-    showToast('已切换：'+p.name);
+    showToast('已切换：'+p.name,'ok');
     localStorage.setItem(LS_PRESET, p.key);
-    localStorage.removeItem(LS_URL);
-    urlInput.value = '';
+    localStorage.removeItem(LS_URL_KEY);
     renderPresetList();
     updatePresetButton();
     return;
   }
   if(!p.url){
-    setStatus('❌ 该菜单项未配置 URL','err');
+    showToast('该菜单项未配置 URL','err');
     return;
   }
   presetCurrent.textContent = '加载中…';
@@ -925,8 +859,7 @@ function updatePresetButton(){
   let name = '默认题单';
   const p = PRESETS.find(x=>x.key===currentPresetKey);
   if(p) name = p.name;
-  else if(currentPresetKey===null && localStorage.getItem(LS_URL)) name = '自定义 URL';
-  else if(!currentPresetKey) name = '本地文件';
+  else if(currentPresetKey===null && localStorage.getItem(LS_URL_KEY)) name = '自定义 URL';
   presetCurrent.textContent = name;
 }
 function openPresetMenu(){ presetMenu.classList.add('open'); presetBtn.setAttribute('aria-expanded','true'); }
@@ -942,22 +875,6 @@ document.addEventListener('keydown', e=>{
   if(e.key==='Escape') closePresetMenu();
 });
 
-// ================= 恢复默认 =================
-document.getElementById('defaultBtn').onclick=()=>{
-  try{
-    localStorage.removeItem(LS_URL);
-    localStorage.removeItem(LS_PRESET);
-    urlInput.value='';
-    resetFilterUI();
-    boot(normalizeData(JSON.parse(JSON.stringify(DEFAULT_DATA))), 'builtin-bitwise', null);
-    setStatus('已恢复默认题单','ok');
-    window.scrollTo({top:0,behavior:'smooth'});
-    showToast('已恢复默认题单');
-    localStorage.setItem(LS_PRESET, 'builtin-bitwise');
-    renderPresetList();
-  }catch(e){ setStatus('❌ 恢复失败：'+e.message,'err'); }
-};
-
 // ================= 其他事件 =================
 document.querySelectorAll('.filter-bar .filter-btn[data-f]').forEach(b=>{
   b.onclick=()=>{ document.querySelectorAll('.filter-bar .filter-btn[data-f]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); filter=b.dataset.f; applyFilter(); };
@@ -965,7 +882,7 @@ document.querySelectorAll('.filter-bar .filter-btn[data-f]').forEach(b=>{
 document.getElementById('search').oninput=e=>{ keyword=e.target.value.trim().toLowerCase(); applyFilter(); };
 document.getElementById('reset').onclick=()=>{
   if(!confirm('确定清空当前题单的标记进度吗？\n（只影响当前来源的进度，其他题单不受影响）')) return;
-  st={}; save(); render(); showToast('当前题单进度已清空');
+  st={}; save(); render(); showToast('当前题单进度已清空','ok');
 };
 document.querySelectorAll('.score-chip[data-min]').forEach(chip=>{
   chip.onclick=()=>{
@@ -989,9 +906,6 @@ const sidebar=document.getElementById('sidebar'), mask=document.getElementById('
 function closeSidebar(){ sidebar.classList.remove('show'); mask.classList.remove('show'); }
 document.getElementById('menuToggle').onclick=()=>{ sidebar.classList.toggle('show'); mask.classList.toggle('show'); };
 mask.onclick=closeSidebar;
-
-let toastTimer;
-function showToast(m){ const t=document.getElementById('toast'); t.textContent='✓ '+m; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2000); }
 
 // ================= 语法高亮 =================
 function highlightMarkdownCode(){
@@ -1019,6 +933,7 @@ window.highlightMarkdownCode = highlightMarkdownCode;
 (async function init(){
   renderPresetList();
 
+  // 1) URL 参数优先
   const param=new URLSearchParams(location.search).get('json');
   if(param){
     if(await loadFromURL(param)) {
@@ -1029,6 +944,7 @@ window.highlightMarkdownCode = highlightMarkdownCode;
     }
   }
 
+  // 2) 上次选中的预设
   const savedPreset = localStorage.getItem(LS_PRESET);
   if(savedPreset){
     const p = PRESETS.find(x=>x.key===savedPreset);
@@ -1042,9 +958,9 @@ window.highlightMarkdownCode = highlightMarkdownCode;
     }
   }
 
-  const savedUrl = localStorage.getItem(LS_URL);
+  // 3) 上次的自定义 URL
+  const savedUrl = localStorage.getItem(LS_URL_KEY);
   if(savedUrl){
-    // savedUrl 已存的是绝对 URL，直接加载
     if(await loadFromURL(savedUrl, { silent:true })) {
       currentPresetKey = null;
       updatePresetButton();
@@ -1053,6 +969,7 @@ window.highlightMarkdownCode = highlightMarkdownCode;
     }
   }
 
+  // 4) 兜底：默认内置题单
   boot(normalizeData(JSON.parse(JSON.stringify(DEFAULT_DATA))), 'builtin-bitwise', null);
   renderPresetList();
   highlightMarkdownCode();
