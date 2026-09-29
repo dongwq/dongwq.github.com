@@ -1,0 +1,452 @@
+{
+  "title": "洛谷 GESP 1-8 级题目整理（按算法标签分组）",
+  "src": "https://www.luogu.com.cn/problem/list?keyword=GESP",
+  "last_update": "2026-09-29T00:00:00+08:00",
+  "difficulty_mapping": {
+    "入门（红）": 10,
+    "普及-（橙）": 20,
+    "普及（黄）": 30,
+    "普及+/提高-（绿）": 40,
+    "提高（青）": 50,
+    "提高+/省选-（蓝）": 60,
+    "省选/NOI-（紫）": 80,
+    "NOI/NOI+/CTS（黑）": 100
+  },
+  "children": [
+    {
+      "title": "一级（Level 1）",
+      "summary": "考察计算机基础与编程环境、变量定义与使用、基本数据类型、控制语句结构（顺序/循环/选择）、基本运算、输入输出语句。",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§1.1 顺序结构与输入输出",
+          "summary": "简单计算、变量赋值、标准输入输出",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3834", "title": "B3834 [GESP202303 一级] 长方形面积", "src": "https://www.luogu.com.cn/problem/B3834", "score": 10, "isPremium": false },
+            { "id": "B3835", "title": "B3835 [GESP202303 一级] 每月天数", "src": "https://www.luogu.com.cn/problem/B3835", "score": 10, "isPremium": false },
+            { "id": "B3846", "title": "B3846 [GESP样题 一级] 闰年求和", "src": "https://www.luogu.com.cn/problem/B3846", "score": 10, "isPremium": false },
+            { "id": "B3847", "title": "B3847 [GESP样题 一级] 当天的第几秒", "src": "https://www.luogu.com.cn/problem/B3847", "score": 10, "isPremium": false },
+            { "id": "B3862", "title": "B3862 [GESP202306 一级] 累计相加", "src": "https://www.luogu.com.cn/problem/B3862", "score": 10, "isPremium": false },
+            { "id": "B3901", "title": "B3901 [GESP202309 一级] 买文具", "src": "https://www.luogu.com.cn/problem/B3901", "score": 10, "isPremium": false },
+            { "id": "B3921", "title": "B3921 [GESP202312 一级] 小杨的考试", "src": "https://www.luogu.com.cn/problem/B3921", "score": 10, "isPremium": false },
+            { "id": "B3952", "title": "B3952 [GESP202403 一级] 小杨买书", "src": "https://www.luogu.com.cn/problem/B3952", "score": 10, "isPremium": false },
+            { "id": "B4034", "title": "B4034 [GESP202409 一级] 小杨购物", "src": "https://www.luogu.com.cn/problem/B4034", "score": 10, "isPremium": false },
+            { "id": "B4062", "title": "B4062 [GESP202412 一级] 温度转换", "src": "https://www.luogu.com.cn/problem/B4062", "score": 10, "isPremium": false },
+            { "id": "B4257", "title": "B4257 [GESP202503 一级] 图书馆里的老鼠", "src": "https://www.luogu.com.cn/problem/B4257", "score": 10, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§1.2 分支与循环",
+          "summary": "条件判断、循环结构、简单枚举",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3861", "title": "B3861 [GESP202306 一级] 时间规划", "src": "https://www.luogu.com.cn/problem/B3861", "score": 10, "isPremium": false },
+            { "id": "B3902", "title": "B3902 [GESP202309 一级] 小明的幸运数", "src": "https://www.luogu.com.cn/problem/B3902", "score": 10, "isPremium": false },
+            { "id": "B3922", "title": "B3922 [GESP202312 一级] 小杨报数", "src": "https://www.luogu.com.cn/problem/B3922", "score": 10, "isPremium": false },
+            { "id": "B4035", "title": "B4035 [GESP202409 一级] 美丽数字", "src": "https://www.luogu.com.cn/problem/B4035", "score": 10, "isPremium": false },
+            { "id": "B4445", "title": "B4445 [GESP202512 一级] 小杨的爱心快递", "src": "https://www.luogu.com.cn/problem/B4445", "score": 10, "isPremium": false },
+            { "id": "B4496", "title": "B4496 [GESP202603 一级] 数字替换", "src": "https://www.luogu.com.cn/problem/B4496", "score": 10, "isPremium": false },
+            { "id": "P1000", "title": "P1000 超级玛丽游戏", "src": "https://www.luogu.com.cn/problem/P1000", "score": 10, "isPremium": false },
+            { "id": "P1001", "title": "P1001 A+B Problem", "src": "https://www.luogu.com.cn/problem/P1001", "score": 10, "isPremium": false },
+            { "id": "P1425", "title": "P1425 小鱼的游泳时间", "src": "https://www.luogu.com.cn/problem/P1425", "score": 10, "isPremium": false },
+            { "id": "P5703", "title": "P5703 苹果采购", "src": "https://www.luogu.com.cn/problem/P5703", "score": 10, "isPremium": false },
+            { "id": "P5704", "title": "P5704 字母转换", "src": "https://www.luogu.com.cn/problem/P5704", "score": 10, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "二级（Level 2）",
+      "summary": "考察计算机的存储与网络、程序设计语言特点、流程图概念与描述、ASCII编码、数据类型转换、多层分支/循环结构、常用数学函数。",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§2.1 多层循环与数学函数",
+          "summary": "嵌套循环、数学函数使用、流程图",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3848", "title": "B3848 [GESP样题 二级] 画正方形", "src": "https://www.luogu.com.cn/problem/B3848", "score": 20, "isPremium": false },
+            { "id": "B3849", "title": "B3849 [GESP样题 二级] 勾股数", "src": "https://www.luogu.com.cn/problem/B3849", "score": 20, "isPremium": false },
+            { "id": "B3863", "title": "B3863 [GESP202306 二级] 找素数", "src": "https://www.luogu.com.cn/problem/B3863", "score": 20, "isPremium": false },
+            { "id": "B3864", "title": "B3864 [GESP202306 二级] 画三角形", "src": "https://www.luogu.com.cn/problem/B3864", "score": 20, "isPremium": false },
+            { "id": "B3923", "title": "B3923 [GESP202312 二级] 小猫分鱼", "src": "https://www.luogu.com.cn/problem/B3923", "score": 20, "isPremium": false },
+            { "id": "B3924", "title": "B3924 [GESP202312 二级] 单位转换", "src": "https://www.luogu.com.cn/problem/B3924", "score": 20, "isPremium": false },
+            { "id": "B3953", "title": "B3953 [GESP202403 二级] 乘法问题", "src": "https://www.luogu.com.cn/problem/B3953", "score": 20, "isPremium": false },
+            { "id": "B3954", "title": "B3954 [GESP202403 二级] 小杨的日字矩阵", "src": "https://www.luogu.com.cn/problem/B3954", "score": 20, "isPremium": false },
+            { "id": "B4036", "title": "B4036 [GESP202409 二级] 数位之和", "src": "https://www.luogu.com.cn/problem/B4036", "score": 20, "isPremium": false },
+            { "id": "B4037", "title": "B4037 [GESP202409 二级] 小杨的 N 字矩阵", "src": "https://www.luogu.com.cn/problem/B4037", "score": 20, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§2.2 分支嵌套与模拟",
+          "summary": "条件嵌套、数值计算、模拟",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B4063", "title": "B4063 [GESP202412 二级] 寻找数字", "src": "https://www.luogu.com.cn/problem/B4063", "score": 20, "isPremium": false },
+            { "id": "B4064", "title": "B4064 [GESP202412 二级] 数三角形", "src": "https://www.luogu.com.cn/problem/B4064", "score": 20, "isPremium": false },
+            { "id": "B4258", "title": "B4258 [GESP202503 二级] 等差数", "src": "https://www.luogu.com.cn/problem/B4258", "score": 20, "isPremium": false },
+            { "id": "B4259", "title": "B4259 [GESP202503 二级] 时间跨越", "src": "https://www.luogu.com.cn/problem/B4259", "score": 20, "isPremium": false },
+            { "id": "B4356", "title": "B4356 [GESP202506 二级] 数三角形", "src": "https://www.luogu.com.cn/problem/B4356", "score": 20, "isPremium": false },
+            { "id": "B4357", "title": "B4357 [GESP202506 二级] 幂和数", "src": "https://www.luogu.com.cn/problem/B4357", "score": 20, "isPremium": false },
+            { "id": "B4446", "title": "B4446 [GESP202512 二级] 环保能量球", "src": "https://www.luogu.com.cn/problem/B4446", "score": 20, "isPremium": false },
+            { "id": "B4447", "title": "B4447 [GESP202512 二级] 黄金格", "src": "https://www.luogu.com.cn/problem/B4447", "score": 20, "isPremium": false },
+            { "id": "P5710", "title": "P5710 数的性质", "src": "https://www.luogu.com.cn/problem/P5710", "score": 20, "isPremium": false },
+            { "id": "P5711", "title": "P5711 闰年判断", "src": "https://www.luogu.com.cn/problem/P5711", "score": 20, "isPremium": false },
+            { "id": "P5715", "title": "P5715 三位数排序", "src": "https://www.luogu.com.cn/problem/P5715", "score": 20, "isPremium": false },
+            { "id": "P5716", "title": "P5716 月份天数", "src": "https://www.luogu.com.cn/problem/P5716", "score": 20, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "三级（Level 3）",
+      "summary": "考察数据编码（原码/反码/补码）、进制转换、位运算、算法的概念与描述、一维数组基本应用、字符串及其函数、枚举法、模拟法。",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§3.1 进制转换与位运算",
+          "summary": "二进制、位运算、编码",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3865", "title": "B3865 [GESP202306 三级] 二进制转换", "src": "https://www.luogu.com.cn/problem/B3865", "score": 30, "isPremium": false },
+            { "id": "B3904", "title": "B3904 [GESP202309 三级] 进制转换", "src": "https://www.luogu.com.cn/problem/B3904", "score": 30, "isPremium": false },
+            { "id": "B3926", "title": "B3926 [GESP202312 三级] 单位转换", "src": "https://www.luogu.com.cn/problem/B3926", "score": 30, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§3.2 字符串与模拟",
+          "summary": "字符串操作、枚举、模拟",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3866", "title": "B3866 [GESP202306 三级] 密码合规检测", "src": "https://www.luogu.com.cn/problem/B3866", "score": 30, "isPremium": false },
+            { "id": "B3903", "title": "B3903 [GESP202309 三级] 避雷针", "src": "https://www.luogu.com.cn/problem/B3903", "score": 30, "isPremium": false },
+            { "id": "B3925", "title": "B3925 [GESP202312 三级] 小猫分鱼", "src": "https://www.luogu.com.cn/problem/B3925", "score": 30, "isPremium": false },
+            { "id": "B3955", "title": "B3955 [GESP202403 三级] 字母求和", "src": "https://www.luogu.com.cn/problem/B3955", "score": 30, "isPremium": false },
+            { "id": "B3956", "title": "B3956 [GESP202403 三级] 完全平方数", "src": "https://www.luogu.com.cn/problem/B3956", "score": 30, "isPremium": false },
+            { "id": "B4038", "title": "B4038 [GESP202409 三级] 平衡序列", "src": "https://www.luogu.com.cn/problem/B4038", "score": 30, "isPremium": false },
+            { "id": "B4039", "title": "B4039 [GESP202409 三级] 回文拼接", "src": "https://www.luogu.com.cn/problem/B4039", "score": 30, "isPremium": false },
+            { "id": "B4065", "title": "B4065 [GESP202412 三级] 数字替换", "src": "https://www.luogu.com.cn/problem/B4065", "score": 30, "isPremium": false },
+            { "id": "B4066", "title": "B4066 [GESP202412 三级] 打印数字", "src": "https://www.luogu.com.cn/problem/B4066", "score": 30, "isPremium": false },
+            { "id": "B4260", "title": "B4260 [GESP202503 三级] 2025", "src": "https://www.luogu.com.cn/problem/B4260", "score": 30, "isPremium": false },
+            { "id": "B4261", "title": "B4261 [GESP202503 三级] 词频统计", "src": "https://www.luogu.com.cn/problem/B4261", "score": 30, "isPremium": false },
+            { "id": "B4358", "title": "B4358 [GESP202506 三级] 奇偶校验", "src": "https://www.luogu.com.cn/problem/B4358", "score": 30, "isPremium": false },
+            { "id": "B4359", "title": "B4359 [GESP202506 三级] 分糖果", "src": "https://www.luogu.com.cn/problem/B4359", "score": 30, "isPremium": false },
+            { "id": "B4448", "title": "B4448 [GESP202512 三级] 密码锁", "src": "https://www.luogu.com.cn/problem/B4448", "score": 30, "isPremium": false },
+            { "id": "B4449", "title": "B4449 [GESP202512 三级] 小杨的智慧购物", "src": "https://www.luogu.com.cn/problem/B4449", "score": 30, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§3.3 数组与枚举",
+          "summary": "一维数组、枚举法",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P5736", "title": "P5736 【深基7.例2】质数筛", "src": "https://www.luogu.com.cn/problem/P5736", "score": 30, "isPremium": false },
+            { "id": "P1177", "title": "P1177 【模板】快速排序", "src": "https://www.luogu.com.cn/problem/P1177", "score": 30, "isPremium": false },
+            { "id": "P1908", "title": "P1908 逆序对", "src": "https://www.luogu.com.cn/problem/P1908", "score": 40, "isPremium": false },
+            { "id": "P1028", "title": "P1028 [NOIP2001 普及组] 数的计算", "src": "https://www.luogu.com.cn/problem/P1028", "score": 30, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "四级（Level 4）",
+      "summary": "考察函数的定义与调用、形参与实参/作用域、指针类型、参数传递、结构体、二维数组与多维数组、递推、排序概念和稳定性、排序算法、简单算法复杂度估算、文件读写、异常处理。",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.1 函数与递归",
+          "summary": "函数定义、参数传递、递归",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3850", "title": "B3850 [GESP202303 四级] 幸运数", "src": "https://www.luogu.com.cn/problem/B3850", "score": 40, "isPremium": false },
+            { "id": "B3851", "title": "B3851 [GESP202303 四级] 图像压缩", "src": "https://www.luogu.com.cn/problem/B3851", "score": 40, "isPremium": false },
+            { "id": "B3867", "title": "B3867 [GESP202306 四级] 简单排序", "src": "https://www.luogu.com.cn/problem/B3867", "score": 40, "isPremium": false },
+            { "id": "B3868", "title": "B3868 [GESP202306 四级] 图像处理", "src": "https://www.luogu.com.cn/problem/B3868", "score": 40, "isPremium": false },
+            { "id": "B3905", "title": "B3905 [GESP202309 四级] 进制转换", "src": "https://www.luogu.com.cn/problem/B3905", "score": 40, "isPremium": false },
+            { "id": "B3906", "title": "B3906 [GESP202309 四级] 变长编码", "src": "https://www.luogu.com.cn/problem/B3906", "score": 40, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§4.2 二维数组与排序",
+          "summary": "二维数组、排序算法",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3927", "title": "B3927 [GESP202312 四级] 小杨的字典", "src": "https://www.luogu.com.cn/problem/B3927", "score": 40, "isPremium": false },
+            { "id": "B3928", "title": "B3928 [GESP202312 四级] 田忌赛马", "src": "https://www.luogu.com.cn/problem/B3928", "score": 40, "isPremium": false },
+            { "id": "B3957", "title": "B3957 [GESP202403 四级] 相似字符串", "src": "https://www.luogu.com.cn/problem/B3957", "score": 40, "isPremium": false },
+            { "id": "B3958", "title": "B3958 [GESP202403 四级] 做题计划", "src": "https://www.luogu.com.cn/problem/B3958", "score": 40, "isPremium": false },
+            { "id": "B4040", "title": "B4040 [GESP202409 四级] 黑白方块", "src": "https://www.luogu.com.cn/problem/B4040", "score": 40, "isPremium": false },
+            { "id": "B4041", "title": "B4041 [GESP202409 四级] 区间排序", "src": "https://www.luogu.com.cn/problem/B4041", "score": 40, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§4.3 递推与综合",
+          "summary": "递推、综合应用",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B4067", "title": "B4067 [GESP202412 四级] Recamán", "src": "https://www.luogu.com.cn/problem/B4067", "score": 40, "isPremium": false },
+            { "id": "B4068", "title": "B4068 [GESP202412 四级] 字符排序", "src": "https://www.luogu.com.cn/problem/B4068", "score": 40, "isPremium": false },
+            { "id": "B4262", "title": "B4262 [GESP202503 四级] 荒地开垦", "src": "https://www.luogu.com.cn/problem/B4262", "score": 40, "isPremium": false },
+            { "id": "B4263", "title": "B4263 [GESP202503 四级] 二阶矩阵", "src": "https://www.luogu.com.cn/problem/B4263", "score": 40, "isPremium": false },
+            { "id": "B4360", "title": "B4360 [GESP202506 四级] 画布裁剪", "src": "https://www.luogu.com.cn/problem/B4360", "score": 40, "isPremium": false },
+            { "id": "B4361", "title": "B4361 [GESP202506 四级] 身高体重指数", "src": "https://www.luogu.com.cn/problem/B4361", "score": 40, "isPremium": false },
+            { "id": "B4558", "title": "B4558 [GESP202606 四级] 身高体重指数", "src": "https://www.luogu.com.cn/problem/B4558", "score": 40, "isPremium": false },
+            { "id": "P5739", "title": "P5739 【深基7.例7】计算阶乘", "src": "https://www.luogu.com.cn/problem/P5739", "score": 40, "isPremium": false },
+            { "id": "P5740", "title": "P5740 【深基7.例9】最厉害的学生", "src": "https://www.luogu.com.cn/problem/P5740", "score": 40, "isPremium": false },
+            { "id": "P5741", "title": "P5741 【深基7.例10】旗鼓相当的对手", "src": "https://www.luogu.com.cn/problem/P5741", "score": 40, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "五级（Level 5）",
+      "summary": "考察初等数论、数组模拟高精度、单链表/双链表/循环链表、辗转相除法（欧几里得算法）、素数筛法、贪心算法。",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§5.1 数论（素数、GCD、筛法）",
+          "summary": "素数判定、筛法、最大公约数、质因数分解",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3941", "title": "B3941 [GESP202403 五级] B-smooth 数", "src": "https://www.luogu.com.cn/problem/B3941", "score": 50, "isPremium": false },
+            { "id": "B3951", "title": "B3951 [GESP202403 五级] 素数个数", "src": "https://www.luogu.com.cn/problem/B3951", "score": 50, "isPremium": false },
+            { "id": "B3871", "title": "B3871 [GESP202309 五级] 因数分解", "src": "https://www.luogu.com.cn/problem/B3871", "score": 50, "isPremium": false },
+            { "id": "P10720", "title": "P10720 [GESP202406 五级] 小杨的幸运数字", "src": "https://www.luogu.com.cn/problem/P10720", "score": 50, "isPremium": false },
+            { "id": "P11961", "title": "P11961 [GESP202503 五级] 原根判断", "src": "https://www.luogu.com.cn/problem/P11961", "score": 60, "isPremium": false },
+            { "id": "P13014", "title": "P13014 [GESP202506 五级] 最大公因数", "src": "https://www.luogu.com.cn/problem/P13014", "score": 50, "isPremium": false },
+            { "id": "P14073", "title": "P14073 [GESP202509 五级] 数字选取", "src": "https://www.luogu.com.cn/problem/P14073", "score": 50, "isPremium": false },
+            { "id": "P3383", "title": "P3383 【模板】线性筛素数", "src": "https://www.luogu.com.cn/problem/P3383", "score": 50, "isPremium": false },
+            { "id": "P1029", "title": "P1029 [NOIP2001 普及组] 最大公约数和最小公倍数", "src": "https://www.luogu.com.cn/problem/P1029", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§5.2 贪心算法",
+          "summary": "贪心策略、优先队列",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3872", "title": "B3872 [GESP202309 五级] 巧夺大奖", "src": "https://www.luogu.com.cn/problem/B3872", "score": 50, "isPremium": false },
+            { "id": "B3930", "title": "B3930 [GESP202312 五级] 烹饪问题", "src": "https://www.luogu.com.cn/problem/B3930", "score": 50, "isPremium": false },
+            { "id": "B4042", "title": "B4042 [GESP202409 五级] 挑战怪物", "src": "https://www.luogu.com.cn/problem/B4042", "score": 50, "isPremium": false },
+            { "id": "B4043", "title": "B4043 [GESP202409 五级] 小杨的锻炼", "src": "https://www.luogu.com.cn/problem/B4043", "score": 50, "isPremium": false },
+            { "id": "B4070", "title": "B4070 [GESP202412 五级] 奇妙数字", "src": "https://www.luogu.com.cn/problem/B4070", "score": 50, "isPremium": false },
+            { "id": "B4071", "title": "B4071 [GESP202412 五级] 武器强化", "src": "https://www.luogu.com.cn/problem/B4071", "score": 50, "isPremium": false },
+            { "id": "P13013", "title": "P13013 [GESP202506 五级] 奖品兑换", "src": "https://www.luogu.com.cn/problem/P13013", "score": 60, "isPremium": false },
+            { "id": "P14074", "title": "P14074 [GESP202509 五级] 有趣的数字和", "src": "https://www.luogu.com.cn/problem/P14074", "score": 50, "isPremium": false },
+            { "id": "P14917", "title": "P14917 [GESP202512 五级] 数字移动", "src": "https://www.luogu.com.cn/problem/P14917", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§5.3 高精度与链表",
+          "summary": "高精度运算、链表操作",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1601", "title": "P1601 A+B Problem（高精）", "src": "https://www.luogu.com.cn/problem/P1601", "score": 50, "isPremium": false },
+            { "id": "P2142", "title": "P2142 高精度减法", "src": "https://www.luogu.com.cn/problem/P2142", "score": 50, "isPremium": false },
+            { "id": "P1303", "title": "P1303 A*B Problem（高精）", "src": "https://www.luogu.com.cn/problem/P1303", "score": 50, "isPremium": false },
+            { "id": "P1480", "title": "P1480 A/B Problem（高精）", "src": "https://www.luogu.com.cn/problem/P1480", "score": 50, "isPremium": false },
+            { "id": "P1009", "title": "P1009 [NOIP1998 普及组] 阶乘之和", "src": "https://www.luogu.com.cn/problem/P1009", "score": 50, "isPremium": false },
+            { "id": "P1160", "title": "P1160 队列安排", "src": "https://www.luogu.com.cn/problem/P1160", "score": 50, "isPremium": false },
+            { "id": "P1996", "title": "P1996 约瑟夫问题", "src": "https://www.luogu.com.cn/problem/P1996", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§5.4 二分与排序",
+          "summary": "二分查找、排序应用",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3870", "title": "B3870 [GESP202306 六级] 哈夫曼编码", "src": "https://www.luogu.com.cn/problem/B3870", "score": 50, "isPremium": false },
+            { "id": "B3969", "title": "B3969 [GESP202403 五级] B-smooth 数", "src": "https://www.luogu.com.cn/problem/B3969", "score": 50, "isPremium": false },
+            { "id": "B3970", "title": "B3970 [GESP202403 五级] 成绩排序", "src": "https://www.luogu.com.cn/problem/B3970", "score": 50, "isPremium": false },
+            { "id": "P11960", "title": "P11960 [GESP202503 五级] 平均分配", "src": "https://www.luogu.com.cn/problem/P11960", "score": 60, "isPremium": false },
+            { "id": "P17010", "title": "P17010 [GESP202606 五级] 排排坐", "src": "https://www.luogu.com.cn/problem/P17010", "score": 50, "isPremium": false },
+            { "id": "P17011", "title": "P17011 [GESP202606 五级] 晚宴", "src": "https://www.luogu.com.cn/problem/P17011", "score": 50, "isPremium": false },
+            { "id": "P14918", "title": "P14918 [GESP202512 五级] 相等序列", "src": "https://www.luogu.com.cn/problem/P14918", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "六级（Level 6）",
+      "summary": "考察树结构（二叉树、哈夫曼树、二叉排序树）、深度优先搜索、广度优先搜索、简单动态规划（一维DP、简单背包）、栈与队列、面向对象基础。",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§6.1 树与搜索",
+          "summary": "二叉树遍历、哈夫曼树、二叉排序树、DFS/BFS",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3869", "title": "B3869 [GESP202306 六级] 二叉树遍历", "src": "https://www.luogu.com.cn/problem/B3869", "score": 60, "isPremium": false },
+            { "id": "B3870", "title": "B3870 [GESP202306 六级] 哈夫曼编码", "src": "https://www.luogu.com.cn/problem/B3870", "score": 60, "isPremium": false },
+            { "id": "B3907", "title": "B3907 [GESP202309 六级] 二叉排序树", "src": "https://www.luogu.com.cn/problem/B3907", "score": 60, "isPremium": false },
+            { "id": "B3908", "title": "B3908 [GESP202309 六级] 小杨的握手问题", "src": "https://www.luogu.com.cn/problem/B3908", "score": 60, "isPremium": false },
+            { "id": "B3931", "title": "B3931 [GESP202312 六级] 闯关游戏", "src": "https://www.luogu.com.cn/problem/B3931", "score": 60, "isPremium": false },
+            { "id": "B3932", "title": "B3932 [GESP202312 六级] 工作沟通", "src": "https://www.luogu.com.cn/problem/B3932", "score": 60, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§6.2 动态规划",
+          "summary": "一维DP、简单背包",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3971", "title": "B3971 [GESP202403 六级] 游戏", "src": "https://www.luogu.com.cn/problem/B3971", "score": 60, "isPremium": false },
+            { "id": "B3972", "title": "B3972 [GESP202403 六级] 好斗的牛", "src": "https://www.luogu.com.cn/problem/B3972", "score": 60, "isPremium": false },
+            { "id": "B4044", "title": "B4044 [GESP202409 六级] 小杨和整数拆分", "src": "https://www.luogu.com.cn/problem/B4044", "score": 60, "isPremium": false },
+            { "id": "B4045", "title": "B4045 [GESP202409 六级] 算法学习", "src": "https://www.luogu.com.cn/problem/B4045", "score": 60, "isPremium": false },
+            { "id": "B4072", "title": "B4072 [GESP202412 六级] 树上游走", "src": "https://www.luogu.com.cn/problem/B4072", "score": 60, "isPremium": false },
+            { "id": "B4073", "title": "B4073 [GESP202412 六级] 运送物资", "src": "https://www.luogu.com.cn/problem/B4073", "score": 60, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§6.3 综合与其他",
+          "summary": "",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B4264", "title": "B4264 [GESP202503 六级] 选数", "src": "https://www.luogu.com.cn/problem/B4264", "score": 60, "isPremium": false },
+            { "id": "B4265", "title": "B4265 [GESP202503 六级] 完全二叉树", "src": "https://www.luogu.com.cn/problem/B4265", "score": 60, "isPremium": false },
+            { "id": "B4362", "title": "B4362 [GESP202506 六级] 括号匹配", "src": "https://www.luogu.com.cn/problem/B4362", "score": 60, "isPremium": false },
+            { "id": "B4363", "title": "B4363 [GESP202506 六级] 分金币", "src": "https://www.luogu.com.cn/problem/B4363", "score": 60, "isPremium": false },
+            { "id": "B4450", "title": "B4450 [GESP202512 六级] 满二叉树", "src": "https://www.luogu.com.cn/problem/B4450", "score": 60, "isPremium": false },
+            { "id": "B4451", "title": "B4451 [GESP202512 六级] 背包问题", "src": "https://www.luogu.com.cn/problem/B4451", "score": 60, "isPremium": false },
+            { "id": "P10377", "title": "P10377 [GESP202403 六级] 好斗的牛", "src": "https://www.luogu.com.cn/problem/P10377", "score": 60, "isPremium": false },
+            { "id": "P15800", "title": "P15800 [GESP202603 六级] 选数", "src": "https://www.luogu.com.cn/problem/P15800", "score": 60, "isPremium": false },
+            { "id": "P15801", "title": "P15801 [GESP202603 六级] 完全二叉树", "src": "https://www.luogu.com.cn/problem/P15801", "score": 60, "isPremium": false },
+            { "id": "P17012", "title": "P17012 [GESP202606 六级] 条形蛋糕", "src": "https://www.luogu.com.cn/problem/P17012", "score": 60, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "七级（Level 7）",
+      "summary": "考察数学库函数、复杂动态规划（二维DP、LIS、LCS、区间DP）、图的定义与遍历（DFS/BFS/泛洪）、哈希表、最短路基础。",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§7.1 图的遍历与最短路",
+          "summary": "DFS、BFS、泛洪、Dijkstra、拓扑排序",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P10265", "title": "P10265 [GESP样题 七级] 迷宫统计", "src": "https://www.luogu.com.cn/problem/P10265", "score": 70, "isPremium": false },
+            { "id": "P10378", "title": "P10378 [GESP202403 七级] 交流问题", "src": "https://www.luogu.com.cn/problem/P10378", "score": 70, "isPremium": false },
+            { "id": "P10379", "title": "P10379 [GESP202403 七级] 俄罗斯方块", "src": "https://www.luogu.com.cn/problem/P10379", "score": 70, "isPremium": false },
+            { "id": "P11964", "title": "P11964 [GESP202503 七级] 图上移动", "src": "https://www.luogu.com.cn/problem/P11964", "score": 70, "isPremium": false },
+            { "id": "P14077", "title": "P14077 [GESP202509 七级] 连通图", "src": "https://www.luogu.com.cn/problem/P14077", "score": 70, "isPremium": false },
+            { "id": "P13017", "title": "P13017 [GESP202506 七级] 线图", "src": "https://www.luogu.com.cn/problem/P13017", "score": 70, "isPremium": false },
+            { "id": "P17014", "title": "P17014 [GESP202606 七级] 染色", "src": "https://www.luogu.com.cn/problem/P17014", "score": 70, "isPremium": false },
+            { "id": "P10110", "title": "P10110 [GESP202312 七级] 商品交易", "src": "https://www.luogu.com.cn/problem/P10110", "score": 70, "isPremium": false },
+            { "id": "P14921", "title": "P14921 [GESP202512 七级] 城市规划", "src": "https://www.luogu.com.cn/problem/P14921", "score": 70, "isPremium": false },
+            { "id": "P15803", "title": "P15803 [GESP202603 七级] 物流网络", "src": "https://www.luogu.com.cn/problem/P15803", "score": 70, "isPremium": false },
+            { "id": "P10723", "title": "P10723 [GESP202406 七级] 黑白翻转", "src": "https://www.luogu.com.cn/problem/P10723", "score": 70, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§7.2 动态规划",
+          "summary": "LIS、线性DP、树形DP、背包DP、区间DP",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P10287", "title": "P10287 [GESP样题 七级] 最长不下降子序列", "src": "https://www.luogu.com.cn/problem/P10287", "score": 70, "isPremium": false },
+            { "id": "P10111", "title": "P10111 [GESP202312 七级] 纸牌游戏", "src": "https://www.luogu.com.cn/problem/P10111", "score": 70, "isPremium": false },
+            { "id": "P11248", "title": "P11248 [GESP202409 七级] 矩阵移动", "src": "https://www.luogu.com.cn/problem/P11248", "score": 70, "isPremium": false },
+            { "id": "P11965", "title": "P11965 [GESP202503 七级] 等价消除", "src": "https://www.luogu.com.cn/problem/P11965", "score": 70, "isPremium": false },
+            { "id": "P13018", "title": "P13018 [GESP202506 七级] 调味平衡", "src": "https://www.luogu.com.cn/problem/P13018", "score": 70, "isPremium": false },
+            { "id": "P14922", "title": "P14922 [GESP202512 七级] 学习小组", "src": "https://www.luogu.com.cn/problem/P14922", "score": 70, "isPremium": false },
+            { "id": "P11249", "title": "P11249 [GESP202409 七级] 小杨寻宝", "src": "https://www.luogu.com.cn/problem/P11249", "score": 70, "isPremium": false },
+            { "id": "P11378", "title": "P11378 [GESP202412 七级] 燃烧", "src": "https://www.luogu.com.cn/problem/P11378", "score": 70, "isPremium": false },
+            { "id": "P11377", "title": "P11377 [GESP202412 七级] 武器购买", "src": "https://www.luogu.com.cn/problem/P11377", "score": 70, "isPremium": false },
+            { "id": "P17015", "title": "P17015 [GESP202606 七级] 消消乐", "src": "https://www.luogu.com.cn/problem/P17015", "score": 70, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§7.3 贪心与其他",
+          "summary": "贪心、数学杂题",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P14078", "title": "P14078 [GESP202509 七级] 金币收集", "src": "https://www.luogu.com.cn/problem/P14078", "score": 70, "isPremium": false },
+            { "id": "P15802", "title": "P15802 [GESP202603 七级] 拆分", "src": "https://www.luogu.com.cn/problem/P15802", "score": 70, "isPremium": false },
+            { "id": "P10724", "title": "P10724 [GESP202406 七级] 区间乘积", "src": "https://www.luogu.com.cn/problem/P10724", "score": 70, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "八级（Level 8）",
+      "summary": "考察计数原理、排列组合、杨辉三角、倍增法、代数与平面几何、图论算法（最小生成树、单源最短路Dijkstra/Floyd）、算法时空效率分析。",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§8.1 图论算法",
+          "summary": "最短路、最小生成树",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P15804", "title": "P15804 [GESP202603 八级] 消息查找", "src": "https://www.luogu.com.cn/problem/P15804", "score": 80, "isPremium": false },
+            { "id": "P15805", "title": "P15805 [GESP202603 八级] 子图最短路", "src": "https://www.luogu.com.cn/problem/P15805", "score": 80, "isPremium": false },
+            { "id": "P14079", "title": "P14079 [GESP202509 八级] 最短距离", "src": "https://www.luogu.com.cn/problem/P14079", "score": 80, "isPremium": false },
+            { "id": "P14080", "title": "P14080 [GESP202509 八级] 最小生成树", "src": "https://www.luogu.com.cn/problem/P14080", "score": 80, "isPremium": false },
+            { "id": "P11966", "title": "P11966 [GESP202503 八级] 上学", "src": "https://www.luogu.com.cn/problem/P11966", "score": 80, "isPremium": false },
+            { "id": "P11967", "title": "P11967 [GESP202503 八级] 割裂", "src": "https://www.luogu.com.cn/problem/P11967", "score": 80, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§8.2 树上问题与动态规划",
+          "summary": "树上移动、树形结构、复杂DP",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P14923", "title": "P14923 [GESP202512 八级] 猫和老鼠", "src": "https://www.luogu.com.cn/problem/P14923", "score": 80, "isPremium": false },
+            { "id": "P13019", "title": "P13019 [GESP202506 八级] 树上旅行", "src": "https://www.luogu.com.cn/problem/P13019", "score": 80, "isPremium": false },
+            { "id": "P13020", "title": "P13020 [GESP202506 八级] 遍历计数", "src": "https://www.luogu.com.cn/problem/P13020", "score": 80, "isPremium": false },
+            { "id": "P11379", "title": "P11379 [GESP202412 八级] 树上移动", "src": "https://www.luogu.com.cn/problem/P11379", "score": 80, "isPremium": false },
+            { "id": "P10725", "title": "P10725 [GESP202406 八级] 最远点对", "src": "https://www.luogu.com.cn/problem/P10725", "score": 80, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§8.3 组合数学与倍增",
+          "summary": "排列组合、杨辉三角、倍增法",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P10263", "title": "P10263 [GESP202403 八级] 公倍数问题", "src": "https://www.luogu.com.cn/problem/P10263", "score": 80, "isPremium": false },
+            { "id": "P10112", "title": "P10112 [GESP202312 八级] 奖品分配", "src": "https://www.luogu.com.cn/problem/P10112", "score": 80, "isPremium": false },
+            { "id": "P10113", "title": "P10113 [GESP202312 八级] 大量的工作沟通", "src": "https://www.luogu.com.cn/problem/P10113", "score": 80, "isPremium": false },
+            { "id": "P10288", "title": "P10288 [GESP样题 八级] 区间", "src": "https://www.luogu.com.cn/problem/P10288", "score": 80, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§8.4 综合与其他",
+          "summary": "",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P14924", "title": "P14924 [GESP202512 八级] 宝石项链", "src": "https://www.luogu.com.cn/problem/P14924", "score": 80, "isPremium": false },
+            { "id": "P11250", "title": "P11250 [GESP202409 八级] 手套配对", "src": "https://www.luogu.com.cn/problem/P11250", "score": 80, "isPremium": false },
+            { "id": "P11251", "title": "P11251 [GESP202409 八级] 美丽路径", "src": "https://www.luogu.com.cn/problem/P11251", "score": 80, "isPremium": false },
+            { "id": "P10726", "title": "P10726 [GESP202406 八级] 空间跳跃", "src": "https://www.luogu.com.cn/problem/P10726", "score": 80, "isPremium": false },
+            { "id": "P10264", "title": "P10264 [GESP202403 八级] 接竹竿", "src": "https://www.luogu.com.cn/problem/P10264", "score": 80, "isPremium": false },
+            { "id": "P10289", "title": "P10289 [GESP样题 八级] 小杨的旅游", "src": "https://www.luogu.com.cn/problem/P10289", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    }
+  ]
+}
