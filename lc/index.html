@@ -487,7 +487,7 @@ function tableHTML(problems){
     const [id,t,url,score,pre]=p;
     const s=st[id]||0;
     const link=url?`<a href="${esc(url)}" target="_blank">${t}</a>`:t;
-    const scoreBadge=score?`<span class="badge b-score">${score}</span>`:'<span class="badge b-noscore">未知</span>';
+    const scoreBadge=score?`<span class="badge b-score">${Math.trunc(score)}</span>`:'<span class="badge b-noscore">未知</span>';
     const preBadge=pre?`<span class="badge b-pre">会员</span>`:'';
     h+=`<tr data-st="${s}" data-score="${score}" data-pre="${pre}" data-txt="${esc((id+' '+t).toLowerCase())}">
       <td class="pid">${id}</td>
