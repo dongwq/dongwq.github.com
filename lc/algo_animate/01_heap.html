@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>堆与堆排序 · 动画演示</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Microsoft YaHei", sans-serif;
+    background: #1a1e2e; color: #e0e0e0;
+    padding: 20px; min-height: 100vh;
+  }
+  h1 { text-align: center; color: #7dd3fc; margin-bottom: 6px; }
+  .subtitle { text-align: center; color: #94a3b8; margin-bottom: 18px; font-size: 14px; }
+
+  .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .tab {
+    padding: 8px 18px; border-radius: 20px; cursor: pointer;
+    background: #2a3050; border: 1px solid #3d4470; color: #a0a8c8; font-size: 14px;
+    transition: all .2s;
+  }
+  .tab.active { background: #3b82f6; color: #fff; border-color: #60a5fa; }
+  .tab:hover { border-color: #60a5fa; }
+
+  .panel { display: none; max-width: 900px; margin: 0 auto;
+    background: #232840; border-radius: 12px; padding: 20px; }
+  .panel.active { display: block; }
+
+  .explain { background: #1e2438; border-left: 4px solid #3b82f6;
+    padding: 12px 14px; border-radius: 6px; margin-bottom: 14px;
+    font-size: 14px; line-height: 1.7; }
+  .explain b { color: #fbbf24; }
+  .explain .ok { color: #4ade80; } .explain .bad { color: #f87171; }
+
+  .stage { position: relative; height: 300px; background: #1a1e30;
+    border-radius: 8px; margin-bottom: 14px; overflow: hidden; }
+
+  .node {
+    position: absolute; width: 42px; height: 42px; border-radius: 50%;
+    background: #3b4262; border: 2px solid #5b6390;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 16px; transition: all .45s ease;
+  }
+  .node.pending { box-shadow: 0 0 0 3px rgba(148,163,184,.45); }
+  .node.ref     { background: #2563eb; border-color: #60a5fa; color: #fff; }
+  .node.hl      { background: #f59e0b; border-color: #fbbf24; color: #1a1e2e; transform: scale(1.15); }
+  .node.swap    { background: #ef4444; border-color: #f87171; transform: scale(1.15); }
+  .node.done    { background: #16a34a; border-color: #22c55e; }
+  .node-label { position: absolute; font-size: 10px; color: #64748b; }
+
+  .edge { position: absolute; height: 2px; background: #3d4470; transform-origin: left center; }
+
+  .legend { display: flex; gap: 14px 20px; justify-content: center; align-items: center;
+    flex-wrap: wrap; font-size: 12px; color: #94a3b8;
+    margin: 0 0 16px; min-height: 18px; line-height: 1.4; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .legend i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; flex: 0 0 auto; }
+
+  /* ══════════ 数组条：柱状图行 + 索引行（上下两层，列对齐） ══════════ */
+  .array-wrap { margin-bottom: 18px; }
+
+  /* 柱状图行 */
+  .array-row { display: flex; gap: 5px; justify-content: center; align-items: flex-end;
+    height: 100px; position: relative; }
+
+  .cell {
+    width: 40px; height: 100px; border-radius: 5px 5px 0 0; position: relative;
+    background: #3b4262; border: 1px solid #5b6390;
+    display: block; font-weight: bold; transition: all .35s;
+    overflow: hidden;
+  }
+  .cell .num { position: absolute; top: 4px; left: 0; right: 0;
+    text-align: center; z-index: 2; line-height: 1.2; }
+  .cell .bar { position: absolute; bottom: 0; left: 0; right: 0;
+    background: #3b82f6; border-radius: 4px 4px 0 0; transition: height .45s; z-index: 1; }
+  .cell.ref  { border-color: #60a5fa; background: #1e3a6b; }
+  .cell.hl   { border-color: #fbbf24; background: #6b5618; }
+  .cell.swap { border-color: #f87171; background: #6b2828; }
+  .cell.done { border-color: #22c55e; }
+  .cell.done .bar { background: #16a34a; }
+
+  /* 索引行：和柱状图行同宽同 gap，每格宽度一致 → 列自动对齐 */
+  .index-row { display: flex; gap: 5px; justify-content: center;
+    margin-top: 6px; }
+  .index-cell {
+    width: 40px; text-align: center; font-size: 11px; font-weight: bold;
+    color: #cbd5e1; background: #2a3050; border-radius: 4px;
+    padding: 3px 0; line-height: 1.2;
+  }
+
+  .control-block {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 14px; margin-top: 10px;
+  }
+  .controls { display: flex; gap: 10px; justify-content: center; align-items: center;
+    flex-wrap: wrap; row-gap: 10px; }
+  button {
+    padding: 9px 22px; border-radius: 8px; border: none; cursor: pointer;
+    font-size: 14px; font-weight: bold; transition: all .15s;
+    white-space: nowrap; flex: 0 0 auto;
+  }
+  .btn-main { background: #3b82f6; color: #fff; }
+  .btn-main:hover { background: #2563eb; }
+  .btn-sec { background: #3d4470; color: #a0a8c8; }
+  .btn-sec:hover { background: #4d5488; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+
+  .progress { height: 6px; background: #1e2438; border-radius: 3px; overflow: hidden;
+    width: 100%; max-width: 560px; }
+  .progress > div { height: 100%; background: linear-gradient(90deg,#3b82f6,#7dd3fc);
+    width: 0%; transition: width .25s; }
+
+  .split-label { text-align: center; font-size: 12px; color: #64748b;
+    margin: 0 0 6px; min-height: 16px; }
+
+  .status {
+    text-align: center; margin-top: 16px; min-height: 44px;
+    font-size: 15px; color: #93c5fd; line-height: 1.6;
+  }
+  .quiz {
+    background: #1e2438; padding: 12px; border-radius: 8px; margin-top: 12px;
+    font-size: 14px; line-height: 1.8;
+  }
+  .quiz .btn-sec { padding: 5px 14px; margin: 0 6px; font-size: 13px; }
+  .formula { text-align: center; color: #fbbf24; font-size: 16px; margin: 8px 0; font-family: monospace; }
+  .kbd { display: inline-block; padding: 1px 6px; border-radius: 4px;
+    background: #2a3050; border: 1px solid #3d4470; font-family: monospace; font-size: 12px; color: #cbd5e1; }
+
+  @media (max-width: 520px) {
+    button { padding: 8px 14px; font-size: 13px; }
+    .controls { gap: 8px; row-gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🌳 堆与堆排序 · 动画演示</h1>
+<p class="subtitle">从零开始，一步步理解堆这个神奇的数据结构　·　快捷键：<span class="kbd">←</span> <span class="kbd">→</span> 翻帧，<span class="kbd">空格</span> 播放/暂停</p>
+
+<div class="tabs">
+  <div class="tab active" onclick="show(0)">① 什么是堆？</div>
+  <div class="tab" onclick="show(1)">② 树 ↔ 数组</div>
+  <div class="tab" onclick="show(2)">③ 建堆（下沉）</div>
+  <div class="tab" onclick="show(3)">④ 堆排序</div>
+</div>
+
+<!-- ══════════ 第1步 ══════════ -->
+<div class="panel active" id="p0">
+  <div class="explain">
+    <b>堆（Heap）</b>是一种特殊的完全二叉树：<br>
+    ✅ <b>最大堆规则</b>：每个父节点 ≥ 它的两个孩子。<br>
+    ✅ 所以<span class="ok">最大的数永远在树顶</span>！这就是堆的"超能力"。<br>
+    ❌ 注意：堆<b>不是</b>完全有序的，只保证"父 ≥ 子"，兄弟之间没有大小要求。
+  </div>
+  <div class="legend" id="legend0"></div>
+  <div class="stage" id="stage0"></div>
+  <div class="quiz">
+    <b>🤔 小测验：</b>上面这棵完全二叉树是合法的<b>最大堆</b>吗？
+    <span id="quiz-msg" style="margin-left:8px"></span><br>
+    <button class="btn-sec" onclick="answerQuiz(true)">是合法堆 ✔</button>
+    <button class="btn-sec" onclick="answerQuiz(false)">不是 ✘</button>
+    <button class="btn-sec" onclick="drawQuiz(true)">👁 看答案</button>
+  </div>
+</div>
+
+<!-- ══════════ 第2步 ══════════ -->
+<div class="panel" id="p1">
+  <div class="explain">
+    实际编程中，堆不用"指针"存树，而是直接放进<b>数组</b>！按层从上到下、从左到右编号。<br>
+    父子关系只需一个公式：<span class="formula">parent(i) = ⌊(i-1)/2⌋　　children(i) = 2i+1, 2i+2</span>
+    用下面两个按钮，分别体验"子找父"和"父找子"。
+  </div>
+  <div class="legend">
+    <span><i style="background:#ef4444"></i>当前节点 i</span>
+    <span><i style="background:#60a5fa"></i>它的父节点</span>
+    <span><i style="background:#f59e0b"></i>它的孩子</span>
+  </div>
+  <div class="stage" id="stage1"></div>
+  <div class="array-wrap">
+    <div class="array-row" id="arr1"></div>
+    <div class="index-row" id="idx1"></div>
+  </div>
+  <div class="control-block">
+    <div class="controls">
+      <button class="btn-sec" id="btn1a" onclick="mode1='parent'; nextHighlight1()">⬆ 看父节点</button>
+      <button class="btn-sec" id="btn1b" onclick="mode1='child'; nextHighlight1()">⬇ 看孩子</button>
+      <button class="btn-sec" onclick="reset1()">重新开始</button>
+    </div>
+  </div>
+  <div class="status" id="status1"></div>
+</div>
+
+<!-- ══════════ 第3步 ══════════ -->
+<div class="panel" id="p2">
+  <div class="explain">
+    怎么把一堆乱序数字变成堆？用<b>下沉</b>：父节点太小就和较大的孩子<b>交换</b>，一路沉到底。<br>
+    从<b>最后一个非叶子节点</b>开始，从右往左、从下往上依次下沉，整棵树就变成堆了！
+  </div>
+  <div class="legend">
+    <span><i style="background:#60a5fa"></i>当前处理的父节点</span>
+    <span><i style="background:#f59e0b"></i>比较中</span>
+    <span><i style="background:#ef4444"></i>刚交换</span>
+    <span><i style="background:#3b4262;box-shadow:0 0 0 3px rgba(148,163,184,.45)"></i>待处理</span>
+  </div>
+  <div class="stage" id="stage2"></div>
+  <div class="array-wrap">
+    <div class="array-row" id="arr2"></div>
+    <div class="index-row" id="idx2"></div>
+  </div>
+  <div class="control-block">
+    <div class="controls">
+      <button class="btn-sec" id="btn2prev" onclick="buildHeapStep(-1)">⏮ 上一步</button>
+      <button class="btn-main" id="btn2play" onclick="togglePlay2()">▶ 播放</button>
+      <button class="btn-main" id="btn2next" onclick="buildHeapStep(1)">下一步 ▶</button>
+      <button class="btn-sec" onclick="resetBuild()">重新开始</button>
+    </div>
+    <div class="progress"><div id="prog2"></div></div>
+  </div>
+  <div class="status" id="status2"></div>
+</div>
+
+<!-- ══════════ 第4步 ══════════ -->
+<div class="panel" id="p3">
+  <div class="explain">
+    建好最大堆后，排序只需两步循环：<br>
+    ① 堆顶（最大值）和<b>末尾元素交换</b> → 最大值归位（绿色）。<br>
+    ② 剩余部分重新<b>下沉</b>恢复堆。重复 n-1 次，全部排好！<br>
+    时间复杂度 <b>O(n log n)</b>，且只需 O(1) 额外空间 —— 这就是堆排序的价值。
+  </div>
+  <div class="legend">
+    <span><i style="background:#f59e0b"></i>比较中</span>
+    <span><i style="background:#ef4444"></i>刚交换</span>
+    <span><i style="background:#16a34a"></i>已归位（排好序）</span>
+  </div>
+  <div class="stage" id="stage3"></div>
+  <div class="array-wrap">
+    <div class="array-row" id="arr3"></div>
+    <div class="index-row" id="idx3"></div>
+  </div>
+  <div class="split-label" id="split3"></div>
+  <div class="control-block">
+    <div class="controls">
+      <button class="btn-sec" id="btn3prev" onclick="sortStep(-1)">⏮ 上一步</button>
+      <button class="btn-main" id="btn3play" onclick="togglePlay3()">▶ 播放</button>
+      <button class="btn-main" id="btn3next" onclick="sortStep(1)">下一步 ▶</button>
+      <button class="btn-sec" onclick="resetSort()">重新开始</button>
+    </div>
+    <div class="progress"><div id="prog3"></div></div>
+  </div>
+  <div class="status" id="status3"></div>
+</div>
+
+<script>
+/* ============================================================
+   公用工具
+   ============================================================ */
+function toSet(x) {
+  if (x instanceof Set) return x;
+  if (Array.isArray(x)) return new Set(x);
+  if (x && typeof x === 'object') return new Set(Object.keys(x).map(Number));
+  return new Set();
+}
+
+function layout(arr, W, H) {
+  const n = arr.length;
+  const levels = Math.max(1, Math.ceil(Math.log2(n + 1)));
+  const positions = [];
+  for (let i = 0; i < n; i++) {
+    const level = Math.floor(Math.log2(i + 1));
+    const idxInLevel = i - (2 ** level - 1);
+    const slots = 2 ** level;
+    const y = 24 + level * (H - 70) / levels;
+    const x = W * (idxInLevel + 0.5) / slots;
+    positions.push({ x, y });
+  }
+  return positions;
+}
+
+function makeTree(stageId, arr, opt = {}) {
+  const stage = document.getElementById(stageId);
+  if (!stage) return;
+  stage.innerHTML = '';
+  const hlSet      = toSet(opt.hl);
+  const doneSet    = toSet(opt.done);
+  const refSet     = toSet(opt.ref);
+  const pendingSet = toSet(opt.pending);
+  const swapSet    = new Set();
+  if (opt.swapBoth) opt.swapBoth.forEach(x => swapSet.add(x));
+  if (opt.swapIdx !== undefined && opt.swapIdx >= 0) swapSet.add(opt.swapIdx);
+
+  const W = stage.clientWidth || 860;
+  const H = stage.clientHeight || 300;
+  const n = arr.length;
+  if (n === 0) return;
+  const pos = layout(arr, W, H);
+
+  for (let i = 1; i < n; i++) {
+    const p = pos[Math.floor((i - 1) / 2)], c = pos[i];
+    const e = document.createElement('div');
+    e.className = 'edge';
+    const x1 = p.x + 21, y1 = p.y + 42, x2 = c.x + 21, y2 = c.y;
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    e.style.cssText = `left:${x1}px;top:${y1}px;width:${len}px;transform:rotate(${Math.atan2(y2-y1,x2-x1)}rad)`;
+    stage.appendChild(e);
+  }
+  arr.forEach((v, i) => {
+    const p = pos[i];
+    const d = document.createElement('div');
+    const cls = ['node'];
+    if (pendingSet.has(i)) cls.push('pending');
+    if (refSet.has(i))     cls.push('ref');
+    if (hlSet.has(i))      cls.push('hl');
+    if (swapSet.has(i))    cls.push('swap');
+    if (doneSet.has(i))    cls.push('done');
+    d.className = cls.join(' ');
+    d.style.cssText = `left:${p.x}px;top:${p.y}px`;
+    d.textContent = v;
+    stage.appendChild(d);
+
+    const idx = document.createElement('div');
+    idx.className = 'node-label';
+    idx.style.cssText = `left:${p.x + 46}px;top:${p.y + 6}px`;
+    idx.textContent = 'i=' + i;
+    stage.appendChild(idx);
+  });
+}
+
+/* 画数组：柱状图 + 独立索引行（列对齐） */
+function makeArray(containerId, indexContainerId, arr, opt = {}) {
+  const box = document.getElementById(containerId);
+  const idxBox = document.getElementById(indexContainerId);
+  if (!box || !idxBox) return;
+  box.innerHTML = '';
+  idxBox.innerHTML = '';
+
+  const doneSet = toSet(opt.done);
+  const hlSet   = toSet(opt.hl);
+  const refSet  = toSet(opt.ref);
+  const swapSet = new Set();
+  if (opt.swapBoth) opt.swapBoth.forEach(x => swapSet.add(x));
+  if (opt.swapIdx !== undefined && opt.swapIdx >= 0) swapSet.add(opt.swapIdx);
+
+  const max = Math.max(...arr, 1);
+  arr.forEach((v, i) => {
+    // 柱子格
+    const c = document.createElement('div');
+    const cls = ['cell'];
+    if (refSet.has(i))  cls.push('ref');
+    if (hlSet.has(i))   cls.push('hl');
+    if (swapSet.has(i)) cls.push('swap');
+    if (doneSet.has(i)) cls.push('done');
+    c.className = cls.join(' ');
+    const barH = Math.round(v / max * 60 + 8);
+    c.innerHTML = `<span class="num">${v}</span>
+      <div class="bar" style="height:${barH}px"></div>`;
+    box.appendChild(c);
+
+    // 索引格（和柱子格同宽，自动对齐）
+    const ic = document.createElement('div');
+    ic.className = 'index-cell';
+    ic.textContent = i;
+    idxBox.appendChild(ic);
+  });
+}
+
+/* ============================================================
+   标签切换
+   ============================================================ */
+let currentPanel = 0;
+function show(n) {
+  if (currentPanel === 2 && n !== 2) stopPlay2();
+  if (currentPanel === 3 && n !== 3) stopPlay3();
+  currentPanel = n;
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', i === n));
+  document.querySelectorAll('.panel').forEach((p, i) => p.classList.toggle('active', i === n));
+  requestAnimationFrame(() => {
+    if (n === 0) drawQuiz(false);
+    if (n === 1) draw1();
+    if (n === 2) { if (buildHistory.length === 0) resetBuild(true); drawBuild(); }
+    if (n === 3) { if (sortHistory.length === 0) resetSort(true); drawSort(); }
+  });
+}
+window.addEventListener('resize', () => show(currentPanel));
+
+/* ============================================================
+   键盘快捷键
+   ============================================================ */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); stepCurrent(-1); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); stepCurrent(1); }
+  if (e.key === ' ')          { e.preventDefault(); togglePlayCurrent(); }
+});
+function stepCurrent(d) {
+  if (currentPanel === 1) nextHighlight1();
+  if (currentPanel === 2) buildHeapStep(d);
+  if (currentPanel === 3) sortStep(d);
+}
+function togglePlayCurrent() {
+  if (currentPanel === 2) togglePlay2();
+  if (currentPanel === 3) togglePlay3();
+}
+
+/* ============================================================
+   第1步
+   ============================================================ */
+const quizArr = [50, 30, 40, 25, 60, 35, 10];
+function checkHeap(arr) {
+  for (let i = 1; i < arr.length; i++) {
+    const p = Math.floor((i - 1) / 2);
+    if (arr[p] < arr[i]) return { parent: p, child: i };
+  }
+  return null;
+}
+function drawQuiz(reveal) {
+  const bad = checkHeap(quizArr);
+  const hl = [];
+  if (bad && reveal) hl.push(bad.parent, bad.child);
+  makeTree('stage0', quizArr, { hl });
+  const legend = document.getElementById('legend0');
+  legend.innerHTML = (bad && reveal)
+    ? '<span><i style="background:#f59e0b"></i>违反"父 ≥ 子"的两个节点</span>'
+    : '';
+}
+function answerQuiz(userSaysHeap) {
+  const msg = document.getElementById('quiz-msg');
+  const bad = checkHeap(quizArr);
+  if (!bad) {
+    msg.innerHTML = userSaysHeap
+      ? '<span class="ok">✅ 答对了！逐对检查每个父节点都 ≥ 孩子，它确实是合法最大堆。</span>'
+      : '<span class="bad">❌ 答错了。逐对检查：每个父节点都 ≥ 孩子，它其实是合法的最大堆。</span>';
+    drawQuiz(false);
+  } else {
+    msg.innerHTML = userSaysHeap
+      ? `<span class="bad">❌ 答错了！看被标黄的两个节点：i=${bad.child} 的值 ${quizArr[bad.child]}
+         &gt; 它的父节点 i=${bad.parent} 的值 ${quizArr[bad.parent]}，违反了"父 ≥ 子"的规则。</span>`
+      : `<span class="ok">✅ 答对了！问题出在被标黄的一对：i=${bad.child} 的值 ${quizArr[bad.child]}
+         &gt; 父节点 i=${bad.parent} 的值 ${quizArr[bad.parent]}，"父 ≥ 子"被破坏，所以不是合法堆。</span>`;
+    drawQuiz(true);
+  }
+}
+
+/* ============================================================
+   第2步
+   ============================================================ */
+const arr1 = [50, 30, 40, 25, 20, 35, 10];
+let idx1 = -1;
+let mode1 = 'parent';
+function reset1() { idx1 = -1; mode1 = 'parent'; draw1(); }
+function nextHighlight1() { if (idx1 < 6) idx1++; draw1(); }
+
+function draw1() {
+  let treeRef = [], treeHl = [];
+  if (idx1 > 0 && mode1 === 'parent') {
+    treeRef.push(Math.floor((idx1 - 1) / 2));
+  }
+  if (idx1 >= 0 && mode1 === 'child') {
+    const l = 2 * idx1 + 1, r = 2 * idx1 + 2;
+    if (l < arr1.length) treeHl.push(l);
+    if (r < arr1.length) treeHl.push(r);
+  }
+  makeTree('stage1', arr1, {
+    ref: treeRef,
+    hl: treeHl,
+    swapIdx: idx1 >= 0 ? idx1 : -1
+  });
+  makeArray('arr1', 'idx1', arr1, {
+    ref: treeRef,
+    hl: treeHl,
+    swapIdx: idx1
+  });
+
+  const s = document.getElementById('status1');
+  if (idx1 < 0) {
+    s.textContent = '点下面按钮开始：i 会一步步往下走，树和数组同步高亮';
+  } else if (mode1 === 'parent') {
+    if (idx1 === 0) {
+      s.textContent = `i=0 是根节点（值 ${arr1[0]}），它没有父节点`;
+    } else {
+      const p = Math.floor((idx1 - 1) / 2);
+      s.textContent = `i=${idx1}（值 ${arr1[idx1]}，红色）：父节点 = ⌊(${idx1}-1)/2⌋ = ${p}（值 ${arr1[p]}，蓝色）`;
+    }
+  } else {
+    const l = 2 * idx1 + 1, r = 2 * idx1 + 2;
+    const parts = [];
+    if (l < arr1.length) parts.push(`2×${idx1}+1 = ${l}（值 ${arr1[l]}）`);
+    if (r < arr1.length) parts.push(`2×${idx1}+2 = ${r}（值 ${arr1[r]}）`);
+    if (parts.length === 0) s.textContent = `i=${idx1}（值 ${arr1[idx1]}，红色）：它是叶子节点，没有孩子`;
+    else s.textContent = `i=${idx1}（值 ${arr1[idx1]}，红色）：孩子 = ${parts.join('，')}（黄色）`;
+  }
+  document.getElementById('btn1a').disabled = idx1 >= 6;
+  document.getElementById('btn1b').disabled = idx1 >= 6;
+}
+
+/* ============================================================
+   第3步
+   ============================================================ */
+let buildHistory = [], buildPtr = 0;
+let playTimer2 = null;
+
+function resetBuild(skipDraw) {
+  stopPlay2();
+  const a = [4, 10, 3, 5, 1, 9, 2];
+  const hist = [{
+    arr: [...a],
+    msg: '初始数组，还不是堆。从最后一个非叶子节点 i=2 开始，从下往上依次下沉',
+    hl: [], swapBoth: null, ref: -1,
+    pending: pendingSet(a.length, Math.floor(a.length / 2) - 1)
+  }];
+
+  for (let i = Math.floor(a.length / 2) - 1; i >= 0; i--) {
+    const pendingNow = pendingSet(a.length, i - 1);
+    let cur = i;
+
+    while (true) {
+      const l = 2 * cur + 1, r = 2 * cur + 2;
+      let large = cur;
+      if (l < a.length && a[l] > a[large]) large = l;
+      if (r < a.length && a[r] > a[large]) large = r;
+      const cmp = [cur, l, r].filter(x => x < a.length);
+      const curVal = a[cur];
+
+      if (large === cur) {
+        hist.push({
+          arr: [...a],
+          msg: `比较 i=${cur}（值 ${curVal}）和它的孩子：它已经是三者中最大的，不用动 ✔`,
+          hl: cmp, swapBoth: null, ref: -1, pending: pendingNow
+        });
+        break;
+      }
+      const largerVal = a[large];
+      [a[cur], a[large]] = [a[large], a[cur]];
+      hist.push({
+        arr: [...a],
+        msg: `孩子 i=${large}（值 ${largerVal}）比父节点 i=${cur}（原值 ${curVal}）更大 → 交换！较小值继续往下沉`,
+        hl: [], swapBoth: [cur, large], ref: -1, pending: pendingNow
+      });
+      cur = large;
+    }
+  }
+  hist.push({
+    arr: [...a],
+    msg: '🎉 建堆完成！每个父节点都 ≥ 孩子，这就是最大堆',
+    hl: [], swapBoth: null, ref: -1, pending: new Set()
+  });
+
+  buildHistory = hist;
+  buildPtr = 0;
+  if (!skipDraw) drawBuild();
+}
+
+function pendingSet(n, upTo) {
+  const s = new Set();
+  for (let k = 0; k <= upTo; k++) {
+    if (2 * k + 1 < n) s.add(k);
+  }
+  return s;
+}
+
+function drawBuild() {
+  if (buildHistory.length === 0) return;
+  buildPtr = Math.min(Math.max(buildPtr, 0), buildHistory.length - 1);
+  const st = buildHistory[buildPtr];
+  makeTree('stage2', st.arr, {
+    hl: st.hl, swapBoth: st.swapBoth, pending: st.pending || new Set()
+  });
+  makeArray('arr2', 'idx2', st.arr, {
+    hl: st.hl, swapBoth: st.swapBoth
+  });
+  document.getElementById('status2').textContent = `【${buildPtr + 1}/${buildHistory.length}】${st.msg}`;
+  updateBuildButtons();
+  setProgress('prog2', buildPtr, buildHistory.length);
+}
+function updateBuildButtons() {
+  document.getElementById('btn2prev').disabled = buildPtr <= 0;
+  document.getElementById('btn2next').disabled = buildPtr >= buildHistory.length - 1;
+}
+function buildHeapStep(d) {
+  stopPlay2();
+  if (buildHistory.length === 0) resetBuild(true);
+  buildPtr = Math.min(Math.max(buildPtr + d, 0), buildHistory.length - 1);
+  drawBuild();
+}
+function togglePlay2() {
+  if (playTimer2) { stopPlay2(); return; }
+  if (buildPtr >= buildHistory.length - 1) buildPtr = 0;
+  document.getElementById('btn2play').textContent = '⏸ 暂停';
+  drawBuild();
+  playTimer2 = setInterval(() => {
+    if (buildPtr >= buildHistory.length - 1) { stopPlay2(); return; }
+    buildPtr++;
+    drawBuild();
+  }, 700);
+}
+function stopPlay2() {
+  if (playTimer2) { clearInterval(playTimer2); playTimer2 = null; }
+  const b = document.getElementById('btn2play');
+  if (b) b.textContent = '▶ 播放';
+}
+
+/* ============================================================
+   第4步
+   ============================================================ */
+let sortHistory = [], sortPtr = 0;
+let playTimer3 = null;
+
+function resetSort(skipDraw) {
+  stopPlay3();
+  const a = [9, 5, 6, 2, 3, 1];
+  const hist = [{
+    arr: [...a], done: [],
+    msg: '起点：一个已经建好的最大堆（堆顶 9 最大）',
+    hl: [], swapBoth: null, split: a.length
+  }];
+  const done = [];
+  for (let end = a.length - 1; end > 0; end--) {
+    const topVal = a[0];
+    hist.push({
+      arr: [...a], done: [...done],
+      msg: `把堆顶最大值 ${topVal} 和末尾 i=${end} 交换 → ${topVal} 即将归位`,
+      hl: [], swapBoth: [0, end], split: end + 1
+    });
+    [a[0], a[end]] = [a[end], a[0]];
+    done.push(end);
+    hist.push({
+      arr: [...a], done: [...done],
+      msg: `最大值 ${a[end]} 已归位到 i=${end}（绿色 ✔），对前 ${end} 个元素重新下沉`,
+      hl: [], swapBoth: null, split: end
+    });
+    let cur = 0;
+    const size = end;
+    while (true) {
+      const l = 2 * cur + 1, r = 2 * cur + 2;
+      let large = cur;
+      if (l < size && a[l] > a[large]) large = l;
+      if (r < size && a[r] > a[large]) large = r;
+      const cmp = [cur, l, r].filter(x => x < size);
+      const curVal = a[cur];
+
+      if (large === cur) {
+        hist.push({
+          arr: [...a], done: [...done],
+          msg: `比较 i=${cur}（值 ${curVal}）和它的孩子：已经是三者中最大，堆恢复 ✔`,
+          hl: cmp, swapBoth: null, split: size
+        });
+        break;
+      }
+      const largerVal = a[large];
+      [a[cur], a[large]] = [a[large], a[cur]];
+      hist.push({
+        arr: [...a], done: [...done],
+        msg: `孩子 i=${large}（值 ${largerVal}）比父节点 i=${cur}（原值 ${curVal}）更大 → 交换，继续下沉`,
+        hl: [], swapBoth: [cur, large], split: size
+      });
+      cur = large;
+    }
+  }
+  hist.push({
+    arr: [...a], done: a.map((_, i) => i),
+    msg: '🎉 排序完成！数组已从小到大排列，这就是堆排序！',
+    hl: [], swapBoth: null, split: 0
+  });
+
+  sortHistory = hist;
+  sortPtr = 0;
+  if (!skipDraw) drawSort();
+}
+
+function drawSort() {
+  if (sortHistory.length === 0) return;
+  sortPtr = Math.min(Math.max(sortPtr, 0), sortHistory.length - 1);
+  const st = sortHistory[sortPtr];
+  makeTree('stage3', st.arr, {
+    hl: st.hl, swapBoth: st.swapBoth, done: st.done
+  });
+  makeArray('arr3', 'idx3', st.arr, {
+    hl: st.hl, swapBoth: st.swapBoth, done: st.done
+  });
+  const splitEl = document.getElementById('split3');
+  if (splitEl) {
+    const n = st.arr.length;
+    if (st.split >= n) splitEl.textContent = '← 当前全部是堆区 →';
+    else if (st.split <= 0) splitEl.textContent = '全部已排序 ✔';
+    else splitEl.textContent = `← 堆区（${st.split} 个）  |  已排序区（${n - st.split} 个） →`;
+  }
+  document.getElementById('status3').textContent = `【${sortPtr + 1}/${sortHistory.length}】${st.msg}`;
+  updateSortButtons();
+  setProgress('prog3', sortPtr, sortHistory.length);
+}
+function updateSortButtons() {
+  document.getElementById('btn3prev').disabled = sortPtr <= 0;
+  document.getElementById('btn3next').disabled = sortPtr >= sortHistory.length - 1;
+}
+function sortStep(d) {
+  stopPlay3();
+  if (sortHistory.length === 0) resetSort(true);
+  sortPtr = Math.min(Math.max(sortPtr + d, 0), sortHistory.length - 1);
+  drawSort();
+}
+function togglePlay3() {
+  if (playTimer3) { stopPlay3(); return; }
+  if (sortPtr >= sortHistory.length - 1) sortPtr = 0;
+  document.getElementById('btn3play').textContent = '⏸ 暂停';
+  drawSort();
+  playTimer3 = setInterval(() => {
+    if (sortPtr >= sortHistory.length - 1) { stopPlay3(); return; }
+    sortPtr++;
+    drawSort();
+  }, 700);
+}
+function stopPlay3() {
+  if (playTimer3) { clearInterval(playTimer3); playTimer3 = null; }
+  const b = document.getElementById('btn3play');
+  if (b) b.textContent = '▶ 播放';
+}
+
+/* ============================================================
+   进度条
+   ============================================================ */
+function setProgress(id, ptr, total) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const pct = total <= 1 ? 100 : (ptr / (total - 1)) * 100;
+  el.style.width = pct + '%';
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+window.addEventListener('DOMContentLoaded', () => {
+  drawQuiz(false);
+  resetBuild(true);
+  resetSort(true);
+});
+</script>
+</body>
+</html>
