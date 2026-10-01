@@ -1,0 +1,1805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python → C++ 算法迁移 · 完整双篇 27 页</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #1a1e2b;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        .ppt-container {
+            max-width: 1280px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .slide {
+            background: #0e121c;
+            border-radius: 2.5rem;
+            padding: 2.5rem 2.8rem;
+            box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+            border: 1px solid #2a3142;
+        }
+
+        .slide-header {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            margin-bottom: 1.8rem;
+            border-bottom: 2px solid #2d3648;
+            padding-bottom: 1rem;
+        }
+
+        .slide-header i {
+            font-size: 2rem;
+            color: #7aa2f7;
+            background: #1e2433;
+            padding: 0.7rem;
+            border-radius: 1.2rem;
+        }
+
+        .slide-header h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            color: #e2e8f0;
+        }
+
+        .slide-header .badge {
+            margin-left: auto;
+            background: #2e3a4e;
+            color: #a9c1e8;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.4rem 1rem;
+            border-radius: 3rem;
+            border: 1px solid #3d4b63;
+            white-space: nowrap;
+        }
+
+        .compare-table {
+            display: flex;
+            flex-direction: column;
+            border-radius: 1.2rem;
+            overflow: hidden;
+            border: 1px solid #262e3d;
+            background: #10161f;
+            margin-bottom: 1.2rem;
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 1fr 2.2fr 2.2fr;
+            border-bottom: 1px solid #202836;
+            min-height: 3.4rem;
+        }
+
+        .table-row:last-child { border-bottom: none; }
+
+        .table-row.header-row {
+            background: #1b222e;
+            font-weight: 600;
+            color: #b9c8e6;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            border-bottom: 2px solid #2a3547;
+        }
+
+        .table-cell {
+            padding: 0.85rem 1.2rem;
+            display: flex;
+            align-items: center;
+            color: #cfd9e6;
+            font-size: 0.98rem;
+            line-height: 1.45;
+            border-right: 1px solid #202836;
+        }
+
+        .table-cell:last-child { border-right: none; }
+
+        .table-cell.code-cell {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.88rem;
+            background: #0b1018;
+            color: #a6e3a1;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        .python-cell .code-cell { color: #f9e2af; }
+        .cpp-cell .code-cell { color: #89dceb; }
+
+        .code-pair {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .code-block {
+            background: #0b1018;
+            border-radius: 1.2rem;
+            border: 1px solid #262e3d;
+            overflow: hidden;
+        }
+
+        .code-block .code-header {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 1.2rem;
+            background: #171f2c;
+            border-bottom: 1px solid #262e3d;
+            font-size: 0.9rem;
+            font-weight: 500;
+            gap: 0.5rem;
+            color: #b9c8e6;
+        }
+
+        .code-block .code-header i { font-size: 1rem; }
+
+        .code-block .code-header .lang {
+            margin-left: auto;
+            background: #2d3648;
+            padding: 0.2rem 0.9rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: #d0ddef;
+        }
+
+        .code-block pre {
+            padding: 1.2rem 1.4rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: #d4e0f0;
+            background: #0b1018;
+        }
+
+        .py pre { color: #f8e3b0; }
+        .cpp pre { color: #b3e5fc; }
+
+        .note-box {
+            background: #1b2332;
+            border-left: 6px solid #7aa2f7;
+            border-radius: 1rem;
+            padding: 1.2rem 1.5rem;
+            margin: 1.4rem 0 0.6rem;
+            font-size: 0.97rem;
+            color: #cbd5e1;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.9rem;
+        }
+
+        .note-box i {
+            color: #7aa2f7;
+            font-size: 1.5rem;
+            margin-top: 0.1rem;
+        }
+
+        .note-box strong { color: #e2e8f0; }
+
+        .badge-sm {
+            background: #283244;
+            padding: 0.25rem 0.9rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #9fb8e0;
+            letter-spacing: 0.02em;
+            margin-left: 0.6rem;
+            white-space: nowrap;
+        }
+
+        .page-number {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 0.8rem;
+            font-size: 0.85rem;
+            color: #4a5a73;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+        }
+
+        .part-divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 0.5rem 0;
+            color: #7aa2f7;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .part-divider .line {
+            flex: 1;
+            height: 1px;
+            background: #2d3648;
+        }
+
+        @media (max-width: 900px) {
+            .slide { padding: 1.8rem; }
+            .slide-header h2 { font-size: 1.6rem; }
+            .table-row { grid-template-columns: 1fr; }
+            .table-cell { border-right: none; border-bottom: 1px solid #202836; }
+            .code-pair { grid-template-columns: 1fr; }
+        }
+
+        .compact-list {
+            list-style: none;
+            color: #b0c0d8;
+            font-size: 0.92rem;
+            line-height: 1.8;
+        }
+
+        .compact-list li i {
+            color: #7aa2f7;
+            margin-right: 0.6rem;
+            width: 1rem;
+        }
+
+        .two-col-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 700px) {
+            .two-col-grid { grid-template-columns: 1fr; }
+        }
+
+        .sub-title {
+            color: #b9c8e6;
+            font-size: 1.1rem;
+            margin-bottom: 0.8rem;
+            font-weight: 500;
+        }
+
+        /* 高亮新页标记 */
+        .slide.new-slide {
+            border: 1px solid #4a6fa5;
+            box-shadow: 0 0 0 1px rgba(122, 162, 247, 0.2), 0 25px 40px -12px rgba(0, 0, 0, 0.8);
+        }
+
+        .slide.new-slide .slide-header::after {
+            content: "NEW";
+            font-size: 0.65rem;
+            background: #2e4a6e;
+            color: #a9d0ff;
+            padding: 0.2rem 0.7rem;
+            border-radius: 1rem;
+            margin-left: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            align-self: flex-start;
+            margin-top: 0.3rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="ppt-container">
+
+        <!-- ========= 封面 ========= -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-exchange-alt"></i>
+                <h2>Python → C++ 算法迁移</h2>
+                <span class="badge">完整双篇 · 27 页</span>
+            </div>
+            <div style="display: flex; gap: 2rem; align-items: center; flex-wrap: wrap; padding: 0.8rem 0 0.4rem;">
+                <div style="flex: 1; min-width: 220px;">
+                    <p style="font-size: 1.2rem; color: #b9c8e6; line-height: 1.6; margin-bottom: 1rem;">
+                        <strong>上篇 · API 对照</strong>（11 页）—— 输入输出、容器、遍历、字符串、排序……<br>
+                        <strong>下篇 · 语言差异</strong>（16 页）—— 变量语义、复制、交换、作用域、指针、内存、移动语义……
+                    </p>
+                    <div style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
+                        <span class="badge-sm"><i class="fas fa-code" style="color: #89dceb;"></i> API 对照</span>
+                        <span class="badge-sm"><i class="fas fa-brain" style="color: #f9e2af;"></i> 语言底层</span>
+                        <span class="badge-sm"><i class="fas fa-microchip" style="color: #a6e3a1;"></i> 性能 & 内存</span>
+                        <span class="badge-sm"><i class="fas fa-exclamation-triangle" style="color: #f38ba8;"></i> 易错点</span>
+                    </div>
+                </div>
+                <div style="font-size: 3.8rem; color: #2e3a4e;">
+                    <i class="fab fa-python" style="color: #f9e2af;"></i>
+                    <i class="fas fa-arrow-right" style="font-size: 2rem; color: #4a5a73; margin: 0 0.5rem;"></i>
+                    <i class="fas fa-code" style="color: #89dceb;"></i>
+                </div>
+            </div>
+            <div class="page-number">1 / 27</div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ============ 上篇：API 对照 ============ -->
+        <!-- ============================================================ -->
+        <div class="part-divider">
+            <span><i class="fas fa-code" style="margin-right: 0.5rem;"></i>上篇 · API 对照</span>
+            <span class="line"></span>
+        </div>
+
+        <!-- 2. 基础输入输出 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-keyboard"></i>
+                <h2>基础输入输出</h2>
+                <span class="badge">I/O 差异</span>
+            </div>
+            <div class="compare-table">
+                <div class="table-row header-row">
+                    <div class="table-cell">场景</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">读单个整数</div>
+                    <div class="table-cell code-cell python-cell">n = int(input())</div>
+                    <div class="table-cell code-cell cpp-cell">int n; cin >> n;</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">读一行多个整数</div>
+                    <div class="table-cell code-cell python-cell">a, b = map(int, input().split())</div>
+                    <div class="table-cell code-cell cpp-cell">int a, b; cin >> a >> b;</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">读整行数组</div>
+                    <div class="table-cell code-cell python-cell">arr = list(map(int, input().split()))</div>
+                    <div class="table-cell code-cell cpp-cell">vector&lt;int&gt; arr(n); for(auto &amp;x:arr) cin&gt;&gt;x;</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">读字符串</div>
+                    <div class="table-cell code-cell python-cell">s = input().strip()</div>
+                    <div class="table-cell code-cell cpp-cell">string s; cin &gt;&gt; s;  // 或 getline</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">加速 IO</div>
+                    <div class="table-cell code-cell python-cell">—</div>
+                    <div class="table-cell code-cell cpp-cell">ios::sync_with_stdio(false); cin.tie(nullptr);</div>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-lightbulb"></i>
+                <div><strong>注意：</strong> C++ 的 <code>cin &gt;&gt; s</code> 遇到空格停止；读整行要用 <code>getline</code>，并注意前面遗留的换行符。</div>
+            </div>
+            <div class="page-number">2 / 27</div>
+        </div>
+
+        <!-- 3. 容器与数据结构 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-database"></i>
+                <h2>容器与数据结构</h2>
+                <span class="badge">STL vs 内置</span>
+            </div>
+            <div class="compare-table">
+                <div class="table-row header-row">
+                    <div class="table-cell">用途</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">动态数组</div>
+                    <div class="table-cell code-cell python-cell">a = []  /  a.append(x)</div>
+                    <div class="table-cell code-cell cpp-cell">vector&lt;int&gt; a; a.push_back(x);</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">定长数组</div>
+                    <div class="table-cell code-cell python-cell">[0]*n</div>
+                    <div class="table-cell code-cell cpp-cell">vector&lt;int&gt; a(n, 0);  // 或 int a[n];</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">哈希表</div>
+                    <div class="table-cell code-cell python-cell">d = {}  /  d[k] = v</div>
+                    <div class="table-cell code-cell cpp-cell">unordered_map&lt;K,V&gt; d; d[k]=v;</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">有序字典</div>
+                    <div class="table-cell code-cell python-cell">dict (3.7+ 有序)</div>
+                    <div class="table-cell code-cell cpp-cell">map&lt;K,V&gt;  // 红黑树，自动排序</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">集合</div>
+                    <div class="table-cell code-cell python-cell">s = set()  /  s.add(x)</div>
+                    <div class="table-cell code-cell cpp-cell">unordered_set&lt;int&gt; s; s.insert(x);</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">优先队列（小顶）</div>
+                    <div class="table-cell code-cell python-cell">heapq（默认小顶）</div>
+                    <div class="table-cell code-cell cpp-cell">priority_queue&lt;int, vector&lt;int&gt;, greater&lt;int&gt;&gt; pq;</div>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-exclamation-circle"></i>
+                <div><strong>关键差异：</strong> Python <code>dict/set</code> 是哈希；C++ <code>map/set</code> 是有序（红黑树，O(log n)），哈希需显式用 <code>unordered_*</code>。</div>
+            </div>
+            <div class="page-number">3 / 27</div>
+        </div>
+
+        <!-- 4. 遍历与迭代 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-redo-alt"></i>
+                <h2>遍历与迭代</h2>
+                <span class="badge">for 循环差异</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python <span class="lang">py</span></div>
+                    <pre>for i in range(n):
+    ...
+for i, x in enumerate(arr):
+    ...
+for k, v in d.items():
+    ...
+for x in arr[::-1]:
+    ...
+for a, b in zip(list1, list2):
+    ...</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ <span class="lang">cpp</span></div>
+                    <pre>for (int i = 0; i &lt; n; i++) { ... }
+
+for (int i = 0; i &lt; arr.size(); i++) { int x = arr[i]; ... }
+// 或
+for (auto&amp; x : arr) { ... }
+
+for (auto&amp; [k, v] : d) { ... }  // C++17
+
+for (auto it = arr.rbegin(); it != arr.rend(); ++it) { ... }
+
+// zip 需手写或使用 ranges::views::zip (C++23)</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-info-circle"></i>
+                <div>C++ 中 <code>for(auto x : arr)</code> 是拷贝，要修改元素需用 <code>auto&amp;</code>；遍历下标建议用 <code>size_t</code> 避免符号比较警告。</div>
+            </div>
+            <div class="page-number">4 / 27</div>
+        </div>
+
+        <!-- 5. 字符串处理 (增强版) -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-font"></i>
+                <h2>字符串处理</h2>
+                <span class="badge">String 操作 + 格式化</span>
+            </div>
+            <div class="compare-table">
+                <div class="table-row header-row">
+                    <div class="table-cell">操作</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">长度</div>
+                    <div class="table-cell code-cell python-cell">len(s)</div>
+                    <div class="table-cell code-cell cpp-cell">s.size() / s.length()</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">切片</div>
+                    <div class="table-cell code-cell python-cell">s[1:4]</div>
+                    <div class="table-cell code-cell cpp-cell">s.substr(1, 3)</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">反转</div>
+                    <div class="table-cell code-cell python-cell">s[::-1]</div>
+                    <div class="table-cell code-cell cpp-cell">reverse(s.begin(), s.end());</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">查找</div>
+                    <div class="table-cell code-cell python-cell">s.find("ab")</div>
+                    <div class="table-cell code-cell cpp-cell">s.find("ab") // 未找到返回 npos</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">分割</div>
+                    <div class="table-cell code-cell python-cell">s.split(',')</div>
+                    <div class="table-cell code-cell cpp-cell">stringstream ss(s); getline(ss, token, ',');</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">格式化</div>
+                    <div class="table-cell code-cell python-cell">f"s = {s}, len = {len(s)}"</div>
+                    <div class="table-cell code-cell cpp-cell">std::format("s = {}, len = {}", s, s.size()); // C++20</div>
+                </div>
+            </div>
+            <div class="code-pair" style="margin-top: 0.5rem;">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python 字符串不可变 <span class="lang">py</span></div>
+                    <pre>s = "hello"
+s2 = s + " world"    # 产生新对象
+parts = s.split(" ")
+joined = "-".join(parts)</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ string 可变 <span class="lang">cpp</span></div>
+                    <pre>std::string s = "hello";
+s += " world";                    // 原地修改
+s[0] = 'H';                       // 可直接修改
+std::stringstream ss(s);
+std::string token;
+while (std::getline(ss, token, ' ')) { }</pre>
+                </div>
+            </div>
+            <div class="page-number">5 / 27</div>
+        </div>
+
+        <!-- 6. 排序与自定义比较 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-sort-amount-down"></i>
+                <h2>排序与自定义比较</h2>
+                <span class="badge">sort / lambda</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python <span class="lang">py</span></div>
+                    <pre>arr.sort()
+arr.sort(reverse=True)
+arr.sort(key=lambda x: x[1])          # 按第二元素
+arr.sort(key=lambda x: (x[0], -x[1])) # 多关键字</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ <span class="lang">cpp</span></div>
+                    <pre>sort(arr.begin(), arr.end());
+sort(arr.begin(), arr.end(), greater&lt;int&gt;());
+sort(arr.begin(), arr.end(), [](auto&amp; a, auto&amp; b){ 
+    return a[1] &lt; b[1]; 
+});
+sort(arr.begin(), arr.end(), [](auto&amp; a, auto&amp; b){
+    if (a[0] != b[0]) return a[0] &lt; b[0];
+    return a[1] &gt; b[1];
+});</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div><strong>注意：</strong> C++ 比较函数必须满足<strong>严格弱序</strong>，使用 <code>&lt;=</code> 会导致 RE。</div>
+            </div>
+            <div class="page-number">6 / 27</div>
+        </div>
+
+        <!-- 7. 常用算法函数 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-cogs"></i>
+                <h2>常用算法函数</h2>
+                <span class="badge">algorithm 库</span>
+            </div>
+            <div class="compare-table">
+                <div class="table-row header-row">
+                    <div class="table-cell">功能</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">求和</div>
+                    <div class="table-cell code-cell python-cell">sum(arr)</div>
+                    <div class="table-cell code-cell cpp-cell">accumulate(arr.begin(), arr.end(), 0);</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">最大/最小</div>
+                    <div class="table-cell code-cell python-cell">max(arr) / min(arr)</div>
+                    <div class="table-cell code-cell cpp-cell">*max_element(...) / *min_element(...)</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">二分查找</div>
+                    <div class="table-cell code-cell python-cell">bisect_left / bisect_right</div>
+                    <div class="table-cell code-cell cpp-cell">lower_bound / upper_bound</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">去重</div>
+                    <div class="table-cell code-cell python-cell">list(set(arr))</div>
+                    <div class="table-cell code-cell cpp-cell">sort + unique + erase</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">全排列</div>
+                    <div class="table-cell code-cell python-cell">itertools.permutations</div>
+                    <div class="table-cell code-cell cpp-cell">next_permutation (需先排序)</div>
+                </div>
+            </div>
+            <div class="code-block cpp" style="margin-top: 1rem;">
+                <div class="code-header"><i class="fas fa-code"></i> C++ 去重 & 全排列 <span class="lang">cpp</span></div>
+                <pre>sort(a.begin(), a.end());
+a.erase(unique(a.begin(), a.end()), a.end());
+
+sort(a.begin(), a.end());
+do { ... } while (next_permutation(a.begin(), a.end()));</pre>
+            </div>
+            <div class="page-number">7 / 27</div>
+        </div>
+
+        <!-- 8. 位运算与数学 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-calculator"></i>
+                <h2>位运算与数学</h2>
+                <span class="badge">math / bit</span>
+            </div>
+            <div class="compare-table">
+                <div class="table-row header-row">
+                    <div class="table-cell">操作</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">幂</div>
+                    <div class="table-cell code-cell python-cell">pow(a, b) / a**b</div>
+                    <div class="table-cell code-cell cpp-cell">pow(a,b) 或手写快速幂</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">整除</div>
+                    <div class="table-cell code-cell python-cell">a // b</div>
+                    <div class="table-cell code-cell cpp-cell">a / b  // 负数向零取整</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">取模</div>
+                    <div class="table-cell code-cell python-cell">a % b (符号随 b)</div>
+                    <div class="table-cell code-cell cpp-cell">a % b (符号随 a)</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">最大公约数</div>
+                    <div class="table-cell code-cell python-cell">math.gcd(a,b)</div>
+                    <div class="table-cell code-cell cpp-cell">__gcd(a,b) 或 gcd(a,b) (C++17)</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">无穷大</div>
+                    <div class="table-cell code-cell python-cell">float('inf')</div>
+                    <div class="table-cell code-cell cpp-cell">INT_MAX / 1e18 / 0x3f3f3f3f</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">位计数</div>
+                    <div class="table-cell code-cell python-cell">bin(x).count('1')</div>
+                    <div class="table-cell code-cell cpp-cell">__builtin_popcount(x)</div>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-lightbulb"></i>
+                <div><code>0x3f3f3f3f</code> 是竞赛常用 INF，两倍相加不会溢出 int。</div>
+            </div>
+            <div class="page-number">8 / 27</div>
+        </div>
+
+        <!-- 9. 函数·递归·类 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-cube"></i>
+                <h2>函数 · 递归 · 类</h2>
+                <span class="badge">结构差异</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python <span class="lang">py</span></div>
+                    <pre>def dfs(u, visited):
+    visited.add(u)
+    for v in graph[u]:
+        if v not in visited:
+            dfs(v, visited)
+
+from functools import lru_cache
+@lru_cache(None)
+def f(n):
+    ...
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ <span class="lang">cpp</span></div>
+                    <pre>void dfs(int u, vector&lt;bool&gt;&amp; visited) {
+    visited[u] = true;
+    for (int v : graph[u])
+        if (!visited[v]) dfs(v, visited);
+}
+
+int memo[1005];
+int f(int n) {
+    if (memo[n] != -1) return memo[n];
+    ...
+}
+
+struct Point {
+    int x, y;
+    Point(int x=0, int y=0) : x(x), y(y) {}
+};</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-exclamation-circle"></i>
+                <div>C++ 递归深度默认约 1e5，Python 默认 1000；深递归需改迭代或调栈。</div>
+            </div>
+            <div class="page-number">9 / 27</div>
+        </div>
+
+        <!-- 10. 易错点 + 两数之和示例 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-bug"></i>
+                <h2>易错点 & 综合示例</h2>
+                <span class="badge">陷阱 & 代码</span>
+            </div>
+            <div class="two-col-grid">
+                <div>
+                    <h3 class="sub-title"><i class="fas fa-times-circle" style="color: #f38ba8; margin-right: 0.5rem;"></i>易错点速查</h3>
+                    <ul class="compact-list">
+                        <li><i class="fas fa-angle-right"></i>整数无限精度 vs <code>int</code> 溢出 → 用 <code>long long</code></li>
+                        <li><i class="fas fa-angle-right"></i><code>//</code> 向下取整 vs C++ <code>/</code> 向零取整</li>
+                        <li><i class="fas fa-angle-right"></i><code>%</code> 符号随除数 vs 随被除数</li>
+                        <li><i class="fas fa-angle-right"></i><code>for x in arr</code> 修改影响原数组？C++ 需 <code>auto&amp;</code></li>
+                        <li><i class="fas fa-angle-right"></i><code>unordered_map</code> 可能被卡，<code>map</code> 稳定 O(log n)</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="sub-title"><i class="fas fa-check-circle" style="color: #a6e3a1; margin-right: 0.5rem;"></i>两数之和</h3>
+                    <div class="code-block py" style="margin-bottom: 0.8rem;">
+                        <div class="code-header"><i class="fab fa-python"></i> Python</div>
+                        <pre style="font-size: 0.8rem; padding: 0.8rem 1rem;">def two_sum(nums, target):
+    seen = {}
+    for i, x in enumerate(nums):
+        if target - x in seen:
+            return [seen[target-x], i]
+        seen[x] = i</pre>
+                    </div>
+                    <div class="code-block cpp">
+                        <div class="code-header"><i class="fas fa-code"></i> C++</div>
+                        <pre style="font-size: 0.8rem; padding: 0.8rem 1rem;">vector&lt;int&gt; twoSum(vector&lt;int&gt;&amp; nums, int target) {
+    unordered_map&lt;int,int&gt; seen;
+    for (int i = 0; i &lt; nums.size(); i++) {
+        int need = target - nums[i];
+        if (seen.count(need)) return {seen[need], i};
+        seen[nums[i]] = i;
+    }
+    return {};
+}</pre>
+                    </div>
+                </div>
+            </div>
+            <div class="note-box" style="margin-top: 0.6rem;">
+                <i class="fas fa-brain"></i>
+                <div><strong>核心思维：</strong> 类型/内存、容器语义、遍历方式、函数式、性能——从 Python 迁移到 C++ 的五大关键维度。</div>
+            </div>
+            <div class="page-number">10 / 27</div>
+        </div>
+
+        <!-- 11. BFS 综合示例（上篇收尾） -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-project-diagram"></i>
+                <h2>综合示例：BFS 最短路</h2>
+                <span class="badge">上篇收尾</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python <span class="lang">py</span></div>
+                    <pre>from collections import deque
+
+def bfs(start, target, graph):
+    q = deque([(start, 0)])
+    visited = {start}
+    while q:
+        u, d = q.popleft()
+        if u == target: return d
+        for v in graph[u]:
+            if v not in visited:
+                visited.add(v)
+                q.append((v, d+1))
+    return -1</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ <span class="lang">cpp</span></div>
+                    <pre>int bfs(int start, int target, vector&lt;vector&lt;int&gt;&gt;&amp; graph) {
+    queue&lt;pair&lt;int,int&gt;&gt; q;
+    vector&lt;bool&gt; visited(graph.size(), false);
+    q.push({start, 0});
+    visited[start] = true;
+    while (!q.empty()) {
+        auto [u, d] = q.front(); q.pop();
+        if (u == target) return d;
+        for (int v : graph[u]) {
+            if (!visited[v]) {
+                visited[v] = true;
+                q.push({v, d+1});
+            }
+        }
+    }
+    return -1;
+}</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-check-circle"></i>
+                <div>上篇完 · 下篇进入 <strong>语言底层差异</strong>，包括变量语义、复制、交换、作用域、指针、内存、移动语义等。</div>
+            </div>
+            <div class="page-number">11 / 27</div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- ============ 下篇：语言底层差异 ============ -->
+        <!-- ============================================================ -->
+        <div class="part-divider">
+            <span><i class="fas fa-brain" style="margin-right: 0.5rem;"></i>下篇 · 语言底层差异</span>
+            <span class="line"></span>
+        </div>
+
+        <!-- 12. 变量与数据模型 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-cubes"></i>
+                <h2>变量与数据模型</h2>
+                <span class="badge">引用 vs 值语义</span>
+            </div>
+            <div class="compare-table">
+                <div class="table-row header-row">
+                    <div class="table-cell">维度</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">变量本质</div>
+                    <div class="table-cell code-cell python-cell">名字绑定到对象（引用语义）</div>
+                    <div class="table-cell code-cell cpp-cell">内存实体，直接持有值（值语义）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">类型</div>
+                    <div class="table-cell code-cell python-cell">动态，运行时确定</div>
+                    <div class="table-cell code-cell cpp-cell">静态，编译期确定</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">赋值</div>
+                    <div class="table-cell code-cell python-cell">b = a → 两个名字指向同一对象</div>
+                    <div class="table-cell code-cell cpp-cell">int b = a; → 拷贝一份新值</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">不可变/可变</div>
+                    <div class="table-cell code-cell python-cell">int/str/tuple 不可变，list/dict/set 可变</div>
+                    <div class="table-cell code-cell cpp-cell">所有类型默认可变（const 除外）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">类型推导</div>
+                    <div class="table-cell code-cell python-cell">运行时动态</div>
+                    <div class="table-cell code-cell cpp-cell">auto（C++11）编译期推导，类型确定后不可变</div>
+                </div>
+            </div>
+            <div class="code-pair" style="margin-top: 0.5rem;">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python 引用语义 <span class="lang">py</span></div>
+                    <pre>a = [1, 2, 3]
+b = a          # b 和 a 是同一个列表
+b.append(4)
+print(a)       # [1, 2, 3, 4] —— a 也变了！</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ 值语义 <span class="lang">cpp</span></div>
+                    <pre>vector&lt;int&gt; a = {1, 2, 3};
+vector&lt;int&gt; b = a;      // b 是 a 的拷贝
+b.push_back(4);
+// a 仍是 {1,2,3}，b 是 {1,2,3,4}
+
+vector&lt;int&gt;&amp; c = a;     // 显式引用才是"同一对象"
+c.push_back(4);         // 现在 a 也变了</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-key"></i>
+                <div><strong>这是最大的思维鸿沟：</strong> Python 默认共享，C++ 默认拷贝。</div>
+            </div>
+            <div class="page-number">12 / 27</div>
+        </div>
+
+        <!-- 13. 数据交换的不同 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-exchange-alt"></i>
+                <h2>数据交换的不同</h2>
+                <span class="badge">swap 语义</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python <span class="lang">py</span></div>
+                    <pre># 一行搞定（元组打包/解包）
+a, b = b, a
+
+# 容器交换引用 O(1)
+arr1, arr2 = arr2, arr1
+
+# 字符串交换
+s1, s2 = s2, s1</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ <span class="lang">cpp</span></div>
+                    <pre>// ① 临时变量（最常用）
+int t = a; a = b; b = t;
+
+// ② std::swap（推荐）
+swap(a, b);
+
+// ③ C++11 起也可用 tuple 解包
+tie(a, b) = make_tuple(b, a);
+
+// 容器交换 O(1)（交换内部指针）
+vector&lt;int&gt; v1 = {1,2,3}, v2 = {4,5};
+swap(v1, v2);   // 高效
+
+// 原生数组 swap 是 O(n) 拷贝！
+int a[100], b[100];
+swap(a, b);     // O(n) 逐元素拷贝</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div><strong>差异：</strong> Python 交换容器永远是 O(1)（换名字）；C++ 的 <code>swap</code> 对 <code>vector/string/map</code> 是 O(1)，对<strong>原生数组是 O(n)</strong>。</div>
+            </div>
+            <div class="page-number">13 / 27</div>
+        </div>
+
+        <!-- 14. 复制数据的差异 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-copy"></i>
+                <h2>复制数据的差异</h2>
+                <span class="badge">浅拷贝 vs 深拷贝</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python <span class="lang">py</span></div>
+                    <pre>import copy
+a = [[1,2],[3,4]]
+b = a                # 别名（引用）
+c = a.copy()         # 浅拷贝：外层新，内层仍共享
+d = copy.deepcopy(a) # 深拷贝：完全独立
+
+b[0][0] = 99
+print(a)  # [[99,2],[3,4]]  —— b 是别名
+c[0][0] = 88
+print(a)  # [[99,2],[3,4]]  —— 浅拷贝内层仍共享</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ <span class="lang">cpp</span></div>
+                    <pre>vector&lt;vector&lt;int&gt;&gt; a = {{1,2},{3,4}};
+vector&lt;vector&lt;int&gt;&gt; b = a;   // 默认深拷贝（逐层拷贝）
+b[0][0] = 99;
+// a 仍是 {{1,2},{3,4}}，b 是 {{99,2},{3,4}}
+
+// 想要浅拷贝？用引用或指针
+vector&lt;vector&lt;int&gt;&gt;&amp; c = a;  // 别名</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-key"></i>
+                <div><strong>重要区别：</strong> C++ 的 <code>=</code> 对 <code>vector&lt;vector&lt;T&gt;&gt;</code> 是<strong>完整深拷贝</strong>；Python 的 <code>=</code> 是别名，<code>.copy()</code> 是浅拷贝。</div>
+            </div>
+            <div class="page-number">14 / 27</div>
+        </div>
+
+        <!-- 15. 函数参数传递（增强版：5 种方式） -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-arrow-right"></i>
+                <h2>函数参数传递：5 种方式</h2>
+                <span class="badge">值 / 引用 / const& / 指针 / &&</span>
+            </div>
+            <div class="compare-table">
+                <div class="table-row header-row">
+                    <div class="table-cell">方式</div>
+                    <div class="table-cell">C++ 签名</div>
+                    <div class="table-cell">语义</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">值传递</div>
+                    <div class="table-cell code-cell cpp-cell">void f(vector&lt;int&gt; v);</div>
+                    <div class="table-cell code-cell cpp-cell">拷贝，开销大</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">引用传递</div>
+                    <div class="table-cell code-cell cpp-cell">void f(vector&lt;int&gt;&amp; v);</div>
+                    <div class="table-cell code-cell cpp-cell">可修改，无拷贝</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">const 引用</div>
+                    <div class="table-cell code-cell cpp-cell">void f(const vector&lt;int&gt;&amp; v);</div>
+                    <div class="table-cell code-cell cpp-cell">只读，无拷贝（推荐）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">指针传递</div>
+                    <div class="table-cell code-cell cpp-cell">void f(vector&lt;int&gt;* v);</div>
+                    <div class="table-cell code-cell cpp-cell">可为空，需解引用</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">右值引用</div>
+                    <div class="table-cell code-cell cpp-cell">void f(vector&lt;int&gt;&amp;&amp; v);</div>
+                    <div class="table-cell code-cell cpp-cell">接管资源（move 语义）</div>
+                </div>
+            </div>
+            <div class="code-pair" style="margin-top: 0.5rem;">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python 只有一种：对象引用 <span class="lang">py</span></div>
+                    <pre>def f(x):
+    x.append(4)      # 修改外部
+def g(x):
+    x = [9,9]        # 重新绑定，不影响外部
+
+arr = [1,2,3]
+f(arr)   # arr 变成 [1,2,3,4]
+g(arr)   # arr 不变</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ 需显式选择 <span class="lang">cpp</span></div>
+                    <pre>void byValue(vector&lt;int&gt; v);        // 拷贝
+void byRef(vector&lt;int&gt;&amp; v);         // 可修改
+void byConstRef(const vector&lt;int&gt;&amp; v);  // 只读，避免拷贝
+void byPtr(vector&lt;int&gt;* v);         // 可为空
+void byMove(vector&lt;int&gt;&amp;&amp; v);       // 接管资源
+
+// 大对象传参必须用 const&amp;
+void process(const vector&lt;int&gt;&amp; v);  // ✅
+void process(vector&lt;int&gt; v);         // ❌ 每次拷贝</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-lightbulb"></i>
+                <div>大对象传参在 C++ 中<strong>必须用 <code>const&amp;</code></strong>，否则每次调用都拷贝，性能灾难。</div>
+            </div>
+            <div class="page-number">15 / 27</div>
+        </div>
+
+        <!-- 16. 切片 vs 复制 + 字符串可变性 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-cut"></i>
+                <h2>切片 · 复制 · 字符串可变性</h2>
+                <span class="badge">slice & copy</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python <span class="lang">py</span></div>
+                    <pre># 切片产生新列表（浅拷贝）
+a = [1,2,3,4,5]
+b = a[1:4]     # [2,3,4]，新列表
+c = a[:]       # 完整浅拷贝
+
+# 字符串不可变
+s = "hello"
+# s[0] = 'H'   # TypeError
+s = 'H' + s[1:]  # 只能新建
+
+# 字符串复制
+t = s           # 新字符串
+u = s[:]        # 同上</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ <span class="lang">cpp</span></div>
+                    <pre>// 迭代器构造产生新 vector
+vector&lt;int&gt; a = {1,2,3,4,5};
+vector&lt;int&gt; b(a.begin()+1, a.begin()+4);  // {2,3,4}
+vector&lt;int&gt; c = a;                         // 完整拷贝
+
+// 字符串可变
+string s = "hello";
+s[0] = 'H';      // 合法，原地修改
+
+// 字符串复制
+string t = s;              // 拷贝
+string u(s);               // 拷贝构造
+string v(s.begin(), s.end()); // 从迭代器拷贝</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-exclamation-circle"></i>
+                <div><strong>可变性差异：</strong> Python 字符串不可变，C++ <code>string</code> 可原地修改 <code>s[0]='H'</code>。</div>
+            </div>
+            <div class="page-number">16 / 27</div>
+        </div>
+
+        <!-- 17. 作用域与生命周期 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-layer-group"></i>
+                <h2>作用域与生命周期</h2>
+                <span class="badge">scope & lifetime</span>
+            </div>
+            <div class="compare-table">
+                <div class="table-row header-row">
+                    <div class="table-cell">维度</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">块作用域</div>
+                    <div class="table-cell code-cell python-cell">无（for i 后 i 仍存在）</div>
+                    <div class="table-cell code-cell cpp-cell">有（{} 出块即销毁）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">闭包</div>
+                    <div class="table-cell code-cell python-cell">天然支持</div>
+                    <div class="table-cell code-cell cpp-cell">lambda 需捕获列表</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">内存管理</div>
+                    <div class="table-cell code-cell python-cell">GC 自动回收</div>
+                    <div class="table-cell code-cell cpp-cell">栈自动 / 堆手动（new/delete）</div>
+                </div>
+            </div>
+            <div class="code-pair" style="margin-top: 0.5rem;">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python 变量泄漏 <span class="lang">py</span></div>
+                    <pre>for i in range(3):
+    pass
+print(i)   # 2 —— 仍然可见
+
+# 闭包
+def counter():
+    n = 0
+    def inc():
+        nonlocal n
+        n += 1
+        return n
+    return inc</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ 块作用域 <span class="lang">cpp</span></div>
+                    <pre>for (int i = 0; i &lt; 3; i++) {}
+// cout &lt;&lt; i;   // 编译错误，i 已销毁
+
+// lambda 捕获
+auto counter = []() {
+    int n = 0;
+    return [n]() mutable { return ++n; };
+}();</pre>
+                </div>
+            </div>
+            <div class="page-number">17 / 27</div>
+        </div>
+
+        <!-- 18. 运算符与语义 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-divide"></i>
+                <h2>运算符与语义</h2>
+                <span class="badge">除法 · 取模 · 逻辑</span>
+            </div>
+            <div class="compare-table">
+                <div class="table-row header-row">
+                    <div class="table-cell">表达式</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell"><code>a / b</code></div>
+                    <div class="table-cell code-cell python-cell">真除法（浮点）</div>
+                    <div class="table-cell code-cell cpp-cell">整数除法（向零取整）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell"><code>a // b</code></div>
+                    <div class="table-cell code-cell python-cell">向下取整除法</div>
+                    <div class="table-cell code-cell cpp-cell">无（需手写）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell"><code>a ** b</code></div>
+                    <div class="table-cell code-cell python-cell">幂运算</div>
+                    <div class="table-cell code-cell cpp-cell">无（用 pow）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell"><code>x in arr</code></div>
+                    <div class="table-cell code-cell python-cell">成员测试</div>
+                    <div class="table-cell code-cell cpp-cell">find(...) != end()</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">链式比较</div>
+                    <div class="table-cell code-cell python-cell">0 &lt; x &lt; 10 合法</div>
+                    <div class="table-cell code-cell cpp-cell">需 0 &lt; x &amp;&amp; x &lt; 10</div>
+                </div>
+            </div>
+            <div class="code-pair" style="margin-top: 0.5rem;">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python 负数除法 <span class="lang">py</span></div>
+                    <pre>-7 // 2   # -4
+-7 % 2    # 1</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ 负数除法 <span class="lang">cpp</span></div>
+                    <pre>-7 / 2;   // -3
+-7 % 2;   // -1</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>负数除法/取模是<strong>算法题常见陷阱</strong>，务必注意。</div>
+            </div>
+            <div class="page-number">18 / 27</div>
+        </div>
+
+        <!-- 19. 空值与初始化 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-ban"></i>
+                <h2>空值与初始化</h2>
+                <span class="badge">None vs 未初始化</span>
+            </div>
+            <div class="compare-table">
+                <div class="table-row header-row">
+                    <div class="table-cell">场景</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">空值</div>
+                    <div class="table-cell code-cell python-cell">None</div>
+                    <div class="table-cell code-cell cpp-cell">nullptr / NULL（指针）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">未初始化</div>
+                    <div class="table-cell code-cell python-cell">不存在（变量必绑定）</div>
+                    <div class="table-cell code-cell cpp-cell">局部变量是垃圾值！</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">空容器判断</div>
+                    <div class="table-cell code-cell python-cell">if not arr:</div>
+                    <div class="table-cell code-cell cpp-cell">if (arr.empty())</div>
+                </div>
+            </div>
+            <div class="code-pair" style="margin-top: 0.5rem;">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python <span class="lang">py</span></div>
+                    <pre>x = None
+if x is None: ...</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ <span class="lang">cpp</span></div>
+                    <pre>int x;              // 垃圾值！
+cout &lt;&lt; x;          // 未定义行为
+
+int y = 0;          // 显式初始化
+int z{};            // C++11 列表初始化，值为 0
+
+vector&lt;int&gt; v(10);  // 10 个 0
+vector&lt;int&gt; w;      // 空
+if (w.empty()) { ... }</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-exclamation-circle"></i>
+                <div><strong>C++ 未初始化变量是常见 bug 源</strong>，Python 无此问题。</div>
+            </div>
+            <div class="page-number">19 / 27</div>
+        </div>
+
+        <!-- 20. 指针与引用 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-asterisk"></i>
+                <h2>指针与引用</h2>
+                <span class="badge">Python 无显式指针</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python <span class="lang">py</span></div>
+                    <pre># 一切是引用，自动解引用
+a = [1,2,3]
+b = a
+b[0] = 99   # 通过 b 修改 a</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ <span class="lang">cpp</span></div>
+                    <pre>int x = 10;
+
+int* p = &x;      // 指针：可重新指向
+*p = 20;          // 解引用修改
+
+int&amp; r = x;       // 引用：绑定后不可改
+r = 30;           // 直接修改 x
+
+// 空指针
+int* q = nullptr;
+if (q == nullptr) { ... }
+
+// 指针运算（Python 无）
+int arr[5] = {1,2,3,4,5};
+int* end = arr + 5;
+for (int* p = arr; p != end; ++p) cout &lt;&lt; *p;</pre>
+                </div>
+            </div>
+            <div class="compare-table" style="margin-top: 0.5rem;">
+                <div class="table-row header-row">
+                    <div class="table-cell">概念</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">引用</div>
+                    <div class="table-cell code-cell python-cell">所有变量</div>
+                    <div class="table-cell code-cell cpp-cell">T&amp;（绑定后不可改）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">指针</div>
+                    <div class="table-cell code-cell python-cell">无</div>
+                    <div class="table-cell code-cell cpp-cell">T*（可为空、可运算）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">自动解引用</div>
+                    <div class="table-cell code-cell python-cell">是</div>
+                    <div class="table-cell code-cell cpp-cell">否（需 *）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">悬空</div>
+                    <div class="table-cell code-cell python-cell">GC 防止</div>
+                    <div class="table-cell code-cell cpp-cell">手动管理，易悬空</div>
+                </div>
+            </div>
+            <div class="page-number">20 / 27</div>
+        </div>
+
+        <!-- 21. 迭代器失效 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-skull-crossbones"></i>
+                <h2>迭代器失效</h2>
+                <span class="badge">Python 没有的坑</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python 删除时遍历安全 <span class="lang">py</span></div>
+                    <pre>arr = [1,2,3,4]
+for x in arr[:]:        # 遍历副本
+    if x % 2 == 0:
+        arr.remove(x)</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ 删除时迭代器会失效！ <span class="lang">cpp</span></div>
+                    <pre>vector&lt;int&gt; v = {1,2,3,4};
+// 错误写法：
+// for (auto it = v.begin(); it != v.end(); ++it)
+//     if (*it % 2 == 0) v.erase(it);  // it 失效！
+
+// 正确写法：
+for (auto it = v.begin(); it != v.end(); ) {
+    if (*it % 2 == 0) it = v.erase(it);  // erase 返回下一个
+    else ++it;
+}</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>C++ 迭代器失效是<strong>经典面试题/竞赛 bug</strong>，Python 完全不用操心。</div>
+            </div>
+            <div class="page-number">21 / 27</div>
+        </div>
+
+        <!-- 22. 异常与错误处理 -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-bug"></i>
+                <h2>异常与错误处理</h2>
+                <span class="badge">try / catch</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python 异常常见 <span class="lang">py</span></div>
+                    <pre>try:
+    x = int(s)
+except ValueError:
+    x = 0
+finally:
+    pass</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ 竞赛中少用异常 <span class="lang">cpp</span></div>
+                    <pre>try {
+    int x = stoi(s);
+} catch (const invalid_argument&amp; e) {
+    x = 0;
+}
+
+// 竞赛更多用返回值判断
+int x;
+if (!(cin &gt;&gt; x)) { /* 处理 */ }</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-lightbulb"></i>
+                <div>竞赛/刷题中，C++ 通常用 <strong>返回值判断</strong> 代替异常，性能更好；C++ 没有 <code>finally</code>，依赖 <strong>RAII</strong> 清理资源。</div>
+            </div>
+            <div class="page-number">22 / 27</div>
+        </div>
+
+        <!-- 23. 多返回值（全新） -->
+        <div class="slide new-slide">
+            <div class="slide-header">
+                <i class="fas fa-people-arrows"></i>
+                <h2>多返回值：3 种方式</h2>
+                <span class="badge">tuple / 输出参数 / 结构体</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python：元组打包解包 <span class="lang">py</span></div>
+                    <pre>def func():
+    return 1, 2, 3       # 打包成元组
+
+a, b, c = func()         # 解包
+
+# 也可返回任意对象
+def func2():
+    return {"x": 1, "y": 2}</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++：3 种方式 <span class="lang">cpp</span></div>
+                    <pre>// ① pair/tuple + 结构化绑定 (C++17)
+#include &lt;tuple&gt;
+std::tuple&lt;int,int,int&gt; func() { return {1,2,3}; }
+auto [a, b, c] = func();
+
+// ② 引用输出参数
+void func2(int&amp; out1, int&amp; out2) {
+    out1 = 1; out2 = 2;
+}
+
+// ③ 结构体 + RVO（无拷贝开销）
+struct Result { int a, b, c; };
+Result func3() { return {1, 2, 3}; }</pre>
+                </div>
+            </div>
+            <div class="compare-table" style="margin-top: 0.5rem;">
+                <div class="table-row header-row">
+                    <div class="table-cell">方式</div>
+                    <div class="table-cell">优点</div>
+                    <div class="table-cell">适用场景</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">tuple + 结构化绑定</div>
+                    <div class="table-cell code-cell cpp-cell">简洁，C++17 起优雅</div>
+                    <div class="table-cell code-cell cpp-cell">返回值少、类型简单</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">引用输出参数</div>
+                    <div class="table-cell code-cell cpp-cell">兼容旧标准，无返回值拷贝</div>
+                    <div class="table-cell code-cell cpp-cell">需要返回多个大对象</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">结构体 + RVO</div>
+                    <div class="table-cell code-cell cpp-cell">语义清晰，编译器优化</div>
+                    <div class="table-cell code-cell cpp-cell">返回值有明确含义</div>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-key"></i>
+                <div><strong>Python 一行 <code>return a, b, c</code>，C++ 需三选一。</strong> RVO/NRVO 保证结构体返回无拷贝开销。</div>
+            </div>
+            <div class="page-number">23 / 27</div>
+        </div>
+
+        <!-- 24. 移动语义（全新） -->
+        <div class="slide new-slide">
+            <div class="slide-header">
+                <i class="fas fa-rocket"></i>
+                <h2>移动语义 std::move</h2>
+                <span class="badge">C++11 性能核心</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python：无移动概念 <span class="lang">py</span></div>
+                    <pre># 赋值即引用，不存在"所有权转移"
+a = [1, 2, 3]
+b = a          # 引用共享
+# a 仍然有效
+
+# 需要独立副本时手动拷贝
+c = a.copy()</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++：移动语义 <span class="lang">cpp</span></div>
+                    <pre>vector&lt;int&gt; a = {1, 2, 3};
+
+// 拷贝：a 和 b 都有数据
+vector&lt;int&gt; b = a;
+
+// 移动：转移所有权，无拷贝
+vector&lt;int&gt; c = std::move(a);
+// a 之后处于"有效但未定义"状态
+// 通常不应再使用 a（除非重新赋值）
+
+// 函数返回大对象自动 RVO / 移动
+vector&lt;int&gt; makeVec() {
+    vector&lt;int&gt; v(1000000);
+    return v;   // RVO，无拷贝
+}</pre>
+                </div>
+            </div>
+            <div class="compare-table" style="margin-top: 0.5rem;">
+                <div class="table-row header-row">
+                    <div class="table-cell">概念</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">赋值</div>
+                    <div class="table-cell code-cell python-cell">引用共享</div>
+                    <div class="table-cell code-cell cpp-cell">拷贝（值语义）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">所有权转移</div>
+                    <div class="table-cell code-cell python-cell">无此概念</div>
+                    <div class="table-cell code-cell cpp-cell">std::move + 右值引用</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">性能优化</div>
+                    <div class="table-cell code-cell python-cell">GC + 引用计数</div>
+                    <div class="table-cell code-cell cpp-cell">RVO / NRVO / move</div>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-lightbulb"></i>
+                <div><code>std::move</code> 不移动任何东西，只是<strong>把左值转成右值引用</strong>，让编译器选择移动构造/移动赋值。</div>
+            </div>
+            <div class="page-number">24 / 27</div>
+        </div>
+
+        <!-- 25. 内存管理与 RAII（全新） -->
+        <div class="slide new-slide">
+            <div class="slide-header">
+                <i class="fas fa-memory"></i>
+                <h2>内存管理与 RAII</h2>
+                <span class="badge">GC vs 智能指针</span>
+            </div>
+            <div class="code-pair">
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python：GC 自动回收 <span class="lang">py</span></div>
+                    <pre>a = [1, 2, 3]
+a = None   # 旧对象引用计数归零，自动释放
+# 无需关心内存
+
+# 循环引用由分代 GC 处理
+import gc
+gc.collect()</pre>
+                </div>
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++：RAII + 智能指针 <span class="lang">cpp</span></div>
+                    <pre>// 裸指针（不推荐）
+int* p = new int(10);
+delete p;
+
+// 智能指针（推荐）
+#include &lt;memory&gt;
+auto up = std::make_unique&lt;int&gt;(10);   // 独占所有权
+auto sp = std::make_shared&lt;int&gt;(20);   // 共享所有权
+
+// RAII：资源获取即初始化
+{
+    std::vector&lt;int&gt; v(1000);
+}   // 离开作用域自动析构，释放内存</pre>
+                </div>
+            </div>
+            <div class="compare-table" style="margin-top: 0.5rem;">
+                <div class="table-row header-row">
+                    <div class="table-cell">维度</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">内存回收</div>
+                    <div class="table-cell code-cell python-cell">引用计数 + 分代 GC</div>
+                    <div class="table-cell code-cell cpp-cell">栈自动 / 堆手动或智能指针</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">资源管理</div>
+                    <div class="table-cell code-cell python-cell">with 语句 / __del__</div>
+                    <div class="table-cell code-cell cpp-cell">RAII（构造获取，析构释放）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">循环引用</div>
+                    <div class="table-cell code-cell python-cell">GC 自动处理</div>
+                    <div class="table-cell code-cell cpp-cell">shared_ptr 需 weak_ptr 打破</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">性能</div>
+                    <div class="table-cell code-cell python-cell">GC 有开销</div>
+                    <div class="table-cell code-cell cpp-cell">零开销抽象（RAII）</div>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-key"></i>
+                <div><strong>RAII 是 C++ 资源管理的基石：</strong> 对象构造时获取资源，析构时自动释放。智能指针、容器、锁都遵循此思想。</div>
+            </div>
+            <div class="page-number">25 / 27</div>
+        </div>
+
+        <!-- 26. 拷贝开销与性能视角（全新） -->
+        <div class="slide new-slide">
+            <div class="slide-header">
+                <i class="fas fa-tachometer-alt"></i>
+                <h2>拷贝开销与性能视角</h2>
+                <span class="badge">从能跑到跑得快</span>
+            </div>
+            <div class="compare-table">
+                <div class="table-row header-row">
+                    <div class="table-cell">场景</div>
+                    <div class="table-cell">Python</div>
+                    <div class="table-cell">C++ 优化手段</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">函数传参</div>
+                    <div class="table-cell code-cell python-cell">引用传递，无拷贝</div>
+                    <div class="table-cell code-cell cpp-cell">const T&amp; 避免拷贝</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">函数返回</div>
+                    <div class="table-cell code-cell python-cell">返回引用</div>
+                    <div class="table-cell code-cell cpp-cell">RVO / NRVO 消除拷贝</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">容器赋值</div>
+                    <div class="table-cell code-cell python-cell">别名，O(1)</div>
+                    <div class="table-cell code-cell cpp-cell">深拷贝 O(n)，可用 move O(1)</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">循环内对象</div>
+                    <div class="table-cell code-cell python-cell">引用，无开销</div>
+                    <div class="table-cell code-cell cpp-cell">auto&amp; 避免每次拷贝</div>
+                </div>
+            </div>
+            <div class="code-pair" style="margin-top: 0.5rem;">
+                <div class="code-block cpp">
+                    <div class="code-header"><i class="fas fa-code"></i> C++ 性能陷阱与优化 <span class="lang">cpp</span></div>
+                    <pre>// ❌ 每次循环拷贝
+for (auto x : bigVec) { ... }
+
+// ✅ 引用，无拷贝
+for (const auto&amp; x : bigVec) { ... }
+
+// ❌ 传值，拷贝大对象
+void process(vector&lt;int&gt; v);
+
+// ✅ const 引用
+void process(const vector&lt;int&gt;&amp; v);
+
+// ❌ 手动拷贝返回
+vector&lt;int&gt; makeVec() {
+    vector&lt;int&gt; v(1000000);
+    return v;   // ✅ RVO，无拷贝
+}
+
+// ✅ 移动语义转移所有权
+vector&lt;int&gt; c = std::move(a);  // O(1)</pre>
+                </div>
+                <div class="code-block py">
+                    <div class="code-header"><i class="fab fa-python"></i> Python 的"隐式优化" <span class="lang">py</span></div>
+                    <pre># Python 传参是引用，无拷贝
+def process(lst):
+    ...
+
+big_list = [0] * 1000000
+process(big_list)   # 无拷贝
+
+# 但切片、拼接会产生新对象
+b = big_list[:]     # 浅拷贝 O(n)
+c = big_list + [1]  # 新列表 O(n)
+
+# 循环内修改列表元素
+for i in range(len(big_list)):
+    big_list[i] += 1   # 原地修改</pre>
+                </div>
+            </div>
+            <div class="note-box">
+                <i class="fas fa-lightbulb"></i>
+                <div><strong>Python 引用传递是"默认优化"，C++ 值语义需要主动优化。</strong> 记住三条：传参 <code>const&amp;</code>、返回靠 RVO、转移用 <code>move</code>。</div>
+            </div>
+            <div class="page-number">26 / 27</div>
+        </div>
+
+        <!-- 27. 综合速查 + 迁移心法（最终页） -->
+        <div class="slide">
+            <div class="slide-header">
+                <i class="fas fa-list-check"></i>
+                <h2>综合对照 · 迁移心法</h2>
+                <span class="badge">总结</span>
+            </div>
+            <div class="compare-table" style="margin-bottom: 1.2rem;">
+                <div class="table-row header-row">
+                    <div class="table-cell">类别</div>
+                    <div class="table-cell">Python 特点</div>
+                    <div class="table-cell">C++ 特点 / 迁移注意</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">变量语义</div>
+                    <div class="table-cell code-cell python-cell">引用绑定</div>
+                    <div class="table-cell code-cell cpp-cell">值语义；需 &amp; 引用避免拷贝</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">赋值</div>
+                    <div class="table-cell code-cell python-cell">别名</div>
+                    <div class="table-cell code-cell cpp-cell">拷贝；大对象用引用 / move</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">交换</div>
+                    <div class="table-cell code-cell python-cell">a,b=b,a</div>
+                    <div class="table-cell code-cell cpp-cell">swap；原生数组 O(n)</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">拷贝</div>
+                    <div class="table-cell code-cell python-cell">= / .copy() / deepcopy</div>
+                    <div class="table-cell code-cell cpp-cell">= 即深拷贝；语义相反</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">类型</div>
+                    <div class="table-cell code-cell python-cell">动态</div>
+                    <div class="table-cell code-cell cpp-cell">静态；必须声明</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">溢出</div>
+                    <div class="table-cell code-cell python-cell">无限精度</div>
+                    <div class="table-cell code-cell cpp-cell">固定位宽；用 long long</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">可变性</div>
+                    <div class="table-cell code-cell python-cell">部分不可变</div>
+                    <div class="table-cell code-cell cpp-cell">全部可变（字符串尤其明显）</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">作用域</div>
+                    <div class="table-cell code-cell python-cell">块内泄漏</div>
+                    <div class="table-cell code-cell cpp-cell">严格块作用域</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">空值</div>
+                    <div class="table-cell code-cell python-cell">None</div>
+                    <div class="table-cell code-cell cpp-cell">nullptr；未初始化是垃圾值</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">迭代器失效</div>
+                    <div class="table-cell code-cell python-cell">无</div>
+                    <div class="table-cell code-cell cpp-cell">常见；erase 后需更新</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">负数除法</div>
+                    <div class="table-cell code-cell python-cell">向下取整</div>
+                    <div class="table-cell code-cell cpp-cell">向零取整；算法题陷阱</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">多返回值</div>
+                    <div class="table-cell code-cell python-cell">元组解包</div>
+                    <div class="table-cell code-cell cpp-cell">tuple / 输出参数 / 结构体</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">内存管理</div>
+                    <div class="table-cell code-cell python-cell">GC 自动</div>
+                    <div class="table-cell code-cell cpp-cell">RAII + 智能指针</div>
+                </div>
+                <div class="table-row">
+                    <div class="table-cell">性能优化</div>
+                    <div class="table-cell code-cell python-cell">引用传递天然优化</div>
+                    <div class="table-cell code-cell cpp-cell">const&amp; / RVO / move</div>
+                </div>
+            </div>
+            <div class="note-box" style="border-left-color: #f9e2af;">
+                <i class="fas fa-lightbulb" style="color: #f9e2af;"></i>
+                <div><strong>迁移心法：</strong> 默认拷贝 vs 引用 · 显式初始化 · 类型与溢出 · 严格作用域 · 迭代器要小心 · 负数运算 · 可变性差异 · 多返回值三选一 · move 语义 · RAII 管理资源。</div>
+            </div>
+            <div class="note-box" style="border-left-color: #a6e3a1; margin-top: 0.5rem;">
+                <i class="fas fa-quote-left" style="color: #a6e3a1;"></i>
+                <div><strong>一句话概括：</strong> Python 中赋值是"贴标签"，C++ 中赋值是"复制内容"；从 C++ 转 Python 要警惕可变对象共享，从 Python 转 C++ 要警惕拷贝开销和悬空引用。</div>
+            </div>
+            <div class="page-number">27 / 27</div>
+        </div>
+
+    </div>
+</body>
+</html>
