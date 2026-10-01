@@ -1,0 +1,229 @@
+{
+  "title": "LeetCode GESP 六级知识点题目整理",
+  "src": "https://leetcode.cn/problemset/",
+  "last_update": "2026-10-01T00:00:00+08:00",
+  "difficulty_mapping": {
+    "Easy（简单）": 10,
+    "Medium（中等）": 50,
+    "Hard（困难）": 80
+  },
+  "children": [
+    {
+      "title": "一、树（Tree）",
+      "summary": "树的基本概念与遍历；哈夫曼树、完全二叉树、二叉排序树",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§1.1 二叉树遍历",
+          "summary": "前序、中序、后序、层序遍历",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "94", "title": "94. 二叉树的中序遍历", "src": "https://leetcode.cn/problems/binary-tree-inorder-traversal/", "score": 10, "isPremium": false },
+            { "id": "144", "title": "144. 二叉树的前序遍历", "src": "https://leetcode.cn/problems/binary-tree-preorder-traversal/", "score": 10, "isPremium": false },
+            { "id": "145", "title": "145. 二叉树的后序遍历", "src": "https://leetcode.cn/problems/binary-tree-postorder-traversal/", "score": 10, "isPremium": false },
+            { "id": "102", "title": "102. 二叉树的层序遍历", "src": "https://leetcode.cn/problems/binary-tree-level-order-traversal/", "score": 50, "isPremium": false },
+            { "id": "107", "title": "107. 二叉树的层序遍历 II", "src": "https://leetcode.cn/problems/binary-tree-level-order-traversal-ii/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§1.2 二叉树属性",
+          "summary": "深度、节点数、平衡性、路径等",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "104", "title": "104. 二叉树的最大深度", "src": "https://leetcode.cn/problems/maximum-depth-of-binary-tree/", "score": 10, "isPremium": false },
+            { "id": "111", "title": "111. 二叉树的最小深度", "src": "https://leetcode.cn/problems/minimum-depth-of-binary-tree/", "score": 10, "isPremium": false },
+            { "id": "226", "title": "226. 翻转二叉树", "src": "https://leetcode.cn/problems/invert-binary-tree/", "score": 10, "isPremium": false },
+            { "id": "101", "title": "101. 对称二叉树", "src": "https://leetcode.cn/problems/symmetric-tree/", "score": 10, "isPremium": false },
+            { "id": "222", "title": "222. 完全二叉树的节点个数", "src": "https://leetcode.cn/problems/count-complete-tree-nodes/", "score": 50, "isPremium": false },
+            { "id": "110", "title": "110. 平衡二叉树", "src": "https://leetcode.cn/problems/balanced-binary-tree/", "score": 10, "isPremium": false },
+            { "id": "543", "title": "543. 二叉树的直径", "src": "https://leetcode.cn/problems/diameter-of-binary-tree/", "score": 10, "isPremium": false },
+            { "id": "257", "title": "257. 二叉树的所有路径", "src": "https://leetcode.cn/problems/binary-tree-paths/", "score": 10, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§1.3 二叉搜索树（BST）",
+          "summary": "验证、搜索、插入、删除、最近公共祖先",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "98", "title": "98. 验证二叉搜索树", "src": "https://leetcode.cn/problems/validate-binary-search-tree/", "score": 50, "isPremium": false },
+            { "id": "700", "title": "700. 二叉搜索树中的搜索", "src": "https://leetcode.cn/problems/search-in-a-binary-search-tree/", "score": 10, "isPremium": false },
+            { "id": "701", "title": "701. 二叉搜索树中的插入操作", "src": "https://leetcode.cn/problems/insert-into-a-binary-search-tree/", "score": 50, "isPremium": false },
+            { "id": "450", "title": "450. 删除二叉搜索树中的节点", "src": "https://leetcode.cn/problems/delete-node-in-a-bst/", "score": 50, "isPremium": false },
+            { "id": "235", "title": "235. 二叉搜索树的最近公共祖先", "src": "https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-search-tree/", "score": 50, "isPremium": false },
+            { "id": "236", "title": "236. 二叉树的最近公共祖先", "src": "https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-tree/", "score": 50, "isPremium": false },
+            { "id": "230", "title": "230. 二叉搜索树中第 K 小的元素", "src": "https://leetcode.cn/problems/kth-smallest-element-in-a-bst/", "score": 50, "isPremium": false },
+            { "id": "108", "title": "108. 将有序数组转换为二叉搜索树", "src": "https://leetcode.cn/problems/convert-sorted-array-to-binary-search-tree/", "score": 10, "isPremium": false },
+            { "id": "96", "title": "96. 不同的二叉搜索树", "src": "https://leetcode.cn/problems/unique-binary-search-trees/", "score": 50, "isPremium": false },
+            { "id": "95", "title": "95. 不同的二叉搜索树 II", "src": "https://leetcode.cn/problems/unique-binary-search-trees-ii/", "score": 50, "isPremium": false },
+            { "id": "530", "title": "530. 二叉搜索树的最小绝对差", "src": "https://leetcode.cn/problems/minimum-absolute-difference-in-bst/", "score": 10, "isPremium": false },
+            { "id": "501", "title": "501. 二叉搜索树中的众数", "src": "https://leetcode.cn/problems/find-mode-in-binary-search-tree/", "score": 10, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§1.4 完全二叉树",
+          "summary": "完全二叉树的定义与操作",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "222", "title": "222. 完全二叉树的节点个数", "src": "https://leetcode.cn/problems/count-complete-tree-nodes/", "score": 50, "isPremium": false },
+            { "id": "919", "title": "919. 完全二叉树插入器", "src": "https://leetcode.cn/problems/complete-binary-tree-inserter/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§1.5 哈夫曼树 / 编码",
+          "summary": "哈夫曼树构建与编码应用",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "1167", "title": "1167. 连接棒材的最低费用", "src": "https://leetcode.cn/problems/minimum-cost-to-connect-sticks/", "score": 50, "isPremium": true },
+            { "id": "621", "title": "621. 任务调度器", "src": "https://leetcode.cn/problems/task-scheduler/", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "二、搜索算法（Search）",
+      "summary": "深度优先搜索 DFS、广度优先搜索 BFS、二叉搜索",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§2.1 深度优先搜索（DFS）",
+          "summary": "图的深度优先搜索、回溯",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "797", "title": "797. 所有可能的路径", "src": "https://leetcode.cn/problems/all-paths-from-source-to-target/", "score": 50, "isPremium": false },
+            { "id": "200", "title": "200. 岛屿数量", "src": "https://leetcode.cn/problems/number-of-islands/", "score": 50, "isPremium": false },
+            { "id": "695", "title": "695. 岛屿的最大面积", "src": "https://leetcode.cn/problems/max-area-of-island/", "score": 50, "isPremium": false },
+            { "id": "133", "title": "133. 克隆图", "src": "https://leetcode.cn/problems/clone-graph/", "score": 50, "isPremium": false },
+            { "id": "494", "title": "494. 目标和", "src": "https://leetcode.cn/problems/target-sum/", "score": 50, "isPremium": false },
+            { "id": "113", "title": "113. 路径总和 II", "src": "https://leetcode.cn/problems/path-sum-ii/", "score": 50, "isPremium": false },
+            { "id": "112", "title": "112. 路径总和", "src": "https://leetcode.cn/problems/path-sum/", "score": 10, "isPremium": false },
+            { "id": "129", "title": "129. 求根节点到叶节点数字之和", "src": "https://leetcode.cn/problems/sum-root-to-leaf-numbers/", "score": 50, "isPremium": false },
+            { "id": "404", "title": "404. 左叶子之和", "src": "https://leetcode.cn/problems/sum-of-left-leaves/", "score": 10, "isPremium": false },
+            { "id": "199", "title": "199. 二叉树的右视图", "src": "https://leetcode.cn/problems/binary-tree-right-side-view/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§2.2 广度优先搜索（BFS）",
+          "summary": "图的广度优先搜索、最短路径",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "286", "title": "286. 墙与门", "src": "https://leetcode.cn/problems/walls-and-gates/", "score": 50, "isPremium": true },
+            { "id": "752", "title": "752. 打开转盘锁", "src": "https://leetcode.cn/problems/open-the-lock/", "score": 50, "isPremium": false },
+            { "id": "279", "title": "279. 完全平方数", "src": "https://leetcode.cn/problems/perfect-squares/", "score": 50, "isPremium": false },
+            { "id": "733", "title": "733. 图像渲染", "src": "https://leetcode.cn/problems/flood-fill/", "score": 10, "isPremium": false },
+            { "id": "542", "title": "542. 01 矩阵", "src": "https://leetcode.cn/problems/01-matrix/", "score": 50, "isPremium": false },
+            { "id": "322", "title": "322. 零钱兑换", "src": "https://leetcode.cn/problems/coin-change/", "score": 50, "isPremium": false },
+            { "id": "994", "title": "994. 腐烂的橘子", "src": "https://leetcode.cn/problems/rotting-oranges/", "score": 50, "isPremium": false },
+            { "id": "1091", "title": "1091. 二进制矩阵中的最短路径", "src": "https://leetcode.cn/problems/shortest-path-in-binary-matrix/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§2.3 二叉搜索",
+          "summary": "在二叉搜索树中进行查找",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "700", "title": "700. 二叉搜索树中的搜索", "src": "https://leetcode.cn/problems/search-in-a-binary-search-tree/", "score": 10, "isPremium": false },
+            { "id": "701", "title": "701. 二叉搜索树中的插入操作", "src": "https://leetcode.cn/problems/insert-into-a-binary-search-tree/", "score": 50, "isPremium": false },
+            { "id": "450", "title": "450. 删除二叉搜索树中的节点", "src": "https://leetcode.cn/problems/delete-node-in-a-bst/", "score": 50, "isPremium": false },
+            { "id": "230", "title": "230. 二叉搜索树中第 K 小的元素", "src": "https://leetcode.cn/problems/kth-smallest-element-in-a-bst/", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "三、简单动态规划（Dynamic Programming）",
+      "summary": "一维动态规划；简单背包问题",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§3.1 一维动态规划",
+          "summary": "线性 DP、递推",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "198", "title": "198. 打家劫舍", "src": "https://leetcode.cn/problems/house-robber/", "score": 50, "isPremium": false },
+            { "id": "746", "title": "746. 使用最小花费爬楼梯", "src": "https://leetcode.cn/problems/min-cost-climbing-stairs/", "score": 10, "isPremium": false },
+            { "id": "70", "title": "70. 爬楼梯", "src": "https://leetcode.cn/problems/climbing-stairs/", "score": 10, "isPremium": false },
+            { "id": "121", "title": "121. 买卖股票的最佳时机", "src": "https://leetcode.cn/problems/best-time-to-buy-and-sell-stock/", "score": 10, "isPremium": false },
+            { "id": "122", "title": "122. 买卖股票的最佳时机 II", "src": "https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-ii/", "score": 50, "isPremium": false },
+            { "id": "53", "title": "53. 最大子数组和", "src": "https://leetcode.cn/problems/maximum-subarray/", "score": 50, "isPremium": false },
+            { "id": "213", "title": "213. 打家劫舍 II", "src": "https://leetcode.cn/problems/house-robber-ii/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§3.2 简单背包问题",
+          "summary": "0-1 背包、完全背包入门",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "416", "title": "416. 分割等和子集", "src": "https://leetcode.cn/problems/partition-equal-subset-sum/", "score": 50, "isPremium": false },
+            { "id": "494", "title": "494. 目标和", "src": "https://leetcode.cn/problems/target-sum/", "score": 50, "isPremium": false },
+            { "id": "1049", "title": "1049. 最后一块石头的重量 II", "src": "https://leetcode.cn/problems/last-stone-weight-ii/", "score": 50, "isPremium": false },
+            { "id": "322", "title": "322. 零钱兑换", "src": "https://leetcode.cn/problems/coin-change/", "score": 50, "isPremium": false },
+            { "id": "518", "title": "518. 零钱兑换 II", "src": "https://leetcode.cn/problems/coin-change-ii/", "score": 50, "isPremium": false },
+            { "id": "377", "title": "377. 组合总和 Ⅳ", "src": "https://leetcode.cn/problems/combination-sum-iv/", "score": 50, "isPremium": false },
+            { "id": "139", "title": "139. 单词拆分", "src": "https://leetcode.cn/problems/word-break/", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "四、面向对象思想（OOP）",
+      "summary": "类的创建与初始化；封装、继承、多态",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.1 设计类题目",
+          "summary": "类的设计与实现",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "1603", "title": "1603. 设计停车系统", "src": "https://leetcode.cn/problems/design-parking-system/", "score": 10, "isPremium": false },
+            { "id": "225", "title": "225. 用队列实现栈", "src": "https://leetcode.cn/problems/implement-stack-using-queues/", "score": 10, "isPremium": false },
+            { "id": "232", "title": "232. 用栈实现队列", "src": "https://leetcode.cn/problems/implement-queue-using-stacks/", "score": 10, "isPremium": false },
+            { "id": "622", "title": "622. 设计循环队列", "src": "https://leetcode.cn/problems/design-circular-queue/", "score": 50, "isPremium": false },
+            { "id": "707", "title": "707. 设计链表", "src": "https://leetcode.cn/problems/design-linked-list/", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "五、栈和队列（Stack & Queue）",
+      "summary": "栈、队列、循环队列",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§5.1 栈的基本应用",
+          "summary": "栈的经典问题",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "20", "title": "20. 有效的括号", "src": "https://leetcode.cn/problems/valid-parentheses/", "score": 10, "isPremium": false },
+            { "id": "155", "title": "155. 最小栈", "src": "https://leetcode.cn/problems/min-stack/", "score": 50, "isPremium": false },
+            { "id": "394", "title": "394. 字符串解码", "src": "https://leetcode.cn/problems/decode-string/", "score": 50, "isPremium": false },
+            { "id": "739", "title": "739. 每日温度", "src": "https://leetcode.cn/problems/daily-temperatures/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§5.2 队列的基本应用",
+          "summary": "队列的经典问题",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "225", "title": "225. 用队列实现栈", "src": "https://leetcode.cn/problems/implement-stack-using-queues/", "score": 10, "isPremium": false },
+            { "id": "232", "title": "232. 用栈实现队列", "src": "https://leetcode.cn/problems/implement-queue-using-stacks/", "score": 10, "isPremium": false },
+            { "id": "622", "title": "622. 设计循环队列", "src": "https://leetcode.cn/problems/design-circular-queue/", "score": 50, "isPremium": false },
+            { "id": "239", "title": "239. 滑动窗口最大值", "src": "https://leetcode.cn/problems/sliding-window-maximum/", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    }
+  ]
+}

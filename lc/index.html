@@ -40,10 +40,10 @@ h1 { font-size:1.05rem; font-weight:600; flex:1; min-width:0; overflow:hidden; t
 .preset-btn .ptitle { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:150px; }
 .preset-btn .caret { font-size:.6rem; opacity:.9; transition:transform .2s; }
 .preset-menu.open .preset-btn .caret { transform:rotate(180deg); }
-.preset-list { position:absolute; top:calc(100% + 6px); right:0; min-width:320px; max-width:min(92vw,420px); max-height:65vh; overflow-y:auto; background:#fff; color:#2c3e50; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.18); border:1px solid #eef2f7; padding:6px; display:none; z-index:200; }
+.preset-list { position:absolute; top:calc(100% + 6px); right:0; min-width:280px; max-width:min(92vw,420px); max-height:65vh; overflow-y:auto; background:#fff; color:#2c3e50; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.18); border:1px solid #eef2f7; padding:6px; display:none; z-index:200; }
 .preset-menu.open .preset-list { display:block; }
 .preset-list .grp-title { font-size:.72rem; color:#868e96; padding:8px 10px 4px; letter-spacing:.4px; }
-.preset-item { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:9px 10px; border-radius:8px; cursor:pointer; font-size:.83rem; transition:background .12s; }
+.preset-item { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:4px 10px; border-radius:8px; cursor:pointer; font-size:.83rem; transition:background .12s; }
 .preset-item:hover { background:#f6f9fc; }
 .preset-item.active { background:#e7f2fd; color:#1864ab; font-weight:600; }
 .preset-item .pi-main { min-width:0; flex:1; }
@@ -261,11 +261,14 @@ const PRESETS = [
   { key:'data_structure',        name:'数据结构题单',      url:'./studyplan/data_structure.json',        desc:'' },
   { key:'bitwise_operations',        name:'位运算',      url:'./studyplan/bitwise_operations.json',        desc:'' },
   { key:'dynamic_programming',        name:'动态规划',      url:'./studyplan/dynamic_programming.json',        desc:'' },
- { key:'string',        name:'字符串',      url:'./studyplan/string.json',        desc:'' },
- { key:'graph',        name:'图论',      url:'./studyplan/graph.json',        desc:'' },
- { key:'math',        name:'数学相关',      url:'./studyplan/math.json', desc:'' },
- { key:'monotonic_stack',        name:'单调栈',      url:'./studyplan/monotonic_stack.json', desc:'' },
- { key:'gespL1-L8',        name:'GESP L1-L8',      url:'./gesp/L1_L8.json',desc:'' }
+  { key:'string',        name:'字符串',      url:'./studyplan/string.json',        desc:'' },
+  { key:'graph',        name:'图论',      url:'./studyplan/graph.json',        desc:'' },
+  { key:'math',        name:'数学相关',      url:'./studyplan/math.json', desc:'' },
+  { key:'monotonic_stack',        name:'单调栈',      url:'./studyplan/monotonic_stack.json', desc:'' },
+  { key:'gespL1-L8',        name:'GESP L1-L8@luogo',      url:'./gesp/L1_L8.json',desc:'' },
+  { key:'gespL6-lc',        name:'gespL6@lc',      url:'./gesp/L6_lc.json',desc:'' },
+  { key:'gespL7-lc',        name:'gespL7@lc',      url:'./gesp/L7_lc.json',desc:'' },
+  { key:'gespL8-lc',        name:'gespL8@lc',      url:'./gesp/L8_lc.json',desc:'' }
 ];
 
 // ====== 内置默认题单数据 ======
@@ -799,14 +802,14 @@ function renderPresetList(){
       if(abs) prog = getProgressSummary(null, abs);
     }
     const progText = prog ? `进度 ${prog.done}/${prog.total} 已学会` : '暂无进度';
+ // <span class="pi-src">${esc(p.desc || p.url || '内置')}</span>
+// <span class="pi-badge">${p.builtin ? '内置' : 'HTTP'}</span>
 
     item.innerHTML = `
       <span class="pi-main">
         <span class="pi-name">${esc(p.name)}</span>
-        <span class="pi-src">${esc(p.desc || p.url || '内置')}</span>
         <span class="pi-prog">${esc(progText)}</span>
-      </span>
-      <span class="pi-badge">${p.builtin ? '内置' : 'HTTP'}</span>
+      </span>  
     `;
     item.onclick = ()=> selectPreset(p);
     presetList.appendChild(item);
@@ -822,7 +825,7 @@ function renderPresetList(){
     <input type="url" id="presetCustomUrl" placeholder="JSON 地址（相对/绝对），回车加载">
     <div class="hint">例如：./data/dp.json、data/graph.json、/api/list.json、https://host/x.json</div>
   `;
-  presetList.appendChild(custom);
+  // presetList.appendChild(custom);
 
   const input = custom.querySelector('#presetCustomUrl');
   input.addEventListener('keydown', async e=>{

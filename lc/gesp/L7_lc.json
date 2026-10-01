@@ -1,0 +1,215 @@
+{
+  "title": "LeetCode GESP 七级知识点题目整理",
+  "src": "https://leetcode.cn/problemset/",
+  "last_update": "2026-10-01T00:00:00+08:00",
+  "difficulty_mapping": {
+    "Easy（简单）": 10,
+    "Medium（中等）": 50,
+    "Hard（困难）": 80
+  },
+  "children": [
+    {
+      "title": "一、数学库函数（Math Functions）",
+      "summary": "三角函数 sin/cos；对数 log10/log2；指数 exp",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§1.1 数学函数应用",
+          "summary": "利用数学函数解决几何、数值计算问题",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "149", "title": "149. 直线上最多的点数", "src": "https://leetcode.cn/problems/max-points-on-a-line/", "score": 80, "isPremium": false },
+            { "id": "372", "title": "372. 超级次方", "src": "https://leetcode.cn/problems/super-pow/", "score": 50, "isPremium": false },
+            { "id": "50", "title": "50. Pow(x, n)", "src": "https://leetcode.cn/problems/powx-n/", "score": 50, "isPremium": false },
+            { "id": "69", "title": "69. x 的平方根", "src": "https://leetcode.cn/problems/sqrtx/", "score": 10, "isPremium": false },
+            { "id": "367", "title": "367. 有效的完全平方数", "src": "https://leetcode.cn/problems/valid-perfect-square/", "score": 10, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "二、复杂动态规划（Advanced DP）",
+      "summary": "二维动态规划、最值优化；区间 DP；最长上升子序列 LIS；最长公共子序列 LCS；滚动数组优化空间复杂度",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§2.1 二维动态规划",
+          "summary": "网格图 DP、二维状态转移",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "62", "title": "62. 不同路径", "src": "https://leetcode.cn/problems/unique-paths/", "score": 50, "isPremium": false },
+            { "id": "64", "title": "64. 最小路径和", "src": "https://leetcode.cn/problems/minimum-path-sum/", "score": 50, "isPremium": false },
+            { "id": "221", "title": "221. 最大正方形", "src": "https://leetcode.cn/problems/maximal-square/", "score": 50, "isPremium": false },
+            { "id": "1143", "title": "1143. 最长公共子序列", "src": "https://leetcode.cn/problems/longest-common-subsequence/", "score": 50, "isPremium": false },
+            { "id": "718", "title": "718. 最长重复子数组", "src": "https://leetcode.cn/problems/maximum-length-of-repeated-subarray/", "score": 50, "isPremium": false },
+            { "id": "304", "title": "304. 二维区域和检索 - 矩阵不可变", "src": "https://leetcode.cn/problems/range-sum-query-2d-immutable/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§2.2 区间 DP",
+          "summary": "区间划分、最优子结构",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "312", "title": "312. 戳气球", "src": "https://leetcode.cn/problems/burst-balloons/", "score": 80, "isPremium": false },
+            { "id": "486", "title": "486. 预测赢家", "src": "https://leetcode.cn/problems/predict-the-winner/", "score": 50, "isPremium": false },
+            { "id": "877", "title": "877. 石子游戏", "src": "https://leetcode.cn/problems/stone-game/", "score": 50, "isPremium": false },
+            { "id": "1000", "title": "1000. 合并石头的最低成本", "src": "https://leetcode.cn/problems/minimum-cost-to-merge-stones/", "score": 80, "isPremium": false },
+            { "id": "1039", "title": "1039. 多边形三角剖分的最低得分", "src": "https://leetcode.cn/problems/minimum-score-triangulation-of-polygon/", "score": 50, "isPremium": false },
+            { "id": "1547", "title": "1547. 切棍子的最小成本", "src": "https://leetcode.cn/problems/minimum-cost-to-cut-a-stick/", "score": 80, "isPremium": false },
+            { "id": "516", "title": "516. 最长回文子序列", "src": "https://leetcode.cn/problems/longest-palindromic-subsequence/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§2.3 最长上升子序列（LIS）",
+          "summary": "LIS 经典问题与变体",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "300", "title": "300. 最长递增子序列", "src": "https://leetcode.cn/problems/longest-increasing-subsequence/", "score": 50, "isPremium": false },
+            { "id": "673", "title": "673. 最长递增子序列的个数", "src": "https://leetcode.cn/problems/number-of-longest-increasing-subsequence/", "score": 50, "isPremium": false },
+            { "id": "354", "title": "354. 俄罗斯套娃信封问题", "src": "https://leetcode.cn/problems/russian-doll-envelopes/", "score": 80, "isPremium": false },
+            { "id": "674", "title": "674. 最长连续递增序列", "src": "https://leetcode.cn/problems/longest-continuous-increasing-subsequence/", "score": 10, "isPremium": false },
+            { "id": "646", "title": "646. 最长数对链", "src": "https://leetcode.cn/problems/maximum-length-of-pair-chain/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§2.4 最长公共子序列（LCS）",
+          "summary": "LCS 经典问题与变体",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "1143", "title": "1143. 最长公共子序列", "src": "https://leetcode.cn/problems/longest-common-subsequence/", "score": 50, "isPremium": false },
+            { "id": "583", "title": "583. 两个字符串的删除操作", "src": "https://leetcode.cn/problems/delete-operation-for-two-strings/", "score": 50, "isPremium": false },
+            { "id": "712", "title": "712. 两个字符串的最小ASCII删除和", "src": "https://leetcode.cn/problems/minimum-ascii-delete-sum-for-two-strings/", "score": 50, "isPremium": false },
+            { "id": "72", "title": "72. 编辑距离", "src": "https://leetcode.cn/problems/edit-distance/", "score": 80, "isPremium": false },
+            { "id": "115", "title": "115. 不同的子序列", "src": "https://leetcode.cn/problems/distinct-subsequences/", "score": 80, "isPremium": false },
+            { "id": "1035", "title": "1035. 不相交的线", "src": "https://leetcode.cn/problems/uncrossed-lines/", "score": 50, "isPremium": false },
+            { "id": "392", "title": "392. 判断子序列", "src": "https://leetcode.cn/problems/is-subsequence/", "score": 10, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§2.5 滚动数组优化",
+          "summary": "空间复杂度优化技巧",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "70", "title": "70. 爬楼梯", "src": "https://leetcode.cn/problems/climbing-stairs/", "score": 10, "isPremium": false },
+            { "id": "198", "title": "198. 打家劫舍", "src": "https://leetcode.cn/problems/house-robber/", "score": 50, "isPremium": false },
+            { "id": "213", "title": "213. 打家劫舍 II", "src": "https://leetcode.cn/problems/house-robber-ii/", "score": 50, "isPremium": false },
+            { "id": "509", "title": "509. 斐波那契数", "src": "https://leetcode.cn/problems/fibonacci-number/", "score": 10, "isPremium": false },
+            { "id": "746", "title": "746. 使用最小花费爬楼梯", "src": "https://leetcode.cn/problems/min-cost-climbing-stairs/", "score": 10, "isPremium": false },
+            { "id": "53", "title": "53. 最大子数组和", "src": "https://leetcode.cn/problems/maximum-subarray/", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "三、图的定义及遍历（Graph Traversal）",
+      "summary": "图的基本概念；图的 DFS 与 BFS 遍历",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§3.1 图的深度优先搜索（DFS）",
+          "summary": "DFS 遍历、连通分量、路径搜索",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "200", "title": "200. 岛屿数量", "src": "https://leetcode.cn/problems/number-of-islands/", "score": 50, "isPremium": false },
+            { "id": "695", "title": "695. 岛屿的最大面积", "src": "https://leetcode.cn/problems/max-area-of-island/", "score": 50, "isPremium": false },
+            { "id": "133", "title": "133. 克隆图", "src": "https://leetcode.cn/problems/clone-graph/", "score": 50, "isPremium": false },
+            { "id": "797", "title": "797. 所有可能的路径", "src": "https://leetcode.cn/problems/all-paths-from-source-to-target/", "score": 50, "isPremium": false },
+            { "id": "547", "title": "547. 省份数量", "src": "https://leetcode.cn/problems/number-of-provinces/", "score": 50, "isPremium": false },
+            { "id": "130", "title": "130. 被围绕的区域", "src": "https://leetcode.cn/problems/surrounded-regions/", "score": 50, "isPremium": false },
+            { "id": "417", "title": "417. 太平洋大西洋水流问题", "src": "https://leetcode.cn/problems/pacific-atlantic-water-flow/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§3.2 图的广度优先搜索（BFS）",
+          "summary": "BFS 遍历、最短路径、层级遍历",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "286", "title": "286. 墙与门", "src": "https://leetcode.cn/problems/walls-and-gates/", "score": 50, "isPremium": true },
+            { "id": "542", "title": "542. 01 矩阵", "src": "https://leetcode.cn/problems/01-matrix/", "score": 50, "isPremium": false },
+            { "id": "994", "title": "994. 腐烂的橘子", "src": "https://leetcode.cn/problems/rotting-oranges/", "score": 50, "isPremium": false },
+            { "id": "1091", "title": "1091. 二进制矩阵中的最短路径", "src": "https://leetcode.cn/problems/shortest-path-in-binary-matrix/", "score": 50, "isPremium": false },
+            { "id": "127", "title": "127. 单词接龙", "src": "https://leetcode.cn/problems/word-ladder/", "score": 80, "isPremium": false },
+            { "id": "752", "title": "752. 打开转盘锁", "src": "https://leetcode.cn/problems/open-the-lock/", "score": 50, "isPremium": false },
+            { "id": "433", "title": "433. 最小基因变化", "src": "https://leetcode.cn/problems/minimum-genetic-mutation/", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "四、图论算法（Graph Algorithms）",
+      "summary": "图的泛洪算法 flood fill",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.1 泛洪算法（Flood Fill）",
+          "summary": "洪水填充、连通区域填充",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "733", "title": "733. 图像渲染", "src": "https://leetcode.cn/problems/flood-fill/", "score": 10, "isPremium": false },
+            { "id": "200", "title": "200. 岛屿数量", "src": "https://leetcode.cn/problems/number-of-islands/", "score": 50, "isPremium": false },
+            { "id": "695", "title": "695. 岛屿的最大面积", "src": "https://leetcode.cn/problems/max-area-of-island/", "score": 50, "isPremium": false },
+            { "id": "130", "title": "130. 被围绕的区域", "src": "https://leetcode.cn/problems/surrounded-regions/", "score": 50, "isPremium": false },
+            { "id": "1254", "title": "1254. 统计封闭岛屿的数目", "src": "https://leetcode.cn/problems/number-of-closed-islands/", "score": 50, "isPremium": false },
+            { "id": "1020", "title": "1020. 飞地的数量", "src": "https://leetcode.cn/problems/number-of-enclaves/", "score": 50, "isPremium": false },
+            { "id": "1034", "title": "1034. 边界着色", "src": "https://leetcode.cn/problems/coloring-a-border/", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "五、哈希表（Hash Table）",
+      "summary": "哈希表的概念与知识及其应用",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§5.1 哈希表基础应用",
+          "summary": "计数、去重、查找",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "1", "title": "1. 两数之和", "src": "https://leetcode.cn/problems/two-sum/", "score": 10, "isPremium": false },
+            { "id": "217", "title": "217. 存在重复元素", "src": "https://leetcode.cn/problems/contains-duplicate/", "score": 10, "isPremium": false },
+            { "id": "136", "title": "136. 只出现一次的数字", "src": "https://leetcode.cn/problems/single-number/", "score": 10, "isPremium": false },
+            { "id": "349", "title": "349. 两个数组的交集", "src": "https://leetcode.cn/problems/intersection-of-two-arrays/", "score": 10, "isPremium": false },
+            { "id": "242", "title": "242. 有效的字母异位词", "src": "https://leetcode.cn/problems/valid-anagram/", "score": 10, "isPremium": false },
+            { "id": "387", "title": "387. 字符串中的第一个唯一字符", "src": "https://leetcode.cn/problems/first-unique-character-in-a-string/", "score": 10, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§5.2 哈希表进阶应用",
+          "summary": "前缀和、子数组、字符串哈希",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "560", "title": "560. 和为 K 的子数组", "src": "https://leetcode.cn/problems/subarray-sum-equals-k/", "score": 50, "isPremium": false },
+            { "id": "525", "title": "525. 连续数组", "src": "https://leetcode.cn/problems/contiguous-array/", "score": 50, "isPremium": false },
+            { "id": "128", "title": "128. 最长连续序列", "src": "https://leetcode.cn/problems/longest-consecutive-sequence/", "score": 50, "isPremium": false },
+            { "id": "49", "title": "49. 字母异位词分组", "src": "https://leetcode.cn/problems/group-anagrams/", "score": 50, "isPremium": false },
+            { "id": "438", "title": "438. 找到字符串中所有字母异位词", "src": "https://leetcode.cn/problems/find-all-anagrams-in-a-string/", "score": 50, "isPremium": false },
+            { "id": "3", "title": "3. 无重复字符的最长子串", "src": "https://leetcode.cn/problems/longest-substring-without-repeating-characters/", "score": 50, "isPremium": false },
+            { "id": "187", "title": "187. 重复的DNA序列", "src": "https://leetcode.cn/problems/repeated-dna-sequences/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§5.3 哈希表设计",
+          "summary": "设计哈希集合与哈希映射",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "705", "title": "705. 设计哈希集合", "src": "https://leetcode.cn/problems/design-hashset/", "score": 10, "isPremium": false },
+            { "id": "706", "title": "706. 设计哈希映射", "src": "https://leetcode.cn/problems/design-hashmap/", "score": 10, "isPremium": false }
+          ]
+        }
+      ]
+    }
+  ]
+}

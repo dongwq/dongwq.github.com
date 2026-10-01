@@ -1,0 +1,214 @@
+{
+  "title": "LeetCode GESP 八级知识点题目整理",
+  "src": "https://leetcode.cn/problemset/",
+  "last_update": "2026-10-01T00:00:00+08:00",
+  "difficulty_mapping": {
+    "Easy（简单）": 10,
+    "Medium（中等）": 50,
+    "Hard（困难）": 80
+  },
+  "children": [
+    {
+      "title": "一、计数原理（Counting Principles）",
+      "summary": "加法原理、乘法原理",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§1.1 加法与乘法原理",
+          "summary": "分步计数、分类计数",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "62", "title": "62. 不同路径", "src": "https://leetcode.cn/problems/unique-paths/", "score": 50, "isPremium": false },
+            { "id": "63", "title": "63. 不同路径 II", "src": "https://leetcode.cn/problems/unique-paths-ii/", "score": 50, "isPremium": false },
+            { "id": "70", "title": "70. 爬楼梯", "src": "https://leetcode.cn/problems/climbing-stairs/", "score": 10, "isPremium": false },
+            { "id": "509", "title": "509. 斐波那契数", "src": "https://leetcode.cn/problems/fibonacci-number/", "score": 10, "isPremium": false },
+            { "id": "1137", "title": "1137. 第 N 个泰波那契数", "src": "https://leetcode.cn/problems/n-th-tribonacci-number/", "score": 10, "isPremium": false },
+            { "id": "1641", "title": "1641. 统计字典序元音字符串的数目", "src": "https://leetcode.cn/problems/count-sorted-vowel-strings/", "score": 50, "isPremium": false },
+            { "id": "1863", "title": "1863. 找出所有子集的异或总和再求和", "src": "https://leetcode.cn/problems/sum-of-all-subset-xor-totals/", "score": 10, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "二、排列与组合（Permutation & Combination）",
+      "summary": "排列、组合的基本概念与编程实现",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§2.1 排列",
+          "summary": "全排列、第 k 个排列、排列生成",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "46", "title": "46. 全排列", "src": "https://leetcode.cn/problems/permutations/", "score": 50, "isPremium": false },
+            { "id": "47", "title": "47. 全排列 II", "src": "https://leetcode.cn/problems/permutations-ii/", "score": 50, "isPremium": false },
+            { "id": "60", "title": "60. 排列序列", "src": "https://leetcode.cn/problems/permutation-sequence/", "score": 80, "isPremium": false },
+            { "id": "31", "title": "31. 下一个排列", "src": "https://leetcode.cn/problems/next-permutation/", "score": 50, "isPremium": false },
+            { "id": "面试题 08.07", "title": "面试题 08.07. 无重复字符串的排列组合", "src": "https://leetcode.cn/problems/permutation-i-lcci/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§2.2 组合",
+          "summary": "组合数、组合总和",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "77", "title": "77. 组合", "src": "https://leetcode.cn/problems/combinations/", "score": 50, "isPremium": false },
+            { "id": "39", "title": "39. 组合总和", "src": "https://leetcode.cn/problems/combination-sum/", "score": 50, "isPremium": false },
+            { "id": "40", "title": "40. 组合总和 II", "src": "https://leetcode.cn/problems/combination-sum-ii/", "score": 50, "isPremium": false },
+            { "id": "216", "title": "216. 组合总和 III", "src": "https://leetcode.cn/problems/combination-sum-iii/", "score": 50, "isPremium": false },
+            { "id": "377", "title": "377. 组合总和 Ⅳ", "src": "https://leetcode.cn/problems/combination-sum-iv/", "score": 50, "isPremium": false },
+            { "id": "1015", "title": "1015. 可被 K 整除的最小整数", "src": "https://leetcode.cn/problems/smallest-integer-divisible-by-k/", "score": 50, "isPremium": false },
+            { "id": "2400", "title": "2400. 恰好移动 k 步到达某一位置的方法数目", "src": "https://leetcode.cn/problems/number-of-ways-to-reach-a-position-after-exactly-k-steps/", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "三、杨辉三角（Pascal's Triangle）",
+      "summary": "杨辉三角的定义与实现",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§3.1 杨辉三角基础",
+          "summary": "生成杨辉三角、二项式系数",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "118", "title": "118. 杨辉三角", "src": "https://leetcode.cn/problems/pascals-triangle/", "score": 10, "isPremium": false },
+            { "id": "119", "title": "119. 杨辉三角 II", "src": "https://leetcode.cn/problems/pascals-triangle-ii/", "score": 10, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "四、倍增法（Binary Lifting）",
+      "summary": "倍增概念与时间复杂度分析",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.1 倍增法基础应用",
+          "summary": "快速幂、树上倍增、LCA",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "50", "title": "50. Pow(x, n)", "src": "https://leetcode.cn/problems/powx-n/", "score": 50, "isPremium": false },
+            { "id": "372", "title": "372. 超级次方", "src": "https://leetcode.cn/problems/super-pow/", "score": 50, "isPremium": false },
+            { "id": "1483", "title": "1483. 树节点的第 K 个祖先", "src": "https://leetcode.cn/problems/kth-ancestor-of-a-tree-node/", "score": 80, "isPremium": false },
+            { "id": "236", "title": "236. 二叉树的最近公共祖先", "src": "https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-tree/", "score": 50, "isPremium": false },
+            { "id": "235", "title": "235. 二叉搜索树的最近公共祖先", "src": "https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-search-tree/", "score": 50, "isPremium": false },
+            { "id": "3154", "title": "3154. 到达第 K 级台阶的方案数", "src": "https://leetcode.cn/problems/find-number-of-ways-to-reach-the-k-th-stair/", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "五、代数与平面几何（Algebra & Geometry）",
+      "summary": "一元/二元一次方程求解；三角形、圆形、长方形面积",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§5.1 方程求解与几何",
+          "summary": "方程求解、几何计算",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "441", "title": "441. 排列硬币", "src": "https://leetcode.cn/problems/arranging-coins/", "score": 10, "isPremium": false },
+            { "id": "836", "title": "836. 矩形重叠", "src": "https://leetcode.cn/problems/rectangle-overlap/", "score": 10, "isPremium": false },
+            { "id": "223", "title": "223. 矩形面积", "src": "https://leetcode.cn/problems/rectangle-area/", "score": 50, "isPremium": false },
+            { "id": "149", "title": "149. 直线上最多的点数", "src": "https://leetcode.cn/problems/max-points-on-a-line/", "score": 80, "isPremium": false },
+            { "id": "478", "title": "478. 在圆内随机生成点", "src": "https://leetcode.cn/problems/generate-random-point-in-a-circle/", "score": 50, "isPremium": false },
+            { "id": "1401", "title": "1401. 圆和矩形是否有重叠", "src": "https://leetcode.cn/problems/circle-and-rectangle-overlapping/", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "六、图论算法及综合应用（Graph Algorithms）",
+      "summary": "最小生成树 Kruskal/Prim；最短路径 Dijkstra/Floyd；图论综合应用与问题求解",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§6.1 最小生成树",
+          "summary": "Kruskal、Prim",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "1584", "title": "1584. 连接所有点的最小费用", "src": "https://leetcode.cn/problems/min-cost-to-connect-all-points/", "score": 50, "isPremium": false },
+            { "id": "1135", "title": "1135. 最低成本连通所有城市", "src": "https://leetcode.cn/problems/connecting-cities-with-minimum-cost/", "score": 50, "isPremium": true },
+            { "id": "1489", "title": "1489. 找到最小生成树里的关键边和伪关键边", "src": "https://leetcode.cn/problems/find-critical-and-pseudo-critical-edges-in-minimum-spanning-tree/", "score": 80, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§6.2 最短路径",
+          "summary": "Dijkstra、Floyd",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "743", "title": "743. 网络延迟时间", "src": "https://leetcode.cn/problems/network-delay-time/", "score": 50, "isPremium": false },
+            { "id": "787", "title": "787. K 站中转内最便宜的航班", "src": "https://leetcode.cn/problems/cheapest-flights-within-k-stops/", "score": 50, "isPremium": false },
+            { "id": "1631", "title": "1631. 最小体力消耗路径", "src": "https://leetcode.cn/problems/path-with-minimum-effort/", "score": 50, "isPremium": false },
+            { "id": "1334", "title": "1334. 阈值距离内邻居最少的城市", "src": "https://leetcode.cn/problems/find-the-city-with-the-smallest-number-of-neighbors-at-a-threshold-distance/", "score": 50, "isPremium": false },
+            { "id": "1976", "title": "1976. 到达目的地的方案数", "src": "https://leetcode.cn/problems/number-of-ways-to-arrive-at-destination/", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§6.3 图论综合应用",
+          "summary": "泛洪填充、图遍历综合",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "200", "title": "200. 岛屿数量", "src": "https://leetcode.cn/problems/number-of-islands/", "score": 50, "isPremium": false },
+            { "id": "133", "title": "133. 克隆图", "src": "https://leetcode.cn/problems/clone-graph/", "score": 50, "isPremium": false },
+            { "id": "207", "title": "207. 课程表", "src": "https://leetcode.cn/problems/course-schedule/", "score": 50, "isPremium": false },
+            { "id": "210", "title": "210. 课程表 II", "src": "https://leetcode.cn/problems/course-schedule-ii/", "score": 50, "isPremium": false },
+            { "id": "547", "title": "547. 省份数量", "src": "https://leetcode.cn/problems/number-of-provinces/", "score": 50, "isPremium": false },
+            { "id": "841", "title": "841. 钥匙和房间", "src": "https://leetcode.cn/problems/keys-and-rooms/", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "七、算法效率分析（Complexity Analysis）",
+      "summary": "各类算法时间与空间复杂度；不同算法求解同一问题的差异",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§7.1 算法复杂度对比",
+          "summary": "同一问题的不同复杂度解法",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "493", "title": "493. 翻转对", "src": "https://leetcode.cn/problems/reverse-pairs/", "score": 80, "isPremium": false },
+            { "id": "912", "title": "912. 排序数组", "src": "https://leetcode.cn/problems/sort-an-array/", "score": 50, "isPremium": false },
+            { "id": "215", "title": "215. 数组中的第K个最大元素", "src": "https://leetcode.cn/problems/kth-largest-element-in-an-array/", "score": 50, "isPremium": false },
+            { "id": "148", "title": "148. 排序链表", "src": "https://leetcode.cn/problems/sort-list/", "score": 50, "isPremium": false },
+            { "id": "704", "title": "704. 二分查找", "src": "https://leetcode.cn/problems/binary-search/", "score": 10, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "八、算法优化（Algorithm Optimization）",
+      "summary": "一般优化方法；数学公式辅助优化",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§8.1 数学公式辅助优化",
+          "summary": "利用数学公式降低复杂度",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "面试题 16.17", "title": "面试题 16.17. 连续数列", "src": "https://leetcode.cn/problems/contiguous-sequence-lcci/", "score": 10, "isPremium": false },
+            { "id": "53", "title": "53. 最大子数组和", "src": "https://leetcode.cn/problems/maximum-subarray/", "score": 50, "isPremium": false },
+            { "id": "169", "title": "169. 多数元素", "src": "https://leetcode.cn/problems/majority-element/", "score": 10, "isPremium": false },
+            { "id": "136", "title": "136. 只出现一次的数字", "src": "https://leetcode.cn/problems/single-number/", "score": 10, "isPremium": false },
+            { "id": "268", "title": "268. 丢失的数字", "src": "https://leetcode.cn/problems/missing-number/", "score": 10, "isPremium": false },
+            { "id": "位运算", "title": "位运算优化专题（不设具体题目）", "src": "https://leetcode.cn/problemset/", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    }
+  ]
+}
