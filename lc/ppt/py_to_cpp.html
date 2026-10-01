@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python → C++ 算法竞赛迁移课 · PPT 讲解</title>
+    <!-- Font Awesome for icons (optional but adds visual clarity) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
+            background: #1e1e2f;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+            min-height: 100vh;
+        }
+
+        /* 幻灯片容器 */
+        .ppt-container {
+            max-width: 1100px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        /* 每张幻灯片卡片 */
+        .slide {
+            background: #ffffff;
+            border-radius: 32px;
+            box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            padding: 32px 36px;
+            transition: transform 0.2s;
+            scroll-margin-top: 20px;
+            page-break-inside: avoid;
+        }
+
+        .slide-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            border-bottom: 3px solid #eaeef5;
+            padding-bottom: 14px;
+        }
+
+        .slide-number {
+            background: #2d3e6b;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            flex-shrink: 0;
+        }
+
+        .slide-title {
+            font-size: 1.9rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #0f1a2e;
+            line-height: 1.2;
+        }
+
+        .slide-subtitle {
+            color: #4a5b7a;
+            font-size: 1rem;
+            font-weight: 400;
+            margin-left: auto;
+            background: #eef2f8;
+            padding: 6px 16px;
+            border-radius: 40px;
+            white-space: nowrap;
+        }
+
+        /* 内容通用样式 */
+        p, li {
+            color: #1e293b;
+            line-height: 1.6;
+            font-size: 1.05rem;
+        }
+
+        .highlight {
+            background: #fef9c3;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #854d0e;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #1e3a8a;
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 3px 12px;
+            border-radius: 30px;
+            margin-right: 8px;
+        }
+
+        /* 表格风格 */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 18px 0 8px;
+            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.98rem;
+            background: white;
+        }
+
+        th {
+            background: #1e2b4a;
+            color: white;
+            font-weight: 600;
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+
+        td {
+            padding: 11px 16px;
+            border-bottom: 1px solid #e9eef4;
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        /* 代码块 */
+        code {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #b91c1c;
+            font-weight: 500;
+        }
+
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 18px 20px;
+            border-radius: 18px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 16px 0;
+            border-left: 5px solid #3b82f6;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            font-weight: 400;
+        }
+
+        /* 双列布局 (对比) */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 16px 0;
+        }
+
+        .col-card {
+            background: #f8fafc;
+            border-radius: 18px;
+            padding: 18px 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .col-card h4 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #0f1a2e;
+        }
+
+        .col-card.python h4 i { color: #3572A5; }
+        .col-card.cpp h4 i { color: #00599C; }
+
+        .arrow-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: #94a3b8;
+            font-weight: 300;
+        }
+
+        /* 映射行箭头样式 */
+        .mapping-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+
+        .mapping-item {
+            background: #eef2ff;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 500;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            color: #1e3a8a;
+        }
+
+        .mapping-arrow {
+            font-size: 1.4rem;
+            color: #64748b;
+        }
+
+        /* 列表 */
+        ul, ol {
+            padding-left: 24px;
+            margin: 10px 0;
+        }
+
+        li {
+            margin: 6px 0;
+        }
+
+        /* 标签云 */
+        .tag-cloud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 16px 0;
+        }
+
+        .tag {
+            background: #dbeafe;
+            color: #1e40af;
+            font-weight: 500;
+            font-size: 0.9rem;
+            padding: 6px 16px;
+            border-radius: 40px;
+            border: 1px solid #bfdbfe;
+        }
+
+        .tag.core {
+            background: #1e2b4a;
+            color: white;
+            border-color: #1e2b4a;
+        }
+
+        /* 代码内联强调 */
+        .inline-code {
+            background: #f1f5f9;
+            color: #b91c1c;
+            font-family: monospace;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        /* 卡片网格 */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .grid-item {
+            background: #f8fafc;
+            padding: 16px 18px;
+            border-radius: 18px;
+            border-left: 6px solid #3b82f6;
+        }
+
+        /* 页脚提示 */
+        .footnote {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 16px;
+            background: #f1f5f9;
+            padding: 12px 18px;
+            border-radius: 14px;
+            border-left: 4px solid #94a3b8;
+        }
+
+        /* 响应式 */
+        @media (max-width: 700px) {
+            .slide {
+                padding: 24px 18px;
+                border-radius: 24px;
+            }
+            .slide-title {
+                font-size: 1.5rem;
+            }
+            .slide-subtitle {
+                display: none;
+            }
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 打印 / PDF 模拟 */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .slide {
+                box-shadow: none;
+                border: 1px solid #ccc;
+                break-inside: avoid;
+                margin-bottom: 24px;
+            }
+        }
+
+        /* 浮动目录按钮 (纯装饰) */
+        .toc-badge {
+            display: inline-block;
+            background: #eef2f8;
+            color: #1e2b4a;
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="ppt-container">
+
+        <!-- 幻灯片 1：总原则 -->
+        <section class="slide" id="slide1">
+            <div class="slide-header">
+                <div class="slide-number">01</div>
+                <div class="slide-title">Python → C++，到底要转换什么？</div>
+                <div class="slide-subtitle">总原则</div>
+            </div>
+            <div style="font-size: 1.2rem; font-weight: 500; margin-bottom: 16px; color: #0f1a2e;">
+                <i class="fas fa-bullseye" style="color: #3b82f6; margin-right: 10px;"></i>
+                不是重新学算法，也不是系统学 C++，而是把 Python 算法思维映射到 C++ 高频工具上。
+            </div>
+            <div class="two-col">
+                <div class="col-card">
+                    <h4><i class="fas fa-check-circle" style="color: #22c55e;"></i> 推荐路线</h4>
+                    <div class="mapping-row" style="flex-direction: column; align-items: flex-start; gap: 6px;">
+                        <span class="tag core">语法映射</span>
+                        <span style="color: #64748b; font-size: 1.2rem;">↓</span>
+                        <span class="tag core">容器映射</span>
+                        <span style="color: #64748b; font-size: 1.2rem;">↓</span>
+                        <span class="tag core">算法库</span>
+                        <span style="color: #64748b; font-size: 1.2rem;">↓</span>
+                        <span class="tag core">语言机制</span>
+                        <span style="color: #64748b; font-size: 1.2rem;">↓</span>
+                        <span class="tag core">性能意识</span>
+                        <span style="color: #64748b; font-size: 1.2rem;">↓</span>
+                        <span class="tag core">代码模板</span>
+                    </div>
+                </div>
+                <div class="col-card" style="border-left: 5px solid #ef4444;">
+                    <h4><i class="fas fa-times-circle" style="color: #ef4444;"></i> 不推荐路线</h4>
+                    <div style="color: #475569; line-height: 2;">
+                        C++ 基础语法 → 面向对象 → 类/继承/模板 → STL → 算法
+                    </div>
+                    <div style="margin-top: 14px; color: #b91c1c; background: #fef2f2; padding: 10px 14px; border-radius: 12px; font-size: 0.95rem;">
+                        <i class="fas fa-exclamation-triangle"></i> 太慢，容易消耗耐心，且偏离算法竞赛目标。
+                    </div>
+                </div>
+            </div>
+            <div class="footnote">
+                <i class="fas fa-lightbulb"></i> 核心目标：看到算法题，能自然用 C++ 表达 Python 算法思想。
+            </div>
+        </section>
+
+        <!-- 幻灯片 2：总映射表 -->
+        <section class="slide" id="slide2">
+            <div class="slide-header">
+                <div class="slide-number">02</div>
+                <div class="slide-title">一张总表：Python → C++ 核心映射</div>
+                <div class="slide-subtitle">高频速查</div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>Python</th><th>C++</th><th>算法用途</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><code>list</code></td><td><code>vector</code></td><td>数组、动态数组</td></tr>
+                        <tr><td><code>dict</code></td><td><code>unordered_map</code></td><td>哈希表</td></tr>
+                        <tr><td><code>dict</code> 需有序</td><td><code>map</code></td><td>有序映射</td></tr>
+                        <tr><td><code>set</code></td><td><code>unordered_set</code></td><td>去重、判存在</td></tr>
+                        <tr><td><code>set</code> 需有序</td><td><code>set</code></td><td>有序集合</td></tr>
+                        <tr><td><code>deque</code></td><td><code>deque</code></td><td>BFS、滑动窗口</td></tr>
+                        <tr><td><code>queue</code></td><td><code>queue</code></td><td>BFS</td></tr>
+                        <tr><td><code>heapq</code></td><td><code>priority_queue</code></td><td>堆、Dijkstra</td></tr>
+                        <tr><td><code>tuple</code></td><td><code>pair</code> / <code>tuple</code></td><td>多值组合</td></tr>
+                        <tr><td><code>sort()</code></td><td><code>sort()</code></td><td>排序</td></tr>
+                        <tr><td><code>bisect_left</code></td><td><code>lower_bound</code></td><td>二分</td></tr>
+                        <tr><td><code>bisect_right</code></td><td><code>upper_bound</code></td><td>二分</td></tr>
+                        <tr><td><code>len(a)</code></td><td><code>a.size()</code></td><td>长度</td></tr>
+                        <tr><td><code>append(x)</code></td><td><code>push_back(x)</code></td><td>尾部插入</td></tr>
+                        <tr><td><code>pop()</code></td><td><code>pop_back()</code></td><td>尾部删除</td></tr>
+                        <tr><td><code>input()</code></td><td><code>cin</code></td><td>输入</td></tr>
+                        <tr><td><code>print()</code></td><td><code>cout</code></td><td>输出</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="footnote">
+                <i class="fas fa-map-signs"></i> 先建立映射直觉，再逐步深入细节。
+            </div>
+        </section>
+
+        <!-- 幻灯片 3：基础语法 + 函数 -->
+        <section class="slide" id="slide3">
+            <div class="slide-header">
+                <div class="slide-number">03</div>
+                <div class="slide-title">基础语法：变量 / 类型 / 函数</div>
+                <div class="slide-subtitle">只学高频</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card python">
+                    <h4><i class="fab fa-python"></i> Python</h4>
+                    <pre style="margin: 0; background: #1e2b4a;"><code>x = 10
+s = "hello"
+
+def dfs(u):
+    return ans
+
+for x in nums:
+    print(x)
+
+for u, v in edges:
+    ...</code></pre>
+                </div>
+                <div class="col-card cpp">
+                    <h4><i class="fab fa-cuttlefish"></i> C++</h4>
+                    <pre style="margin: 0; background: #1e2b4a;"><code>int x = 10;
+string s = "hello";
+
+void dfs(int u) {
+    // ...
+    return; // 或 int dfs
+}
+
+for (auto x : nums) {
+    cout &lt;&lt; x;
+}
+
+for (auto [u, v] : edges) {
+    // ...
+}</code></pre>
+                </div>
+            </div>
+            <div style="margin-top: 18px;">
+                <span class="badge">优先掌握类型</span>
+                <span class="tag">int</span>
+                <span class="tag">long long</span>
+                <span class="tag">double</span>
+                <span class="tag">char</span>
+                <span class="tag">bool</span>
+                <span class="tag">string</span>
+                <span class="tag">auto</span>
+            </div>
+            <div class="footnote" style="margin-top: 16px;">
+                <i class="fas fa-info-circle"></i> 现代 C++ 可用 <code>auto</code> 让编译器推导类型，减少心智负担。
+            </div>
+        </section>
+
+        <!-- 幻灯片 4：容器映射 (vector / map / set) -->
+        <section class="slide" id="slide4">
+            <div class="slide-header">
+                <div class="slide-number">04</div>
+                <div class="slide-title">核心容器：vector / map / set</div>
+                <div class="slide-subtitle">STL 基石</div>
+            </div>
+            <div class="grid-3">
+                <!-- vector -->
+                <div class="grid-item" style="border-left-color: #3b82f6;">
+                    <h4 style="font-size: 1.2rem; margin-bottom: 8px;">📦 list → vector</h4>
+                    <div style="font-size: 0.92rem;">
+                        <code>a.append(4)</code> → <code>a.push_back(4)</code><br>
+                        <code>a.pop()</code> → <code>a.pop_back()</code><br>
+                        <code>len(a)</code> → <code>a.size()</code><br>
+                        <code>sort(a)</code> → <code>sort(a.begin(), a.end())</code>
+                    </div>
+                    <div style="margin-top: 10px; background: #eef2ff; padding: 8px; border-radius: 12px; font-size: 0.88rem;">
+                        <i class="fas fa-key"></i> <code>begin(), end()</code> 表示整个数组
+                    </div>
+                </div>
+                <!-- map -->
+                <div class="grid-item" style="border-left-color: #8b5cf6;">
+                    <h4 style="font-size: 1.2rem; margin-bottom: 8px;">🗺️ dict → map / unordered_map</h4>
+                    <div style="font-size: 0.92rem;">
+                        <code>cnt = {}</code> → <code>unordered_map&lt;int,int&gt; cnt;</code><br>
+                        <code>cnt[x] += 1</code> → <code>cnt[x]++;</code><br>
+                        <code>if x in cnt</code> → <code>if (cnt.count(x))</code><br>
+                        遍历 → <code>for (auto [k,v] : cnt)</code>
+                    </div>
+                    <div style="margin-top: 10px; background: #f3e8ff; padding: 8px; border-radius: 12px; font-size: 0.88rem;">
+                        <i class="fas fa-balance-scale"></i> 只查哈希 → unordered_map；有序 → map
+                    </div>
+                </div>
+                <!-- set -->
+                <div class="grid-item" style="border-left-color: #ec4899;">
+                    <h4 style="font-size: 1.2rem; margin-bottom: 8px;">🔷 set → set / unordered_set</h4>
+                    <div style="font-size: 0.92rem;">
+                        <code>s = set()</code> → <code>unordered_set&lt;int&gt; s;</code><br>
+                        <code>s.add(x)</code> → <code>s.insert(x);</code><br>
+                        <code>if x in s</code> → <code>if (s.count(x))</code>
+                    </div>
+                    <div style="margin-top: 10px; background: #fce7f3; padding: 8px; border-radius: 12px; font-size: 0.88rem;">
+                        <i class="fas fa-sort"></i> 只关心有没有 → unordered_set；有序 → set
+                    </div>
+                </div>
+            </div>
+            <div class="footnote" style="margin-top: 8px;">
+                <i class="fas fa-arrow-right"></i> 选择原则：<strong>需要顺序用有序版本，只查存在用无序版本（平均 O(1)）。</strong>
+            </div>
+        </section>
+
+        <!-- 幻灯片 5：heapq + tuple / pair -->
+        <section class="slide" id="slide5">
+            <div class="slide-header">
+                <div class="slide-number">05</div>
+                <div class="slide-title">heapq → priority_queue & tuple → pair</div>
+                <div class="slide-subtitle">易错点 + 语法糖</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card">
+                    <h4><i class="fas fa-layer-group" style="color: #f59e0b;"></i> 堆：默认方向相反</h4>
+                    <div style="display: flex; justify-content: space-between; margin: 12px 0;">
+                        <div style="text-align: center;">
+                            <div style="font-weight: 700; color: #3572A5;">Python heapq</div>
+                            <div style="font-size: 1.6rem;">小根堆</div>
+                            <div style="background: #e2e8f0; padding: 6px 12px; border-radius: 20px; margin-top: 6px;">1 2 3 4</div>
+                        </div>
+                        <div style="font-size: 2rem; color: #94a3b8;">⇄</div>
+                        <div style="text-align: center;">
+                            <div style="font-weight: 700; color: #00599C;">C++ priority_queue</div>
+                            <div style="font-size: 1.6rem;">大根堆</div>
+                            <div style="background: #e2e8f0; padding: 6px 12px; border-radius: 20px; margin-top: 6px;">4 3 2 1</div>
+                        </div>
+                    </div>
+                    <pre style="margin: 12px 0 0; background: #0f172a;"><code>// C++ 小根堆
+priority_queue&lt;int, vector&lt;int&gt;, greater&lt;int&gt;&gt; pq;</code></pre>
+                    <div style="font-size: 0.9rem; color: #b45309; background: #fffbeb; padding: 8px; border-radius: 12px; margin-top: 10px;">
+                        <i class="fas fa-exclamation-circle"></i> Dijkstra、Top K 必看！
+                    </div>
+                </div>
+                <div class="col-card">
+                    <h4><i class="fas fa-cube" style="color: #8b5cf6;"></i> tuple → pair / structured binding</h4>
+                    <div class="mapping-row">
+                        <span class="mapping-item">Python: (1, 2)</span>
+                        <span class="mapping-arrow">→</span>
+                        <span class="mapping-item">pair&lt;int,int&gt; x = {1,2};</span>
+                    </div>
+                    <div class="mapping-row">
+                        <span class="mapping-item">u, v = edge</span>
+                        <span class="mapping-arrow">→</span>
+                        <span class="mapping-item">auto [u, v] = edge;</span>
+                    </div>
+                    <div class="mapping-row">
+                        <span class="mapping-item">for u, v in edges:</span>
+                        <span class="mapping-arrow">→</span>
+                        <span class="mapping-item">for (auto [u,v] : edges)</span>
+                    </div>
+                    <div style="background: #f1f5f9; padding: 12px; border-radius: 14px; margin-top: 12px; font-size: 0.92rem;">
+                        <i class="fas fa-code-branch"></i> 图论常见：<br>
+                        <code>vector&lt;pair&lt;int,int&gt;&gt; edges;</code><br>
+                        <code>vector&lt;vector&lt;pair&lt;int,int&gt;&gt;&gt; graph;</code>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 6：算法库 sort / lower_bound -->
+        <section class="slide" id="slide6">
+            <div class="slide-header">
+                <div class="slide-number">06</div>
+                <div class="slide-title">算法库：sort / lower_bound</div>
+                <div class="slide-subtitle">algorithm 头文件</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card python">
+                    <h4><i class="fab fa-python"></i> Python</h4>
+                    <pre style="margin: 0; background: #1e2b4a;"><code>a.sort()
+
+a.sort(key=lambda x: x[1])
+
+bisect_left(a, x)
+bisect_right(a, x)</code></pre>
+                </div>
+                <div class="col-card cpp">
+                    <h4><i class="fab fa-cuttlefish"></i> C++</h4>
+                    <pre style="margin: 0; background: #1e2b4a;"><code>sort(a.begin(), a.end());
+
+sort(a.begin(), a.end(),
+     [](const auto& x, const auto& y) {
+         return x.second &lt; y.second;
+     });
+
+lower_bound(a.begin(), a.end(), x)
+upper_bound(a.begin(), a.end(), x)</code></pre>
+                </div>
+            </div>
+            <div style="margin-top: 18px; background: #f1f5f9; padding: 14px 18px; border-radius: 16px;">
+                <i class="fas fa-arrow-right" style="color: #3b82f6;"></i>
+                <strong>迭代器转下标：</strong>
+                <code style="background: #0f172a; color: #e2e8f0;">int pos = lower_bound(a.begin(), a.end(), x) - a.begin();</code>
+            </div>
+            <div class="footnote">
+                <i class="fas fa-lightbulb"></i> lambda 就是“告诉 sort 两个元素怎么比较”，不要怕。
+            </div>
+        </section>
+
+        <!-- 幻灯片 7：C++ 特有重点 (引用 / 溢出 / IO) -->
+        <section class="slide" id="slide7">
+            <div class="slide-header">
+                <div class="slide-number">07</div>
+                <div class="slide-title">C++ 特有重点：引用 / 溢出 / 快速 IO</div>
+                <div class="slide-subtitle">必须补的差异</div>
+            </div>
+            <div class="grid-3">
+                <div class="grid-item" style="border-left-color: #3b82f6;">
+                    <h4>🔗 引用 &</h4>
+                    <div style="font-size: 0.92rem;">
+                        Python 默认传引用，C++ 默认传值。<br>
+                        <code>void add(vector&lt;int&gt;& a)</code> 修改原对象<br>
+                        <code>void solve(const vector&lt;int&gt;& a)</code> 只读不复制
+                    </div>
+                </div>
+                <div class="grid-item" style="border-left-color: #ef4444;">
+                    <h4>⚠️ 整数溢出</h4>
+                    <div style="font-size: 0.92rem;">
+                        <code>int</code> ≈ 2×10⁹<br>
+                        <code>long long</code> ≈ 9×10¹⁸<br>
+                        安全乘法：<code>1LL * a * b</code>
+                    </div>
+                </div>
+                <div class="grid-item" style="border-left-color: #22c55e;">
+                    <h4>⚡ 快速 IO</h4>
+                    <div style="font-size: 0.92rem;">
+                        <code>ios::sync_with_stdio(false);</code><br>
+                        <code>cin.tie(nullptr);</code><br>
+                        加速 cin/cout
+                    </div>
+                </div>
+            </div>
+            <div class="two-col" style="margin-top: 18px;">
+                <div class="col-card" style="background: #fef2f2;">
+                    <h4 style="color: #b91c1c;">❌ 危险写法</h4>
+                    <pre style="margin: 0; background: #1e2b4a;"><code>int a = 100000, b = 100000;
+long long ans = a * b; // 可能溢出</code></pre>
+                </div>
+                <div class="col-card" style="background: #f0fdf4;">
+                    <h4 style="color: #166534;">✅ 安全写法</h4>
+                    <pre style="margin: 0; background: #1e2b4a;"><code>long long ans = 1LL * a * b;</code></pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 8：性能意识 + 同题双写 -->
+        <section class="slide" id="slide8">
+            <div class="slide-header">
+                <div class="slide-number">08</div>
+                <div class="slide-title">性能意识 & 同题双写</div>
+                <div class="slide-subtitle">最有效学习法</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-tachometer-alt"></i> 性能意识</h4>
+                    <ul style="margin-top: 8px;">
+                        <li>同样 O(N²)，C++ 常数更小</li>
+                        <li>但复杂度仍是第一决定因素</li>
+                        <li>C++ 优化常数，不能改变复杂度</li>
+                    </ul>
+                    <div style="margin-top: 12px; background: #dbeafe; padding: 10px; border-radius: 14px; font-size: 0.92rem;">
+                        <i class="fas fa-check-circle" style="color: #2563eb;"></i> 算法复杂度第一，C++ 加速是辅助。
+                    </div>
+                </div>
+                <div class="col-card" style="background: #f5f3ff;">
+                    <h4><i class="fas fa-sync-alt"></i> 同题双写流程</h4>
+                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.95rem;">
+                        <span>1. Python 已经会的题</span>
+                        <span style="color: #64748b;">↓</span>
+                        <span>2. 用 C++ 重写</span>
+                        <span style="color: #64748b;">↓</span>
+                        <span>3. 遇到不会的语法，只学这个语法</span>
+                        <span style="color: #64748b;">↓</span>
+                        <span>4. 继续做题</span>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 20px;">
+                <span class="badge">Two Sum 示例</span>
+            </div>
+            <div class="two-col" style="margin-top: 8px;">
+                <div class="col-card python" style="background: #f8fafc;">
+                    <h4>Python</h4>
+                    <pre style="margin: 0; background: #0f172a;"><code>def two_sum(nums, target):
+    pos = {}
+    for i, x in enumerate(nums):
+        if target - x in pos:
+            return [pos[target - x], i]
+        pos[x] = i</code></pre>
+                </div>
+                <div class="col-card cpp" style="background: #f8fafc;">
+                    <h4>C++</h4>
+                    <pre style="margin: 0; background: #0f172a;"><code>vector&lt;int&gt; twoSum(vector&lt;int&gt;& nums, int target) {
+    unordered_map&lt;int, int&gt; pos;
+    for (int i = 0; i &lt; nums.size(); i++) {
+        int x = nums[i];
+        if (pos.count(target - x)) {
+            return {pos[target - x], i};
+        }
+        pos[x] = i;
+    }
+    return {};
+}</code></pre>
+                </div>
+            </div>
+            <div class="footnote" style="margin-top: 8px;">
+                <i class="fas fa-lightbulb"></i> 算法思想不变，变的只是容器、循环、类型、语法。
+            </div>
+        </section>
+
+        <!-- 幻灯片 9：刷题路线 + 最小子集 -->
+        <section class="slide" id="slide9">
+            <div class="slide-header">
+                <div class="slide-number">09</div>
+                <div class="slide-title">刷题路线 & C++ 算法最小子集</div>
+                <div class="slide-subtitle">按图索骥</div>
+            </div>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1.4; min-width: 300px;">
+                    <h4 style="margin-bottom: 12px;">📋 推荐刷题顺序</h4>
+                    <div class="table-wrapper" style="margin: 0;">
+                        <table>
+                            <thead><tr><th>阶段</th><th>题目</th><th>重点</th></tr></thead>
+                            <tbody>
+                                <tr><td>基础映射</td><td>Two Sum</td><td>dict → unordered_map</td></tr>
+                                <tr><td>基础映射</td><td>Contains Duplicate</td><td>set → unordered_set</td></tr>
+                                <tr><td>基础映射</td><td>Valid Anagram</td><td>string + map/array</td></tr>
+                                <tr><td>vector+sort</td><td>Merge Sorted Array</td><td>双指针</td></tr>
+                                <tr><td>vector+sort</td><td>Sort Colors</td><td>swap</td></tr>
+                                <tr><td>STL</td><td>Binary Search</td><td>lower_bound</td></tr>
+                                <tr><td>STL</td><td>Kth Largest Element</td><td>priority_queue</td></tr>
+                                <tr><td>STL</td><td>Top K Frequent Elements</td><td>map + heap</td></tr>
+                                <tr><td>DFS/BFS</td><td>Number of Islands</td><td>vector&lt;vector&gt;</td></tr>
+                                <tr><td>DFS/BFS</td><td>Rotting Oranges</td><td>queue</td></tr>
+                                <tr><td>二分</td><td>Search Insert Position</td><td>lower_bound</td></tr>
+                                <tr><td>堆</td><td>Kth Largest in a Stream</td><td>priority_queue</td></tr>
+                                <tr><td>图最短路</td><td>Network Delay Time</td><td>pair + heap</td></tr>
+                                <tr><td>图最短路</td><td>Path With Minimum Effort</td><td>Dijkstra</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div style="flex: 1; min-width: 240px;">
+                    <h4 style="margin-bottom: 12px;">🧰 C++ 算法最小子集</h4>
+                    <div style="background: #1e2b4a; color: white; padding: 18px 20px; border-radius: 24px; font-family: monospace; font-size: 0.9rem; line-height: 1.8;">
+                        <div>├── 基础: int, long long, bool, string, auto</div>
+                        <div>├── 容器: vector, string, pair, stack, queue,</div>
+                        <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;deque, priority_queue, set,</div>
+                        <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;unordered_set, map, unordered_map</div>
+                        <div>├── 算法: sort, reverse, min/max,</div>
+                        <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;lower_bound, upper_bound, binary_search</div>
+                        <div>├── 语言: function, recursion, reference &,</div>
+                        <div>│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;const &, lambda, structured binding</div>
+                        <div>└── 竞赛: 快速 IO, 溢出, 复杂度, STL 复杂度</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 10：总结 + 5分钟PPT结构 -->
+        <section class="slide" id="slide10">
+            <div class="slide-header">
+                <div class="slide-number">10</div>
+                <div class="slide-title">最终目标 & 5 分钟 PPT 结构</div>
+                <div class="slide-subtitle">收尾</div>
+            </div>
+            <div style="background: #0f172a; color: white; padding: 24px 28px; border-radius: 28px; margin-bottom: 24px;">
+                <div style="font-size: 1.3rem; font-weight: 600; margin-bottom: 12px;">🎯 最终目标</div>
+                <div style="font-size: 1.1rem; color: #cbd5e1; margin-bottom: 8px;">不是“我学会了 C++”，而是：</div>
+                <div style="font-size: 1.3rem; font-weight: 700; color: #93c5fd; border-left: 6px solid #3b82f6; padding-left: 18px;">
+                    看到一道算法题，我可以自然地用 C++ 把 Python 算法思想表达出来。
+                </div>
+            </div>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1;">
+                    <h4 style="margin-bottom: 10px;">📽️ 5 分钟 PPT 压缩版</h4>
+                    <div style="display: flex; flex-direction: column; gap: 6px; background: #f1f5f9; padding: 18px; border-radius: 20px;">
+                        <span><span class="toc-badge">01</span> Python → C++，到底要转换什么？</span>
+                        <span><span class="toc-badge">02</span> 基础语法：变量 / 类型 / 函数</span>
+                        <span><span class="toc-badge">03</span> 核心容器：list → vector</span>
+                        <span><span class="toc-badge">04</span> dict / set / heapq → STL</span>
+                        <span><span class="toc-badge">05</span> 算法库：sort / lower_bound</span>
+                        <span><span class="toc-badge">06</span> C++ 特有重点：引用 / const / long long</span>
+                        <span><span class="toc-badge">07</span> 同题双写：Python vs C++</span>
+                        <span><span class="toc-badge">08</span> 最终路线：STL + 算法 + 性能意识</span>
+                    </div>
+                </div>
+                <div style="flex: 1; background: #f8fafc; padding: 18px; border-radius: 20px;">
+                    <h4>🔁 最短路径</h4>
+                    <div style="display: flex; flex-direction: column; gap: 4px; font-weight: 500;">
+                        <span>Python 算法</span>
+                        <span style="color: #64748b;">↓</span>
+                        <span>高频语法映射</span>
+                        <span style="color: #64748b;">↓</span>
+                        <span>STL 容器</span>
+                        <span style="color: #64748b;">↓</span>
+                        <span>algorithm</span>
+                        <span style="color: #64748b;">↓</span>
+                        <span>引用 / const / long long</span>
+                        <span style="color: #64748b;">↓</span>
+                        <span>性能意识</span>
+                        <span style="color: #64748b;">↓</span>
+                        <span style="font-weight: 700; color: #1e3a8a;">C++ 算法模板</span>
+                    </div>
+                </div>
+            </div>
+            <div class="footnote" style="margin-top: 20px; text-align: center;">
+                <i class="fas fa-graduation-cap"></i> 不要“学完 C++ 再做算法”，而是“边做算法边学 C++”。
+            </div>
+        </section>
+
+    </div>
+</body>
+</html>

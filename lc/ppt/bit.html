@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>树状数组 Fenwick Tree · PPT 讲解</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
+            background: #1a1e2c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 28px 16px;
+            min-height: 100vh;
+        }
+
+        .ppt-container {
+            max-width: 1080px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .slide {
+            background: #ffffff;
+            border-radius: 32px;
+            box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            padding: 32px 36px;
+            page-break-inside: avoid;
+        }
+
+        .slide-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 22px;
+            border-bottom: 3px solid #eef2f8;
+            padding-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .slide-number {
+            background: #1e2b4a;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            flex-shrink: 0;
+        }
+
+        .slide-title {
+            font-size: 1.85rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #0b1629;
+            line-height: 1.2;
+        }
+
+        .slide-subtitle {
+            color: #4a5b7a;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-left: auto;
+            background: #eef2f8;
+            padding: 6px 18px;
+            border-radius: 40px;
+            white-space: nowrap;
+        }
+
+        p, li {
+            color: #1e293b;
+            line-height: 1.65;
+            font-size: 1.02rem;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #b91c1c;
+            font-weight: 500;
+        }
+
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 16px 20px;
+            border-radius: 18px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.55;
+            margin: 14px 0;
+            border-left: 5px solid #3b82f6;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            font-weight: 400;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 16px 0;
+        }
+
+        .col-card {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 18px 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .col-card h4 {
+            font-size: 1.05rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #0b1629;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .grid-item {
+            background: #f8fafc;
+            padding: 16px 18px;
+            border-radius: 18px;
+            border-left: 6px solid #3b82f6;
+        }
+
+        .grid-item h4 {
+            font-size: 1.02rem;
+            margin-bottom: 8px;
+            color: #0b1629;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 16px 0 8px;
+            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.93rem;
+            background: white;
+        }
+
+        th {
+            background: #1e2b4a;
+            color: white;
+            font-weight: 600;
+            padding: 10px 14px;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+
+        td {
+            padding: 9px 14px;
+            border-bottom: 1px solid #e9eef4;
+            vertical-align: top;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #f8fafc; }
+
+        td a, .col-card a, .grid-item a, .info-box a, .slide a {
+            color: #1d4ed8;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            transition: border-color 0.15s, color 0.15s;
+        }
+
+        td a:hover, .col-card a:hover, .grid-item a:hover, .info-box a:hover, .slide a:hover {
+            color: #1e3a8a;
+            border-bottom-color: #1d4ed8;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 5px 14px;
+            border-radius: 40px;
+            border: 1px solid #bfdbfe;
+            margin: 3px 4px 3px 0;
+        }
+
+        .tag.core {
+            background: #1e2b4a;
+            color: white;
+            border-color: #1e2b4a;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #1e3a8a;
+            font-weight: 600;
+            font-size: 0.82rem;
+            padding: 4px 14px;
+            border-radius: 30px;
+            margin-right: 8px;
+        }
+
+        .formula-box {
+            background: #f1f5f9;
+            padding: 16px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #8b5cf6;
+            margin: 14px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.92rem;
+            color: #0f172a;
+            overflow-x: auto;
+        }
+
+        .formula-box strong { color: #6d28d9; }
+
+        .warning-box {
+            background: #fef2f2;
+            padding: 14px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #ef4444;
+            margin: 14px 0;
+            color: #991b1b;
+            font-size: 0.98rem;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            padding: 14px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #3b82f6;
+            margin: 14px 0;
+            color: #1e3a8a;
+            font-size: 0.98rem;
+        }
+
+        .success-box {
+            background: #f0fdf4;
+            padding: 14px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #22c55e;
+            margin: 14px 0;
+            color: #166534;
+            font-size: 0.98rem;
+        }
+
+        .flow-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.55;
+            color: #1e293b;
+            background: #f8fafc;
+            padding: 16px 20px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .highlight {
+            background: #fef9c3;
+            padding: 1px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #854d0e;
+        }
+
+        .toc-badge {
+            display: inline-block;
+            background: #eef2f8;
+            color: #1e2b4a;
+            font-size: 0.78rem;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 700px) {
+            .slide { padding: 22px 16px; border-radius: 24px; }
+            .slide-title { font-size: 1.4rem; }
+            .slide-subtitle { display: none; }
+            .two-col, .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .slide { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; margin-bottom: 24px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ppt-container">
+
+        <!-- 幻灯片 1：总原则 + 起点 -->
+        <section class="slide" id="slide1">
+            <div class="slide-header">
+                <div class="slide-number">01</div>
+                <div class="slide-title">起点：动态区间求和</div>
+                <div class="slide-subtitle">总原则</div>
+            </div>
+            <div style="font-size: 1.15rem; font-weight: 500; margin-bottom: 16px; color: #0b1629;">
+                <i class="fas fa-bullseye" style="color: #3b82f6; margin-right: 10px;"></i>
+                不要从代码开始，而是从一个问题开始：为什么明明只是“求区间和”，还需要专门的数据结构？
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-list-ol"></i> 问题设定</h4>
+                    <div style="font-size: 0.95rem; line-height: 1.8;">
+                        <code>A = [2, 1, 3, 5, 4, 7]</code><br><br>
+                        操作①：修改某个位置 <code>A[3] = 10</code><br>
+                        操作②：查询一段区间 <code>sum(2, 5)</code>
+                    </div>
+                </div>
+                <div class="col-card" style="background: #fef2f2;">
+                    <h4><i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> 暴力做法</h4>
+                    <div style="font-size: 0.95rem; line-height: 1.8;">
+                        <code>sum(l, r)</code> → 从 l 到 r 一个一个加<br>
+                        复杂度：<code>O(n)</code><br><br>
+                        如果有 <code>10^5</code> 次查询：<br>
+                        <code>O(nq) ≈ 10^10</code> → <strong>显然不行</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="info-box">
+                <i class="fas fa-lightbulb"></i> 一条主线：<strong>前缀和 → 修改困难 → 树状数组 → 修改 + 查询都做到 O(log n)</strong>
+            </div>
+        </section>
+
+        <!-- 幻灯片 2：前缀和 -->
+        <section class="slide" id="slide2">
+            <div class="slide-header">
+                <div class="slide-number">02</div>
+                <div class="slide-title">第一反应：前缀和</div>
+                <div class="slide-subtitle">查询 O(1)，修改 O(n)</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-check-circle" style="color: #22c55e;"></i> 构造与查询</h4>
+                    <div class="flow-text" style="font-size: 0.85rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.6;">
+A：  2   1   3   5   4   7
+P：  0   2   3   6   11  15  22
+
+P[i] = A[1] + A[2] + ... + A[i]
+
+sum(l, r) = P[r] - P[l-1]
+                    </div>
+                    <div class="success-box" style="margin-top: 10px;">
+                        <i class="fas fa-check-circle"></i> 查询复杂度：<strong>O(1)</strong>
+                    </div>
+                </div>
+                <div class="col-card" style="background: #fef2f2;">
+                    <h4><i class="fas fa-times-circle" style="color: #ef4444;"></i> 致命问题：修改</h4>
+                    <div style="font-size: 0.95rem; line-height: 1.8;">
+                        <code>A[3] = 100</code><br><br>
+                        则 <code>P[3], P[4], P[5], P[6], ...</code> 全部受影响。
+                    </div>
+                    <div class="warning-box" style="margin-top: 10px;">
+                        <i class="fas fa-exclamation-triangle"></i> 修改复杂度：<strong>O(n)</strong>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 3：树状数组解决的核心问题 -->
+        <section class="slide" id="slide3">
+            <div class="slide-header">
+                <div class="slide-number">03</div>
+                <div class="slide-title">树状数组解决的核心问题</div>
+                <div class="slide-subtitle">O(log n) / O(log n)</div>
+            </div>
+            <div class="flow-text" style="font-size: 0.9rem; white-space: pre; line-height: 1.6; text-align: center;">
+                 动态数组
+                    │
+          ┌─────────┴─────────┐
+          ↓                   ↓
+        修改                  查询
+          │                   │
+       很快                   很快
+          │                   │
+          └─────────┬─────────┘
+                    ↓
+              树状数组
+                    ↓
+              O(log n) / O(log n)
+            </div>
+            <div class="info-box" style="margin-top: 18px;">
+                <i class="fas fa-key"></i> 核心能力：<strong>单点修改 + 前缀查询</strong> → 进一步得到 <strong>单点修改 + 区间查询</strong>
+            </div>
+        </section>
+
+        <!-- 幻灯片 4：树状数组到底是什么 -->
+        <section class="slide" id="slide4">
+            <div class="slide-header">
+                <div class="slide-number">04</div>
+                <div class="slide-title">树状数组到底是什么？</div>
+                <div class="slide-subtitle">每个位置存一段区间和</div>
+            </div>
+            <div style="font-size: 1.05rem; margin-bottom: 12px; color: #0b1629;">
+                <i class="fas fa-info-circle" style="color: #3b82f6;"></i>
+                数组里的每一个位置，并不是只保存一个元素，而是保存一个特定区间的和。
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #f8fafc;">
+                    <h4><i class="fas fa-th"></i> 各节点负责区间</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.6;">
+tree[1] = A[1]
+tree[2] = A[1..2]
+tree[3] = A[3]
+tree[4] = A[1..4]
+tree[5] = A[5]
+tree[6] = A[5..6]
+tree[7] = A[7]
+tree[8] = A[1..8]
+                    </div>
+                </div>
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-sitemap"></i> 树形结构</h4>
+                    <div class="flow-text" style="font-size: 0.78rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+                     [1..8]
+                       │
+             ┌─────────┴─────────┐
+             │                   │
+          [1..4]              [5..8]
+             │                   │
+         [1..2] [3..4]      [5..6] [7..8]
+            │     │             │     │
+          [1] [2] [3] [4]    [5] [6] [7] [8]
+                    </div>
+                </div>
+            </div>
+            <div class="success-box" style="margin-top: 12px;">
+                <i class="fas fa-lightbulb"></i> 真正的 Fenwick Tree 把这棵树 <strong>压缩成一个数组</strong>。
+            </div>
+        </section>
+
+        <!-- 幻灯片 5：lowbit -->
+        <section class="slide" id="slide5">
+            <div class="slide-header">
+                <div class="slide-number">05</div>
+                <div class="slide-title">最重要的规律：lowbit</div>
+                <div class="slide-subtitle">核心数学</div>
+            </div>
+            <div class="formula-box" style="text-align: center; font-size: 1.3rem; border-left-color: #f59e0b;">
+                lowbit(x) = x &amp; (-x)
+            </div>
+            <div style="font-size: 1rem; margin: 12px 0; color: #1e293b;">
+                <i class="fas fa-arrow-right" style="color: #3b82f6;"></i>
+                含义：<strong>x 的二进制中，最低位那个 1 所代表的数值。</strong>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-calculator"></i> 示例</h4>
+                    <div style="font-size: 0.95rem; line-height: 1.8;">
+                        <code>x = 6 = 110</code> → <code>lowbit(6) = 2</code><br>
+                        <code>x = 8 = 1000</code> → <code>lowbit(8) = 8</code><br>
+                        <code>x = 12 = 1100</code> → <code>lowbit(12) = 4</code>
+                    </div>
+                </div>
+                <div class="col-card" style="background: #f8fafc;">
+                    <h4><i class="fas fa-table"></i> lowbit 对照表</h4>
+                    <table style="font-size: 0.88rem;">
+                        <tr><td><strong>x</strong></td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td><td>7</td><td>8</td></tr>
+                        <tr><td><strong>lowbit(x)</strong></td><td>1</td><td>2</td><td>1</td><td>4</td><td>1</td><td>2</td><td>1</td><td>8</td></tr>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 6：lowbit 表示区间长度 -->
+        <section class="slide" id="slide6">
+            <div class="slide-header">
+                <div class="slide-number">06</div>
+                <div class="slide-title">lowbit 表示“区间长度”</div>
+                <div class="slide-subtitle">统一公式</div>
+            </div>
+            <div style="font-size: 1rem; margin-bottom: 14px; color: #1e293b;">
+                对于 <code>tree[i]</code>，它负责的区间长度 = <code>lowbit(i)</code>。
+            </div>
+            <div class="formula-box" style="text-align: center; font-size: 1.1rem; border-left-color: #8b5cf6;">
+                <strong>tree[i] = A[i - lowbit(i) + 1 ... i]</strong>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>节点</th><th>lowbit</th><th>负责区间</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>tree[1]</code></td><td>1</td><td>A[1]</td></tr>
+                        <tr><td><code>tree[2]</code></td><td>2</td><td>A[1..2]</td></tr>
+                        <tr><td><code>tree[6]</code></td><td>2</td><td>A[5..6]</td></tr>
+                        <tr><td><code>tree[8]</code></td><td>8</td><td>A[1..8]</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 幻灯片 7：前缀查询 -->
+        <section class="slide" id="slide7">
+            <div class="slide-header">
+                <div class="slide-number">07</div>
+                <div class="slide-title">前缀查询：i -= lowbit(i)</div>
+                <div class="slide-subtitle">O(log n)</div>
+            </div>
+            <div style="font-size: 1rem; margin-bottom: 12px; color: #1e293b;">
+                求 <code>sum(1, 7)</code>：
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-route"></i> 路径</h4>
+                    <div class="flow-text" style="font-size: 0.85rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.7;">
+tree[7] 负责 [7]      7 - lowbit(7) = 6
+tree[6] 负责 [5,6]    6 - lowbit(6) = 4
+tree[4] 负责 [1,4]    4 - lowbit(4) = 0
+                    </div>
+                </div>
+                <div class="col-card" style="background: #f0fdf4;">
+                    <h4><i class="fas fa-th"></i> 区间覆盖</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.6;">
+[1 2 3 4][5 6][7]
+    ↑       ↑    ↑
+  tree4   tree6 tree7
+
+路径：7 → 6 → 4 → 0
+                    </div>
+                </div>
+            </div>
+            <div class="success-box" style="margin-top: 12px;">
+                <i class="fas fa-key"></i> 每次 <code>i -= lowbit(i)</code>，复杂度 <strong>O(log n)</strong>
+            </div>
+        </section>
+
+        <!-- 幻灯片 8：单点修改 -->
+        <section class="slide" id="slide8">
+            <div class="slide-header">
+                <div class="slide-number">08</div>
+                <div class="slide-title">单点修改：i += lowbit(i)</div>
+                <div class="slide-subtitle">O(log n)</div>
+            </div>
+            <div style="font-size: 1rem; margin-bottom: 12px; color: #1e293b;">
+                假设 <code>A[3] += 5</code>，所有包含位置 3 的节点都要更新：
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-route"></i> 更新路径</h4>
+                    <div class="flow-text" style="font-size: 0.85rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.7;">
+3  →  4  →  8  →  16 ...
+                    </div>
+                    <div style="font-size: 0.92rem; margin-top: 8px;">
+                        每次 <code>i += lowbit(i)</code>
+                    </div>
+                </div>
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-code"></i> 更新操作</h4>
+                    <div class="flow-text" style="font-size: 0.85rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.6;">
+update(3, +5)
+
+tree[3] += 5
+tree[4] += 5
+tree[8] += 5
+...
+                    </div>
+                </div>
+            </div>
+            <div class="formula-box" style="text-align: center; border-left-color: #f59e0b;">
+                <strong>修改：i += lowbit(i)</strong> &nbsp;&nbsp;|&nbsp;&nbsp; <strong>查询：i -= lowbit(i)</strong>
+            </div>
+        </section>
+
+        <!-- 幻灯片 9：两个核心操作 + 区间查询 -->
+        <section class="slide" id="slide9">
+            <div class="slide-header">
+                <div class="slide-number">09</div>
+                <div class="slide-title">两个核心操作 & 区间查询</div>
+                <div class="slide-subtitle">模板与组合</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff; border-left: 5px solid #3b82f6;">
+                    <h4><i class="fas fa-plus-circle"></i> ① 单点修改 add(i, delta)</h4>
+                    <pre style="margin: 8px 0; font-size: 0.82rem;"><code>while i <= n:
+    tree[i] += delta
+    i += lowbit(i)</code></pre>
+                    <div style="font-size: 0.9rem;">复杂度：<strong>O(log n)</strong></div>
+                </div>
+                <div class="col-card" style="background: #f0fdf4; border-left: 5px solid #22c55e;">
+                    <h4><i class="fas fa-search"></i> ② 前缀查询 sum(i)</h4>
+                    <pre style="margin: 8px 0; font-size: 0.82rem;"><code>ans = 0
+while i > 0:
+    ans += tree[i]
+    i -= lowbit(i)</code></pre>
+                    <div style="font-size: 0.9rem;">复杂度：<strong>O(log n)</strong></div>
+                </div>
+            </div>
+            <div class="formula-box" style="text-align: center; margin-top: 16px; border-left-color: #8b5cf6;">
+                <strong>sum(l, r) = prefix(r) - prefix(l-1)</strong>
+            </div>
+            <div class="info-box" style="text-align: center;">
+                <i class="fas fa-check-circle"></i> 单点修改 O(log n) + 区间查询 O(log n) —— 这就是树状数组最核心的价值。
+            </div>
+        </section>
+
+        <!-- 幻灯片 10：树状数组 vs 线段树 -->
+        <section class="slide" id="slide10">
+            <div class="slide-header">
+                <div class="slide-number">10</div>
+                <div class="slide-title">树状数组 vs 线段树</div>
+                <div class="slide-subtitle">如何选择</div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>对比项</th><th>树状数组</th><th>线段树</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>单点修改</td><td>O(log n)</td><td>O(log n)</td></tr>
+                        <tr><td>区间查询</td><td>O(log n)</td><td>O(log n)</td></tr>
+                        <tr><td>代码</td><td><strong>短</strong></td><td>长</td></tr>
+                        <tr><td>内存</td><td><strong>O(n)</strong></td><td>O(4n) 左右</td></tr>
+                        <tr><td>区间修改</td><td>有特殊技巧</td><td><strong>非常灵活</strong></td></tr>
+                        <tr><td>区间最值</td><td>不擅长</td><td><strong>擅长</strong></td></tr>
+                        <tr><td>区间求和</td><td><strong>非常适合</strong></td><td>适合</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="two-col" style="margin-top: 8px;">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-cube"></i> 树状数组</h4>
+                    <div style="font-size: 0.95rem;">简单的“动态前缀 / 区间统计”。</div>
+                </div>
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-tree"></i> 线段树</h4>
+                    <div style="font-size: 0.95rem;">复杂的“动态区间信息”。</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 11：计数 + 离散化 -->
+        <section class="slide" id="slide11">
+            <div class="slide-header">
+                <div class="slide-number">11</div>
+                <div class="slide-title">树状数组不一定存“和” & 离散化</div>
+                <div class="slide-subtitle">动态前缀统计器</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-calculator"></i> 计数应用</h4>
+                    <div style="font-size: 0.95rem; line-height: 1.7;">
+                        <code>A = [5, 2, 6, 1]</code><br>
+                        求：每个数字右边有多少个比它小？<br>
+                        答案：<code>[2, 1, 1, 0]</code>
+                    </div>
+                    <div class="info-box" style="margin-top: 10px;">
+                        <i class="fas fa-key"></i> <code>tree[x]</code> = 有多少个数字 x<br>
+                        <code>sum(x)</code> = 有多少个数字 ≤ x
+                    </div>
+                    <div class="success-box" style="margin-top: 10px;">
+                        <i class="fas fa-lightbulb"></i> <strong>树状数组 = 动态前缀统计器</strong>
+                    </div>
+                </div>
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-compress-alt"></i> 离散化</h4>
+                    <div style="font-size: 0.92rem; line-height: 1.7;">
+                        数字可能非常大：<br>
+                        <code>10, 1000000000, -500000, 999999999999</code>
+                    </div>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.6; margin-top: 8px;">
+原数组：100, 500, 100, 20, 5000
+
+排序去重：20, 100, 500, 5000
+
+映射：20→1, 100→2, 500→3, 5000→4
+                    </div>
+                    <div class="warning-box" style="margin-top: 8px;">
+                        <i class="fas fa-arrow-right"></i> 大数值 → 离散化 → 小下标 → 树状数组
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 12：逆序对 + 动态排名 + 第 k 小 -->
+        <section class="slide" id="slide12">
+            <div class="slide-header">
+                <div class="slide-number">12</div>
+                <div class="slide-title">逆序对 & 动态排名 & 第 k 小</div>
+                <div class="slide-subtitle">经典应用</div>
+            </div>
+            <div class="grid-3">
+                <div class="grid-item" style="border-left-color: #3b82f6;">
+                    <h4>🔄 逆序对</h4>
+                    <div style="font-size: 0.9rem; line-height: 1.7;">
+                        <code>i &lt; j 但 A[i] &gt; A[j]</code><br>
+                        <code>[3,1,2] → (3,1), (3,2)</code><br>
+                        答案：<code>2</code><br><br>
+                        树状数组：从右往左 + 统计右边比当前数字小的数量
+                    </div>
+                </div>
+                <div class="grid-item" style="border-left-color: #8b5cf6;">
+                    <h4>📊 动态排名</h4>
+                    <div style="font-size: 0.9rem; line-height: 1.7;">
+                        <code>1 3 3 5 8</code><br>
+                        次数：<code>1 0 2 0 1 0 0 1</code><br><br>
+                        <code>query(5) = 1+2+1 = 4</code><br>
+                        → 有 4 个数字 ≤ 5
+                    </div>
+                </div>
+                <div class="grid-item" style="border-left-color: #ec4899;">
+                    <h4>🔍 第 k 小</h4>
+                    <div style="font-size: 0.9rem; line-height: 1.7;">
+                        找最小的 x 使<br>
+                        <code>prefix_sum(x) &gt;= k</code><br><br>
+                        进阶：<br>
+                        <code>Fenwick Tree + binary lifting</code><br>
+                        → <code>O(log n)</code> 找第 k 小
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 13：LeetCode 练习路线 -->
+        <section class="slide" id="slide13">
+            <div class="slide-header">
+                <div class="slide-number">13</div>
+                <div class="slide-title">LeetCode 练习路线</div>
+                <div class="slide-subtitle">按顺序进阶</div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>顺序</th><th>题号</th><th>题目</th><th>重点</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td>①</td>
+                            <td>307</td>
+                            <td><a href="https://leetcode.cn/problems/range-sum-query-mutable/" target="_blank">区域和检索 - 数组可修改</a></td>
+                            <td>单点修改 + 区间查询</td>
+                        </tr>
+                        <tr>
+                            <td>②</td>
+                            <td>315</td>
+                            <td><a href="https://leetcode.cn/problems/count-of-smaller-numbers-after-self/" target="_blank">计算右侧小于当前元素的个数</a></td>
+                            <td>从右向左 + 离散化 + 前缀计数</td>
+                        </tr>
+                        <tr>
+                            <td>③</td>
+                            <td>1649</td>
+                            <td><a href="https://leetcode.cn/problems/create-sorted-array-through-instructions/" target="_blank">通过指令创建有序数组</a></td>
+                            <td>动态加入 + 小于/大于统计</td>
+                        </tr>
+                        <tr>
+                            <td>④</td>
+                            <td>493</td>
+                            <td><a href="https://leetcode.cn/problems/reverse-pairs/" target="_blank">翻转对</a></td>
+                            <td>树状数组 + 离散化 + 逆序统计</td>
+                        </tr>
+                        <tr>
+                            <td>⑤</td>
+                            <td>327</td>
+                            <td><a href="https://leetcode.cn/problems/count-of-range-sum/" target="_blank">区间和的个数</a></td>
+                            <td>前缀和 + 离散化 + 树状数组</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="info-box" style="margin-top: 12px;">
+                <i class="fas fa-graduation-cap"></i> 从“会写模板”走向“会建模”：307 → 315 → 1649 → 493 → 327
+            </div>
+        </section>
+
+        <!-- 幻灯片 14：总结 + 与平衡树比较 -->
+        <section class="slide" id="slide14">
+            <div class="slide-header">
+                <div class="slide-number">14</div>
+                <div class="slide-title">总结 & 与平衡树的关系</div>
+                <div class="slide-subtitle">收尾</div>
+            </div>
+            <div style="background: #0f172a; color: white; padding: 24px 28px; border-radius: 28px; margin-bottom: 22px;">
+                <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 14px;">🎯 记住这 5 句话</div>
+                <div style="font-size: 0.98rem; color: #cbd5e1; line-height: 1.9;">
+                    ① 树状数组解决什么？<strong style="color: #93c5fd;">动态修改 + 前缀统计。</strong><br>
+                    ② 两个核心操作：<code style="background: #1e293b; color: #93c5fd;">add(i, delta)</code> / <code style="background: #1e293b; color: #93c5fd;">sum(i)</code><br>
+                    ③ 核心数学：<code style="background: #1e293b; color: #93c5fd;">lowbit(i) = i &amp; -i</code><br>
+                    ④ 两个方向：修改 <code style="background: #1e293b; color: #93c5fd;">i += lowbit(i)</code> / 查询 <code style="background: #1e293b; color: #93c5fd;">i -= lowbit(i)</code><br>
+                    ⑤ 什么时候想到它？动态加入/删除 + 统计某个值之前/之后有多少 + 排名/逆序对/频率
+                </div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-cube"></i> 树状数组</h4>
+                    <div style="font-size: 0.95rem;">
+                        偏向<strong>离散值域上的计数 / 前缀统计</strong><br>
+                        代码短，常数小<br>
+                        典型：逆序对、排名、频率
+                    </div>
+                </div>
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-tree"></i> 平衡树</h4>
+                    <div style="font-size: 0.95rem;">
+                        偏向<strong>动态维护元素本身的有序关系</strong><br>
+                        代码长，常数大<br>
+                        典型：前驱后继、第 k 大、区间第 k 大
+                    </div>
+                </div>
+            </div>
+            <div class="info-box" style="margin-top: 16px; text-align: center;">
+                <i class="fas fa-key"></i> 两者都能做“动态有序统计”，但选择取决于<strong>是否需要维护元素本身的有序关系</strong>。
+            </div>
+        </section>
+
+    </div>
+</body>
+</html>

@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>算法中的平衡树 · PPT 讲解</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
+            background: #1a1e2c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 28px 16px;
+            min-height: 100vh;
+        }
+
+        .ppt-container {
+            max-width: 1080px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .slide {
+            background: #ffffff;
+            border-radius: 32px;
+            box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            padding: 32px 36px;
+            page-break-inside: avoid;
+        }
+
+        .slide-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 22px;
+            border-bottom: 3px solid #eef2f8;
+            padding-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .slide-number {
+            background: #1e2b4a;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            flex-shrink: 0;
+        }
+
+        .slide-title {
+            font-size: 1.85rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #0b1629;
+            line-height: 1.2;
+        }
+
+        .slide-subtitle {
+            color: #4a5b7a;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-left: auto;
+            background: #eef2f8;
+            padding: 6px 18px;
+            border-radius: 40px;
+            white-space: nowrap;
+        }
+
+        p, li {
+            color: #1e293b;
+            line-height: 1.65;
+            font-size: 1.02rem;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #b91c1c;
+            font-weight: 500;
+        }
+
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 16px 20px;
+            border-radius: 18px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.55;
+            margin: 14px 0;
+            border-left: 5px solid #3b82f6;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            font-weight: 400;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 16px 0;
+        }
+
+        .three-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .col-card {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 18px 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .col-card h4 {
+            font-size: 1.05rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #0b1629;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .grid-item {
+            background: #f8fafc;
+            padding: 16px 18px;
+            border-radius: 18px;
+            border-left: 6px solid #3b82f6;
+        }
+
+        .grid-item h4 {
+            font-size: 1.02rem;
+            margin-bottom: 8px;
+            color: #0b1629;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 16px 0 8px;
+            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            background: white;
+        }
+
+        th {
+            background: #1e2b4a;
+            color: white;
+            font-weight: 600;
+            padding: 9px 12px;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e9eef4;
+            vertical-align: top;
+        }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #f8fafc; }
+
+        td a, .col-card a, .grid-item a, .info-box a, .slide a {
+            color: #1d4ed8;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            transition: border-color 0.15s, color 0.15s;
+        }
+
+        td a:hover, .col-card a:hover, .grid-item a:hover, .info-box a:hover, .slide a:hover {
+            color: #1e3a8a;
+            border-bottom-color: #1d4ed8;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            font-weight: 500;
+            font-size: 0.82rem;
+            padding: 4px 12px;
+            border-radius: 40px;
+            border: 1px solid #bfdbfe;
+            margin: 3px 4px 3px 0;
+        }
+
+        .tag.core {
+            background: #1e2b4a;
+            color: white;
+            border-color: #1e2b4a;
+        }
+
+        .tag.easy { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+        .tag.medium { background: #fef9c3; color: #854d0e; border-color: #fde68a; }
+        .tag.hard { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+
+        .badge {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #1e3a8a;
+            font-weight: 600;
+            font-size: 0.82rem;
+            padding: 4px 14px;
+            border-radius: 30px;
+            margin-right: 8px;
+        }
+
+        .formula-box {
+            background: #f1f5f9;
+            padding: 16px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #8b5cf6;
+            margin: 14px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.92rem;
+            color: #0f172a;
+            overflow-x: auto;
+        }
+
+        .formula-box strong { color: #6d28d9; }
+
+        .warning-box {
+            background: #fef2f2;
+            padding: 14px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #ef4444;
+            margin: 14px 0;
+            color: #991b1b;
+            font-size: 0.96rem;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            padding: 14px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #3b82f6;
+            margin: 14px 0;
+            color: #1e3a8a;
+            font-size: 0.96rem;
+        }
+
+        .success-box {
+            background: #f0fdf4;
+            padding: 14px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #22c55e;
+            margin: 14px 0;
+            color: #166534;
+            font-size: 0.96rem;
+        }
+
+        .flow-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.84rem;
+            line-height: 1.55;
+            color: #1e293b;
+            background: #f8fafc;
+            padding: 16px 20px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .highlight {
+            background: #fef9c3;
+            padding: 1px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #854d0e;
+        }
+
+        .toc-badge {
+            display: inline-block;
+            background: #eef2f8;
+            color: #1e2b4a;
+            font-size: 0.78rem;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .section-divider {
+            background: #1e2b4a;
+            color: white;
+            padding: 18px 28px;
+            border-radius: 24px;
+            font-size: 1.25rem;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 0.02em;
+        }
+
+        /* 深色总结框（屏幕 / 打印双适配） */
+        .summary-dark {
+            background: #0f172a;
+            color: white;
+            padding: 24px 28px;
+            border-radius: 28px;
+            margin-bottom: 22px;
+        }
+        .summary-dark-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+        .summary-dark-content {
+            font-size: 0.98rem;
+            color: #cbd5e1;
+            line-height: 1.9;
+        }
+        .summary-dark .summary-em { color: #93c5fd; }
+        .summary-dark .summary-code {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            background: #1e293b;
+            color: #93c5fd;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 500;
+        }
+
+        @media (max-width: 700px) {
+            .slide { padding: 22px 16px; border-radius: 24px; }
+            .slide-title { font-size: 1.4rem; }
+            .slide-subtitle { display: none; }
+            .two-col, .three-col, .grid-3 { grid-template-columns: 1fr; }
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .slide {
+                box-shadow: none;
+                border: 1px solid #ccc;
+                break-inside: avoid;
+                margin-bottom: 24px;
+            }
+            .summary-dark {
+                background: #f8fafc !important;
+                color: #0b1629 !important;
+                border: 1px solid #cbd5e1 !important;
+            }
+            .summary-dark-title { color: #0b1629 !important; }
+            .summary-dark-content { color: #1e293b !important; }
+            .summary-dark .summary-em { color: #1d4ed8 !important; }
+            .summary-dark .summary-code {
+                background: #e2e8f0 !important;
+                color: #b91c1c !important;
+                border: 1px solid #cbd5e1 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="ppt-container">
+
+        <!-- 幻灯片 1：为什么需要平衡树 -->
+        <section class="slide" id="slide1">
+            <div class="slide-header">
+                <div class="slide-number">01</div>
+                <div class="slide-title">为什么需要平衡树？</div>
+                <div class="slide-subtitle">开场引入</div>
+            </div>
+            <div style="font-size: 1.1rem; font-weight: 500; margin-bottom: 14px; color: #0b1629;">
+                <i class="fas fa-bullseye" style="color: #3b82f6; margin-right: 10px;"></i>
+                给你一堆数字，支持：插入 / 删除 / 查询存在 / 最小最大 / 比 x 大的最小数 / 第 k 小
+            </div>
+            <div class="flow-text" style="font-size: 0.88rem; white-space: pre; line-height: 1.6;">
+初始：3  8  10  15  20
+
+insert(12)
+delete(8)
+查询 &gt; 10 的最小值
+查询第 3 小
+            </div>
+            <div class="table-wrapper" style="margin-top: 14px;">
+                <table>
+                    <thead>
+                        <tr><th>数据结构</th><th>插入</th><th>删除</th><th>查找</th><th>最小/最大</th><th>前驱/后继</th><th>第 k 小</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>无序数组</td><td>O(1)</td><td>O(n)</td><td>O(n)</td><td>O(n)</td><td>O(n)</td><td>O(n)</td></tr>
+                        <tr><td>排序数组</td><td>O(n)</td><td>O(n)</td><td>O(log n)</td><td>O(1)</td><td>O(log n)</td><td>O(1)</td></tr>
+                        <tr><td>HashSet</td><td>O(1)*</td><td>O(1)*</td><td>O(1)*</td><td>❌</td><td>❌</td><td>❌</td></tr>
+                        <tr><td>堆</td><td>O(log n)</td><td>O(log n)</td><td>❌</td><td>O(1)</td><td>❌</td><td>❌</td></tr>
+                        <tr style="background: #fef9c3;">
+                            <td><strong>平衡树</strong></td>
+                            <td><strong>O(log n)</strong></td>
+                            <td><strong>O(log n)</strong></td>
+                            <td><strong>O(log n)</strong></td>
+                            <td><strong>O(log n)</strong></td>
+                            <td><strong>O(log n)</strong></td>
+                            <td><strong>O(log n)*</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="info-box">
+                <i class="fas fa-key"></i> <strong>平衡树最大的价值，不是“查找快”，而是在动态修改数据的同时，始终保持“有序”。</strong>
+            </div>
+        </section>
+
+        <!-- 幻灯片 2：BST 基础 -->
+        <section class="slide" id="slide2">
+            <div class="slide-header">
+                <div class="slide-number">02</div>
+                <div class="slide-title">先理解：什么是 BST？</div>
+                <div class="slide-subtitle">基础结构</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-tree"></i> 二叉搜索树规则</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+             8
+           /   \
+          3     15
+         / \    / \
+        1   5  10 20
+                    </div>
+                    <div style="font-size: 0.95rem; margin-top: 10px;">
+                        节点 <code>8</code>：左边全部 &lt; 8，右边全部 &gt; 8
+                    </div>
+                </div>
+                <div class="col-card" style="background: #f0fdf4;">
+                    <h4><i class="fas fa-search"></i> 查找 10 的路径</h4>
+                    <div class="flow-text" style="font-size: 0.85rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.6;">
+        8
+       ↓
+      15
+     ↓
+    10
+                    </div>
+                    <div class="success-box" style="margin-top: 10px;">
+                        <i class="fas fa-check-circle"></i> 理想情况：高度 <code>O(log n)</code><br>
+                        查找 / 插入 / 删除 = O(log n)
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 3：为什么必须平衡 -->
+        <section class="slide" id="slide3">
+            <div class="slide-header">
+                <div class="slide-number">03</div>
+                <div class="slide-title">为什么必须“平衡”？</div>
+                <div class="slide-subtitle">退化成链</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #fef2f2; border-left: 5px solid #ef4444;">
+                    <h4><i class="fas fa-times-circle" style="color: #ef4444;"></i> 普通 BST（插入 1..7）</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+1
+ \
+  2
+   \
+    3
+     \
+      4
+       \
+        5
+         \
+          6
+           \
+            7
+                    </div>
+                    <div class="warning-box" style="margin-top: 10px;">
+                        <i class="fas fa-exclamation-triangle"></i> 高度 <code>O(n)</code> → 退化成链表
+                    </div>
+                </div>
+                <div class="col-card" style="background: #f0fdf4; border-left: 5px solid #22c55e;">
+                    <h4><i class="fas fa-check-circle" style="color: #22c55e;"></i> 平衡 BST</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+          4
+       /     \
+      2       6
+     / \     / \
+    1   3   5   7
+                    </div>
+                    <div class="success-box" style="margin-top: 10px;">
+                        <i class="fas fa-check-circle"></i> 高度 <code>O(log n)</code> → 所有操作稳定
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 4：平衡策略 -->
+        <section class="slide" id="slide4">
+            <div class="slide-header">
+                <div class="slide-number">04</div>
+                <div class="slide-title">平衡树在“平衡”什么？</div>
+                <div class="slide-subtitle">三种常见策略</div>
+            </div>
+            <div class="grid-3">
+                <div class="grid-item" style="border-left-color: #3b82f6;">
+                    <h4>🌲 AVL Tree</h4>
+                    <div style="font-size: 0.92rem; line-height: 1.7;">
+                        <code>|height(L) - height(R)| ≤ 1</code><br><br>
+                        <strong>优点：</strong>查找非常稳定<br>
+                        <strong>缺点：</strong>修改维护严格
+                    </div>
+                </div>
+                <div class="grid-item" style="border-left-color: #ef4444;">
+                    <h4>🔴 Red-Black Tree</h4>
+                    <div style="font-size: 0.92rem; line-height: 1.7;">
+                        通过颜色规则控制树高<br><br>
+                        <strong>优点：</strong>修改性能好<br>
+                        <strong>典型：</strong>C++ <code>std::set</code> / <code>std::map</code>
+                    </div>
+                </div>
+                <div class="grid-item" style="border-left-color: #8b5cf6;">
+                    <h4>⚡ Treap</h4>
+                    <div style="font-size: 0.92rem; line-height: 1.7;">
+                        BST + Heap<br><br>
+                        <strong>优点：</strong>代码短，适合竞赛<br>
+                        <strong>核心：</strong>随机 priority
+                    </div>
+                </div>
+            </div>
+            <div class="info-box" style="margin-top: 8px;">
+                <i class="fas fa-key"></i> 核心思想：<strong>不要让树退化成链。</strong>
+            </div>
+        </section>
+
+        <!-- 幻灯片 5：核心思维 -->
+        <section class="slide" id="slide5">
+            <div class="slide-header">
+                <div class="slide-number">05</div>
+                <div class="slide-title">核心思维：什么时候想到平衡树？</div>
+                <div class="slide-subtitle">判断依据</div>
+            </div>
+            <div class="flow-text" style="font-size: 0.88rem; white-space: pre; line-height: 1.6; text-align: center;">
+                 动态数据
+                    │
+          ┌─────────┴─────────┐
+          ↓                   ↓
+       只关心存在性          需要有序关系
+          │                   │
+       HashSet                │
+                              ↓
+                         平衡树
+            </div>
+            <div class="two-col" style="margin-top: 16px;">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-question-circle"></i> HashSet 就够了</h4>
+                    <div style="font-size: 0.95rem;">
+                        “x 在不在？”<br>
+                        “x 出现过几次？”
+                    </div>
+                </div>
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-arrow-right"></i> 需要平衡树</h4>
+                    <div style="font-size: 0.95rem;">
+                        “x 左边/右边最近是谁？”<br>
+                        “第 k 小是谁？”<br>
+                        “≥ x 的最小值是谁？”
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 6：6 个核心操作 -->
+        <section class="slide" id="slide6">
+            <div class="slide-header">
+                <div class="slide-number">06</div>
+                <div class="slide-title">平衡树最重要的 6 个操作</div>
+                <div class="slide-subtitle">核心能力</div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>操作</th><th>含义</th><th>复杂度</th><th>典型场景</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Insert</strong></td><td>插入</td><td>O(log n)</td><td>动态加入</td></tr>
+                        <tr><td><strong>Erase</strong></td><td>删除</td><td>O(log n)</td><td>动态删除</td></tr>
+                        <tr><td><strong>Find</strong></td><td>查找</td><td>O(log n)</td><td>是否存在</td></tr>
+                        <tr><td><strong>Lower Bound</strong></td><td>第一个 ≥ x</td><td>O(log n)</td><td>最接近且不小于</td></tr>
+                        <tr><td><strong>Upper Bound</strong></td><td>第一个 &gt; x</td><td>O(log n)</td><td>严格大于</td></tr>
+                        <tr><td><strong>Rank</strong></td><td>第 k 小</td><td>O(log n)*</td><td>排名 / 中位数</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="two-col" style="margin-top: 8px;">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-arrow-right"></i> Lower Bound</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+1  3  5 | 8  10  15
+          ↑
+   lower_bound(6) = 8
+                    </div>
+                </div>
+                <div class="col-card" style="background: #f0fdf4;">
+                    <h4><i class="fas fa-arrow-left"></i> Upper Bound</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+1  3  5  8  8 | 10
+                 ↑
+   upper_bound(8) = 10
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 7：场景一 & 二 -->
+        <section class="slide" id="slide7">
+            <div class="slide-header">
+                <div class="slide-number">07</div>
+                <div class="slide-title">场景一 & 二：动态有序集合 / 前驱后继</div>
+                <div class="slide-subtitle">最经典的应用</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-users"></i> 场景一：动态有序集合</h4>
+                    <div style="font-size: 0.95rem; line-height: 1.7;">
+                        一群学生不断加入、退出。<br>
+                        问：分数 ≥ 80 的学生中最低分是多少？
+                    </div>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5; margin-top: 8px;">
+100  95  90  85  80  75  60
+查询 &gt;= 82  →  85
+                    </div>
+                    <div class="info-box" style="margin-top: 8px;">
+                        本质是 <code>lower_bound(82)</code>
+                    </div>
+                </div>
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-exchange-alt"></i> 场景二：前驱 / 后继</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+1  3  5  8 | 9 | 10  15
+          ↑     ↑
+        前驱   后继
+                    </div>
+                    <table style="font-size: 0.85rem; margin-top: 8px;">
+                        <tr><td><strong>predecessor(9)</strong></td><td>8</td></tr>
+                        <tr><td><strong>successor(9)</strong></td><td>10</td></tr>
+                    </table>
+                    <div style="font-size: 0.9rem; margin-top: 8px;">
+                        典型题：维护动态点集，查询距离 x 最近的点。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 8：场景三 动态中位数 -->
+        <section class="slide" id="slide8">
+            <div class="slide-header">
+                <div class="slide-number">08</div>
+                <div class="slide-title">场景三：动态维护中位数</div>
+                <div class="slide-subtitle">平衡树 vs 双堆</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-tree"></i> 平衡树做法</h4>
+                    <div style="font-size: 0.95rem; line-height: 1.7;">
+                        维护 <code>subtree_size</code><br>
+                        第 <code>(n+1)/2</code> 小就是中位数
+                    </div>
+                    <table style="font-size: 0.85rem; margin-top: 8px;">
+                        <tr><td>插入</td><td>O(log n)</td></tr>
+                        <tr><td>查询中位数</td><td>O(log n)</td></tr>
+                    </table>
+                </div>
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-balance-scale"></i> 双堆做法（竞赛常用）</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+        小于中位数
+       /           \
+   大根堆          小根堆
+  max-heap       min-heap
+                    </div>
+                    <div style="font-size: 0.9rem; margin-top: 8px;">
+                        左边大根堆，右边小根堆<br>
+                        保持两边大小平衡
+                    </div>
+                </div>
+            </div>
+            <div class="warning-box" style="margin-top: 12px;">
+                <i class="fas fa-exclamation-triangle"></i> <strong>提醒：</strong>竞赛中“动态中位数”不一定首选平衡树。应该根据操作集合选择数据结构，而不是“看到中位数 → 平衡树”。
+            </div>
+        </section>
+
+        <!-- 幻灯片 9：场景四 & 五 -->
+        <section class="slide" id="slide9">
+            <div class="slide-header">
+                <div class="slide-number">09</div>
+                <div class="slide-title">场景四 & 五：滑动窗口 / 区间有序集合</div>
+                <div class="slide-subtitle">动态有序统计</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-window-maximize"></i> 场景四：滑动窗口</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+1 5 3 8 2 7 9
+k = 3
+
+[1 5 3] → [5 3 8] → [3 8 2] → ...
+                    </div>
+                    <div style="font-size: 0.92rem; margin-top: 8px;">
+                        每次：删除旧元素 + 加入新元素 + 查询最小/最大/中位数
+                    </div>
+                    <div class="success-box" style="margin-top: 8px;">
+                        删除 / 插入 / 查询均为 O(log k)
+                    </div>
+                </div>
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-layer-group"></i> 场景五：区间有序集合</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+[1,5]  [3,8]  [10,20]  [15,30]
+
+key = 区间左端点
+
+[1,5] → [3,8] → [10,20]
+                    </div>
+                    <div style="font-size: 0.92rem; margin-top: 8px;">
+                        不断加入/删除区间，查询某个位置附近的区间
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 10：场景六 扫描线 -->
+        <section class="slide" id="slide10">
+            <div class="slide-header">
+                <div class="slide-number">10</div>
+                <div class="slide-title">场景六：二维问题 —— 一维平衡树作为扫描线工具</div>
+                <div class="slide-subtitle">扫描线思想</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-arrows-alt-h"></i> 扫描过程</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+点集 (x, y)
+
+按 x 从左到右扫描：
+x →
+────────────────────→
+                    </div>
+                    <div style="font-size: 0.95rem; margin-top: 8px;">
+                        扫描到某个 x 时，把活跃点的 <code>y</code> 放进平衡树
+                    </div>
+                </div>
+                <div class="col-card" style="background: #f0fdf4;">
+                    <h4><i class="fas fa-compress-alt"></i> 降维思想</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+二维问题 (x, y)
+        ↓
+扫描 x
+        +
+维护 y 的有序集合
+                    </div>
+                    <div class="info-box" style="margin-top: 8px;">
+                        <i class="fas fa-key"></i> 这就是 <strong>扫描线 Sweep Line</strong> 的基本思想。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 11：数据结构选择 -->
+        <section class="slide" id="slide11">
+            <div class="slide-header">
+                <div class="slide-number">11</div>
+                <div class="slide-title">平衡树 vs 其他数据结构</div>
+                <div class="slide-subtitle">如何选择</div>
+            </div>
+            <div class="flow-text" style="font-size: 0.84rem; white-space: pre; line-height: 1.5;">
+                    我要维护一堆数据
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+          ↓                ↓                ↓
+       只查存在性        只要最值          需要有序关系
+          │                │                │
+       HashSet             堆               平衡树
+          │                │                │
+       x ∈ S ?          min / max       lower_bound
+                                      predecessor
+                                      successor
+                                      rank
+            </div>
+            <div class="table-wrapper" style="margin-top: 14px;">
+                <table>
+                    <thead><tr><th>需求</th><th>推荐</th></tr></thead>
+                    <tbody>
+                        <tr><td>判断 x 是否存在</td><td>HashSet</td></tr>
+                        <tr><td>计数</td><td>HashMap</td></tr>
+                        <tr><td>动态最大值 / 最小值</td><td>Heap</td></tr>
+                        <tr><td>前 k 大</td><td>Heap</td></tr>
+                        <tr><td>动态有序集合</td><td><strong>平衡树</strong></td></tr>
+                        <tr><td>前驱 / 后继</td><td><strong>平衡树</strong></td></tr>
+                        <tr><td>lower_bound</td><td><strong>平衡树</strong></td></tr>
+                        <tr><td>第 k 小</td><td>平衡树 / Fenwick / Segment Tree</td></tr>
+                        <tr><td>区间加减</td><td>Segment Tree</td></tr>
+                        <tr><td>区间求和</td><td>Fenwick / Segment Tree</td></tr>
+                        <tr><td>静态第 k 小</td><td>排序 / 二分等其他方法</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 幻灯片 12：三方对比 -->
+        <section class="slide" id="slide12">
+            <div class="slide-header">
+                <div class="slide-number">12</div>
+                <div class="slide-title">平衡树 vs 线段树 vs 树状数组</div>
+                <div class="slide-subtitle">易混淆三方对比</div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>对比项</th><th>平衡树</th><th>线段树</th><th>树状数组</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><strong>维护对象</strong></td><td>元素的顺序</td><td>坐标区间</td><td>前缀统计</td></tr>
+                        <tr><td><strong>核心操作</strong></td><td>前驱 / 后继 / 第 k 小</td><td>区间修改 / 区间查询</td><td>单点修改 / 前缀查询</td></tr>
+                        <tr><td><strong>动态插入删除</strong></td><td><strong>擅长</strong></td><td>不擅长</td><td>不擅长</td></tr>
+                        <tr><td><strong>区间最值</strong></td><td>不擅长</td><td><strong>擅长</strong></td><td>不擅长</td></tr>
+                        <tr><td><strong>代码长度</strong></td><td>长</td><td>长</td><td><strong>短</strong></td></tr>
+                        <tr><td><strong>常数</strong></td><td>大</td><td>中</td><td><strong>小</strong></td></tr>
+                        <tr><td><strong>典型题</strong></td><td>动态排名 / 扫描线</td><td>区间最值 / 区间加</td><td>逆序对 / 动态求和</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="two-col" style="margin-top: 8px;">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-tree"></i> 平衡树</h4>
+                    <div style="font-size: 0.95rem;">维护“元素的顺序”</div>
+                </div>
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-chart-bar"></i> 线段树 / 树状数组</h4>
+                    <div style="font-size: 0.95rem;">维护“坐标区间 / 前缀”</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 13：平衡树 vs 哈希表 -->
+        <section class="slide" id="slide13">
+            <div class="slide-header">
+                <div class="slide-number">13</div>
+                <div class="slide-title">平衡树 vs 哈希表</div>
+                <div class="slide-subtitle">高频选择</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-hashtag"></i> HashSet</h4>
+                    <div style="font-size: 0.95rem; line-height: 1.7;">
+                        <code>S = {2, 5, 8, 13, 20}</code><br><br>
+                        问：8 在不在？<br>
+                        <strong>O(1) 平均</strong>
+                    </div>
+                    <div class="warning-box" style="margin-top: 10px;">
+                        问：8 的后继是谁？<br>
+                        <strong>不知道</strong>
+                    </div>
+                </div>
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-tree"></i> 平衡树</h4>
+                    <div style="font-size: 0.95rem; line-height: 1.7;">
+                        <code>S = {2, 5, 8, 13, 20}</code><br><br>
+                        问：8 在不在？<br>
+                        <strong>O(log n)</strong>
+                    </div>
+                    <div class="success-box" style="margin-top: 10px;">
+                        问：8 的后继是谁？<br>
+                        <strong>13</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="info-box" style="text-align: center; margin-top: 12px;">
+                <i class="fas fa-key"></i> <strong>Hash 表强调“有没有”；平衡树强调“在哪里”。</strong>
+            </div>
+        </section>
+
+        <!-- 幻灯片 14：Treap -->
+        <section class="slide" id="slide14">
+            <div class="slide-header">
+                <div class="slide-number">14</div>
+                <div class="slide-title">竞赛中最值得掌握的：Treap</div>
+                <div class="slide-subtitle">Tree + Heap</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-cube"></i> 节点结构</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+┌──────────────┐
+│ key          │ ← BST
+│ priority     │ ← Heap
+│ size         │ ← 子树大小
+│ left         │
+│ right        │
+└──────────────┘
+                    </div>
+                </div>
+                <div class="col-card" style="background: #f0fdf4;">
+                    <h4><i class="fas fa-sitemap"></i> 示例</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+             (8,90)
+            /      \
+        (3,50)    (15,70)
+
+key：3 &lt; 8 &lt; 15
+priority：90 &gt; 50，90 &gt; 70
+                    </div>
+                    <div class="success-box" style="margin-top: 8px;">
+                        随机 priority → 期望高度 O(log n)
+                    </div>
+                </div>
+            </div>
+            <div class="info-box" style="margin-top: 12px;">
+                <i class="fas fa-key"></i> 支持：<code>insert / erase / find / lower_bound / upper_bound / rank / k-th / split / merge</code>
+            </div>
+        </section>
+
+        <!-- 幻灯片 15：识别模式 -->
+        <section class="slide" id="slide15">
+            <div class="slide-header">
+                <div class="slide-number">15</div>
+                <div class="slide-title">一个经典的识别模式</div>
+                <div class="slide-subtitle">看到操作集合想到平衡树</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-list-ol"></i> 操作集合</h4>
+                    <div class="flow-text" style="font-size: 0.85rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.7;">
+1 x   插入 x
+2 x   删除 x
+3 x   查询 x 的排名
+4 k   查询第 k 小
+5 x   查询前驱
+6 x   查询后继
+                    </div>
+                </div>
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-lightbulb"></i> 识别信号</h4>
+                    <div class="flow-text" style="font-size: 0.82rem; white-space: pre; background: transparent; padding: 0; border: none; line-height: 1.5;">
+                  动态集合
+                     │
+          ┌──────────┴──────────┐
+          ↓                     ↓
+       修改元素               查询顺序
+          │                     │
+       insert                 rank
+       erase                  k-th
+                              predecessor
+                              successor
+                                  │
+                                  ↓
+                              平衡树
+                    </div>
+                </div>
+            </div>
+            <div class="success-box" style="text-align: center; margin-top: 12px;">
+                <i class="fas fa-key"></i> <strong>insert / erase / rank / k-th / predecessor / successor → 平衡树</strong>
+            </div>
+        </section>
+
+        <!-- 幻灯片 16：不应该使用平衡树的情况 -->
+        <section class="slide" id="slide16">
+            <div class="slide-header">
+                <div class="slide-number">16</div>
+                <div class="slide-title">什么时候“不应该”使用平衡树？</div>
+                <div class="slide-subtitle">常见误区</div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>情况</th><th>不要用平衡树</th><th>优先选择</th></tr></thead>
+                    <tbody>
+                        <tr><td>只需要最大值</td><td>❌</td><td><strong>Heap</strong></td></tr>
+                        <tr><td>只需要判断存在性</td><td>❌</td><td><strong>HashSet</strong></td></tr>
+                        <tr><td>数据完全静态</td><td>❌</td><td><strong>排序 + 二分</strong></td></tr>
+                        <tr><td>值域非常小</td><td>❌</td><td><strong>计数数组 / Fenwick / Segment Tree</strong></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="warning-box" style="margin-top: 12px;">
+                <i class="fas fa-exclamation-triangle"></i> <strong>常见误区：</strong>看到“有序”就上平衡树。应该先问：数据是否动态？是否需要前驱后继/排名？如果只是查存在，HashSet 更快；如果只要最值，Heap 更简单。
+            </div>
+        </section>
+
+        <!-- 幻灯片 17：LeetCode 题目推荐 -->
+        <section class="slide" id="slide17">
+            <div class="slide-header">
+                <div class="slide-number">17</div>
+                <div class="slide-title">LeetCode 题目推荐</div>
+                <div class="slide-subtitle">按思维层次递进</div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead><tr><th>层次</th><th>题号</th><th>题目</th><th>难度</th><th>核心</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td rowspan="2">动态有序集合</td>
+                            <td>220</td>
+                            <td><a href="https://leetcode.cn/problems/contains-duplicate-iii/" target="_blank">存在重复元素 III</a></td>
+                            <td><span class="tag medium">中等</span></td>
+                            <td>滑动窗口 + 动态集合 + 寻找附近元素</td>
+                        </tr>
+                        <tr>
+                            <td>352</td>
+                            <td><a href="https://leetcode.cn/problems/data-stream-as-disjoint-intervals/" target="_blank">将数据流变为多个不相交区间</a></td>
+                            <td><span class="tag hard">困难</span></td>
+                            <td>动态集合 → 前驱/后继 → 区间合并</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2">动态中位数</td>
+                            <td>480</td>
+                            <td><a href="https://leetcode.cn/problems/sliding-window-median/" target="_blank">滑动窗口中位数</a></td>
+                            <td><span class="tag hard">困难</span></td>
+                            <td>滑动窗口 + 删除 + 插入 + 中位数</td>
+                        </tr>
+                        <tr>
+                            <td>295</td>
+                            <td><a href="https://leetcode.cn/problems/find-median-from-data-stream/" target="_blank">数据流的中位数</a></td>
+                            <td><span class="tag hard">困难</span></td>
+                            <td>动态统计（双堆经典）</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2">第 k 小 / 有序统计</td>
+                            <td>315</td>
+                            <td><a href="https://leetcode.cn/problems/count-of-smaller-numbers-after-self/" target="_blank">计算右侧小于当前元素的个数</a></td>
+                            <td><span class="tag hard">困难</span></td>
+                            <td>rank query</td>
+                        </tr>
+                        <tr>
+                            <td>363</td>
+                            <td><a href="https://leetcode.cn/problems/max-sum-of-rectangle-no-larger-than-k/" target="_blank">矩形区域不超过 K 的最大数值和</a></td>
+                            <td><span class="tag hard">困难</span></td>
+                            <td>二维 → 一维 → 前缀和 → 有序集合</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2">真正感受“有序集合”</td>
+                            <td>729</td>
+                            <td><a href="https://leetcode.cn/problems/my-calendar-i/" target="_blank">我的日程安排表 I</a></td>
+                            <td><span class="tag medium">中等</span></td>
+                            <td>按 start 排序 + 前驱 + 后继</td>
+                        </tr>
+                        <tr>
+                            <td>731</td>
+                            <td><a href="https://leetcode.cn/problems/my-calendar-ii/" target="_blank">我的日程安排表 II</a></td>
+                            <td><span class="tag medium">中等</span></td>
+                            <td>动态区间 + 重叠次数</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2">高级应用</td>
+                            <td>218</td>
+                            <td><a href="https://leetcode.cn/problems/the-skyline-problem/" target="_blank">天际线问题</a></td>
+                            <td><span class="tag hard">困难</span></td>
+                            <td>扫描线 + 有序集合 + 动态删除 + 当前最大值</td>
+                        </tr>
+                        <tr>
+                            <td>715</td>
+                            <td><a href="https://leetcode.cn/problems/range-module/" target="_blank">Range 模块</a></td>
+                            <td><span class="tag hard">困难</span></td>
+                            <td>动态区间 addRange / removeRange / queryRange</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- 幻灯片 18：学习路线 -->
+        <section class="slide" id="slide18">
+            <div class="slide-header">
+                <div class="slide-number">18</div>
+                <div class="slide-title">建议的学习路线</div>
+                <div class="slide-subtitle">循序渐进</div>
+            </div>
+            <div class="flow-text" style="font-size: 0.82rem; white-space: pre; line-height: 1.5;">
+             平衡树学习路线
+                    │
+                    ↓
+             ① 什么是 BST
+                    │
+                    ↓
+             ② 为什么会退化
+                    │
+                    ↓
+             ③ 什么叫平衡
+                    │
+                    ↓
+          ④ lower_bound / upper_bound
+                    │
+                    ↓
+           ⑤ predecessor / successor
+                    │
+                    ↓
+             ⑥ rank / k-th
+                    │
+                    ↓
+               ⑦ Treap
+                    │
+                    ↓
+              ⑧ FHQ Treap
+                    │
+             ┌──────┴──────┐
+             ↓             ↓
+          动态集合       区间维护
+             │             │
+             ↓             ↓
+        扫描线 / 排名   split / merge
+            </div>
+        </section>
+
+        <!-- 幻灯片 19：总结 -->
+        <section class="slide" id="slide19">
+            <div class="slide-header">
+                <div class="slide-number">19</div>
+                <div class="slide-title">最后：用一句话记住平衡树</div>
+                <div class="slide-subtitle">总结</div>
+            </div>
+
+            <div class="summary-dark">
+                <div class="summary-dark-title">🎯 记住这三句话</div>
+                <div class="summary-dark-content">
+                    <strong class="summary-em">Hash 表</strong> 解决“有没有”。<br>
+                    <strong class="summary-em">堆</strong> 解决“最大/最小”。<br>
+                    <strong class="summary-em">平衡树</strong> 解决“动态数据中的有序关系”。<br><br>
+                    尤其是：前驱、后继、
+                    <code class="summary-code">lower_bound</code>、
+                    <code class="summary-code">upper_bound</code>、排名、第 k 小。
+                </div>
+            </div>
+
+            <div class="flow-text" style="font-size: 0.84rem; white-space: pre; line-height: 1.5;">
+                    平衡树
+                      │
+          ┌───────────┼───────────┐
+          ↓           ↓           ↓
+        动态         有序        查询
+          │           │           │
+       insert       min/max     lower_bound
+       erase        排序关系     upper_bound
+                                  │
+                         ┌────────┼────────┐
+                         ↓        ↓        ↓
+                       前驱      后继      第k小
+            </div>
+
+            <div class="success-box" style="text-align: center; margin-top: 12px;">
+                <i class="fas fa-key"></i> <strong>动态插入 + 动态删除 + 保持有序 + 查询附近元素/排名 → 平衡树 / Treap</strong>
+            </div>
+        </section>
+
+        <!-- 幻灯片 20：时间分配 + PPT 结构 -->
+        <section class="slide" id="slide20">
+            <div class="slide-header">
+                <div class="slide-number">20</div>
+                <div class="slide-title">时间分配 & 5 分钟 PPT 结构</div>
+                <div class="slide-subtitle">收尾</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #f8fafc;">
+                    <h4><i class="fas fa-clock"></i> 20 分钟讲解时间分配</h4>
+                    <table style="font-size: 0.85rem;">
+                        <tr><td>0:00–2:00</td><td>为什么需要平衡树</td></tr>
+                        <tr><td>2:00–5:00</td><td>BST 与退化</td></tr>
+                        <tr><td>5:00–7:00</td><td>什么叫“平衡”</td></tr>
+                        <tr><td>7:00–10:00</td><td>insert / erase / LB / UB</td></tr>
+                        <tr><td>10:00–12:00</td><td>前驱 / 后继</td></tr>
+                        <tr><td>12:00–14:00</td><td>rank / 第 k 小</td></tr>
+                        <tr><td>14:00–16:00</td><td>滑动窗口 / 动态中位数</td></tr>
+                        <tr><td>16:00–18:00</td><td>扫描线 / 区间 / 二维</td></tr>
+                        <tr><td>18:00–19:00</td><td>Hash / Heap / Segment Tree 对比</td></tr>
+                        <tr><td>19:00–20:00</td><td>Treap + 总结 + 题目推荐</td></tr>
+                    </table>
+                </div>
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-list-ol"></i> 5 分钟 PPT 结构</h4>
+                    <div style="display: flex; flex-direction: column; gap: 5px; font-size: 0.9rem;">
+                        <span><span class="toc-badge">01</span> 为什么需要平衡树</span>
+                        <span><span class="toc-badge">02</span> BST 与退化</span>
+                        <span><span class="toc-badge">03</span> 什么叫“平衡”</span>
+                        <span><span class="toc-badge">04</span> 核心思维：HashSet 不够时</span>
+                        <span><span class="toc-badge">05</span> 6 个核心操作</span>
+                        <span><span class="toc-badge">06</span> 动态有序集合 / 前驱后继</span>
+                        <span><span class="toc-badge">07</span> 动态中位数（对比双堆）</span>
+                        <span><span class="toc-badge">08</span> 滑动窗口 / 扫描线</span>
+                        <span><span class="toc-badge">09</span> 三方对比 + Treap</span>
+                        <span><span class="toc-badge">10</span> 识别模式 + 总结</span>
+                    </div>
+                </div>
+            </div>
+            <div class="info-box" style="margin-top: 16px;">
+                <i class="fas fa-lightbulb"></i> 视觉建议：重点做 <strong>“同一组数据分别用 Hash / Heap / 平衡树维护”</strong> 的动态图示，比直接讲 AVL / 红黑树旋转更适合初学者。
+            </div>
+        </section>
+
+    </div>
+</body>
+</html>

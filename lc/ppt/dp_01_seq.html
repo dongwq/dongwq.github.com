@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>算法中的简单动态规划 · PPT 讲解</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
+            background: #1a1e2c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 28px 16px;
+            min-height: 100vh;
+        }
+
+        .ppt-container {
+            max-width: 1080px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        /* 幻灯片卡片 */
+        .slide {
+            background: #ffffff;
+            border-radius: 32px;
+            box-shadow: 0 20px 35px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            padding: 32px 36px;
+            transition: transform 0.15s;
+            page-break-inside: avoid;
+        }
+
+        .slide-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 22px;
+            border-bottom: 3px solid #eef2f8;
+            padding-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .slide-number {
+            background: #1e2b4a;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            flex-shrink: 0;
+        }
+
+        .slide-title {
+            font-size: 1.85rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #0b1629;
+            line-height: 1.2;
+        }
+
+        .slide-subtitle {
+            color: #4a5b7a;
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-left: auto;
+            background: #eef2f8;
+            padding: 6px 18px;
+            border-radius: 40px;
+            white-space: nowrap;
+        }
+
+        /* 文本与代码 */
+        p, li {
+            color: #1e293b;
+            line-height: 1.65;
+            font-size: 1.02rem;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #b91c1c;
+            font-weight: 500;
+        }
+
+        pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 16px 20px;
+            border-radius: 18px;
+            overflow-x: auto;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.88rem;
+            line-height: 1.55;
+            margin: 14px 0;
+            border-left: 5px solid #3b82f6;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            font-weight: 400;
+        }
+
+        /* 卡片与网格 */
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 16px 0;
+        }
+
+        .col-card {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 18px 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .col-card h4 {
+            font-size: 1.05rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #0b1629;
+        }
+
+        .col-card.python h4 i { color: #3572A5; }
+        .col-card.cpp h4 i { color: #00599C; }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .grid-item {
+            background: #f8fafc;
+            padding: 16px 18px;
+            border-radius: 18px;
+            border-left: 6px solid #3b82f6;
+        }
+
+        .grid-item h4 {
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+            color: #0b1629;
+        }
+
+        /* 表格 */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 16px 0 8px;
+            border-radius: 18px;
+            border: 1px solid #e2e8f0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            background: white;
+        }
+
+        th {
+            background: #1e2b4a;
+            color: white;
+            font-weight: 600;
+            padding: 11px 16px;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #e9eef4;
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        /* 标签 */
+        .tag {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 5px 14px;
+            border-radius: 40px;
+            border: 1px solid #bfdbfe;
+            margin: 3px 4px 3px 0;
+        }
+
+        .tag.core {
+            background: #1e2b4a;
+            color: white;
+            border-color: #1e2b4a;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #1e3a8a;
+            font-weight: 600;
+            font-size: 0.82rem;
+            padding: 4px 14px;
+            border-radius: 30px;
+            margin-right: 8px;
+        }
+
+        /* 公式框 */
+        .formula-box {
+            background: #f1f5f9;
+            padding: 16px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #8b5cf6;
+            margin: 14px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            color: #0f172a;
+            overflow-x: auto;
+        }
+
+        .formula-box strong {
+            color: #6d28d9;
+        }
+
+        /* 特殊提示框 */
+        .warning-box {
+            background: #fef2f2;
+            padding: 14px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #ef4444;
+            margin: 14px 0;
+            color: #991b1b;
+            font-size: 0.98rem;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            padding: 14px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #3b82f6;
+            margin: 14px 0;
+            color: #1e3a8a;
+            font-size: 0.98rem;
+        }
+
+        .success-box {
+            background: #f0fdf4;
+            padding: 14px 20px;
+            border-radius: 16px;
+            border-left: 5px solid #22c55e;
+            margin: 14px 0;
+            color: #166534;
+            font-size: 0.98rem;
+        }
+
+        /* 流程图文字 */
+        .flow-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.92rem;
+            line-height: 1.8;
+            color: #1e293b;
+            background: #f8fafc;
+            padding: 16px 20px;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .arrow-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+
+        .arrow-icon {
+            color: #94a3b8;
+            font-size: 1.2rem;
+        }
+
+        .highlight {
+            background: #fef9c3;
+            padding: 1px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            color: #854d0e;
+        }
+
+        /* 响应式 */
+        @media (max-width: 700px) {
+            .slide {
+                padding: 22px 16px;
+                border-radius: 24px;
+            }
+            .slide-title {
+                font-size: 1.4rem;
+            }
+            .slide-subtitle {
+                display: none;
+            }
+            .two-col, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media print {
+            body { background: white; padding: 0; }
+            .slide {
+                box-shadow: none;
+                border: 1px solid #ccc;
+                break-inside: avoid;
+                margin-bottom: 24px;
+            }
+        }
+
+        /* 目录小标签 */
+        .toc-badge {
+            display: inline-block;
+            background: #eef2f8;
+            color: #1e2b4a;
+            font-size: 0.78rem;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        /* 表格特殊样式 */
+        .table-compact td, .table-compact th {
+            padding: 8px 14px;
+            font-size: 0.9rem;
+        }
+
+        /* 大数字展示 */
+        .big-number {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #1e2b4a;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="ppt-container">
+
+        <!-- 幻灯片 1：总原则 + 引入 -->
+        <section class="slide" id="slide1">
+            <div class="slide-header">
+                <div class="slide-number">01</div>
+                <div class="slide-title">DP 是什么？—— 爬楼梯引入</div>
+                <div class="slide-subtitle">总原则</div>
+            </div>
+            <div style="font-size: 1.15rem; font-weight: 500; margin-bottom: 16px; color: #0b1629;">
+                <i class="fas fa-bullseye" style="color: #3b82f6; margin-right: 10px;"></i>
+                DP 不是背公式，而是回答四个问题：
+            </div>
+            <div class="grid-3">
+                <div class="grid-item" style="border-left-color: #3b82f6;">
+                    <h4><i class="fas fa-question-circle"></i> ① 状态定义</h4>
+                    <code>dp[i]</code> 表示什么？
+                </div>
+                <div class="grid-item" style="border-left-color: #8b5cf6;">
+                    <h4><i class="fas fa-exchange-alt"></i> ② 状态转移</h4>
+                    <code>dp[i]</code> 怎么从前面的状态得到？
+                </div>
+                <div class="grid-item" style="border-left-color: #ec4899;">
+                    <h4><i class="fas fa-flag"></i> ③ 初始化</h4>
+                    最开始几个状态是什么？
+                </div>
+            </div>
+            <div class="grid-3" style="grid-template-columns: 1fr;">
+                <div class="grid-item" style="border-left-color: #f59e0b;">
+                    <h4><i class="fas fa-sort-amount-down"></i> ④ 遍历顺序</h4>
+                    从前往后还是反向？
+                </div>
+            </div>
+            <div class="two-col" style="margin-top: 8px;">
+                <div class="col-card" style="background: #f1f5f9;">
+                    <h4><i class="fas fa-stairs"></i> 爬楼梯问题</h4>
+                    <div style="font-family: monospace; font-size: 1rem; line-height: 1.7;">
+                        楼梯：0 → 1 → 2 → 3 → 4 → 5<br>
+                        每次走 1 步或 2 步<br>
+                        问：走到第 5 层有多少种方法？
+                    </div>
+                </div>
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-lightbulb"></i> 关键观察</h4>
+                    <div style="text-align: center; font-family: monospace; margin: 6px 0;">
+                        5<br>
+                        ↙ ↘<br>
+                        3&nbsp;&nbsp;&nbsp;4
+                    </div>
+                    <div style="text-align: center; font-weight: 600; margin-top: 6px;">
+                        dp[5] = dp[3] + dp[4]
+                    </div>
+                </div>
+            </div>
+            <div class="info-box" style="margin-top: 16px;">
+                <i class="fas fa-brain"></i> <strong>DP = 状态 + 状态转移 + 记忆已经计算过的结果。</strong>
+                把大问题拆成小问题，保存小问题答案，避免重复计算。
+            </div>
+        </section>
+
+        <!-- 幻灯片 2：DP 四步法 -->
+        <section class="slide" id="slide2">
+            <div class="slide-header">
+                <div class="slide-number">02</div>
+                <div class="slide-title">DP 四步法（贯穿全程）</div>
+                <div class="slide-subtitle">方法论</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 12px; align-items: center;">
+                <div style="background: #1e2b4a; color: white; padding: 16px 32px; border-radius: 20px; width: 100%; max-width: 500px; text-align: center;">
+                    <div style="font-size: 1.1rem; font-weight: 700;">1. 定义状态</div>
+                    <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 4px;">dp[i] 到底表示什么？</div>
+                </div>
+                <i class="fas fa-arrow-down" style="font-size: 1.6rem; color: #94a3b8;"></i>
+                <div style="background: #2d3e6b; color: white; padding: 16px 32px; border-radius: 20px; width: 100%; max-width: 500px; text-align: center;">
+                    <div style="font-size: 1.1rem; font-weight: 700;">2. 写状态转移</div>
+                    <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 4px;">dp[i] 怎么得到？</div>
+                </div>
+                <i class="fas fa-arrow-down" style="font-size: 1.6rem; color: #94a3b8;"></i>
+                <div style="background: #3b4d7a; color: white; padding: 16px 32px; border-radius: 20px; width: 100%; max-width: 500px; text-align: center;">
+                    <div style="font-size: 1.1rem; font-weight: 700;">3. 初始化</div>
+                    <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 4px;">最开始几个状态？</div>
+                </div>
+                <i class="fas fa-arrow-down" style="font-size: 1.6rem; color: #94a3b8;"></i>
+                <div style="background: #4a5d8a; color: white; padding: 16px 32px; border-radius: 20px; width: 100%; max-width: 500px; text-align: center;">
+                    <div style="font-size: 1.1rem; font-weight: 700;">4. 确定遍历顺序</div>
+                    <div style="font-size: 0.95rem; opacity: 0.9; margin-top: 4px;">从前往后还是反向？</div>
+                </div>
+            </div>
+            <div class="warning-box" style="margin-top: 20px;">
+                <i class="fas fa-exclamation-triangle"></i> <strong>最重要的是状态定义。</strong>
+                如果 <code>dp[i]</code> 的含义都没有搞清楚，后面的公式基本不可能正确。
+            </div>
+        </section>
+
+        <!-- 幻灯片 3：一维线性 DP —— 爬楼梯 + 打家劫舍 -->
+        <section class="slide" id="slide3">
+            <div class="slide-header">
+                <div class="slide-number">03</div>
+                <div class="slide-title">一维线性 DP：爬楼梯 & 打家劫舍</div>
+                <div class="slide-subtitle">经典模型</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="border-top: 5px solid #3b82f6;">
+                    <h4><i class="fas fa-stairs" style="color: #3b82f6;"></i> 爬楼梯 (LeetCode 70)</h4>
+                    <table class="table-compact" style="margin: 8px 0;">
+                        <tr><td><strong>状态定义</strong></td><td><code>dp[i]</code> = 爬到第 i 阶的方法数</td></tr>
+                        <tr><td><strong>最后一步</strong></td><td>从 i-1 走 1 步，或从 i-2 走 2 步</td></tr>
+                        <tr><td><strong>转移方程</strong></td><td><code>dp[i] = dp[i-1] + dp[i-2]</code></td></tr>
+                        <tr><td><strong>初始化</strong></td><td><code>dp[1] = 1, dp[2] = 2</code></td></tr>
+                        <tr><td><strong>遍历顺序</strong></td><td>从前往后</td></tr>
+                    </table>
+                    <div style="background: #f1f5f9; padding: 10px 14px; border-radius: 12px; font-family: monospace; font-size: 0.9rem; margin-top: 6px;">
+                        i：&nbsp;&nbsp;1&nbsp;&nbsp;2&nbsp;&nbsp;3&nbsp;&nbsp;4&nbsp;&nbsp;5<br>
+                        dp：&nbsp;1&nbsp;&nbsp;2&nbsp;&nbsp;3&nbsp;&nbsp;5&nbsp;&nbsp;8
+                    </div>
+                </div>
+                <div class="col-card" style="border-top: 5px solid #8b5cf6;">
+                    <h4><i class="fas fa-home" style="color: #8b5cf6;"></i> 打家劫舍 (LeetCode 198)</h4>
+                    <div style="font-size: 0.92rem; margin-bottom: 6px;">
+                        房子：[2] [7] [9] [3] [1]<br>
+                        相邻不能同时偷，问最多偷多少？
+                    </div>
+                    <table class="table-compact" style="margin: 8px 0;">
+                        <tr><td><strong>状态定义</strong></td><td><code>dp[i]</code> = 考虑前 i 个房子最多偷的钱</td></tr>
+                        <tr><td><strong>不偷</strong></td><td><code>dp[i-1]</code></td></tr>
+                        <tr><td><strong>偷</strong></td><td><code>dp[i-2] + nums[i]</code></td></tr>
+                        <tr><td><strong>转移方程</strong></td><td><code>dp[i] = max(dp[i-1], dp[i-2] + nums[i])</code></td></tr>
+                    </table>
+                    <div style="background: #f3e8ff; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem;">
+                        <i class="fas fa-check-circle" style="color: #8b5cf6;"></i> 典型的选择决策：偷或不偷。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 4：一维 DP 的共同结构 + 信号 -->
+        <section class="slide" id="slide4">
+            <div class="slide-header">
+                <div class="slide-number">04</div>
+                <div class="slide-title">一维 DP 的共同结构 & 识别信号</div>
+                <div class="slide-subtitle">模式识别</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #f8fafc;">
+                    <h4><i class="fas fa-project-diagram"></i> 共同结构</h4>
+                    <div class="flow-text" style="font-size: 0.88rem; white-space: pre; background: transparent; padding: 0; border: none;">
+             当前问题
+                │
+       ┌────────┴────────┐
+       ↓                 ↓
+   之前的状态          之前的状态
+       │                 │
+       └────────┬────────┘
+                ↓
+             dp[i]
+                    </div>
+                </div>
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-search"></i> 识别信号</h4>
+                    <div style="font-size: 0.95rem; line-height: 1.8;">
+                        看到以下组合，考虑一维 DP：
+                    </div>
+                    <div class="tag-cloud" style="margin-top: 10px;">
+                        <span class="tag core">数组</span>
+                        <span class="tag core">当前位置 i</span>
+                        <span class="tag core">前面状态影响后面</span>
+                        <span class="tag core">最大 / 最小 / 方案数</span>
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top: 18px;">
+                <span class="badge">常见形式</span>
+            </div>
+            <div class="grid-3" style="margin-top: 8px;">
+                <div class="grid-item" style="border-left-color: #3b82f6;">
+                    <code>dp[i] = dp[i-1] + dp[i-2]</code>
+                </div>
+                <div class="grid-item" style="border-left-color: #8b5cf6;">
+                    <code>dp[i] = max(dp[i-1], dp[i-2] + nums[i])</code>
+                </div>
+                <div class="grid-item" style="border-left-color: #ec4899;">
+                    <code>dp[i] = min(dp[i-1], dp[i-2] + cost[i])</code>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 5：0/1 背包 —— 模型 + 转移方程 -->
+        <section class="slide" id="slide5">
+            <div class="slide-header">
+                <div class="slide-number">05</div>
+                <div class="slide-title">0/1 背包：模型 & 转移方程</div>
+                <div class="slide-subtitle">第二类模型</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #fef9e7;">
+                    <h4><i class="fas fa-box"></i> 问题模型</h4>
+                    <div style="font-size: 0.95rem; line-height: 1.8;">
+                        背包容量 <code>W = 4</code><br>
+                        物品：<br>
+                        ① 重量 2，价值 3<br>
+                        ② 重量 1，价值 2<br>
+                        ③ 重量 3，价值 4<br>
+                        <strong>每个物品最多选一次，最大价值？</strong>
+                    </div>
+                    <div style="margin-top: 10px; background: #fff; padding: 10px; border-radius: 12px; font-size: 0.9rem;">
+                        <i class="fas fa-toggle-on" style="color: #f59e0b;"></i> 每个物品只有两个选择：
+                        <code>0 = 不选</code> / <code>1 = 选</code>
+                    </div>
+                </div>
+                <div class="col-card" style="background: #eff6ff;">
+                    <h4><i class="fas fa-table"></i> 二维 DP 定义</h4>
+                    <table class="table-compact" style="margin: 6px 0;">
+                        <tr><td><strong>状态</strong></td><td><code>dp[i][j]</code> = 只考虑前 i 个物品，容量为 j 时的最大价值</td></tr>
+                        <tr><td><strong>不选</strong></td><td><code>dp[i-1][j]</code></td></tr>
+                        <tr><td><strong>选</strong></td><td><code>dp[i-1][j-w[i]] + v[i]</code></td></tr>
+                    </table>
+                    <div class="formula-box" style="margin-top: 10px; border-left-color: #3b82f6;">
+                        <strong>转移方程：</strong><br>
+                        dp[i][j] = max(<br>
+                        &nbsp;&nbsp;dp[i-1][j],<br>
+                        &nbsp;&nbsp;dp[i-1][j-w[i]] + v[i]<br>
+                        )
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 6：背包 DP 表实例 -->
+        <section class="slide" id="slide6">
+            <div class="slide-header">
+                <div class="slide-number">06</div>
+                <div class="slide-title">背包 DP 表实例</div>
+                <div class="slide-subtitle">直观理解</div>
+            </div>
+            <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;">
+                <div style="flex: 1; min-width: 280px;">
+                    <div style="font-size: 1rem; margin-bottom: 12px;">
+                        <strong>容量 W = 4</strong><br>
+                        物品：1(2,3)&nbsp;&nbsp;2(1,2)&nbsp;&nbsp;3(3,4)
+                    </div>
+                    <table style="font-size: 0.95rem;">
+                        <thead>
+                            <tr><th></th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>物 0</strong></td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+                            <tr><td><strong>物 1</strong></td><td>0</td><td>0</td><td>3</td><td>3</td><td>3</td></tr>
+                            <tr><td><strong>物 2</strong></td><td>0</td><td>2</td><td>3</td><td>5</td><td>5</td></tr>
+                            <tr><td><strong>物 3</strong></td><td>0</td><td>2</td><td>3</td><td>5</td><td style="background: #fef9c3; font-weight: 700;">6</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style="flex: 0.9; min-width: 200px;">
+                    <div class="success-box">
+                        <i class="fas fa-check-circle"></i> <strong>答案：dp[3][4] = 6</strong><br>
+                        选择：物品 2 + 物品 3<br>
+                        重量：1 + 3 = 4<br>
+                        价值：2 + 4 = 6
+                    </div>
+                    <div class="info-box" style="margin-top: 12px;">
+                        <i class="fas fa-info-circle"></i> 物品 ① + ③ 重量为 5，超过容量 4，不能同时选择。
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 7：一维优化 + 关键坑 -->
+        <section class="slide" id="slide7">
+            <div class="slide-header">
+                <div class="slide-number">07</div>
+                <div class="slide-title">一维优化 & 容量从大到小（重点坑）</div>
+                <div class="slide-subtitle">滚动数组</div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #f0fdf4;">
+                    <h4><i class="fas fa-compress-alt"></i> 空间压缩</h4>
+                    <div style="font-size: 0.95rem; margin-bottom: 8px;">
+                        转移只依赖上一行：
+                    </div>
+                    <div class="formula-box" style="border-left-color: #22c55e; font-size: 0.9rem;">
+                        dp[i][j] = max(dp[i-1][j],<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dp[i-1][j-w] + v)
+                    </div>
+                    <div style="margin-top: 10px; font-size: 0.95rem;">
+                        压缩为：<code>dp[j]</code><br>
+                        空间：<code>O(nW)</code> → <code>O(W)</code>
+                    </div>
+                </div>
+                <div class="col-card" style="background: #fef2f2;">
+                    <h4><i class="fas fa-exclamation-triangle" style="color: #ef4444;"></i> 关键坑：容量必须从大到小</h4>
+                    <pre style="margin: 8px 0; font-size: 0.85rem;"><code>for each item:
+    for (int j = W; j >= weight; j--)
+        dp[j] = max(dp[j],
+                    dp[j-weight] + value);</code></pre>
+                    <div style="font-size: 0.92rem; line-height: 1.6;">
+                        <strong>从小到大：</strong>本轮更新的 <code>dp[j-weight]</code> 可能被再次使用 → 同一物品被重复选择。<br>
+                        <strong>从大到小：</strong>使用的永远是上一轮的旧值 → 保证每个物品只用一次。
+                    </div>
+                </div>
+            </div>
+            <div class="warning-box" style="margin-top: 16px;">
+                <i class="fas fa-key"></i> <strong>0/1 背包一维写法：容量从大到小遍历。</strong>
+            </div>
+        </section>
+
+        <!-- 幻灯片 8：两类 DP 对比 + 判断 DP 三问 -->
+        <section class="slide" id="slide8">
+            <div class="slide-header">
+                <div class="slide-number">08</div>
+                <div class="slide-title">两类 DP 对比 & 判断 DP 三问</div>
+                <div class="slide-subtitle">总结与识别</div>
+            </div>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>对比项</th><th>一维线性 DP</th><th>0/1 背包</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><strong>状态</strong></td><td><code>dp[i]</code></td><td><code>dp[i][j]</code> → 优化 <code>dp[j]</code></td></tr>
+                        <tr><td><strong>维度</strong></td><td>一维</td><td>二维 → 一维</td></tr>
+                        <tr><td><strong>关键</strong></td><td>前 i 个位置</td><td>前 i 个物品 + 容量 j</td></tr>
+                        <tr><td><strong>选择</strong></td><td>通常无显式选择</td><td>不选 / 选</td></tr>
+                        <tr><td><strong>例子</strong></td><td>爬楼梯、打家劫舍、LIS</td><td>等和子集、零钱兑换</td></tr>
+                        <tr><td><strong>遍历</strong></td><td>从前往后</td><td>一维优化后容量从大到小</td></tr>
+                        <tr><td><strong>复杂度</strong></td><td>时间 O(n)，空间 O(n) 或 O(1)</td><td>时间 O(nW)，空间 O(W)</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top: 20px;">
+                <span class="badge">判断 DP 三问</span>
+            </div>
+            <div class="grid-3" style="margin-top: 10px;">
+                <div class="grid-item" style="border-left-color: #3b82f6;">
+                    <h4>① 大问题能拆吗？</h4>
+                    <code>dp[5] ← dp[4], dp[3]</code>
+                </div>
+                <div class="grid-item" style="border-left-color: #8b5cf6;">
+                    <h4>② 最优子结构？</h4>
+                    小问题最优解 → 大问题最优解
+                </div>
+                <div class="grid-item" style="border-left-color: #ec4899;">
+                    <h4>③ 重复计算？</h4>
+                    暴力递归中同一子问题多次出现
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 9：推荐刷题路线 -->
+        <section class="slide" id="slide9">
+            <div class="slide-header">
+                <div class="slide-number">09</div>
+                <div class="slide-title">推荐刷题路线</div>
+                <div class="slide-subtitle">6 道题串起学习链</div>
+            </div>
+            <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+                <div style="flex: 1.2; min-width: 300px;">
+                    <div class="flow-text" style="font-size: 0.85rem; white-space: pre; line-height: 1.5; background: #f8fafc;">
+                 动态规划入门
+                       │
+             ┌─────────┴─────────┐
+             ↓                   ↓
+        一维线性 DP             背包
+             │                   │
+       ┌─────┼─────┐       ┌─────┼─────┐
+       ↓     ↓     ↓       ↓     ↓     ↓
+      70    746   198     416   322   518
+     爬楼梯  最小花费 打家劫舍  等和   零钱   零钱
+                         子集   兑换II
+       │           │
+       └─────┬─────┘
+             ↓
+            300
+       最长递增子序列
+             ↓
+          213 / 494
+             ↓
+       更复杂的 DP
+                    </div>
+                </div>
+                <div style="flex: 0.8; min-width: 220px;">
+                    <div class="success-box">
+                        <i class="fas fa-trophy"></i> <strong>如果只选 6 道作业</strong>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 12px;">
+                        <div style="background: #f1f5f9; padding: 10px 14px; border-radius: 14px; font-weight: 500;">
+                            <span style="display: inline-block; width: 28px; height: 28px; background: #1e2b4a; color: white; border-radius: 50%; text-align: center; line-height: 28px; font-size: 0.8rem; margin-right: 10px;">1</span> 70 爬楼梯
+                        </div>
+                        <div style="background: #f1f5f9; padding: 10px 14px; border-radius: 14px; font-weight: 500;">
+                            <span style="display: inline-block; width: 28px; height: 28px; background: #1e2b4a; color: white; border-radius: 50%; text-align: center; line-height: 28px; font-size: 0.8rem; margin-right: 10px;">2</span> 746 最小花费爬楼梯
+                        </div>
+                        <div style="background: #f1f5f9; padding: 10px 14px; border-radius: 14px; font-weight: 500;">
+                            <span style="display: inline-block; width: 28px; height: 28px; background: #1e2b4a; color: white; border-radius: 50%; text-align: center; line-height: 28px; font-size: 0.8rem; margin-right: 10px;">3</span> 198 打家劫舍
+                        </div>
+                        <div style="background: #f1f5f9; padding: 10px 14px; border-radius: 14px; font-weight: 500;">
+                            <span style="display: inline-block; width: 28px; height: 28px; background: #1e2b4a; color: white; border-radius: 50%; text-align: center; line-height: 28px; font-size: 0.8rem; margin-right: 10px;">4</span> 300 最长递增子序列
+                        </div>
+                        <div style="background: #f1f5f9; padding: 10px 14px; border-radius: 14px; font-weight: 500;">
+                            <span style="display: inline-block; width: 28px; height: 28px; background: #1e2b4a; color: white; border-radius: 50%; text-align: center; line-height: 28px; font-size: 0.8rem; margin-right: 10px;">5</span> 416 分割等和子集
+                        </div>
+                        <div style="background: #f1f5f9; padding: 10px 14px; border-radius: 14px; font-weight: 500;">
+                            <span style="display: inline-block; width: 28px; height: 28px; background: #1e2b4a; color: white; border-radius: 50%; text-align: center; line-height: 28px; font-size: 0.8rem; margin-right: 10px;">6</span> 322 零钱兑换
+                        </div>
+                    </div>
+                    <div style="margin-top: 14px; background: #eef2f8; padding: 12px 16px; border-radius: 14px; font-size: 0.9rem;">
+                        <i class="fas fa-link"></i> 串起完整学习链：<br>
+                        一维状态 → max/min → 选择决策<br>
+                        → 二维背包 → 一维背包 → 遍历方向
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 幻灯片 10：最终总结 + 5 分钟 PPT 结构 -->
+        <section class="slide" id="slide10">
+            <div class="slide-header">
+                <div class="slide-number">10</div>
+                <div class="slide-title">最终总结 & 5 分钟 PPT 结构</div>
+                <div class="slide-subtitle">收尾</div>
+            </div>
+            <div style="background: #0f172a; color: white; padding: 24px 28px; border-radius: 28px; margin-bottom: 22px;">
+                <div style="font-size: 1.2rem; font-weight: 600; margin-bottom: 14px;">🎯 核心思维</div>
+                <div style="font-size: 1.05rem; color: #cbd5e1; margin-bottom: 10px;">
+                    先定义“我要求的答案”是什么，再想这个答案怎么从更小的问题得到。
+                </div>
+                <div style="font-size: 1.15rem; font-weight: 700; color: #93c5fd; border-left: 6px solid #3b82f6; padding-left: 18px;">
+                    不要把 DP 当成一堆需要背诵的公式。<br>
+                    真正应该掌握的是：“这个 dp[i] 到底代表什么？”
+                </div>
+            </div>
+            <div class="two-col">
+                <div class="col-card" style="background: #f8fafc;">
+                    <h4><i class="fas fa-sitemap"></i> DP 四步法</h4>
+                    <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.95rem;">
+                        <span><span class="toc-badge">1</span> 定义状态</span>
+                        <span style="color: #94a3b8;">↓</span>
+                        <span><span class="toc-badge">2</span> 状态转移</span>
+                        <span style="color: #94a3b8;">↓</span>
+                        <span><span class="toc-badge">3</span> 初始化</span>
+                        <span style="color: #94a3b8;">↓</span>
+                        <span><span class="toc-badge">4</span> 遍历顺序</span>
+                        <span style="color: #94a3b8;">↓</span>
+                        <span style="font-weight: 700; color: #1e3a8a;">答案</span>
+                    </div>
+                </div>
+                <div class="col-card" style="background: #f1f5f9;">
+                    <h4><i class="fas fa-list-ol"></i> 5 分钟 PPT 结构</h4>
+                    <div style="display: flex; flex-direction: column; gap: 5px; font-size: 0.92rem;">
+                        <span><span class="toc-badge">01</span> DP 是什么？—— 爬楼梯引入</span>
+                        <span><span class="toc-badge">02</span> DP 四步法</span>
+                        <span><span class="toc-badge">03</span> 一维线性 DP：爬楼梯 + 打家劫舍</span>
+                        <span><span class="toc-badge">04</span> 一维 DP 的共同结构</span>
+                        <span><span class="toc-badge">05</span> 0/1 背包：二维模型 + 转移方程</span>
+                        <span><span class="toc-badge">06</span> 背包 DP 表实例</span>
+                        <span><span class="toc-badge">07</span> 一维优化 + 容量从大到小</span>
+                        <span><span class="toc-badge">08</span> 两类 DP 对比 + 判断三问</span>
+                        <span><span class="toc-badge">09</span> 刷题路线：6 道题</span>
+                        <span><span class="toc-badge">10</span> 最终总结</span>
+                    </div>
+                </div>
+            </div>
+            <div class="info-box" style="margin-top: 18px; text-align: center;">
+                <i class="fas fa-graduation-cap"></i> 只要状态定义正确，转移方程往往就会自然出现。
+            </div>
+        </section>
+
+    </div>
+</body>
+</html>
