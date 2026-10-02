@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数学演示工具 · 坐标系</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+    background: #eef2f8;
+    margin: 0; min-height: 100vh;
+    display: flex; justify-content: center; align-items: center;
+    padding: 10px;
+  }
+  .card {
+    background: #fff; border-radius: 20px;
+    box-shadow: 0 20px 50px -12px rgba(0,20,40,0.28);
+    padding: 14px 18px 18px; max-width: 1280px;
+  }
+  h1 {
+    font-size: 1.15rem; font-weight: 600; margin: 0 0 3px;
+    color: #0b1e3a; display: flex; align-items: center; gap: 8px;
+  }
+  h1 .tag {
+    background: #1e4a7a; color: #fff; font-size: 0.62rem;
+    font-weight: 400; padding: 2px 9px; border-radius: 40px;
+  }
+  .sub {
+    color: #4a5e7a; font-size: 0.7rem;
+    border-left: 3px solid #98b9e0; background: #f0f6ff;
+    padding: 2px 11px; border-radius: 0 8px 8px 0;
+    margin: 0 0 10px; width: fit-content;
+  }
+  .main-panel { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+
+  /* ---- 画布区（固定尺寸，不随缩放变化布局）---- */
+  .canvas-wrapper {
+    position: relative; background: #fff; border-radius: 12px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.03);
+    overflow: hidden; line-height: 0; flex-shrink: 0;
+    width: 760px; height: 760px;   /* 固定布局尺寸 */
+  }
+  canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+  /* 悬浮工具条 */
+  .floating-toolbar {
+    position: absolute; top: 10px; left: 10px;
+    display: flex; gap: 4px; z-index: 5;
+    background: rgba(255,255,255,.94); backdrop-filter: blur(6px);
+    border-radius: 30px; padding: 4px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04);
+  }
+  .ft-btn {
+    border: none; background: transparent; border-radius: 30px;
+    padding: 5px 10px; font-size: 0.66rem; font-weight: 600;
+    color: #1a3b5e; cursor: pointer; transition: .12s;
+    display: flex; align-items: center; gap: 3px; white-space: nowrap;
+  }
+  .ft-btn:hover { background: #e1edfc; }
+  .ft-btn.active { background: #1e4a7a; color: #fff; }
+  .ft-btn:active { transform: scale(.95); }
+
+  .zoom-bar {
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    background: rgba(255,255,255,.94); backdrop-filter: blur(6px);
+    border-radius: 40px; padding: 4px 8px; display: flex;
+    align-items: center; gap: 4px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.04);
+    z-index: 5;
+  }
+  .zoom-btn {
+    border: none; background: transparent; width: 24px; height: 24px;
+    border-radius: 50%; font-size: .95rem; font-weight: 600;
+    color: #1a3b5e; cursor: pointer; display: flex;
+    align-items: center; justify-content: center; padding: 0;
+  }
+  .zoom-btn:hover { background: #e1edfc; }
+  .zoom-level {
+    font-size: .66rem; font-weight: 600; color: #2d577b;
+    min-width: 38px; text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ---- 右侧面板：更窄 ---- */
+  .control-panel {
+    flex: 0 1 250px; min-width: 220px; max-width: 250px;
+    display: flex; flex-direction: column; gap: 7px;
+    max-height: 800px; overflow-y: auto; padding-right: 2px;
+  }
+  .control-panel::-webkit-scrollbar { width: 4px; }
+  .control-panel::-webkit-scrollbar-thumb { background: #c2d6ea; border-radius: 10px; }
+
+  .panel-section {
+    background: #f9fcff; border: 1px solid #d9e6f5;
+    border-radius: 10px; padding: 8px 10px;
+  }
+  .panel-section > label {
+    display: block; font-size: .68rem; font-weight: 700;
+    color: #1a3b5e; margin-bottom: 5px;
+  }
+  .row { display: flex; gap: 4px; align-items: center; }
+  .row + .row { margin-top: 5px; }
+
+  .field {
+    display: flex; align-items: center; background: #fff;
+    border: 1px solid #cbdae9; border-radius: 8px;
+    padding: 0 3px 0 6px; flex: 1; transition: .15s;
+  }
+  .field:focus-within {
+    border-color: #2c6eae;
+    box-shadow: 0 0 0 2px rgba(44,110,174,.13);
+  }
+  .field span { font-weight: 700; color: #2c6eae; font-size: .66rem; }
+  .field input {
+    border: none; padding: 5px 3px; font-size: .76rem;
+    width: 100%; background: transparent; outline: none;
+    font-family: 'JetBrains Mono', monospace; font-weight: 500;
+    color: #0b1e3a;
+  }
+  .field input::placeholder { color: #a0b6cf; font-weight: 400; }
+
+  textarea.batch {
+    width: 100%; border: 1px solid #cbdae9; border-radius: 8px;
+    padding: 6px 8px; font-family: 'JetBrains Mono', monospace;
+    font-size: .7rem; line-height: 1.45; color: #0b1e3a;
+    resize: vertical; outline: none; min-height: 52px;
+    transition: .15s;
+  }
+  textarea.batch:focus {
+    border-color: #2c6eae;
+    box-shadow: 0 0 0 2px rgba(44,110,174,.13);
+  }
+  textarea.batch::placeholder { color: #a0b6cf; }
+
+  .btn {
+    border: none; border-radius: 40px; padding: 5px 8px;
+    font-size: .64rem; font-weight: 600; cursor: pointer;
+    transition: all .13s; display: inline-flex;
+    align-items: center; justify-content: center; gap: 2px;
+    background: #fff; color: #1a3b5e;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04), 0 0 0 1px #cbdae9;
+    flex: 1; white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    background: #1e4a7a; color: #fff;
+    box-shadow: 0 4px 10px -6px rgba(30,74,122,.4), 0 0 0 1px #1e4a7a;
+  }
+  .btn-primary:hover { background: #123a5e; }
+  .btn-success {
+    background: #2d7a4a; color: #fff;
+    box-shadow: 0 4px 10px -6px rgba(45,122,74,.4), 0 0 0 1px #2d7a4a;
+  }
+  .btn-success:hover { background: #1f5a36; }
+  .btn-soft {
+    background: #e6effa; color: #1a3b5e;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04), 0 0 0 1px #a0bede;
+  }
+  .btn-soft:hover { background: #d4e3f5; }
+  .btn-danger {
+    background: #fdecec; color: #a32b2b;
+    box-shadow: 0 1px 4px rgba(0,0,0,.04), 0 0 0 1px #eeb8b8;
+  }
+  .btn-danger:hover { background: #fad4d4; }
+
+  .hint { font-size: .58rem; color: #607d9b; margin-top: 2px; }
+  .hint code {
+    background: #eef3fa; padding: 1px 5px; border-radius: 20px;
+    font-size: .56rem; color: #1e4a7a;
+  }
+
+  .item-list {
+    max-height: 130px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .item-list::-webkit-scrollbar { width: 4px; }
+  .item-list::-webkit-scrollbar-thumb { background: #c2d6ea; border-radius: 10px; }
+
+  .item-row {
+    display: flex; align-items: center; gap: 5px;
+    background: #fff; border-radius: 7px; padding: 3px 5px 3px 7px;
+    font-size: .64rem; font-family: 'JetBrains Mono', monospace;
+    box-shadow: 0 1px 3px rgba(0,0,0,.03), 0 0 0 1px #dce8f4;
+    cursor: pointer; transition: .12s;
+  }
+  .item-row:hover { background: #f4f9ff; box-shadow: 0 2px 6px rgba(0,0,0,.05), 0 0 0 1px #b8cee4; }
+
+  .item-color {
+    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+  }
+  .item-label {
+    flex: 1; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; color: #0a2a44; font-weight: 500;
+  }
+  .item-del {
+    border: none; background: none; color: #8aa2c0;
+    font-size: .82rem; line-height: 1; cursor: pointer;
+    padding: 0 2px; border-radius: 50%;
+  }
+  .item-del:hover { color: #c03a3a; background: #ffeaea; }
+
+  .empty-msg {
+    color: #98adc5; font-size: .62rem; font-style: italic;
+    text-align: center; padding: 5px 0;
+  }
+
+  .status {
+    font-size: .6rem; color: #2d577b; background: #e9f1fa;
+    border-radius: 30px; padding: 3px 9px;
+    display: inline-block; margin-top: 2px;
+  }
+
+  .check-row {
+    display: flex; align-items: center; gap: 5px;
+    font-size: .64rem; color: #1a3b5e; cursor: pointer;
+    user-select: none;
+  }
+  .check-row input[type="checkbox"] {
+    width: 12px; height: 12px; accent-color: #1e4a7a; cursor: pointer;
+  }
+  .check-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 3px 6px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📐 数学演示工具 · 直角坐标系 <span class="tag">教学版</span></h1>
+  <div class="sub">绘制点 · 函数曲线 · 线段/折线/多边形 · 滚轮以鼠标为中心缩放 · 拖拽平移</div>
+
+  <div class="main-panel">
+    <!-- 画布：固定布局尺寸 760x760 -->
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="cv"></canvas>
+      <div class="floating-toolbar">
+        <button class="ft-btn active" data-tool="select">🖐️ 选择</button>
+        <button class="ft-btn" data-tool="point">📍 取点</button>
+        <button class="ft-btn" data-tool="segment">📏 线段</button>
+        <button class="ft-btn" data-tool="polyline">〰️ 折线</button>
+        <button class="ft-btn" data-tool="polygon">⬡ 多边形</button>
+      </div>
+      <div class="zoom-bar">
+        <button class="zoom-btn" id="zoomOut">−</button>
+        <span class="zoom-level" id="zoomLevel">100%</span>
+        <button class="zoom-btn" id="zoomIn">+</button>
+        <button class="zoom-btn" id="zoomReset" title="重置视图">⟲</button>
+      </div>
+    </div>
+
+    <!-- 右侧控制面板 -->
+    <div class="control-panel">
+
+      <div class="panel-section">
+        <label>📈 函数曲线 y = f(x)</label>
+        <div class="row">
+          <div class="field">
+            <span>y=</span>
+            <input id="funcInput" placeholder="sin(x) 或 x^2/4" value="sin(x)">
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn btn-primary" id="addFuncBtn">➕ 绘制</button>
+          <button class="btn btn-soft" id="clearFuncBtn">清除曲线</button>
+        </div>
+        <div class="hint">
+          <code>sin cos tan sqrt abs log exp pi e</code>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <label>➕ 添加点 / 命名</label>
+        <div class="row">
+          <div class="field"><span>x</span><input type="number" id="xInput" value="3" step="any"></div>
+          <div class="field"><span>y</span><input type="number" id="yInput" value="4" step="any"></div>
+        </div>
+        <div class="row">
+          <div class="field"><span>名</span><input id="labelInput" placeholder="A（可选）" maxlength="6"></div>
+        </div>
+        <div class="row">
+          <button class="btn btn-primary" id="addBtn">➕ 添加</button>
+          <button class="btn btn-danger" id="clearAllBtn">🗑️ 清空</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <label>📦 批量输入（每行一个点）</label>
+        <textarea class="batch" id="batchInput" rows="3" placeholder="2 3&#10;-4 -2&#10;5.5 -5"></textarea>
+        <div class="row" style="margin-top:5px;">
+          <button class="btn btn-soft" id="batchAddBtn">📥 批量添加</button>
+          <button class="btn btn-soft" id="batchClearBtn">🧽 清空</button>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <label>⚙️ 显示设置</label>
+        <div class="check-grid">
+          <label class="check-row"><input type="checkbox" id="showGrid" checked>网格</label>
+          <label class="check-row"><input type="checkbox" id="showTick" checked>刻度</label>
+          <label class="check-row"><input type="checkbox" id="showCoord" checked>坐标标签</label>
+          <label class="check-row"><input type="checkbox" id="showFunc">函数曲线</label>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <label>📋 元素列表 <span id="elemCount" style="font-weight:400;color:#607d9b;">(0)</span></label>
+        <div class="item-list" id="itemList">
+          <div class="empty-msg">暂无元素</div>
+        </div>
+      </div>
+
+      <div class="panel-section">
+        <label>💾 导出 / 工具</label>
+        <div class="row">
+          <button class="btn btn-success" id="exportPngBtn">🖼️ PNG</button>
+          <button class="btn btn-soft" id="exportJsonBtn">📄 JSON</button>
+        </div>
+      </div>
+
+      <div class="status" id="statusMsg">🟢 就绪 · 点击画布可直接取点</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// ============================================================
+// 1. 基础配置
+// ============================================================
+const canvas = document.getElementById('cv');
+const ctx = canvas.getContext('2d');
+const wrapper = document.getElementById('canvasWrapper');
+
+// 逻辑坐标系范围（数据坐标）
+const X_MIN = -10, X_MAX = 10, Y_MIN = -10, Y_MAX = 10;
+const GRID_STEP = 1;
+
+// 内部渲染分辨率（高分辨率绘制，与 CSS 显示尺寸解耦）
+const RENDER_W = 1520;
+const RENDER_H = 1520;
+// 视口：数据坐标 -> 渲染像素的映射参数（含缩放平移）
+// 基础映射：把 [-10,10] 映射到 [PAD, RENDER-PAD]
+const PAD = 60;               // 渲染像素边距（相对 1520 画布很小）
+const BASE_W = RENDER_W - 2 * PAD;
+const BASE_H = RENDER_H - 2 * PAD;
+
+canvas.width = RENDER_W;
+canvas.height = RENDER_H;
+
+// 视图状态：scale 是缩放倍数，offset 是渲染像素偏移
+let view = { scale: 1.0, offsetX: 0, offsetY: 0 };
+let dragState = { active: false, lastX: 0, lastY: 0, moved: false };
+
+// 工具状态
+let currentTool = 'select';
+let pendingPoints = [];
+let hoveredElem = null;
+
+// 数据
+let elements = [];
+let elementIdCounter = 1;
+
+// 显示选项
+let showOptions = { grid: true, tick: true, coordLabel: true, func: true };
+
+const PALETTE = [
+  '#1e4a7a', '#c0392b', '#27ae60', '#8e44ad', '#d35400',
+  '#16a085', '#2c3e50', '#e67e22', '#2980b9', '#c2185b'
+];
+
+// ============================================================
+// 2. 坐标映射
+// ============================================================
+function dataToCanvas(x, y) {
+  const bx = PAD + ((x - X_MIN) / (X_MAX - X_MIN)) * BASE_W;
+  const by = PAD + BASE_H - ((y - Y_MIN) / (Y_MAX - Y_MIN)) * BASE_H;
+  return {
+    x: bx * view.scale + view.offsetX,
+    y: by * view.scale + view.offsetY
+  };
+}
+
+function canvasToData(cx, cy) {
+  const bx = (cx - view.offsetX) / view.scale;
+  const by = (cy - view.offsetY) / view.scale;
+  const x = X_MIN + ((bx - PAD) / BASE_W) * (X_MAX - X_MIN);
+  const y = Y_MIN + ((BASE_H - (by - PAD)) / BASE_H) * (Y_MAX - Y_MIN);
+  return { x, y };
+}
+
+// ============================================================
+// 3. 绘制
+// ============================================================
+function draw() {
+  ctx.clearRect(0, 0, RENDER_W, RENDER_H);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, RENDER_W, RENDER_H);
+
+  if (showOptions.grid) drawGrid();
+  if (showOptions.tick) drawTicks();
+  drawAxes();
+  if (showOptions.func) drawAllFunctions();
+  drawAllElements();
+  drawPendingPreview();
+}
+
+function drawGrid() {
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = '#e0e9f2';
+  ctx.beginPath();
+  for (let x = X_MIN; x <= X_MAX; x += GRID_STEP) {
+    if (Math.abs(x) < 1e-9) continue;
+    const p1 = dataToCanvas(x, Y_MIN);
+    const p2 = dataToCanvas(x, Y_MAX);
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+  }
+  for (let y = Y_MIN; y <= Y_MAX; y += GRID_STEP) {
+    if (Math.abs(y) < 1e-9) continue;
+    const p1 = dataToCanvas(X_MIN, y);
+    const p2 = dataToCanvas(X_MAX, y);
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(p2.x, p2.y);
+  }
+  ctx.stroke();
+}
+
+function drawTicks() {
+  const o = dataToCanvas(0, 0);
+  const fs = Math.max(18, Math.round(22 * view.scale));
+  ctx.font = `${fs}px "JetBrains Mono", monospace`;
+  ctx.fillStyle = '#3f5a7a';
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let x = X_MIN; x <= X_MAX; x++) {
+    if (x === 0) continue;
+    const p = dataToCanvas(x, 0);
+    ctx.fillText(x, p.x, p.y + 8 * view.scale);
+  }
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let y = Y_MIN; y <= Y_MAX; y++) {
+    if (y === 0) continue;
+    const p = dataToCanvas(0, y);
+    ctx.fillText(y, p.x - 8 * view.scale, p.y);
+  }
+  ctx.font = `bold ${Math.max(20, Math.round(24*view.scale))}px "JetBrains Mono", monospace`;
+  ctx.fillStyle = '#1e4a7a';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.fillText('0', o.x - 8*view.scale, o.y + 8*view.scale);
+}
+
+function drawAxes() {
+  const pXMin = dataToCanvas(X_MIN, 0);
+  const pXMax = dataToCanvas(X_MAX, 0);
+  const pYMin = dataToCanvas(0, Y_MIN);
+  const pYMax = dataToCanvas(0, Y_MAX);
+
+  ctx.lineWidth = 3.4;
+  ctx.strokeStyle = '#2d3e56';
+  ctx.beginPath();
+  ctx.moveTo(pXMin.x, pXMin.y); ctx.lineTo(pXMax.x, pXMax.y);
+  ctx.moveTo(pYMin.x, pYMin.y); ctx.lineTo(pYMax.x, pYMax.y);
+  ctx.stroke();
+
+  const s = view.scale;
+  ctx.fillStyle = '#2d3e56';
+  ctx.beginPath();
+  ctx.moveTo(pXMax.x, pXMax.y);
+  ctx.lineTo(pXMax.x - 22*s, pXMax.y - 11*s);
+  ctx.lineTo(pXMax.x - 22*s, pXMax.y + 11*s);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(pYMax.x, pYMax.y);
+  ctx.lineTo(pYMax.x - 11*s, pYMax.y + 22*s);
+  ctx.lineTo(pYMax.x + 11*s, pYMax.y + 22*s);
+  ctx.closePath(); ctx.fill();
+
+  ctx.font = `bold ${Math.max(22, Math.round(26*s))}px system-ui, sans-serif`;
+  ctx.fillStyle = '#1a3b5e';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+  ctx.fillText('x', pXMax.x - 8, pXMax.y - 14*s);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('y', pYMax.x + 14*s, pYMax.y + 6);
+}
+
+function drawAllElements() {
+  elements.forEach(el => {
+    if (!el.visible) return;
+    const isHover = hoveredElem && hoveredElem.id === el.id;
+
+    if (el.type === 'segment' || el.type === 'polyline' || el.type === 'polygon') {
+      if (el.points.length < 2) return;
+      ctx.beginPath();
+      el.points.forEach((pt, i) => {
+        const p = dataToCanvas(pt.x, pt.y);
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      if (el.type === 'polygon') ctx.closePath();
+
+      if (el.type === 'polygon') {
+        ctx.fillStyle = hexA(el.color, 0.15);
+        ctx.fill();
+      }
+      ctx.strokeStyle = el.color;
+      ctx.lineWidth = (isHover ? 6 : 4) * view.scale;
+      ctx.stroke();
+
+      el.points.forEach(pt => {
+        const p = dataToCanvas(pt.x, pt.y);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 7 * view.scale, 0, Math.PI*2);
+        ctx.fillStyle = el.color;
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2.5 * view.scale;
+        ctx.stroke();
+      });
+      return;
+    }
+
+    if (el.type === 'point') {
+      const p = dataToCanvas(el.points[0].x, el.points[0].y);
+      const r = (isHover ? 12 : 9) * view.scale;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r + 7*view.scale, 0, Math.PI*2);
+      ctx.fillStyle = hexA(el.color, 0.15);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+      ctx.fillStyle = el.color;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 3 * view.scale;
+      ctx.stroke();
+
+      if (el.label || showOptions.coordLabel) {
+        const fs = Math.max(17, Math.round(20 * view.scale));
+        ctx.font = `bold ${fs}px "JetBrains Mono", monospace`;
+        ctx.fillStyle = el.color;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        let txt = '';
+        if (el.label) txt += el.label + ' ';
+        if (showOptions.coordLabel) txt += `(${fmt(el.points[0].x)}, ${fmt(el.points[0].y)})`;
+        ctx.fillText(txt.trim(), p.x + 15*view.scale, p.y - 12*view.scale);
+      }
+    }
+  });
+}
+
+function drawAllFunctions() {
+  elements.forEach(el => {
+    if (el.type !== 'function' || !el.visible) return;
+    const fn = el.fn;
+    const samples = 1600;
+    const step = (X_MAX - X_MIN) / samples;
+
+    ctx.beginPath();
+    let started = false;
+    let prevY = null;
+
+    for (let i = 0; i <= samples; i++) {
+      const x = X_MIN + i * step;
+      let y;
+      try { y = fn(x); } catch(e) { y = NaN; }
+      if (!isFinite(y)) { started = false; prevY = null; continue; }
+      if (prevY !== null && Math.abs(y - prevY) > 20) started = false;
+
+      const p = dataToCanvas(x, y);
+      if (!started) { ctx.moveTo(p.x, p.y); started = true; }
+      else ctx.lineTo(p.x, p.y);
+      prevY = y;
+    }
+    ctx.strokeStyle = el.color;
+    ctx.lineWidth = 4 * view.scale;
+    ctx.stroke();
+  });
+}
+
+function drawPendingPreview() {
+  if (pendingPoints.length === 0) return;
+  const color = '#e67e22';
+
+  ctx.beginPath();
+  pendingPoints.forEach((pt, i) => {
+    const p = dataToCanvas(pt.x, pt.y);
+    if (i === 0) ctx.moveTo(p.x, p.y);
+    else ctx.lineTo(p.x, p.y);
+  });
+  if (pendingPoints.length > 1) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3.5 * view.scale;
+    ctx.setLineDash([11*view.scale, 8*view.scale]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  pendingPoints.forEach(pt => {
+    const p = dataToCanvas(pt.x, pt.y);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 9*view.scale, 0, Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2.5*view.scale;
+    ctx.stroke();
+  });
+}
+
+// ============================================================
+// 4. 工具函数
+// ============================================================
+function fmt(n) { return Number(n.toFixed(3)).toString(); }
+function hexA(hex, a) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function autoColor(idx) { return PALETTE[idx % PALETTE.length]; }
+
+function setStatus(text, isError) {
+  const el = document.getElementById('statusMsg');
+  el.textContent = text;
+  el.style.background = isError ? '#ffe6e6' : '#e9f1fa';
+  el.style.color = isError ? '#b32d2d' : '#2d577b';
+}
+
+// ============================================================
+// 5. 表达式解析
+// ============================================================
+function parseExpression(expr) {
+  let s = expr.trim().replace(/\^/g, '**');
+  const replacements = [
+    [/\bpi\b/g, 'Math.PI'], [/\be\b/g, 'Math.E'],
+    [/\bsin\b/g, 'Math.sin'], [/\bcos\b/g, 'Math.cos'], [/\btan\b/g, 'Math.tan'],
+    [/\basin\b/g, 'Math.asin'], [/\bacos\b/g, 'Math.acos'], [/\batan\b/g, 'Math.atan'],
+    [/\bsinh\b/g, 'Math.sinh'], [/\bcosh\b/g, 'Math.cosh'], [/\btanh\b/g, 'Math.tanh'],
+    [/\bsqrt\b/g, 'Math.sqrt'], [/\bcbrt\b/g, 'Math.cbrt'], [/\babs\b/g, 'Math.abs'],
+    [/\blog10\b/g, 'Math.log10'], [/\blog2\b/g, 'Math.log2'], [/\blog\b/g, 'Math.log'],
+    [/\bln\b/g, 'Math.log'], [/\bexp\b/g, 'Math.exp'],
+    [/\bfloor\b/g, 'Math.floor'], [/\bceil\b/g, 'Math.ceil'], [/\bround\b/g, 'Math.round'],
+  ];
+  for (const [re, rep] of replacements) s = s.replace(re, rep);
+  try {
+    const fn = new Function('x', `"use strict"; return (${s});`);
+    fn(1);
+    return fn;
+  } catch (e) { return null; }
+}
+
+// ============================================================
+// 6. 元素管理
+// ============================================================
+function addElement(el) {
+  el.id = elementIdCounter++;
+  el.visible = el.visible !== false;
+  el.color = el.color || autoColor(elements.length);
+  elements.push(el);
+  updateElementList();
+  draw();
+  return el;
+}
+
+function removeElement(id) {
+  elements = elements.filter(e => e.id !== id);
+  updateElementList();
+  draw();
+}
+
+function updateElementList() {
+  const list = document.getElementById('itemList');
+  document.getElementById('elemCount').textContent = `(${elements.length})`;
+
+  if (elements.length === 0) {
+    list.innerHTML = '<div class="empty-msg">暂无元素</div>';
+    return;
+  }
+
+  list.innerHTML = '';
+  elements.forEach(el => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+
+    let label = '';
+    if (el.type === 'point') {
+      label = (el.label ? el.label : '') + ` (${fmt(el.points[0].x)}, ${fmt(el.points[0].y)})`;
+    } else if (el.type === 'segment') label = `线段(${el.points.length}点)`;
+    else if (el.type === 'polyline') label = `折线(${el.points.length}点)`;
+    else if (el.type === 'polygon') label = `多边形(${el.points.length}点)`;
+    else if (el.type === 'function') label = `y=${el.expr}`;
+
+    const colorSpan = document.createElement('span');
+    colorSpan.className = 'item-color';
+    colorSpan.style.background = el.color;
+    if (el.type === 'function') {
+      colorSpan.style.borderRadius = '2px';
+      colorSpan.style.height = '3px';
+    }
+
+    const labelSpan = document.createElement('span');
+    labelSpan.className = 'item-label';
+    labelSpan.textContent = label;
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'item-del';
+    delBtn.textContent = '×';
+    delBtn.title = '删除';
+    delBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeElement(el.id);
+    });
+
+    row.appendChild(colorSpan);
+    row.appendChild(labelSpan);
+    row.appendChild(delBtn);
+    row.addEventListener('click', () => {
+      if (el.type === 'point') {
+        document.getElementById('xInput').value = fmt(el.points[0].x);
+        document.getElementById('yInput').value = fmt(el.points[0].y);
+        document.getElementById('labelInput').value = el.label || '';
+      }
+    });
+
+    list.appendChild(row);
+  });
+}
+
+// ============================================================
+// 7. 添加点
+// ============================================================
+function addPointFromInput() {
+  const x = parseFloat(document.getElementById('xInput').value);
+  const y = parseFloat(document.getElementById('yInput').value);
+  const label = document.getElementById('labelInput').value.trim();
+
+  if (isNaN(x) || isNaN(y)) { setStatus('⚠️ 请输入有效的 x, y', true); return; }
+  if (x < X_MIN || x > X_MAX || y < Y_MIN || y > Y_MAX) {
+    setStatus('⚠️ 坐标超出范围 [-10,10]', true); return;
+  }
+
+  let finalLabel = label;
+  if (!finalLabel) {
+    const used = new Set(elements.filter(e => e.type==='point' && e.label).map(e => e.label));
+    for (const L of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+      if (!used.has(L)) { finalLabel = L; break; }
+    }
+  }
+
+  addElement({ type: 'point', points: [{x, y}], label: finalLabel });
+  setStatus(`✅ 已添加点 ${finalLabel}(${fmt(x)}, ${fmt(y)})`);
+  document.getElementById('labelInput').value = '';
+  document.getElementById('xInput').focus();
+}
+
+function addBatchPoints() {
+  const raw = document.getElementById('batchInput').value.trim();
+  if (!raw) { setStatus('⚠️ 批量输入为空', true); return; }
+
+  const lines = raw.split(/\r?\n/);
+  let ok = 0, bad = 0;
+  const usedLetters = new Set(elements.filter(e => e.type==='point' && e.label).map(e => e.label));
+
+  lines.forEach(line => {
+    const t = line.trim();
+    if (!t) return;
+    const parts = t.split(/\s+/);
+    if (parts.length < 2) { bad++; return; }
+    const x = Number(parts[0]), y = Number(parts[1]);
+    if (isNaN(x) || isNaN(y) || x<X_MIN||x>X_MAX||y<Y_MIN||y>Y_MAX) { bad++; return; }
+
+    let label = '';
+    for (const L of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+      if (!usedLetters.has(L)) { label = L; usedLetters.add(L); break; }
+    }
+
+    addElement({ type: 'point', points: [{x, y}], label });
+    ok++;
+  });
+
+  setStatus(`✅ 批量添加 ${ok} 个点` + (bad ? `，⚠️ ${bad} 行无效` : ''), bad > 0);
+}
+
+// ============================================================
+// 8. 画布交互
+// ============================================================
+// 把鼠标事件转换为内部渲染坐标（画布 CSS 尺寸和内部尺寸可能不同）
+function getCanvasPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return {
+    x: (clientX - rect.left) * (RENDER_W / rect.width),
+    y: (clientY - rect.top) * (RENDER_H / rect.height)
+  };
+}
+
+function onCanvasClick(e) {
+  if (dragState.moved) return;
+
+  const pos = getCanvasPos(e);
+  const data = canvasToData(pos.x, pos.y);
+  const x = Math.round(data.x * 100) / 100;
+  const y = Math.round(data.y * 100) / 100;
+
+  if (x < X_MIN || x > X_MAX || y < Y_MIN || y > Y_MAX) return;
+
+  if (currentTool === 'select') {
+    document.getElementById('xInput').value = x;
+    document.getElementById('yInput').value = y;
+    setStatus(`📌 已取坐标 (${x}, ${y})，点击「添加」确认`);
+    return;
+  }
+
+  if (currentTool === 'point') {
+    const used = new Set(elements.filter(el => el.type==='point' && el.label).map(el => el.label));
+    let label = '';
+    for (const L of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+      if (!used.has(L)) { label = L; break; }
+    }
+    addElement({ type: 'point', points: [{x, y}], label });
+    setStatus(`✅ 已添加点 ${label}(${x}, ${y})`);
+    return;
+  }
+
+  pendingPoints.push({x, y});
+  setStatus(`📍 已选 ${pendingPoints.length} 个点，再次点击继续；按 Enter 完成`);
+  draw();
+}
+
+function finishShape() {
+  if (pendingPoints.length < 2) {
+    pendingPoints = [];
+    draw();
+    setStatus('⚠️ 至少需要 2 个点');
+    return;
+  }
+
+  const type = currentTool === 'segment' ? 'segment'
+            : currentTool === 'polyline' ? 'polyline'
+            : 'polygon';
+  if (type === 'segment' && pendingPoints.length !== 2) {
+    setStatus('⚠️ 线段需要恰好 2 个点');
+    return;
+  }
+
+  addElement({ type, points: pendingPoints.slice(), fill: type === 'polygon' });
+  setStatus(`✅ 已创建${type==='segment'?'线段':type==='polyline'?'折线':'多边形'}`);
+  pendingPoints = [];
+  draw();
+}
+
+function onMouseMove(e) {
+  if (dragState.active) {
+    const pos = getCanvasPos(e);
+    const dx = pos.x - dragState.lastX;
+    const dy = pos.y - dragState.lastY;
+    view.offsetX += dx;
+    view.offsetY += dy;
+    dragState.lastX = pos.x;
+    dragState.lastY = pos.y;
+    dragState.moved = true;
+    draw();
+    return;
+  }
+
+  const pos = getCanvasPos(e);
+  let found = null;
+  const hitRadius = 22 * view.scale;
+
+  for (const el of elements) {
+    if (!el.visible) continue;
+    if (el.type === 'point') {
+      const p = dataToCanvas(el.points[0].x, el.points[0].y);
+      if (Math.hypot(p.x - pos.x, p.y - pos.y) < hitRadius) { found = el; break; }
+    }
+  }
+
+  if ((found && (!hoveredElem || hoveredElem.id !== found.id)) ||
+      (!found && hoveredElem)) {
+    hoveredElem = found;
+    draw();
+  }
+
+  if (found) canvas.style.cursor = 'pointer';
+  else if (currentTool === 'select') canvas.style.cursor = 'grab';
+  else canvas.style.cursor = 'crosshair';
+}
+
+// ============================================================
+// 9. 缩放（以鼠标位置为锚点，不影响布局）
+// ============================================================
+function zoomAt(anchorX, anchorY, factor) {
+  const newScale = Math.max(0.3, Math.min(5.0, view.scale * factor));
+  const actual = newScale / view.scale;
+  // 保持锚点在数据坐标中的位置不变
+  view.offsetX = anchorX - (anchorX - view.offsetX) * actual;
+  view.offsetY = anchorY - (anchorY - view.offsetY) * actual;
+  view.scale = newScale;
+  document.getElementById('zoomLevel').textContent = Math.round(view.scale * 100) + '%';
+  draw();
+}
+
+function setZoomCenter(newScale) {
+  // 以画布中心为锚点（按钮缩放用）
+  const cx = RENDER_W / 2, cy = RENDER_H / 2;
+  const actual = newScale / view.scale;
+  view.offsetX = cx - (cx - view.offsetX) * actual;
+  view.offsetY = cy - (cy - view.offsetY) * actual;
+  view.scale = newScale;
+  document.getElementById('zoomLevel').textContent = Math.round(view.scale * 100) + '%';
+  draw();
+}
+
+function resetView() {
+  view = { scale: 1.0, offsetX: 0, offsetY: 0 };
+  document.getElementById('zoomLevel').textContent = '100%';
+  draw();
+}
+
+// ============================================================
+// 10. 导出
+// ============================================================
+function exportPNG() {
+  const link = document.createElement('a');
+  link.download = 'coordinate-' + Date.now() + '.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  setStatus('🖼️ 已导出 PNG');
+}
+
+function exportJSON() {
+  const data = {
+    view: { ...view },
+    elements: elements.map(el => ({
+      id: el.id, type: el.type, points: el.points,
+      label: el.label, color: el.color, expr: el.expr
+    }))
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const link = document.createElement('a');
+  link.download = 'coordinate-' + Date.now() + '.json';
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  setStatus('📄 已导出 JSON');
+}
+
+// ============================================================
+// 11. 初始化与事件绑定
+// ============================================================
+function init() {
+  // 工具切换
+  document.querySelectorAll('.ft-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ft-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTool = btn.dataset.tool;
+      pendingPoints = [];
+      draw();
+      const names = { select:'选择', point:'取点', segment:'线段', polyline:'折线', polygon:'多边形' };
+      setStatus(`🔧 已切换到「${names[currentTool]}」` +
+        (['segment','polyline','polygon'].includes(currentTool) ? '，点击画布选点，按 Enter 完成' : ''));
+    });
+  });
+
+  // 鼠标按下：开始拖拽（仅选择工具）
+  canvas.addEventListener('mousedown', (e) => {
+    if (currentTool === 'select' && e.button === 0) {
+      dragState.active = true;
+      dragState.moved = false;
+      const pos = getCanvasPos(e);
+      dragState.lastX = pos.x;
+      dragState.lastY = pos.y;
+    }
+  });
+
+  canvas.addEventListener('click', onCanvasClick);
+  canvas.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', () => {
+    if (dragState.active) {
+      dragState.active = false;
+      setTimeout(() => { dragState.moved = false; }, 60);
+    }
+  });
+
+  // 触摸支持
+  canvas.addEventListener('touchstart', (e) => {
+    if (currentTool === 'select' && e.touches.length === 1) {
+      dragState.active = true;
+      dragState.moved = false;
+      const pos = getCanvasPos(e);
+      dragState.lastX = pos.x;
+      dragState.lastY = pos.y;
+    }
+  }, { passive: true });
+  canvas.addEventListener('touchmove', (e) => {
+    if (dragState.active && e.touches.length === 1) {
+      const pos = getCanvasPos(e);
+      const dx = pos.x - dragState.lastX;
+      const dy = pos.y - dragState.lastY;
+      view.offsetX += dx;
+      view.offsetY += dy;
+      dragState.lastX = pos.x;
+      dragState.lastY = pos.y;
+      dragState.moved = true;
+      draw();
+      e.preventDefault();
+    }
+  }, { passive: false });
+  canvas.addEventListener('touchend', () => {
+    if (dragState.active) {
+      dragState.active = false;
+      setTimeout(() => { dragState.moved = false; }, 60);
+    }
+  });
+
+  // 滚轮缩放：以鼠标位置为锚点，不改变布局
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const pos = getCanvasPos(e);
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    zoomAt(pos.x, pos.y, factor);
+  }, { passive: false });
+
+  // 键盘
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && pendingPoints.length >= 2) {
+      finishShape();
+    } else if (e.key === 'Escape') {
+      pendingPoints = [];
+      draw();
+      setStatus('↩️ 已取消当前绘制');
+    }
+  });
+
+  // 添加点
+  document.getElementById('addBtn').addEventListener('click', addPointFromInput);
+  document.getElementById('xInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') addPointFromInput();
+  });
+  document.getElementById('yInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') addPointFromInput();
+  });
+
+  // 批量
+  document.getElementById('batchAddBtn').addEventListener('click', addBatchPoints);
+  document.getElementById('batchClearBtn').addEventListener('click', () => {
+    document.getElementById('batchInput').value = '';
+  });
+
+  // 清空全部
+  document.getElementById('clearAllBtn').addEventListener('click', () => {
+    if (elements.length === 0) return;
+    if (confirm('确定清空所有元素吗？')) {
+      elements = [];
+      pendingPoints = [];
+      updateElementList();
+      draw();
+      setStatus('🧹 已清空全部');
+    }
+  });
+
+  // 函数
+  document.getElementById('addFuncBtn').addEventListener('click', () => {
+    const expr = document.getElementById('funcInput').value.trim();
+    if (!expr) { setStatus('⚠️ 请输入函数表达式', true); return; }
+    const fn = parseExpression(expr);
+    if (!fn) { setStatus('⚠️ 表达式无法解析', true); return; }
+    addElement({ type: 'function', expr, fn, points: [] });
+    setStatus(`✅ 已绘制 y = ${expr}`);
+  });
+  document.getElementById('clearFuncBtn').addEventListener('click', () => {
+    elements = elements.filter(e => e.type !== 'function');
+    updateElementList();
+    draw();
+    setStatus('🧹 已清除函数曲线');
+  });
+  document.getElementById('funcInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') document.getElementById('addFuncBtn').click();
+  });
+
+  // 显示选项
+  ['grid','tick','coordLabel','func'].forEach(k => {
+    const id = {grid:'showGrid', tick:'showTick', coordLabel:'showCoord', func:'showFunc'}[k];
+    document.getElementById(id).addEventListener('change', (e) => {
+      showOptions[k] = e.target.checked;
+      draw();
+    });
+  });
+
+  // 缩放按钮（以中心为锚点）
+  document.getElementById('zoomIn').addEventListener('click', () => setZoomCenter(view.scale * 1.25));
+  document.getElementById('zoomOut').addEventListener('click', () => setZoomCenter(view.scale / 1.25));
+  document.getElementById('zoomReset').addEventListener('click', resetView);
+
+  // 导出
+  document.getElementById('exportPngBtn').addEventListener('click', exportPNG);
+  document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
+
+  // 示例
+  addElement({ type: 'point', points: [{x: 2, y: 3}], label: 'A' });
+  addElement({ type: 'point', points: [{x: -4, y: -2}], label: 'B' });
+  addElement({ type: 'point', points: [{x: 5, y: -5}], label: 'C' });
+  const fn = parseExpression('sin(x)');
+  if (fn) addElement({ type: 'function', expr: 'sin(x)', fn, points: [], color: '#c0392b' });
+
+  setStatus('✨ 示例已加载 · 滚轮以鼠标为中心缩放，拖拽平移');
+}
+
+init();
+})();
+</script>
+</body>
+</html>
