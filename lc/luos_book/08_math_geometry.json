@@ -1,0 +1,70 @@
+{
+  "title": "洛谷《算法竞赛》计算几何专题题目整理",
+  "src": "https://www.luogu.com.cn/training/1016092",
+  "last_update": "2026-10-03T00:00:00+08:00",
+  "difficulty_mapping": {
+    "入门（红）": 10,
+    "普及-（橙）": 20,
+    "普及（黄）": 30,
+    "普及+/提高-（绿）": 40,
+    "提高（青）": 50,
+    "提高+/省选-（蓝）": 60,
+    "省选/NOI-（紫）": 80,
+    "NOI/NOI+/CTS（黑）": 100
+  },
+  "children": [
+    {
+      "title": "8.1 二维几何",
+      "summary": "【主要应用】点线面基本运算、凸包、旋转卡壳、半平面交、最近点对、最小矩形覆盖、平面区域划分。\n【应用方式】用向量叉积与点积判断方向、共线与相交；Graham / Andrew 求凸包；旋转卡壳求直径/宽度/最小矩形；半平面交用双端队列维护；最近点对用分治。\n【模板代码】\n```cpp\n// 基础向量与点\nstruct Point {\n    double x, y;\n    Point operator+(Point p) const { return {x + p.x, y + p.y}; }\n    Point operator-(Point p) const { return {x - p.x, y - p.y}; }\n    double operator*(Point p) const { return x * p.x + y * p.y; } // 点积\n    double operator^(Point p) const { return x * p.y - y * p.x; } // 叉积\n    bool operator<(Point p) const { return x == p.x ? y < p.y : x < p.x; }\n};\n\n// Andrew 求凸包\nvector<Point> convex_hull(vector<Point> p) {\n    sort(p.begin(), p.end());\n    vector<Point> stk;\n    for (int i = 0; i < p.size(); i++) {\n        while (stk.size() >= 2 && ((stk.back() - stk[stk.size()-2]) ^ (p[i] - stk.back())) <= 0) stk.pop_back();\n        stk.push_back(p[i]);\n    }\n    int k = stk.size();\n    for (int i = p.size() - 2; i >= 0; i--) {\n        while (stk.size() > k && ((stk.back() - stk[stk.size()-2]) ^ (p[i] - stk.back())) <= 0) stk.pop_back();\n        stk.push_back(p[i]);\n    }\n    stk.pop_back();\n    return stk;\n}\n\n// 旋转卡壳求凸包直径\ndouble rotating_calipers(vector<Point> &p) {\n    int n = p.size(), j = 1;\n    double ans = 0;\n    for (int i = 0; i < n; i++) {\n        while (fabs((p[(i+1)%n] - p[i]) ^ (p[(j+1)%n] - p[i])) > fabs((p[(i+1)%n] - p[i]) ^ (p[j] - p[i]))) j = (j + 1) % n;\n        ans = max(ans, max(dis(p[i], p[j]), dis(p[(i+1)%n], p[j])));\n    }\n    return ans;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§8.1.1 二维几何",
+          "summary": "【主要应用】神秘大三角、二维凸包、平面上的最接近点对、Beauty Contest、最佳包裹、信用卡凸包、战争、田野、最小矩形覆盖、赛车、瞭望塔、半平面交、逃考、小凸想跑步、浙江省选。\n【应用方式】凸包用 Andrew / Graham；旋转卡壳求直径与最小矩形；最近点对分治；半平面交用双端队列；Minkowski 和（战争）。\n【模板代码】\n```cpp\n// 半平面交（双端队列）\nstruct Line { Point p, v; double ang; };\nbool onleft(Line l, Point p) { return (l.v ^ (p - l.p)) > 0; }\nPoint inter(Line a, Line b) { /* 求交点 */ }\nvector<Point> half_plane_intersection(vector<Line> &lines) {\n    sort(lines.begin(), lines.end(), [](Line a, Line b) { return a.ang < b.ang; });\n    deque<Line> q;\n    deque<Point> p;\n    for (auto l : lines) {\n        while (p.size() >= 2 && !onleft(l, p.back())) q.pop_back(), p.pop_back();\n        while (p.size() >= 2 && !onleft(l, p.front())) q.pop_front(), p.pop_front();\n        q.push_back(l);\n        if (q.size() >= 2) p.push_back(inter(q[q.size()-2], q.back()));\n    }\n    // 处理尾部\n    return vector<Point>(p.begin(), p.end());\n}\n\n// 最近点对（分治）\ndouble closest_pair(vector<Point> &p, int l, int r) {\n    if (r - l <= 3) { /* 暴力 */ }\n    int mid = (l + r) >> 1;\n    double d = min(closest_pair(p, l, mid), closest_pair(p, mid + 1, r));\n    // 合并跨越中线的点\n    return d;\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1355", "title": "P1355 神秘大三角", "src": "https://www.luogu.com.cn/problem/P1355", "score": 50, "isPremium": false },
+            { "id": "P2742", "title": "P2742 【模板】二维凸包 / [USACO5.1] 圈奶牛Fencing the Cows", "src": "https://www.luogu.com.cn/problem/P2742", "score": 60, "isPremium": false },
+            { "id": "P1257", "title": "P1257 平面上的最接近点对", "src": "https://www.luogu.com.cn/problem/P1257", "score": 60, "isPremium": false },
+            { "id": "P1452", "title": "P1452 [USACO03FALL] Beauty Contest G", "src": "https://www.luogu.com.cn/problem/P1452", "score": 80, "isPremium": false },
+            { "id": "P2287", "title": "P2287 [HNOI2004] 最佳包裹", "src": "https://www.luogu.com.cn/problem/P2287", "score": 80, "isPremium": false },
+            { "id": "P3829", "title": "P3829 [SHOI2012] 信用卡凸包", "src": "https://www.luogu.com.cn/problem/P3829", "score": 80, "isPremium": false },
+            { "id": "P4557", "title": "P4557 [JSOI2018] 战争", "src": "https://www.luogu.com.cn/problem/P4557", "score": 100, "isPremium": false },
+            { "id": "P5403", "title": "P5403 [CTS2019] 田野", "src": "https://www.luogu.com.cn/problem/P5403", "score": 100, "isPremium": false },
+            { "id": "P3187", "title": "P3187 [HNOI2007] 最小矩形覆盖", "src": "https://www.luogu.com.cn/problem/P3187", "score": 100, "isPremium": false },
+            { "id": "P3256", "title": "P3256 [JLOI2013] 赛车", "src": "https://www.luogu.com.cn/problem/P3256", "score": 80, "isPremium": false },
+            { "id": "P2600", "title": "P2600 [ZJOI2008] 瞭望塔", "src": "https://www.luogu.com.cn/problem/P2600", "score": 100, "isPremium": false },
+            { "id": "P4196", "title": "P4196 【模板】半平面交 / [CQOI2006] 凸多边形", "src": "https://www.luogu.com.cn/problem/P4196", "score": 80, "isPremium": false },
+            { "id": "P3297", "title": "P3297 [SDOI2013] 逃考", "src": "https://www.luogu.com.cn/problem/P3297", "score": 100, "isPremium": false },
+            { "id": "P4250", "title": "P4250 [SCOI2015] 小凸想跑步", "src": "https://www.luogu.com.cn/problem/P4250", "score": 100, "isPremium": false },
+            { "id": "P5328", "title": "P5328 [ZJOI2019] 浙江省选", "src": "https://www.luogu.com.cn/problem/P5328", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "8.2 圆",
+      "summary": "【主要应用】最小圆覆盖、圆与点/线/圆的位置关系、圆面积并、圆交点。\n【应用方式】最小圆覆盖用随机增量法，期望 O(n)；圆与直线求交用点到直线距离；圆面积并用扫描线或格林公式。\n【模板代码】\n```cpp\n// 最小圆覆盖（随机增量法）\nstruct Circle { Point o; double r; };\nCircle min_circle(vector<Point> &p) {\n    random_shuffle(p.begin(), p.end());\n    Circle c = {p[0], 0};\n    for (int i = 1; i < p.size(); i++) {\n        if (dis(c.o, p[i]) <= c.r) continue;\n        c = {p[i], 0};\n        for (int j = 0; j < i; j++) {\n            if (dis(c.o, p[j]) <= c.r) continue;\n            c.o = {(p[i].x + p[j].x) / 2, (p[i].y + p[j].y) / 2};\n            c.r = dis(c.o, p[i]);\n            for (int k = 0; k < j; k++) {\n                if (dis(c.o, p[k]) <= c.r) continue;\n                c = circumcircle(p[i], p[j], p[k]);\n            }\n        }\n    }\n    return c;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§8.2.1 圆",
+          "summary": "【主要应用】最小圆覆盖。\n【应用方式】随机增量法：先确定一个点，再找第二个点确定直径，最后找第三个点确定外接圆；期望 O(n)。\n【模板代码】\n```cpp\n// 三点外接圆\nCircle circumcircle(Point a, Point b, Point c) {\n    Point m1 = {(a.x + b.x) / 2, (a.y + b.y) / 2};\n    Point m2 = {(a.x + c.x) / 2, (a.y + c.y) / 2};\n    Point v1 = {b.y - a.y, a.x - b.x};\n    Point v2 = {c.y - a.y, a.x - c.x};\n    Point o = inter({m1, v1}, {m2, v2});\n    return {o, dis(o, a)};\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1742", "title": "P1742 最小圆覆盖", "src": "https://www.luogu.com.cn/problem/P1742", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "8.3 三维几何",
+      "summary": "【主要应用】三维凸包、三维向量运算、点到平面距离、三维旋转、体积计算。\n【应用方式】用三维向量叉积求法向量；三维凸包用增量法；点到平面距离用点积；体积用混合积；三维旋转用旋转矩阵或四元数。\n【模板代码】\n```cpp\n// 三维向量\nstruct Point3 {\n    double x, y, z;\n    Point3 operator+(Point3 p) const { return {x + p.x, y + p.y, z + p.z}; }\n    Point3 operator-(Point3 p) const { return {x - p.x, y - p.y, z - p.z}; }\n    double operator*(Point3 p) const { return x * p.x + y * p.y + z * p.z; } // 点积\n    Point3 operator^(Point3 p) const { return {y * p.z - z * p.y, z * p.x - x * p.z, x * p.y - y * p.x}; } // 叉积\n};\n// 混合积 (a × b) · c\ndouble mixed(Point3 a, Point3 b, Point3 c) { return (a ^ b) * c; }\n// 点到平面距离\ndouble dist_plane(Point3 p, Point3 a, Point3 b, Point3 c) {\n    Point3 n = (b - a) ^ (c - a);\n    return fabs((p - a) * n) / sqrt(n * n);\n}\n```",
+      "isLeaf": true,
+      "children": [],
+      "problems": []
+    }
+  ]
+}

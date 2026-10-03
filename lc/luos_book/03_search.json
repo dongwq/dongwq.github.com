@@ -1,0 +1,175 @@
+{
+  "title": "洛谷《算法竞赛》搜索专题题目整理",
+  "src": "https://www.luogu.com.cn/training/1016022",
+  "last_update": "2026-10-03T00:00:00+08:00",
+  "difficulty_mapping": {
+    "入门（红）": 10,
+    "普及-（橙）": 20,
+    "普及（黄）": 30,
+    "普及+/提高-（绿）": 40,
+    "提高（青）": 50,
+    "提高+/省选-（蓝）": 60,
+    "省选/NOI-（紫）": 80,
+    "NOI/NOI+/CTS（黑）": 100
+  },
+  "children": [
+    {
+      "title": "3.1 BFS 和 DFS 基础",
+      "summary": "【主要应用】图的遍历、连通块统计、迷宫最短路径、状态搜索、全排列/子集枚举、棋盘类问题。\n【应用方式】DFS 用递归或栈实现，适合枚举所有方案、连通块染色、回溯；BFS 用队列实现，适合求最短步数、层序遍历、多源扩散。网格图中常配合方向数组与访问标记。\n【模板代码】\n```cpp\n// DFS 网格遍历\nint dx[] = {0, 0, 1, -1}, dy[] = {1, -1, 0, 0};\nvoid dfs(int x, int y) {\n    vis[x][y] = 1;\n    for (int i = 0; i < 4; i++) {\n        int nx = x + dx[i], ny = y + dy[i];\n        if (nx < 1 || nx > n || ny < 1 || ny > m) continue;\n        if (vis[nx][ny] || a[nx][ny] == 0) continue;\n        dfs(nx, ny);\n    }\n}\n\n// BFS 求最短步数\nqueue<pair<int,int>> q;\nq.push({sx, sy});\ndis[sx][sy] = 0; vis[sx][sy] = 1;\nwhile (!q.empty()) {\n    auto [x, y] = q.front(); q.pop();\n    for (int i = 0; i < 4; i++) {\n        int nx = x + dx[i], ny = y + dy[i];\n        if (nx < 1 || nx > n || ny < 1 || ny > m) continue;\n        if (vis[nx][ny] || a[nx][ny] == 0) continue;\n        vis[nx][ny] = 1;\n        dis[nx][ny] = dis[x][y] + 1;\n        q.push({nx, ny});\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§3.1.1 BFS 和 DFS 基础",
+          "summary": "【主要应用】全球变暖、八皇后、单词接龙、Scales S、奇迹、油滴扩展、填涂颜色、马的遍历、棋盘、字串变换、机器人搬重物。\n【应用方式】八皇后用回溯 + 对角线标记；填涂颜色用泛洪；马的遍历用 BFS；棋盘用 Dijkstra/BFS；字串变换用 BFS + 字符串哈希。\n【模板代码】\n```cpp\n// 八皇后回溯\nvoid dfs(int row) {\n    if (row > n) { ans++; return; }\n    for (int col = 1; col <= n; col++) {\n        if (vis_col[col] || vis_d1[row + col] || vis_d2[row - col + n]) continue;\n        vis_col[col] = vis_d1[row + col] = vis_d2[row - col + n] = 1;\n        dfs(row + 1);\n        vis_col[col] = vis_d1[row + col] = vis_d2[row - col + n] = 0;\n    }\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P8662", "title": "P8662 [蓝桥杯 2018 省 AB] 全球变暖", "src": "https://www.luogu.com.cn/problem/P8662", "score": 50, "isPremium": false },
+            { "id": "P1219", "title": "P1219 [USACO1.5] 八皇后 Checker Challenge", "src": "https://www.luogu.com.cn/problem/P1219", "score": 50, "isPremium": false },
+            { "id": "P1019", "title": "P1019 [NOIP 2000 提高组] 单词接龙（疑似错题）", "src": "https://www.luogu.com.cn/problem/P1019", "score": 60, "isPremium": false },
+            { "id": "P5194", "title": "P5194 [USACO05DEC] Scales S", "src": "https://www.luogu.com.cn/problem/P5194", "score": 60, "isPremium": false },
+            { "id": "P5440", "title": "P5440 【XR-2】奇迹", "src": "https://www.luogu.com.cn/problem/P5440", "score": 60, "isPremium": false },
+            { "id": "P1378", "title": "P1378 油滴扩展", "src": "https://www.luogu.com.cn/problem/P1378", "score": 60, "isPremium": false },
+            { "id": "P1162", "title": "P1162 填涂颜色", "src": "https://www.luogu.com.cn/problem/P1162", "score": 40, "isPremium": false },
+            { "id": "P1443", "title": "P1443 马的遍历", "src": "https://www.luogu.com.cn/problem/P1443", "score": 40, "isPremium": false },
+            { "id": "P3956", "title": "P3956 [NOIP 2017 普及组] 棋盘", "src": "https://www.luogu.com.cn/problem/P3956", "score": 60, "isPremium": false },
+            { "id": "P1032", "title": "P1032 [NOIP 2002 提高组] 字串变换", "src": "https://www.luogu.com.cn/problem/P1032", "score": 60, "isPremium": false },
+            { "id": "P1126", "title": "P1126 [CERC1996] 机器人搬重物", "src": "https://www.luogu.com.cn/problem/P1126", "score": 60, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "3.2 剪枝",
+      "summary": "【主要应用】DFS 搜索空间过大时，通过可行性剪枝、最优性剪枝、搜索顺序优化、记忆化等方式降低复杂度。\n【应用方式】常见剪枝：当前代价已超过最优解则返回；剩余元素无法达到目标则返回；优先搜索分支少或约束强的节点；排序后从大到小尝试。\n【模板代码】\n```cpp\n// 最优性剪枝 + 可行性剪枝\nvoid dfs(int step, int cost) {\n    if (cost >= ans) return; // 最优性剪枝\n    if (step > n) { ans = min(ans, cost); return; }\n    if (cost + minRemain[step] >= ans) return; // 可行性剪枝\n    // 优先搜索更可能出解的分支\n    dfs(step + 1, cost + w[step]);\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§3.2.1 剪枝",
+          "summary": "【主要应用】Backward Digit Sums、吃奶酪、小木棍、靶形数独、Mayan 游戏。\n【应用方式】小木棍用排序 + 可行性剪枝 + 排除等效冗余；数独用位运算 + 最少可选位置优先；Mayan 游戏用模拟 + 剪枝。\n【模板代码】\n```cpp\n// 小木棍剪枝\nvoid dfs(int cnt, int len, int last) {\n    if (cnt == sum / L) { ok = 1; return; }\n    if (len == L) { dfs(cnt + 1, 0, 1); return; }\n    for (int i = last; i <= n; i++) {\n        if (vis[i] || len + a[i] > L) continue;\n        if (i > 1 && a[i] == a[i-1] && !vis[i-1]) continue; // 排除等效\n        vis[i] = 1;\n        dfs(cnt, len + a[i], i + 1);\n        vis[i] = 0;\n        if (!len || len + a[i] == L) return; // 剪枝\n    }\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1118", "title": "P1118 [USACO06FEB] Backward Digit Sums G/S", "src": "https://www.luogu.com.cn/problem/P1118", "score": 60, "isPremium": false },
+            { "id": "P1433", "title": "P1433 吃奶酪", "src": "https://www.luogu.com.cn/problem/P1433", "score": 60, "isPremium": false },
+            { "id": "P1120", "title": "P1120 [CERC 1995] 小木棍", "src": "https://www.luogu.com.cn/problem/P1120", "score": 80, "isPremium": false },
+            { "id": "P1074", "title": "P1074 [NOIP 2009 提高组] 靶形数独", "src": "https://www.luogu.com.cn/problem/P1074", "score": 80, "isPremium": false },
+            { "id": "P1312", "title": "P1312 [NOIP 2011 提高组] Mayan 游戏", "src": "https://www.luogu.com.cn/problem/P1312", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "3.3 洪水填充",
+      "summary": "【主要应用】连通块染色、封闭区域判断、地图填充、引水入城等网格连通性问题。\n【应用方式】从起点或边界开始 BFS/DFS，将与起点连通的区域标记；常用于判断内部与外部、统计区域个数与大小。\n【模板代码】\n```cpp\n// 洪水填充（BFS）\nvoid flood(int sx, int sy) {\n    queue<pair<int,int>> q;\n    q.push({sx, sy});\n    vis[sx][sy] = 1;\n    while (!q.empty()) {\n        auto [x, y] = q.front(); q.pop();\n        for (int i = 0; i < 4; i++) {\n            int nx = x + dx[i], ny = y + dy[i];\n            if (nx < 1 || nx > n || ny < 1 || ny > m) continue;\n            if (vis[nx][ny] || a[nx][ny] == 1) continue;\n            vis[nx][ny] = 1;\n            q.push({nx, ny});\n        }\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§3.3.1 洪水填充",
+          "summary": "【主要应用】引水入城、拯救oibh总部、填涂颜色、Obstacle Course S。\n【应用方式】从边界开始泛洪标记外部；内部未标记点即为封闭区域；结合 DP 或最短路处理引水问题。\n【模板代码】\n```cpp\n// 从边界泛洪标记外部\nfor (int i = 1; i <= n; i++) {\n    if (!vis[i][1]) flood(i, 1);\n    if (!vis[i][m]) flood(i, m);\n}\nfor (int j = 1; j <= m; j++) {\n    if (!vis[1][j]) flood(1, j);\n    if (!vis[n][j]) flood(n, j);\n}\n// 输出未访问的内部点\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1514", "title": "P1514 [NOIP 2010 提高组] 引水入城", "src": "https://www.luogu.com.cn/problem/P1514", "score": 80, "isPremium": false },
+            { "id": "P1506", "title": "P1506 拯救oibh总部", "src": "https://www.luogu.com.cn/problem/P1506", "score": 50, "isPremium": false },
+            { "id": "P1162", "title": "P1162 填涂颜色", "src": "https://www.luogu.com.cn/problem/P1162", "score": 40, "isPremium": false },
+            { "id": "P1649", "title": "P1649 [USACO07OCT] Obstacle Course S", "src": "https://www.luogu.com.cn/problem/P1649", "score": 60, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "3.4 BFS 与最短路径",
+      "summary": "【主要应用】无权图或边权相同的最短路径、多源最短路、状态最短路。\n【应用方式】BFS 按层扩展，第一次到达某状态时的步数即为最短步数；多源 BFS 将多个起点同时入队；状态 BFS 需对状态去重。\n【模板代码】\n```cpp\n// 多源 BFS\nqueue<pair<int,int>> q;\nfor (auto [x, y] : sources) {\n    dis[x][y] = 0;\n    q.push({x, y});\n}\nwhile (!q.empty()) {\n    auto [x, y] = q.front(); q.pop();\n    for (int i = 0; i < 4; i++) {\n        int nx = x + dx[i], ny = y + dy[i];\n        if (nx < 1 || nx > n || ny < 1 || ny > m) continue;\n        if (dis[nx][ny] != -1) continue;\n        dis[nx][ny] = dis[x][y] + 1;\n        q.push({nx, ny});\n    }\n}\n```",
+      "isLeaf": true,
+      "children": [],
+      "problems": []
+    },
+    {
+      "title": "3.5 双向广搜",
+      "summary": "【主要应用】搜索空间巨大但目标明确时，从起点和终点同时 BFS，相遇即最短路径。\n【应用方式】维护两个队列与两个访问标记；每次扩展一层，检查是否与另一侧相遇；适合字串变换、冰球锦标赛等。\n【模板代码】\n```cpp\n// 双向 BFS\nqueue<string> q1, q2;\nunordered_map<string, int> d1, d2;\nq1.push(s); d1[s] = 0;\nq2.push(t); d2[t] = 0;\nwhile (!q1.empty() && !q2.empty()) {\n    if (q1.size() > q2.size()) swap(q1, q2), swap(d1, d2);\n    int sz = q1.size();\n    while (sz--) {\n        string u = q1.front(); q1.pop();\n        for (string v : next(u)) {\n            if (d1.count(v)) continue;\n            if (d2.count(v)) return d1[u] + 1 + d2[v];\n            d1[v] = d1[u] + 1;\n            q1.push(v);\n        }\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§3.5.1 双向广搜",
+          "summary": "【主要应用】字串变换、Nearby Cows、世界冰球锦标赛、Knights of Ni。\n【应用方式】字串变换从两端同时 BFS；Nearby Cows 用双向 BFS 或换根 DP；冰球锦标赛用 meet-in-the-middle。\n【模板代码】\n```cpp\n// meet-in-the-middle\nvoid dfs1(int i, int sum) { /* 前半部分所有可能和 */ }\nvoid dfs2(int i, int sum) { /* 后半部分，二分查找匹配 */ }\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1032", "title": "P1032 [NOIP 2002 提高组] 字串变换", "src": "https://www.luogu.com.cn/problem/P1032", "score": 60, "isPremium": false },
+            { "id": "P3047", "title": "P3047 [USACO12FEB] Nearby Cows G", "src": "https://www.luogu.com.cn/problem/P3047", "score": 80, "isPremium": false },
+            { "id": "P4799", "title": "P4799 [CEOI 2015] 世界冰球锦标赛 (Day2)", "src": "https://www.luogu.com.cn/problem/P4799", "score": 80, "isPremium": false },
+            { "id": "P5195", "title": "P5195 [USACO05DEC] Knights of Ni S", "src": "https://www.luogu.com.cn/problem/P5195", "score": 60, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "3.6 BFS 与优先队列",
+      "summary": "【主要应用】边权非负且不相同时的最短路，即 Dijkstra 算法；也用于优先扩展更优状态的搜索。\n【应用方式】用优先队列维护当前距离最小的节点，每次取出并松弛邻边；已确定最短路的节点不再入队。\n【模板代码】\n```cpp\n// Dijkstra 堆优化\nvoid dijkstra(int s) {\n    memset(dis, 0x3f, sizeof(dis));\n    dis[s] = 0;\n    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<>> pq;\n    pq.push({0, s});\n    while (!pq.empty()) {\n        auto [d, u] = pq.top(); pq.pop();\n        if (d != dis[u]) continue;\n        for (auto [v, w] : g[u]) {\n            if (dis[v] > dis[u] + w) {\n                dis[v] = dis[u] + w;\n                pq.push({dis[v], v});\n            }\n        }\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§3.6.1 BFS 与优先队列",
+          "summary": "【主要应用】单源最短路径（标准版）。\n【应用方式】优先队列按距离从小到大扩展；注意松弛时更新距离并入队。\n【模板代码】\n```cpp\n// 标准 Dijkstra\nwhile (!pq.empty()) {\n    auto [d, u] = pq.top(); pq.pop();\n    if (vis[u]) continue;\n    vis[u] = 1;\n    for (auto [v, w] : g[u]) {\n        if (dis[v] > dis[u] + w) {\n            dis[v] = dis[u] + w;\n            pq.push({dis[v], v});\n        }\n    }\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P4779", "title": "P4779 【模板】单源最短路径（标准版）", "src": "https://www.luogu.com.cn/problem/P4779", "score": 40, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "3.7 BFS 与双端队列",
+      "summary": "【主要应用】0-1 权图最短路（0-1 BFS），边权只有 0 和 1 时用双端队列替代优先队列。\n【应用方式】边权为 0 时从队首入队，边权为 1 时从队尾入队；保证队列中距离单调，整体 O(n + m)。\n【模板代码】\n```cpp\n// 0-1 BFS\ndeque<int> dq;\ndq.push_front(s);\ndis[s] = 0;\nwhile (!dq.empty()) {\n    int u = dq.front(); dq.pop_front();\n    for (auto [v, w] : g[u]) {\n        if (dis[v] > dis[u] + w) {\n            dis[v] = dis[u] + w;\n            if (w == 0) dq.push_front(v);\n            else dq.push_back(v);\n        }\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§3.7.1 BFS 与双端队列",
+          "summary": "【主要应用】Switch the Lamp On。\n【应用方式】将每个格子看作节点，方向一致边权 0，否则边权 1；跑 0-1 BFS 求最少旋转次数。\n【模板代码】\n```cpp\n// 0-1 BFS 网格建模\n// 每个格子有四个方向，若当前方向与目标方向一致则边权 0\n// 否则边权 1\nif (w == 0) dq.push_front(v);\nelse dq.push_back(v);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P4667", "title": "P4667 [BalticOI 2011] Switch the Lamp On (Day1)", "src": "https://www.luogu.com.cn/problem/P4667", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "3.8 A* 算法",
+      "summary": "【主要应用】带启发式函数的最短路搜索、k 短路、八数码、游戏寻路。\n【应用方式】用 f = g + h 排序优先队列，h 为到目标的估计代价；要求 h 不高估真实代价（可采纳性）。\n【模板代码】\n```cpp\n// A* 算法\nstruct Node {\n    int u, g, h;\n    bool operator<(const Node &o) const { return g + h > o.g + o.h; }\n};\npriority_queue<Node> pq;\npq.push({s, 0, h(s)});\nwhile (!pq.empty()) {\n    auto [u, g, h] = pq.top(); pq.pop();\n    if (u == t) { ans = g; break; }\n    for (auto [v, w] : g[u]) {\n        if (vis[v]) continue;\n        pq.push({v, g + w, h(v)});\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§3.8.1 A* 算法",
+          "summary": "【主要应用】k 短路 / 魔法猪学院。\n【应用方式】先反向跑 Dijkstra 求 h；再用 A* 求第 k 短路；每次从优先队列取出一个状态，计数到终点。\n【模板代码】\n```cpp\n// A* 求 k 短路\n// 反向图跑 Dijkstra 得到 h[]\n// 正向 A* 优先队列按 g + h 排序\nwhile (!pq.empty()) {\n    auto [u, g] = pq.top(); pq.pop();\n    if (u == t) {\n        cnt++;\n        if (cnt == k) return g;\n    }\n    for (auto [v, w] : g[u]) pq.push({v, g + w});\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P2483", "title": "P2483 【模板】k 短路 / [SDOI2010] 魔法猪学院", "src": "https://www.luogu.com.cn/problem/P2483", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "3.9 IDDFS 和 IDA*",
+      "summary": "【主要应用】深度不确定或搜索空间巨大的问题，用迭代加深限制深度，结合启发式函数剪枝。\n【应用方式】IDDFS 从小到大枚举深度限制；IDA* 在 IDDFS 基础上加入估价函数，若当前代价 + 估计代价 > 限制则剪枝。\n【模板代码】\n```cpp\n// IDA*\nbool dfs(int step, int maxd) {\n    if (step + h() > maxd) return false;\n    if (check()) return true;\n    for (auto nxt : next_states()) {\n        if (dfs(step + 1, maxd)) return true;\n    }\n    return false;\n}\nfor (int maxd = 0; ; maxd++) {\n    if (dfs(0, maxd)) break;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§3.9.1 IDDFS 和 IDA*",
+          "summary": "【主要应用】字串变换、四子连棋、骑士精神、铁盘整理。\n【应用方式】骑士精神用 IDA* + 估价函数（不在目标位置的骑士数）；四子连棋用 IDDFS；铁盘整理用 IDA* + 逆序对估价。\n【模板代码】\n```cpp\n// 骑士精神 IDA*\nint h() {\n    int cnt = 0;\n    for (int i = 1; i <= 5; i++)\n        for (int j = 1; j <= 5; j++)\n            if (a[i][j] != goal[i][j]) cnt++;\n    return cnt - 1;\n}\nbool dfs(int step, int maxd, int x, int y) {\n    if (step + h() > maxd) return false;\n    if (h() == 0) return true;\n    for (int i = 0; i < 8; i++) {\n        int nx = x + dx[i], ny = y + dy[i];\n        if (nx < 1 || nx > 5 || ny < 1 || ny > 5) continue;\n        swap(a[x][y], a[nx][ny]);\n        if (dfs(step + 1, maxd, nx, ny)) return true;\n        swap(a[x][y], a[nx][ny]);\n    }\n    return false;\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1032", "title": "P1032 [NOIP 2002 提高组] 字串变换", "src": "https://www.luogu.com.cn/problem/P1032", "score": 60, "isPremium": false },
+            { "id": "P2346", "title": "P2346 四子连棋", "src": "https://www.luogu.com.cn/problem/P2346", "score": 80, "isPremium": false },
+            { "id": "P2324", "title": "P2324 [SCOI2005] 骑士精神", "src": "https://www.luogu.com.cn/problem/P2324", "score": 80, "isPremium": false },
+            { "id": "P2534", "title": "P2534 [AHOI2012] 铁盘整理", "src": "https://www.luogu.com.cn/problem/P2534", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    }
+  ]
+}

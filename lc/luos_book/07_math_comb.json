@@ -1,0 +1,204 @@
+{
+  "title": "洛谷《算法竞赛》组合数学专题题目整理",
+  "src": "https://www.luogu.com.cn/training/1016091",
+  "last_update": "2026-10-03T00:00:00+08:00",
+  "difficulty_mapping": {
+    "入门（红）": 10,
+    "普及-（橙）": 20,
+    "普及（黄）": 30,
+    "普及+/提高-（绿）": 40,
+    "提高（青）": 50,
+    "提高+/省选-（蓝）": 60,
+    "省选/NOI-（紫）": 80,
+    "NOI/NOI+/CTS（黑）": 100
+  },
+  "children": [
+    {
+      "title": "7.1 基本概念",
+      "summary": "【主要应用】排列数、组合数计算、二项式系数、组合恒等式、组合计数基础。\n【应用方式】预处理阶乘与逆元快速求 C(n,m)；利用对称性、递推式、生成函数化简；注意取模与溢出。\n【模板代码】\n```cpp\n// 组合数预处理（模素数）\nlong long fac[N], inv_fac[N];\nvoid init(int n) {\n    fac[0] = 1;\n    for (int i = 1; i <= n; i++) fac[i] = fac[i-1] * i % MOD;\n    inv_fac[n] = qpow(fac[n], MOD - 2, MOD);\n    for (int i = n - 1; i >= 0; i--) inv_fac[i] = inv_fac[i+1] * (i+1) % MOD;\n}\nlong long C(int n, int m) {\n    if (m < 0 || m > n) return 0;\n    return fac[n] * inv_fac[m] % MOD * inv_fac[n-m] % MOD;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§7.1.1 基本概念",
+          "summary": "【主要应用】组合数问题、青原樱、越狱、树的计数、情侣？给我烧了、XR-4 题。\n【应用方式】组合数问题用杨辉三角 + 前缀和；越狱用总方案减去不越狱方案；树的计数用 Prufer 序列；情侣问题用错排 + 组合。\n【模板代码】\n```cpp\n// 越狱：m^n - m*(m-1)^(n-1)\nlong long ans = (qpow(m, n, MOD) - m * qpow(m-1, n-1, MOD) % MOD + MOD) % MOD;\nprintf(\"%lld\\n\", ans);\n\n// 树的计数（Prufer 序列）\n// 度数确定的树个数 = (n-2)! / ∏(d_i - 1)!\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P2822", "title": "P2822 [NOIP 2016 提高组] 组合数问题", "src": "https://www.luogu.com.cn/problem/P2822", "score": 60, "isPremium": false },
+            { "id": "P5520", "title": "P5520 [yLOI2019] 青原樱", "src": "https://www.luogu.com.cn/problem/P5520", "score": 60, "isPremium": false },
+            { "id": "P3197", "title": "P3197 [HNOI2008] 越狱", "src": "https://www.luogu.com.cn/problem/P3197", "score": 50, "isPremium": false },
+            { "id": "P2290", "title": "P2290 [HNOI2004] 树的计数", "src": "https://www.luogu.com.cn/problem/P2290", "score": 80, "isPremium": false },
+            { "id": "P4931", "title": "P4931 [MtOI2018] 情侣？给我烧了！（加强版）", "src": "https://www.luogu.com.cn/problem/P4931", "score": 80, "isPremium": false },
+            { "id": "P5596", "title": "P5596 【XR-4】题", "src": "https://www.luogu.com.cn/problem/P5596", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "7.2 鸽巢原理",
+      "summary": "【主要应用】证明存在性、抽屉原理、最坏情况分析、构造性问题。\n【应用方式】将 n+1 个物品放入 n 个抽屉，必有一个抽屉至少 2 个；常用于证明、计数下界、贪心构造。\n【模板代码】\n```cpp\n// 鸽巢原理：n+1 个数中必有两个数模 n 同余\n// 前缀和 + 模 n 分类\nfor (int i = 1; i <= n; i++) {\n    sum[i] = (sum[i-1] + a[i]) % n;\n    if (sum[i] == 0) { /* 找到一组解 */ }\n    if (vis[sum[i]]) { /* 找到一组解 */ }\n    vis[sum[i]] = i;\n}\n```",
+      "isLeaf": true,
+      "children": [],
+      "problems": []
+    },
+    {
+      "title": "7.3 二项式定理和杨辉三角",
+      "summary": "【主要应用】展开 (a+b)^n、二项式系数求和、杨辉三角递推、组合恒等式证明。\n【应用方式】二项式定理 (a+b)^n = Σ C(n,k) a^(n-k) b^k；杨辉三角 C(n,k) = C(n-1,k) + C(n-1,k-1)；前缀和优化查询。\n【模板代码】\n```cpp\n// 杨辉三角递推\nfor (int i = 0; i <= n; i++) {\n    C[i][0] = 1;\n    for (int j = 1; j <= i; j++)\n        C[i][j] = (C[i-1][j] + C[i-1][j-1]) % MOD;\n}\n\n// 二项式定理：计算系数\n// (ax + by)^k 中 x^n y^m 的系数 = C(k, n) * a^n * b^m\nlong long ans = C(k, n) * qpow(a, n, MOD) % MOD * qpow(b, m, MOD) % MOD;\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§7.3.1 二项式定理和杨辉三角",
+          "summary": "【主要应用】计算系数、组合数问题。\n【应用方式】计算系数用二项式定理 + 快速幂；组合数问题用杨辉三角 + 二维前缀和。\n【模板代码】\n```cpp\n// 计算系数\nlong long ans = C(k, n) * qpow(a, n, MOD) % MOD * qpow(b, m, MOD) % MOD;\nprintf(\"%lld\\n\", ans);\n\n// 组合数问题：二维前缀和\nfor (int i = 0; i <= n; i++)\n    for (int j = 0; j <= i; j++)\n        s[i][j] = s[i-1][j] + s[i][j-1] - s[i-1][j-1] + (C[i][j] % k == 0);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1313", "title": "P1313 [NOIP 2011 提高组] 计算系数", "src": "https://www.luogu.com.cn/problem/P1313", "score": 60, "isPremium": false },
+            { "id": "P2822", "title": "P2822 [NOIP 2016 提高组] 组合数问题", "src": "https://www.luogu.com.cn/problem/P2822", "score": 60, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "7.4 卢卡斯定理",
+      "summary": "【主要应用】大组合数取模小素数、Lucas 定理、扩展 Lucas。\n【应用方式】Lucas 定理：C(n,m) mod p = C(n%p, m%p) * C(n/p, m/p) mod p；递归计算；扩展 Lucas 处理模数非素数。\n【模板代码】\n```cpp\n// Lucas 定理\nlong long Lucas(long long n, long long m, long long p) {\n    if (m == 0) return 1;\n    return C(n % p, m % p, p) * Lucas(n / p, m / p, p) % p;\n}\n// C(n, m, p) 用阶乘 + 逆元\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§7.4.1 卢卡斯定理",
+          "summary": "【主要应用】卢卡斯定理模板、奇怪的分组、抛硬币、古代猪文、超能粒子炮·改、三角圣地。\n【应用方式】Lucas + 阶乘逆元；古代猪文用欧拉定理 + Lucas + CRT；抛硬币用组合数 + 高精度。\n【模板代码】\n```cpp\n// Lucas 定理模板\nlong long C(long long n, long long m, long long p) {\n    if (m > n) return 0;\n    long long a = 1, b = 1;\n    for (long long i = 1; i <= m; i++) {\n        a = a * (n - i + 1) % p;\n        b = b * i % p;\n    }\n    return a * qpow(b, p - 2, p) % p;\n}\nlong long Lucas(long long n, long long m, long long p) {\n    if (m == 0) return 1;\n    return C(n % p, m % p, p) * Lucas(n / p, m / p, p) % p;\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3807", "title": "P3807 【模板】卢卡斯定理 / Lucas 定理", "src": "https://www.luogu.com.cn/problem/P3807", "score": 60, "isPremium": false },
+            { "id": "P1680", "title": "P1680 奇怪的分组", "src": "https://www.luogu.com.cn/problem/P1680", "score": 60, "isPremium": false },
+            { "id": "P3726", "title": "P3726 [AHOI2017/HNOI2017] 抛硬币", "src": "https://www.luogu.com.cn/problem/P3726", "score": 100, "isPremium": false },
+            { "id": "P2480", "title": "P2480 [SDOI2010] 古代猪文", "src": "https://www.luogu.com.cn/problem/P2480", "score": 100, "isPremium": false },
+            { "id": "P4345", "title": "P4345 [SHOI2015] 超能粒子炮·改", "src": "https://www.luogu.com.cn/problem/P4345", "score": 100, "isPremium": false },
+            { "id": "P2675", "title": "P2675 《瞿葩的数字游戏》T3-三角圣地", "src": "https://www.luogu.com.cn/problem/P2675", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "7.5 容斥原理",
+      "summary": "【主要应用】计数去重、至少/至多问题、错排、染色、排列限制。\n【应用方式】|A∪B∪C| = Σ|A| - Σ|A∩B| + Σ|A∩B∩C| - ...；常用二进制枚举子集；结合 DP 或组合数计算交。\n【模板代码】\n```cpp\n// 容斥原理\nlong long ans = 0;\nfor (int s = 1; s < (1 << n); s++) {\n    int cnt = __builtin_popcount(s);\n    long long sum = 0;\n    for (int i = 0; i < n; i++)\n        if (s >> i & 1) sum += a[i];\n    if (cnt & 1) ans += f(sum);\n    else ans -= f(sum);\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§7.5.1 容斥原理",
+          "summary": "【主要应用】硬币购物、小星星、成绩比较、球球的排列、黑暗前的幻想乡、染色、唱跳rap和篮球、Emiya 家今天的饭、随机立方体。\n【应用方式】硬币购物用容斥 + 完全背包；小星星用容斥 + 树形 DP；染色用容斥 + 组合数；Emiya 用容斥 + DP。\n【模板代码】\n```cpp\n// 硬币购物（容斥 + 完全背包）\n// 总方案 - 至少一种超限 + 至少两种超限 - ...\nfor (int s = 1; s < 16; s++) {\n    int cnt = __builtin_popcount(s);\n    long long sum = 0;\n    for (int i = 0; i < 4; i++)\n        if (s >> i & 1) sum += c[i] * (d[i] + 1);\n    if (sum <= m) {\n        if (cnt & 1) ans -= f[m - sum];\n        else ans += f[m - sum];\n    }\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1450", "title": "P1450 [HAOI2008] 硬币购物", "src": "https://www.luogu.com.cn/problem/P1450", "score": 80, "isPremium": false },
+            { "id": "P3349", "title": "P3349 [ZJOI2016] 小星星", "src": "https://www.luogu.com.cn/problem/P3349", "score": 100, "isPremium": false },
+            { "id": "P3270", "title": "P3270 [JLOI2016] 成绩比较", "src": "https://www.luogu.com.cn/problem/P3270", "score": 100, "isPremium": false },
+            { "id": "P4448", "title": "P4448 [AHOI2018初中组] 球球的排列", "src": "https://www.luogu.com.cn/problem/P4448", "score": 80, "isPremium": false },
+            { "id": "P4336", "title": "P4336 [SHOI2016] 黑暗前的幻想乡", "src": "https://www.luogu.com.cn/problem/P4336", "score": 100, "isPremium": false },
+            { "id": "P4491", "title": "P4491 [HAOI2018] 染色", "src": "https://www.luogu.com.cn/problem/P4491", "score": 100, "isPremium": false },
+            { "id": "P5339", "title": "P5339 [TJOI2019] 唱、跳、rap和篮球", "src": "https://www.luogu.com.cn/problem/P5339", "score": 100, "isPremium": false },
+            { "id": "P5664", "title": "P5664 [CSP-S 2019] Emiya 家今天的饭", "src": "https://www.luogu.com.cn/problem/P5664", "score": 100, "isPremium": false },
+            { "id": "P5400", "title": "P5400 [CTS2019] 随机立方体", "src": "https://www.luogu.com.cn/problem/P5400", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "7.6 Catalan 数和 Stirling 数",
+      "summary": "【主要应用】括号序列、栈、二叉树计数、凸多边形三角剖分、集合划分、斯特林数。\n【应用方式】Catalan 数 C_n = C(2n,n)/(n+1)；第一类斯特林数表示 n 个元素排成 k 个环；第二类斯特林数表示 n 个元素分成 k 个非空集合。\n【模板代码】\n```cpp\n// Catalan 数\nlong long catalan(int n) {\n    return C(2 * n, n) * qpow(n + 1, MOD - 2, MOD) % MOD;\n}\n\n// 第二类斯特林数递推\nS[0][0] = 1;\nfor (int i = 1; i <= n; i++)\n    for (int j = 1; j <= i; j++)\n        S[i][j] = (S[i-1][j-1] + j * S[i-1][j]) % MOD;\n\n// 第一类斯特林数递推\ns[0][0] = 1;\nfor (int i = 1; i <= n; i++)\n    for (int j = 1; j <= i; j++)\n        s[i][j] = (s[i-1][j-1] + (i-1) * s[i-1][j]) % MOD;\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§7.6.1 Catalan 数和 Stirling 数",
+          "summary": "【主要应用】树屋阶梯、栈、生成字符串、矩阵II、鸡蛋饼、有趣的数列、冒泡排序、概率论、小朋友的球、第二类斯特林数·行/列、第一类斯特林数·行/列、Crash 的文明世界。\n【应用方式】Catalan 数用于括号/栈/二叉树；斯特林数用于集合划分与排列环；NTT 加速斯特林数行/列计算。\n【模板代码】\n```cpp\n// Catalan 数：栈\n// f[i] = Σ f[j] * f[i-1-j]\nf[0] = 1;\nfor (int i = 1; i <= n; i++)\n    for (int j = 0; j < i; j++)\n        f[i] = (f[i] + f[j] * f[i-1-j]) % MOD;\nprintf(\"%lld\\n\", f[n]);\n\n// 第二类斯特林数·行（NTT 加速）\n// S(n, k) = 1/k! * Σ (-1)^i * C(k,i) * (k-i)^n\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P2532", "title": "P2532 [AHOI2012] 树屋阶梯", "src": "https://www.luogu.com.cn/problem/P2532", "score": 60, "isPremium": false },
+            { "id": "P1044", "title": "P1044 [NOIP 2003 普及组] 栈", "src": "https://www.luogu.com.cn/problem/P1044", "score": 50, "isPremium": false },
+            { "id": "P1641", "title": "P1641 [SCOI2010] 生成字符串", "src": "https://www.luogu.com.cn/problem/P1641", "score": 60, "isPremium": false },
+            { "id": "P1722", "title": "P1722 矩阵 II", "src": "https://www.luogu.com.cn/problem/P1722", "score": 50, "isPremium": false },
+            { "id": "P1976", "title": "P1976 鸡蛋饼", "src": "https://www.luogu.com.cn/problem/P1976", "score": 50, "isPremium": false },
+            { "id": "P3200", "title": "P3200 [HNOI2009] 有趣的数列", "src": "https://www.luogu.com.cn/problem/P3200", "score": 80, "isPremium": false },
+            { "id": "P4769", "title": "P4769 [NOI2018] 冒泡排序", "src": "https://www.luogu.com.cn/problem/P4769", "score": 100, "isPremium": false },
+            { "id": "P3978", "title": "P3978 [TJOI2015] 概率论", "src": "https://www.luogu.com.cn/problem/P3978", "score": 80, "isPremium": false },
+            { "id": "P1655", "title": "P1655 小朋友的球", "src": "https://www.luogu.com.cn/problem/P1655", "score": 60, "isPremium": false },
+            { "id": "P5395", "title": "P5395 第二类斯特林数·行", "src": "https://www.luogu.com.cn/problem/P5395", "score": 80, "isPremium": false },
+            { "id": "P5396", "title": "P5396 第二类斯特林数·列", "src": "https://www.luogu.com.cn/problem/P5396", "score": 80, "isPremium": false },
+            { "id": "P5408", "title": "P5408 第一类斯特林数·行", "src": "https://www.luogu.com.cn/problem/P5408", "score": 80, "isPremium": false },
+            { "id": "P5409", "title": "P5409 第一类斯特林数·列", "src": "https://www.luogu.com.cn/problem/P5409", "score": 80, "isPremium": false },
+            { "id": "P4827", "title": "P4827 [集训队互测 2011] Crash 的文明世界", "src": "https://www.luogu.com.cn/problem/P4827", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "7.7 Burnside 引理和 Polya 计数",
+      "summary": "【主要应用】等价类计数、置换群下的染色方案数、图的同构计数。\n【应用方式】Burnside 引理：等价类数 = 1/|G| * Σ |Fix(g)|；Polya 定理用颜色数的轮换数幂求和；常需枚举置换或按轮换长度分类。\n【模板代码】\n```cpp\n// Polya 定理（旋转置换）\nlong long ans = 0;\nfor (int i = 0; i < n; i++)\n    ans = (ans + qpow(m, gcd(n, i), MOD)) % MOD;\nans = ans * qpow(n, MOD - 2, MOD) % MOD;\nprintf(\"%lld\\n\", ans);\n\n// Burnside 引理（一般置换群）\n// 枚举所有置换 g，计算不动点个数 |Fix(g)|\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§7.7.1 Burnside 引理和 Polya 计数",
+          "summary": "【主要应用】Cards、黑白瓷砖、有色图、图的同构计数、烷烃计数、同分异构体计数、烯烃计数、画画、Pólya 定理。\n【应用方式】Polya 定理用 gcd 求轮换数；Burnside 引理枚举置换；结合生成函数或 DP 计算不动点。\n【模板代码】\n```cpp\n// Polya 定理模板\nlong long ans = 0;\nfor (int i = 0; i < n; i++)\n    ans = (ans + qpow(m, gcd(n, i), MOD)) % MOD;\nans = ans * qpow(n, MOD - 2, MOD) % MOD;\nprintf(\"%lld\\n\", ans);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1446", "title": "P1446 [HNOI2008] Cards", "src": "https://www.luogu.com.cn/problem/P1446", "score": 80, "isPremium": false },
+            { "id": "P2561", "title": "P2561 [AHOI2002] 黑白瓷砖", "src": "https://www.luogu.com.cn/problem/P2561", "score": 80, "isPremium": false },
+            { "id": "P4128", "title": "P4128 [SHOI2006] 有色图", "src": "https://www.luogu.com.cn/problem/P4128", "score": 100, "isPremium": false },
+            { "id": "P4727", "title": "P4727 [HNOI2009] 图的同构计数", "src": "https://www.luogu.com.cn/problem/P4727", "score": 100, "isPremium": false },
+            { "id": "P6598", "title": "P6598 烷烃计数", "src": "https://www.luogu.com.cn/problem/P6598", "score": 100, "isPremium": false },
+            { "id": "P5818", "title": "P5818 [JSOI2011] 同分异构体计数", "src": "https://www.luogu.com.cn/problem/P5818", "score": 100, "isPremium": false },
+            { "id": "P6597", "title": "P6597 烯烃计数", "src": "https://www.luogu.com.cn/problem/P6597", "score": 100, "isPremium": false },
+            { "id": "P4708", "title": "P4708 画画", "src": "https://www.luogu.com.cn/problem/P4708", "score": 100, "isPremium": false },
+            { "id": "P4980", "title": "P4980 【模板】Pólya 定理", "src": "https://www.luogu.com.cn/problem/P4980", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "7.8 母函数",
+      "summary": "【主要应用】组合计数、整数拆分、递推关系求解、多项式系数提取。\n【应用方式】构造普通母函数或指数母函数，将问题转化为多项式乘法；用 NTT/FFT 加速；结合求导、积分、ln/exp 化简。\n【模板代码】\n```cpp\n// 普通母函数：整数拆分\n// 1/(1-x)(1-x^2)(1-x^3)...\n// 用多项式乘法或 DP 计算系数\n\n// 指数母函数：排列计数\n// Σ a_n x^n / n!\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§7.8.1 母函数",
+          "summary": "【主要应用】整数的 lqp 拆分、calc、玩游戏、拯救世界。\n【应用方式】构造生成函数后用 NTT 加速；结合递推式求通项；多项式 ln/exp 化简。\n【模板代码】\n```cpp\n// 生成函数 + 多项式求逆\n// F(x) = 1 / (1 - A(x))\n// 用多项式求逆计算\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P4451", "title": "P4451 [国家集训队] 整数的lqp拆分", "src": "https://www.luogu.com.cn/problem/P4451", "score": 100, "isPremium": false },
+            { "id": "P4463", "title": "P4463 [集训队互测 2012] calc", "src": "https://www.luogu.com.cn/problem/P4463", "score": 100, "isPremium": false },
+            { "id": "P4705", "title": "P4705 玩游戏", "src": "https://www.luogu.com.cn/problem/P4705", "score": 100, "isPremium": false },
+            { "id": "P2000", "title": "P2000 拯救世界", "src": "https://www.luogu.com.cn/problem/P2000", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "7.9 公平组合游戏",
+      "summary": "【主要应用】Nim 游戏、威佐夫博弈、SG 函数、取石子游戏、有向图游戏。\n【应用方式】SG 定理：游戏和的 SG 值等于各子游戏 SG 值的异或；必败态 SG = 0；威佐夫博弈用黄金分割判定；Nim 用异或和判定。\n【模板代码】\n```cpp\n// Nim 游戏\nint xorsum = 0;\nfor (int i = 1; i <= n; i++) xorsum ^= a[i];\nif (xorsum) puts(\"先手必胜\");\nelse puts(\"先手必败\");\n\n// SG 函数\nint sg[N];\nbool vis[N];\nvoid get_sg(int n) {\n    for (int i = 1; i <= n; i++) {\n        memset(vis, 0, sizeof(vis));\n        for (int j : reach[i]) vis[sg[j]] = 1;\n        for (int j = 0; ; j++)\n            if (!vis[j]) { sg[i] = j; break; }\n    }\n}\n\n// 威佐夫博弈\ndouble gold = (sqrt(5.0) + 1) / 2;\nif (a > b) swap(a, b);\nint k = b - a;\nif (a == (int)(k * gold)) puts(\"先手必败\");\nelse puts(\"先手必胜\");\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§7.9.1 公平组合游戏",
+          "summary": "【主要应用】Roy&October之取石子、威佐夫博弈、取石子游戏、取石头游戏、Cow Digit Game、取石子游戏、高手过招、取数游戏II、基础博弈练习题、欧几里德的游戏。\n【应用方式】Nim 异或判定；威佐夫用黄金分割；SG 函数打表找规律；有向图游戏用记忆化搜索求 SG。\n【模板代码】\n```cpp\n// SG 函数（记忆化）\nint sg(int x) {\n    if (f[x] != -1) return f[x];\n    set<int> s;\n    for (int i = 1; i <= x; i++)\n        s.insert(sg(x - i));\n    for (int i = 0; ; i++)\n        if (!s.count(i)) return f[x] = i;\n}\n\n// 威佐夫博弈\nif (a > b) swap(a, b);\nint k = b - a;\nif (a == (int)(k * (sqrt(5.0) + 1) / 2)) puts(\"先手必败\");\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P4018", "title": "P4018 Roy&October之取石子", "src": "https://www.luogu.com.cn/problem/P4018", "score": 60, "isPremium": false },
+            { "id": "P2252", "title": "P2252 【模板】威佐夫博弈 / [SHOI2002] 取石子游戏", "src": "https://www.luogu.com.cn/problem/P2252", "score": 60, "isPremium": false },
+            { "id": "P2599", "title": "P2599 [ZJOI2009] 取石子游戏", "src": "https://www.luogu.com.cn/problem/P2599", "score": 80, "isPremium": false },
+            { "id": "P3210", "title": "P3210 [HNOI2010] 取石头游戏", "src": "https://www.luogu.com.cn/problem/P3210", "score": 100, "isPremium": false },
+            { "id": "P2953", "title": "P2953 [USACO09OPEN] Cow Digit Game S", "src": "https://www.luogu.com.cn/problem/P2953", "score": 60, "isPremium": false },
+            { "id": "P5675", "title": "P5675 [GZOI2017] 取石子游戏", "src": "https://www.luogu.com.cn/problem/P5675", "score": 80, "isPremium": false },
+            { "id": "P2575", "title": "P2575 高手过招", "src": "https://www.luogu.com.cn/problem/P2575", "score": 80, "isPremium": false },
+            { "id": "P1288", "title": "P1288 取数游戏 II", "src": "https://www.luogu.com.cn/problem/P1288", "score": 60, "isPremium": false },
+            { "id": "P5652", "title": "P5652 基础博弈练习题", "src": "https://www.luogu.com.cn/problem/P5652", "score": 80, "isPremium": false },
+            { "id": "P1290", "title": "P1290 欧几里德的游戏", "src": "https://www.luogu.com.cn/problem/P1290", "score": 60, "isPremium": false }
+          ]
+        }
+      ]
+    }
+  ]
+}

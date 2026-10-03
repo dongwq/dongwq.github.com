@@ -1,0 +1,432 @@
+{
+  "title": "洛谷《算法竞赛》高级数据结构专题题目整理",
+  "src": "https://www.luogu.com.cn/training/1016023",
+  "last_update": "2026-10-03T00:00:00+08:00",
+  "difficulty_mapping": {
+    "入门（红）": 10,
+    "普及-（橙）": 20,
+    "普及（黄）": 30,
+    "普及+/提高-（绿）": 40,
+    "提高（青）": 50,
+    "提高+/省选-（蓝）": 60,
+    "省选/NOI-（紫）": 80,
+    "NOI/NOI+/CTS（黑）": 100
+  },
+  "children": [
+    {
+      "title": "4.1 并查集",
+      "summary": "【主要应用】维护不相交集合的合并与查询，常用于连通性判断、Kruskal 最小生成树、带权关系推断、种类并查集。\n【应用方式】路径压缩 + 按秩合并；带权并查集维护到根的距离或关系；种类并查集拆点表示不同类别；离线倒序处理删边。\n【模板代码】\n```cpp\n// 普通并查集\nint fa[N];\nint find(int x) { return fa[x] == x ? x : fa[x] = find(fa[x]); }\nvoid merge(int x, int y) { fa[find(x)] = find(y); }\n\n// 带权并查集（维护到根距离）\nint d[N];\nint find(int x) {\n    if (fa[x] == x) return x;\n    int root = find(fa[x]);\n    d[x] += d[fa[x]];\n    return fa[x] = root;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.1.1 并查集",
+          "summary": "【主要应用】食物链（种类并查集）、修复公路（排序+并查集）、奶酪（连通性）、关押罪犯（二分+种类并查集）、MooTube（离线+并查集）、星球大战（倒序加边）、银河英雄传说（带权并查集）、程序自动分析（离散化+并查集）。\n【应用方式】种类并查集拆成多个域；带权并查集维护相对关系；离线倒序将删边转为加边。\n【模板代码】\n```cpp\n// 种类并查集（食物链）\n// x 表示同类, x+n 表示吃 x 的, x+2n 表示被 x 吃的\nvoid merge(int x, int y) { fa[find(x)] = find(y); }\nif (op == 1) {\n    merge(x, y);\n    merge(x + n, y + n);\n    merge(x + 2*n, y + 2*n);\n} else {\n    merge(x, y + n);\n    merge(x + n, y + 2*n);\n    merge(x + 2*n, y);\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P2024", "title": "P2024 [NOI2001] 食物链", "src": "https://www.luogu.com.cn/problem/P2024", "score": 60, "isPremium": false },
+            { "id": "P1111", "title": "P1111 修复公路", "src": "https://www.luogu.com.cn/problem/P1111", "score": 40, "isPremium": false },
+            { "id": "P3958", "title": "P3958 [NOIP 2017 提高组] 奶酪", "src": "https://www.luogu.com.cn/problem/P3958", "score": 50, "isPremium": false },
+            { "id": "P1525", "title": "P1525 [NOIP 2010 提高组] 关押罪犯", "src": "https://www.luogu.com.cn/problem/P1525", "score": 60, "isPremium": false },
+            { "id": "P4185", "title": "P4185 [USACO18JAN] MooTube G", "src": "https://www.luogu.com.cn/problem/P4185", "score": 60, "isPremium": false },
+            { "id": "P1197", "title": "P1197 [JSOI2008] 星球大战", "src": "https://www.luogu.com.cn/problem/P1197", "score": 60, "isPremium": false },
+            { "id": "P1196", "title": "P1196 [NOI2002] 银河英雄传说", "src": "https://www.luogu.com.cn/problem/P1196", "score": 60, "isPremium": false },
+            { "id": "P1955", "title": "P1955 [NOI2015] 程序自动分析", "src": "https://www.luogu.com.cn/problem/P1955", "score": 60, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.2 树状数组",
+      "summary": "【主要应用】单点修改 + 区间查询、区间修改 + 单点查询、区间修改 + 区间查询、二维树状数组、逆序对、第 k 大。\n【应用方式】利用 lowbit 维护前缀信息；差分实现区间修改；二维树状数组处理矩阵；树状数组上倍增求第 k 大。\n【模板代码】\n```cpp\n// 单点修改 + 区间查询\nint bit[N];\nvoid add(int x, int v) { for (; x <= n; x += x & -x) bit[x] += v; }\nint sum(int x) { int res = 0; for (; x; x -= x & -x) res += bit[x]; return res; }\nint query(int l, int r) { return sum(r) - sum(l - 1); }\n\n// 区间修改 + 单点查询（差分）\nvoid range_add(int l, int r, int v) { add(l, v); add(r + 1, -v); }\nint point_query(int x) { return sum(x); }\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.2.1 树状数组",
+          "summary": "【主要应用】线段树1（区间修改区间查询）、上帝造题的七分钟（二维树状数组）、逆序对、树状数组模板、最接近神的人、第k大斜率、火柴排队、Promotion Counting、HH的项链、物流、计数问题、采花、列队。\n【应用方式】二维树状数组处理矩阵修改与查询；逆序对用离散化 + 树状数组；离线按右端点排序处理区间不同数。\n【模板代码】\n```cpp\n// 二维树状数组\nvoid add(int x, int y, int v) {\n    for (int i = x; i <= n; i += i & -i)\n        for (int j = y; j <= m; j += j & -j)\n            bit[i][j] += v;\n}\nint sum(int x, int y) {\n    int res = 0;\n    for (int i = x; i; i -= i & -i)\n        for (int j = y; j; j -= j & -j)\n            res += bit[i][j];\n    return res;\n}\n\n// 逆序对\nfor (int i = n; i >= 1; i--) {\n    ans += sum(a[i] - 1);\n    add(a[i], 1);\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3372", "title": "P3372 【模板】线段树 1", "src": "https://www.luogu.com.cn/problem/P3372", "score": 60, "isPremium": false },
+            { "id": "P4514", "title": "P4514 上帝造题的七分钟", "src": "https://www.luogu.com.cn/problem/P4514", "score": 80, "isPremium": false },
+            { "id": "P1908", "title": "P1908 逆序对", "src": "https://www.luogu.com.cn/problem/P1908", "score": 40, "isPremium": false },
+            { "id": "P3374", "title": "P3374 【模板】树状数组 1", "src": "https://www.luogu.com.cn/problem/P3374", "score": 40, "isPremium": false },
+            { "id": "P3368", "title": "P3368 【模板】树状数组 2", "src": "https://www.luogu.com.cn/problem/P3368", "score": 40, "isPremium": false },
+            { "id": "P1774", "title": "P1774 最接近神的人", "src": "https://www.luogu.com.cn/problem/P1774", "score": 50, "isPremium": false },
+            { "id": "P4479", "title": "P4479 [BJWC2018] 第k大斜率", "src": "https://www.luogu.com.cn/problem/P4479", "score": 80, "isPremium": false },
+            { "id": "P1966", "title": "P1966 [NOIP 2013 提高组] 火柴排队", "src": "https://www.luogu.com.cn/problem/P1966", "score": 60, "isPremium": false },
+            { "id": "P3605", "title": "P3605 [USACO17JAN] Promotion Counting P", "src": "https://www.luogu.com.cn/problem/P3605", "score": 60, "isPremium": false },
+            { "id": "P1972", "title": "P1972 [SDOI2009] HH 的项链", "src": "https://www.luogu.com.cn/problem/P1972", "score": 80, "isPremium": false },
+            { "id": "P3586", "title": "P3586 [POI 2015 R2] 物流 Logistics", "src": "https://www.luogu.com.cn/problem/P3586", "score": 80, "isPremium": false },
+            { "id": "P4054", "title": "P4054 [JSOI2009] 计数问题", "src": "https://www.luogu.com.cn/problem/P4054", "score": 80, "isPremium": false },
+            { "id": "P4113", "title": "P4113 [HEOI2012] 采花", "src": "https://www.luogu.com.cn/problem/P4113", "score": 80, "isPremium": false },
+            { "id": "P3960", "title": "P3960 [NOIP 2017 提高组] 列队", "src": "https://www.luogu.com.cn/problem/P3960", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.3 线段树",
+      "summary": "【主要应用】区间修改 + 区间查询、区间最值、区间历史最值、扫描线、动态开点、线段树合并、李超线段树。\n【应用方式】懒标记下传；扫描线求矩形面积并/周长；动态开点节省空间；线段树合并处理树上问题；李超线段树维护一次函数最值。\n【模板代码】\n```cpp\n// 区间加 + 区间求和\nvoid pushup(int p) { sum[p] = sum[p<<1] + sum[p<<1|1]; }\nvoid pushdown(int p, int l, int r) {\n    if (!add[p]) return;\n    int mid = (l + r) >> 1;\n    sum[p<<1] += add[p] * (mid - l + 1); add[p<<1] += add[p];\n    sum[p<<1|1] += add[p] * (r - mid); add[p<<1|1] += add[p];\n    add[p] = 0;\n}\nvoid update(int p, int l, int r, int ql, int qr, int v) {\n    if (ql <= l && r <= qr) { sum[p] += v * (r - l + 1); add[p] += v; return; }\n    pushdown(p, l, r);\n    int mid = (l + r) >> 1;\n    if (ql <= mid) update(p<<1, l, mid, ql, qr, v);\n    if (qr > mid) update(p<<1|1, mid+1, r, ql, qr, v);\n    pushup(p);\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.3.1 线段树",
+          "summary": "【主要应用】线段树1/2/3、上帝造题的七分钟2、矩形周长、扫描线、数学计算、窗口的星星、降雨量、排序、影魔、李超线段树、楼房重建、小白逛公园、线段树合并、删数、语言。\n【应用方式】扫描线按 x 排序 + 线段树维护 y 覆盖；李超线段树插入直线求最值；线段树合并用动态开点。\n【模板代码】\n```cpp\n// 扫描线求矩形面积并\nstruct Line { int l, r, h, tag; } line[N];\nsort(line + 1, line + 1 + cnt, [](Line a, Line b) { return a.h < b.h; });\nfor (int i = 1; i <= cnt; i++) {\n    update(1, 1, n, line[i].l, line[i].r - 1, line[i].tag);\n    ans += len[1] * (line[i+1].h - line[i].h);\n}\n\n// 李超线段树插入直线\nvoid insert(int p, int l, int r, Line x) {\n    int mid = (l + r) >> 1;\n    if (f(x, mid) > f(tree[p], mid)) swap(tree[p], x);\n    if (l == r) return;\n    if (f(x, l) > f(tree[p], l)) insert(p<<1, l, mid, x);\n    else if (f(x, r) > f(tree[p], r)) insert(p<<1|1, mid+1, r, x);\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3372", "title": "P3372 【模板】线段树 1", "src": "https://www.luogu.com.cn/problem/P3372", "score": 60, "isPremium": false },
+            { "id": "P4145", "title": "P4145 上帝造题的七分钟 2 / 花神游历各国", "src": "https://www.luogu.com.cn/problem/P4145", "score": 60, "isPremium": false },
+            { "id": "P6242", "title": "P6242 【模板】线段树 3（区间最值操作、区间历史最值）", "src": "https://www.luogu.com.cn/problem/P6242", "score": 100, "isPremium": false },
+            { "id": "P1856", "title": "P1856 [IOI 1998 / USACO5.5] 矩形周长 Picture", "src": "https://www.luogu.com.cn/problem/P1856", "score": 80, "isPremium": false },
+            { "id": "P3373", "title": "P3373 【模板】线段树 2", "src": "https://www.luogu.com.cn/problem/P3373", "score": 60, "isPremium": false },
+            { "id": "P5490", "title": "P5490 【模板】扫描线 & 矩形面积并", "src": "https://www.luogu.com.cn/problem/P5490", "score": 80, "isPremium": false },
+            { "id": "P4588", "title": "P4588 [TJOI2018] 数学计算", "src": "https://www.luogu.com.cn/problem/P4588", "score": 60, "isPremium": false },
+            { "id": "P1502", "title": "P1502 窗口的星星", "src": "https://www.luogu.com.cn/problem/P1502", "score": 80, "isPremium": false },
+            { "id": "P2471", "title": "P2471 [SCOI2007] 降雨量", "src": "https://www.luogu.com.cn/problem/P2471", "score": 80, "isPremium": false },
+            { "id": "P2824", "title": "P2824 [HEOI2016/TJOI2016] 排序", "src": "https://www.luogu.com.cn/problem/P2824", "score": 80, "isPremium": false },
+            { "id": "P3722", "title": "P3722 [AHOI2017/HNOI2017] 影魔", "src": "https://www.luogu.com.cn/problem/P3722", "score": 100, "isPremium": false },
+            { "id": "P4097", "title": "P4097 【模板】李超线段树 / [HEOI2013] Segment", "src": "https://www.luogu.com.cn/problem/P4097", "score": 80, "isPremium": false },
+            { "id": "P4198", "title": "P4198 楼房重建", "src": "https://www.luogu.com.cn/problem/P4198", "score": 80, "isPremium": false },
+            { "id": "P4513", "title": "P4513 小白逛公园", "src": "https://www.luogu.com.cn/problem/P4513", "score": 80, "isPremium": false },
+            { "id": "P4556", "title": "P4556 【模板】线段树合并 / [Vani 有约会] 雨天的尾巴", "src": "https://www.luogu.com.cn/problem/P4556", "score": 80, "isPremium": false },
+            { "id": "P5324", "title": "P5324 [BJOI2019] 删数", "src": "https://www.luogu.com.cn/problem/P5324", "score": 100, "isPremium": false },
+            { "id": "P5327", "title": "P5327 [ZJOI2019] 语言", "src": "https://www.luogu.com.cn/problem/P5327", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.4 可持久化线段树",
+      "summary": "【主要应用】主席树求区间第 k 小、可持久化数组、可持久化并查集、可持久化平衡树、树上第 k 小。\n【应用方式】每次修改新建一条链，保留历史版本；主席树利用前缀和思想求区间第 k 小；可持久化并查集用可持久化数组维护 fa。\n【模板代码】\n```cpp\n// 主席树求区间第 k 小\nint update(int pre, int l, int r, int x) {\n    int p = ++tot;\n    lc[p] = lc[pre]; rc[p] = rc[pre]; sum[p] = sum[pre] + 1;\n    if (l == r) return p;\n    int mid = (l + r) >> 1;\n    if (x <= mid) lc[p] = update(lc[pre], l, mid, x);\n    else rc[p] = update(rc[pre], mid+1, r, x);\n    return p;\n}\nint query(int u, int v, int l, int r, int k) {\n    if (l == r) return l;\n    int mid = (l + r) >> 1, x = sum[lc[v]] - sum[lc[u]];\n    if (k <= x) return query(lc[u], lc[v], l, mid, k);\n    else return query(rc[u], rc[v], mid+1, r, k - x);\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.4.1 可持久化线段树",
+          "summary": "【主要应用】可持久化线段树2、粟粟的书架、森林、任务查询系统、列队、美味、Count on a tree、原题识别、可持久化数组、可持久化并查集、可持久化平衡树、可持久化文艺平衡树。\n【应用方式】主席树求区间第 k 小；树上主席树求路径第 k 小；可持久化并查集用可持久化数组维护 fa 与 size。\n【模板代码】\n```cpp\n// 可持久化数组\nint update(int pre, int l, int r, int pos, int val) {\n    int p = ++tot;\n    if (l == r) { val[p] = val; return p; }\n    int mid = (l + r) >> 1;\n    if (pos <= mid) lc[p] = update(lc[pre], l, mid, pos, val), rc[p] = rc[pre];\n    else rc[p] = update(rc[pre], mid+1, r, pos, val), lc[p] = lc[pre];\n    return p;\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3834", "title": "P3834 【模板】可持久化线段树 2", "src": "https://www.luogu.com.cn/problem/P3834", "score": 80, "isPremium": false },
+            { "id": "P2468", "title": "P2468 [SDOI2010] 粟粟的书架", "src": "https://www.luogu.com.cn/problem/P2468", "score": 100, "isPremium": false },
+            { "id": "P3302", "title": "P3302 [SDOI2013] 森林", "src": "https://www.luogu.com.cn/problem/P3302", "score": 100, "isPremium": false },
+            { "id": "P3168", "title": "P3168 [CQOI2015] 任务查询系统", "src": "https://www.luogu.com.cn/problem/P3168", "score": 100, "isPremium": false },
+            { "id": "P4559", "title": "P4559 [JSOI2018] 列队", "src": "https://www.luogu.com.cn/problem/P4559", "score": 100, "isPremium": false },
+            { "id": "P3293", "title": "P3293 [SCOI2016] 美味", "src": "https://www.luogu.com.cn/problem/P3293", "score": 100, "isPremium": false },
+            { "id": "P2633", "title": "P2633 Count on a tree", "src": "https://www.luogu.com.cn/problem/P2633", "score": 80, "isPremium": false },
+            { "id": "P4618", "title": "P4618 [SDOI2018] 原题识别", "src": "https://www.luogu.com.cn/problem/P4618", "score": 100, "isPremium": false },
+            { "id": "P3919", "title": "P3919 【模板】可持久化线段树 1（可持久化数组）", "src": "https://www.luogu.com.cn/problem/P3919", "score": 80, "isPremium": false },
+            { "id": "P3402", "title": "P3402 【模板】可持久化并查集", "src": "https://www.luogu.com.cn/problem/P3402", "score": 80, "isPremium": false },
+            { "id": "P3835", "title": "P3835 【模板】可持久化平衡树", "src": "https://www.luogu.com.cn/problem/P3835", "score": 80, "isPremium": false },
+            { "id": "P5055", "title": "P5055 【模板】可持久化文艺平衡树", "src": "https://www.luogu.com.cn/problem/P5055", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.5 分块与莫队算法",
+      "summary": "【主要应用】区间查询、区间修改、离线区间询问、带修莫队、回滚莫队、树上莫队、二次离线莫队。\n【应用方式】将序列分成 √n 块，预处理块内信息；莫队按左端点所在块排序，右端点单调移动；带修莫队增加时间维；回滚莫队处理只增不删。\n【模板代码】\n```cpp\n// 普通莫队\nint block = sqrt(n);\nsort(q + 1, q + 1 + m, [](Query a, Query b) {\n    if (a.l / block != b.l / block) return a.l < b.l;\n    return (a.l / block) & 1 ? a.r > b.r : a.r < b.r;\n});\nint L = 1, R = 0;\nfor (int i = 1; i <= m; i++) {\n    while (L > q[i].l) add(--L);\n    while (R < q[i].r) add(++R);\n    while (L < q[i].l) del(L++);\n    while (R > q[i].r) del(R--);\n    ans[q[i].id] = res;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.5.1 分块与莫队算法",
+          "summary": "【主要应用】弹飞绵羊、教主的魔法、HH的项链、Count on a tree II、开关、哈希冲突、序列、排队、方方方的数据结构、开车、蒲公英、未来日记、王室联邦、小Z的袜子、带修莫队、回滚莫队、莫队二次离线、小B的询问、小清新人渣的本愿、大爷的字符串题、糖果公园、来者不拒去者不追。\n【应用方式】分块预处理每块信息；莫队离线排序减少移动次数；带修莫队增加时间维；回滚莫队用于只增不删。\n【模板代码】\n```cpp\n// 带修莫队\nint block = pow(n, 2.0 / 3);\nsort(q + 1, q + 1 + m, [](Query a, Query b) {\n    if (a.l / block != b.l / block) return a.l < b.l;\n    if (a.r / block != b.r / block) return a.r < b.r;\n    return a.t < b.t;\n});\nwhile (T < q[i].t) apply(++T);\nwhile (T > q[i].t) rollback(T--);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3203", "title": "P3203 [HNOI2010] 弹飞绵羊", "src": "https://www.luogu.com.cn/problem/P3203", "score": 80, "isPremium": false },
+            { "id": "P2801", "title": "P2801 教主的魔法", "src": "https://www.luogu.com.cn/problem/P2801", "score": 80, "isPremium": false },
+            { "id": "P1972", "title": "P1972 [SDOI2009] HH 的项链", "src": "https://www.luogu.com.cn/problem/P1972", "score": 80, "isPremium": false },
+            { "id": "SP10707", "title": "SP10707 COT2 - Count on a tree II", "src": "https://www.luogu.com.cn/problem/SP10707", "score": 80, "isPremium": false },
+            { "id": "P3870", "title": "P3870 [TJOI2009] 开关", "src": "https://www.luogu.com.cn/problem/P3870", "score": 60, "isPremium": false },
+            { "id": "P3396", "title": "P3396 哈希冲突", "src": "https://www.luogu.com.cn/problem/P3396", "score": 80, "isPremium": false },
+            { "id": "P3863", "title": "P3863 序列", "src": "https://www.luogu.com.cn/problem/P3863", "score": 80, "isPremium": false },
+            { "id": "P1975", "title": "P1975 [国家集训队] 排队", "src": "https://www.luogu.com.cn/problem/P1975", "score": 80, "isPremium": false },
+            { "id": "P3710", "title": "P3710 方方方的数据结构", "src": "https://www.luogu.com.cn/problem/P3710", "score": 80, "isPremium": false },
+            { "id": "P3992", "title": "P3992 [BJOI2017] 开车", "src": "https://www.luogu.com.cn/problem/P3992", "score": 80, "isPremium": false },
+            { "id": "P4168", "title": "P4168 [Violet] 蒲公英", "src": "https://www.luogu.com.cn/problem/P4168", "score": 80, "isPremium": false },
+            { "id": "P4119", "title": "P4119 [Ynoi2018] 未来日记", "src": "https://www.luogu.com.cn/problem/P4119", "score": 100, "isPremium": false },
+            { "id": "P2325", "title": "P2325 [SCOI2005] 王室联邦", "src": "https://www.luogu.com.cn/problem/P2325", "score": 80, "isPremium": false },
+            { "id": "P1494", "title": "P1494 [国家集训队] 小 Z 的袜子", "src": "https://www.luogu.com.cn/problem/P1494", "score": 80, "isPremium": false },
+            { "id": "P1903", "title": "P1903 【模板】带修莫队 / [国家集训队] 数颜色 / 维护队列", "src": "https://www.luogu.com.cn/problem/P1903", "score": 80, "isPremium": false },
+            { "id": "P5906", "title": "P5906 【模板】回滚莫队&不删除莫队", "src": "https://www.luogu.com.cn/problem/P5906", "score": 80, "isPremium": false },
+            { "id": "P4887", "title": "P4887 【模板】莫队二次离线 / 第十四分块(前体)", "src": "https://www.luogu.com.cn/problem/P4887", "score": 100, "isPremium": false },
+            { "id": "P2709", "title": "P2709 【模板】莫队 / 小 B 的询问", "src": "https://www.luogu.com.cn/problem/P2709", "score": 60, "isPremium": false },
+            { "id": "P3674", "title": "P3674 小清新人渣的本愿", "src": "https://www.luogu.com.cn/problem/P3674", "score": 80, "isPremium": false },
+            { "id": "P3709", "title": "P3709 大爷的字符串题", "src": "https://www.luogu.com.cn/problem/P3709", "score": 80, "isPremium": false },
+            { "id": "P4074", "title": "P4074 [WC2013] 糖果公园", "src": "https://www.luogu.com.cn/problem/P4074", "score": 100, "isPremium": false },
+            { "id": "P5501", "title": "P5501 [LnOI2019] 来者不拒，去者不追", "src": "https://www.luogu.com.cn/problem/P5501", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.6 块状链表",
+      "summary": "【主要应用】支持插入、删除、区间查询的序列维护，适合文本编辑器等动态序列问题。\n【应用方式】将序列分成若干块，每块用数组或链表维护；插入时分裂块，删除时合并块；块大小一般取 √n。\n【模板代码】\n```cpp\n// 块状链表基本结构\nstruct Block {\n    int sz;\n    char s[N];\n    Block *nxt;\n};\n// 插入：找到位置所在块，分裂后插入\n// 删除：找到区间覆盖的块，删除整块或部分\n// 查询：遍历块统计\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.6.1 块状链表",
+          "summary": "【主要应用】文本编辑器（NOI2003）。\n【应用方式】维护字符序列，支持插入、删除、查询；块大小取 √n，插入时分裂块，删除时合并块。\n【模板代码】\n```cpp\n// 文本编辑器核心操作\nvoid insert(int pos, string s) {\n    // 定位到 pos 所在块\n    // 分裂该块\n    // 将 s 分块插入\n}\nvoid erase(int l, int r) {\n    // 删除 [l, r] 范围内的字符\n    // 合并剩余块\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P4008", "title": "P4008 [NOI2003] 文本编辑器", "src": "https://www.luogu.com.cn/problem/P4008", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.7 简单树上问题",
+      "summary": "【主要应用】树的直径、树的重心、树的最长路径、树网的核。\n【应用方式】两次 DFS/BFS 求直径；树形 DP 求直径；树的重心通过子树大小计算。\n【模板代码】\n```cpp\n// 两次 DFS 求直径\nvoid dfs(int u, int fa, int d) {\n    if (d > maxd) maxd = d, maxu = u;\n    for (int v : g[u]) if (v != fa) dfs(v, u, d + 1);\n}\ndfs(1, 0, 0);\nmaxd = 0;\ndfs(maxu, 0, 0);\nprintf(\"%d\\n\", maxd);\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.7.1 简单树上问题",
+          "summary": "【主要应用】树的直径、巡逻、树网的核。\n【应用方式】两次 DFS 求直径；树形 DP 求直径；直径上尺取法求最小偏心距。\n【模板代码】\n```cpp\n// 树形 DP 求直径\nvoid dfs(int u, int fa) {\n    for (int v : g[u]) if (v != fa) {\n        dfs(v, u);\n        ans = max(ans, f[u] + f[v] + 1);\n        f[u] = max(f[u], f[v] + 1);\n    }\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B4016", "title": "B4016 树的直径", "src": "https://www.luogu.com.cn/problem/B4016", "score": 40, "isPremium": false },
+            { "id": "P3629", "title": "P3629 [APIO2010] 巡逻", "src": "https://www.luogu.com.cn/problem/P3629", "score": 80, "isPremium": false },
+            { "id": "P1099", "title": "P1099 [NOIP 2007 提高组] 树网的核", "src": "https://www.luogu.com.cn/problem/P1099", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.8 LCA",
+      "summary": "【主要应用】最近公共祖先、树上路径问题、树上差分、树上倍增。\n【应用方式】倍增法预处理 up[u][k] 与深度；Tarjan 离线求 LCA；树链剖分求 LCA。\n【模板代码】\n```cpp\n// 倍增 LCA\nvoid dfs(int u, int fa) {\n    dep[u] = dep[fa] + 1;\n    up[u][0] = fa;\n    for (int i = 1; i < LOG; i++) up[u][i] = up[up[u][i-1]][i-1];\n    for (int v : g[u]) if (v != fa) dfs(v, u);\n}\nint lca(int u, int v) {\n    if (dep[u] < dep[v]) swap(u, v);\n    for (int i = LOG - 1; i >= 0; i--)\n        if (dep[up[u][i]] >= dep[v]) u = up[u][i];\n    if (u == v) return u;\n    for (int i = LOG - 1; i >= 0; i--)\n        if (up[u][i] != up[v][i]) u = up[u][i], v = up[v][i];\n    return up[u][0];\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.8.1 LCA",
+          "summary": "【主要应用】LCA模板、Max Flow、货车运输、运输计划、天天爱跑步、斐波那契、紧急集合/聚会。\n【应用方式】倍增预处理 + 二进制 lifting；树上差分统计路径覆盖；结合二分答案求最小最大边。\n【模板代码】\n```cpp\n// 树上差分（点差分）\ndiff[u] += v; diff[v] += v;\ndiff[lca] -= v; diff[fa[lca][0]] -= v;\n// 子树和即为该点被覆盖次数\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3379", "title": "P3379 【模板】最近公共祖先（LCA）", "src": "https://www.luogu.com.cn/problem/P3379", "score": 60, "isPremium": false },
+            { "id": "P3128", "title": "P3128 [USACO15DEC] Max Flow P", "src": "https://www.luogu.com.cn/problem/P3128", "score": 80, "isPremium": false },
+            { "id": "P1967", "title": "P1967 [NOIP 2013 提高组] 货车运输", "src": "https://www.luogu.com.cn/problem/P1967", "score": 80, "isPremium": false },
+            { "id": "P2680", "title": "P2680 [NOIP 2015 提高组] 运输计划", "src": "https://www.luogu.com.cn/problem/P2680", "score": 100, "isPremium": false },
+            { "id": "P1600", "title": "P1600 [NOIP 2016 提高组] 天天爱跑步", "src": "https://www.luogu.com.cn/problem/P1600", "score": 100, "isPremium": false },
+            { "id": "P3938", "title": "P3938 斐波那契", "src": "https://www.luogu.com.cn/problem/P3938", "score": 80, "isPremium": false },
+            { "id": "P4281", "title": "P4281 [AHOI2008] 紧急集合 / 聚会", "src": "https://www.luogu.com.cn/problem/P4281", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.9 树上的分治",
+      "summary": "【主要应用】树上路径统计、点分治、点分树、动态点分治。\n【应用方式】点分治：每次找重心，统计经过重心的路径，递归处理子树；点分树：将点分治的递归结构建成树，支持动态修改。\n【模板代码】\n```cpp\n// 点分治框架\nvoid getroot(int u, int fa, int tot, int &rt) {\n    sz[u] = 1; mx[u] = 0;\n    for (int v : g[u]) if (v != fa && !vis[v]) {\n        getroot(v, u, tot, rt);\n        sz[u] += sz[v];\n        mx[u] = max(mx[u], sz[v]);\n    }\n    mx[u] = max(mx[u], tot - sz[u]);\n    if (mx[u] < mx[rt]) rt = u;\n}\nvoid solve(int u) {\n    vis[u] = 1;\n    // 统计经过 u 的路径\n    for (int v : g[u]) if (!vis[v]) {\n        // 递归处理子树\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.9.1 树上的分治",
+          "summary": "【主要应用】Tree、点分树/震波、捉迷藏、幻想乡战略游戏、Cow at Large、Transport、点分治模板、聪聪可可、树上游戏、树的难题、Race、开店、模式字符串、重建计划。\n【应用方式】点分治求路径长度等于 k 的方案数；点分树支持动态修改与查询；结合单调队列或树状数组统计答案。\n【模板代码】\n```cpp\n// 点分治求路径长度等于 k\nvoid calc(int u, int d, int fa) {\n    // 统计当前子树到 u 的距离\n    for (int v : g[u]) if (v != fa && !vis[v]) calc(v, d + w, u);\n}\nvoid divide(int u) {\n    vis[u] = 1;\n    for (int v : g[u]) if (!vis[v]) {\n        calc(v, w, u);\n        // 合并答案\n    }\n    for (int v : g[u]) if (!vis[v]) {\n        int rt = 0; getroot(v, 0, sz[v], rt);\n        divide(rt);\n    }\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P4178", "title": "P4178 Tree", "src": "https://www.luogu.com.cn/problem/P4178", "score": 80, "isPremium": false },
+            { "id": "P6329", "title": "P6329 【模板】点分树 / 震波", "src": "https://www.luogu.com.cn/problem/P6329", "score": 100, "isPremium": false },
+            { "id": "P2056", "title": "P2056 [ZJOI2007] 捉迷藏", "src": "https://www.luogu.com.cn/problem/P2056", "score": 100, "isPremium": false },
+            { "id": "P3345", "title": "P3345 [ZJOI2015] 幻想乡战略游戏", "src": "https://www.luogu.com.cn/problem/P3345", "score": 100, "isPremium": false },
+            { "id": "P4183", "title": "P4183 [USACO18JAN] Cow at Large P", "src": "https://www.luogu.com.cn/problem/P4183", "score": 100, "isPremium": false },
+            { "id": "P5306", "title": "P5306 [COCI 2018/2019 #5] Transport", "src": "https://www.luogu.com.cn/problem/P5306", "score": 100, "isPremium": false },
+            { "id": "P3806", "title": "P3806 【模板】点分治", "src": "https://www.luogu.com.cn/problem/P3806", "score": 80, "isPremium": false },
+            { "id": "P2634", "title": "P2634 [国家集训队] 聪聪可可", "src": "https://www.luogu.com.cn/problem/P2634", "score": 80, "isPremium": false },
+            { "id": "P2664", "title": "P2664 树上游戏", "src": "https://www.luogu.com.cn/problem/P2664", "score": 100, "isPremium": false },
+            { "id": "P3714", "title": "P3714 [BJOI2017] 树的难题", "src": "https://www.luogu.com.cn/problem/P3714", "score": 100, "isPremium": false },
+            { "id": "P4149", "title": "P4149 [IOI 2011] Race", "src": "https://www.luogu.com.cn/problem/P4149", "score": 80, "isPremium": false },
+            { "id": "P3241", "title": "P3241 [HNOI2015] 开店", "src": "https://www.luogu.com.cn/problem/P3241", "score": 100, "isPremium": false },
+            { "id": "P4075", "title": "P4075 [SDOI2016] 模式字符串", "src": "https://www.luogu.com.cn/problem/P4075", "score": 100, "isPremium": false },
+            { "id": "P4292", "title": "P4292 [WC2010] 重建计划", "src": "https://www.luogu.com.cn/problem/P4292", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.10 树链剖分",
+      "summary": "【主要应用】树上路径修改与查询、子树修改与查询、LCA、树上第 k 大。\n【应用方式】重链剖分：两次 DFS 求 size、重儿子、top、dfn；用线段树维护 dfn 序上的区间信息；路径查询不断跳 top。\n【模板代码】\n```cpp\n// 树链剖分两次 DFS\nvoid dfs1(int u, int fa) {\n    sz[u] = 1; dep[u] = dep[fa] + 1; fa[u] = fa;\n    for (int v : g[u]) if (v != fa) {\n        dfs1(v, u);\n        sz[u] += sz[v];\n        if (sz[v] > sz[son[u]]) son[u] = v;\n    }\n}\nvoid dfs2(int u, int topf) {\n    dfn[u] = ++cnt; top[u] = topf;\n    if (son[u]) dfs2(son[u], topf);\n    for (int v : g[u]) if (v != fa[u] && v != son[u]) dfs2(v, v);\n}\n// 路径查询\nint query_path(int u, int v) {\n    int res = 0;\n    while (top[u] != top[v]) {\n        if (dep[top[u]] < dep[top[v]]) swap(u, v);\n        res += query(1, 1, n, dfn[top[u]], dfn[u]);\n        u = fa[top[u]];\n    }\n    if (dep[u] > dep[v]) swap(u, v);\n    res += query(1, 1, n, dfn[u], dfn[v]);\n    return res;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.10.1 树链剖分",
+          "summary": "【主要应用】染色、游戏、松鼠的新家、LCA、树链剖分模板、旅行、树的统计、旅游、异或、旧词、由乃的OJ、Abbi并不想研学。\n【应用方式】重链剖分 + 线段树维护路径信息；子树查询利用 dfn 连续区间；结合 LCT 或树套树处理复杂问题。\n【模板代码】\n```cpp\n// 子树查询（dfn 连续）\nquery(1, 1, n, dfn[u], dfn[u] + sz[u] - 1);\n// 路径修改\nwhile (top[u] != top[v]) {\n    if (dep[top[u]] < dep[top[v]]) swap(u, v);\n    update(1, 1, n, dfn[top[u]], dfn[u], v);\n    u = fa[top[u]];\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P2486", "title": "P2486 [SDOI2011] 染色", "src": "https://www.luogu.com.cn/problem/P2486", "score": 80, "isPremium": false },
+            { "id": "P4069", "title": "P4069 [SDOI2016] 游戏", "src": "https://www.luogu.com.cn/problem/P4069", "score": 100, "isPremium": false },
+            { "id": "P3258", "title": "P3258 [JLOI2014] 松鼠的新家", "src": "https://www.luogu.com.cn/problem/P3258", "score": 80, "isPremium": false },
+            { "id": "P4211", "title": "P4211 [LNOI2014] LCA", "src": "https://www.luogu.com.cn/problem/P4211", "score": 100, "isPremium": false },
+            { "id": "P3384", "title": "P3384 【模板】重链剖分 / 树链剖分", "src": "https://www.luogu.com.cn/problem/P3384", "score": 80, "isPremium": false },
+            { "id": "P3313", "title": "P3313 [SDOI2014] 旅行", "src": "https://www.luogu.com.cn/problem/P3313", "score": 80, "isPremium": false },
+            { "id": "P2590", "title": "P2590 [ZJOI2008] 树的统计", "src": "https://www.luogu.com.cn/problem/P2590", "score": 80, "isPremium": false },
+            { "id": "P1505", "title": "P1505 [国家集训队] 旅游", "src": "https://www.luogu.com.cn/problem/P1505", "score": 80, "isPremium": false },
+            { "id": "P4592", "title": "P4592 [TJOI2018] 异或", "src": "https://www.luogu.com.cn/problem/P4592", "score": 100, "isPremium": false },
+            { "id": "P5305", "title": "P5305 [GXOI/GZOI2019] 旧词", "src": "https://www.luogu.com.cn/problem/P5305", "score": 100, "isPremium": false },
+            { "id": "P5354", "title": "P5354 [Ynoi Easy Round 2017] 由乃的 OJ", "src": "https://www.luogu.com.cn/problem/P5354", "score": 100, "isPremium": false },
+            { "id": "P5499", "title": "P5499 [LnOI2019] Abbi 并不想研学", "src": "https://www.luogu.com.cn/problem/P5499", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.11 二叉查找树",
+      "summary": "【主要应用】维护有序集合，支持插入、删除、查找前驱后继、排名查询。\n【应用方式】BST 性质：左子树 < 根 < 右子树；插入/删除按大小递归；可结合平衡树避免退化。\n【模板代码】\n```cpp\n// BST 插入\nvoid insert(Node *&p, int x) {\n    if (!p) { p = new Node(x); return; }\n    if (x < p->val) insert(p->l, x);\n    else insert(p->r, x);\n}\n// BST 查找\nbool find(Node *p, int x) {\n    if (!p) return false;\n    if (p->val == x) return true;\n    return x < p->val ? find(p->l, x) : find(p->r, x);\n}\n```",
+      "isLeaf": true,
+      "children": [],
+      "problems": []
+    },
+    {
+      "title": "4.12 替罪羊树",
+      "summary": "【主要应用】维护有序集合，支持插入、删除、排名、前驱后继。\n【应用方式】不旋转，通过重构不平衡子树保持平衡；设置平衡因子 α，当某子树大小超过 α 倍时暴力重构。\n【模板代码】\n```cpp\n// 替罪羊树重构\nvoid rebuild(int &p) {\n    vector<int> v;\n    dfs(p, v);\n    build(p, v, 0, v.size() - 1);\n}\nvoid insert(int &p, int x) {\n    if (!p) { p = new Node(x); return; }\n    if (x < p->val) insert(p->l, x);\n    else insert(p->r, x);\n    if (bad(p)) rebuild(p);\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.12.1 替罪羊树",
+          "summary": "【主要应用】普通平衡树模板。\n【应用方式】插入后检查是否失衡；失衡则中序遍历收集节点后重建；删除可标记后重构。\n【模板代码】\n```cpp\n// 替罪羊树节点\nstruct Node { int val, sz, cnt; Node *l, *r; };\n// 重构条件\nbool bad(Node *p) {\n    return max(p->l ? p->l->sz : 0, p->r ? p->r->sz : 0) > alpha * p->sz;\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3369", "title": "P3369 【模板】普通平衡树", "src": "https://www.luogu.com.cn/problem/P3369", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.13 Treap 树",
+      "summary": "【主要应用】维护有序集合，支持插入、删除、排名、前驱后继、区间翻转。\n【应用方式】Treap = BST + 堆；每个节点随机优先级，通过旋转保持堆性质；FHQ Treap 用分裂与合并代替旋转。\n【模板代码】\n```cpp\n// Treap 旋转\nvoid rotate(Node *&p, int d) {\n    Node *q = p->ch[d ^ 1];\n    p->ch[d ^ 1] = q->ch[d];\n    q->ch[d] = p;\n    p = q;\n}\nvoid insert(Node *&p, int x) {\n    if (!p) { p = new Node(x); return; }\n    int d = x > p->val;\n    insert(p->ch[d], x);\n    if (p->ch[d]->pri < p->pri) rotate(p, d ^ 1);\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.13.1 Treap 树",
+          "summary": "【主要应用】普通平衡树模板。\n【应用方式】随机优先级 + 旋转；插入/删除按 BST 规则，之后调整堆性质；可扩展支持区间操作。\n【模板代码】\n```cpp\n// Treap 删除\nvoid erase(Node *&p, int x) {\n    if (p->val == x) {\n        if (!p->l || !p->r) p = p->l ? p->l : p->r;\n        else {\n            int d = p->l->pri < p->r->pri;\n            rotate(p, d);\n            erase(p->ch[d], x);\n        }\n    } else erase(p->ch[x > p->val], x);\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3369", "title": "P3369 【模板】普通平衡树", "src": "https://www.luogu.com.cn/problem/P3369", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.14 FHQ Treap 树",
+      "summary": "【主要应用】维护有序集合、区间操作、可持久化平衡树。\n【应用方式】分裂（按值或按大小）与合并；无需旋转，代码短，易扩展；支持区间翻转、可持久化。\n【模板代码】\n```cpp\n// FHQ Treap 分裂（按值）\nvoid split(Node *p, int x, Node *&a, Node *&b) {\n    if (!p) { a = b = nullptr; return; }\n    if (p->val <= x) a = p, split(p->r, x, a->r, b);\n    else b = p, split(p->l, x, a, b->l);\n    pushup(p);\n}\n// 合并\nNode *merge(Node *a, Node *b) {\n    if (!a || !b) return a ? a : b;\n    if (a->pri < b->pri) { a->r = merge(a->r, b); pushup(a); return a; }\n    else { b->l = merge(a, b->l); pushup(b); return b; }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.14.1 FHQ Treap 树",
+          "summary": "【主要应用】文本编辑器、文艺平衡树、可持久化文艺平衡树、可持久化平衡树。\n【应用方式】按大小分裂实现区间操作；打翻转标记；可持久化版本通过复制节点实现。\n【模板代码】\n```cpp\n// 区间翻转\nvoid pushdown(Node *p) {\n    if (p->rev) {\n        swap(p->l, p->r);\n        if (p->l) p->l->rev ^= 1;\n        if (p->r) p->r->rev ^= 1;\n        p->rev = 0;\n    }\n}\n// 分裂按大小\nvoid split(Node *p, int k, Node *&a, Node *&b) {\n    if (!p) { a = b = nullptr; return; }\n    pushdown(p);\n    int sz = p->l ? p->l->sz : 0;\n    if (sz < k) a = p, split(p->r, k - sz - 1, a->r, b);\n    else b = p, split(p->l, k, a, b->l);\n    pushup(p);\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P4008", "title": "P4008 [NOI2003] 文本编辑器", "src": "https://www.luogu.com.cn/problem/P4008", "score": 80, "isPremium": false },
+            { "id": "P3391", "title": "P3391 【模板】文艺平衡树", "src": "https://www.luogu.com.cn/problem/P3391", "score": 80, "isPremium": false },
+            { "id": "P5055", "title": "P5055 【模板】可持久化文艺平衡树", "src": "https://www.luogu.com.cn/problem/P5055", "score": 80, "isPremium": false },
+            { "id": "P3835", "title": "P3835 【模板】可持久化平衡树", "src": "https://www.luogu.com.cn/problem/P3835", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.15 笛卡尔树",
+      "summary": "【主要应用】RMQ、直方图最大矩形、树上问题转化、单调栈建树。\n【应用方式】用单调栈 O(n) 建树；每个节点是区间最值；中序遍历为原序列；可结合 LCA 求 RMQ。\n【模板代码】\n```cpp\n// 笛卡尔树建树（小根堆）\nint stk[N], top = 0;\nfor (int i = 1; i <= n; i++) {\n    int last = 0;\n    while (top && a[stk[top]] > a[i]) last = stk[top--];\n    if (top) rs[stk[top]] = i;\n    if (last) ls[i] = last;\n    stk[++top] = i;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.15.1 笛卡尔树",
+          "summary": "【主要应用】树的序、meetings 会议、由乃救爷爷、求 m 区间内的最小值、笛卡尔树模板。\n【应用方式】单调栈建树；中序遍历为原序列；结合 RMQ 或树上 DP 求解。\n【模板代码】\n```cpp\n// 笛卡尔树上 LCA 求 RMQ\nint lca(int u, int v) {\n    // 笛卡尔树中 u, v 的 LCA 即为区间 [u, v] 的最小值\n    // 可用倍增或 Tarjan 求 LCA\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1377", "title": "P1377 [TJOI2011] 树的序", "src": "https://www.luogu.com.cn/problem/P1377", "score": 80, "isPremium": false },
+            { "id": "P5044", "title": "P5044 [IOI 2018] meetings 会议", "src": "https://www.luogu.com.cn/problem/P5044", "score": 100, "isPremium": false },
+            { "id": "P3793", "title": "P3793 由乃救爷爷", "src": "https://www.luogu.com.cn/problem/P3793", "score": 100, "isPremium": false },
+            { "id": "P1440", "title": "P1440 求 m 区间内的最小值", "src": "https://www.luogu.com.cn/problem/P1440", "score": 60, "isPremium": false },
+            { "id": "P5854", "title": "P5854 【模板】笛卡尔树", "src": "https://www.luogu.com.cn/problem/P5854", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.16 Splay 树",
+      "summary": "【主要应用】维护有序集合、区间操作、动态序列、LCT 辅助树。\n【应用方式】Splay 通过旋转将节点伸展到根；支持区间分裂与合并；常用于文艺平衡树、动态序列维护。\n【模板代码】\n```cpp\n// Splay 旋转\nvoid rotate(int x) {\n    int y = fa[x], z = fa[y], k = (ch[y][1] == x);\n    if (z) ch[z][ch[z][1] == y] = x;\n    fa[x] = z;\n    ch[y][k] = ch[x][k ^ 1];\n    if (ch[x][k ^ 1]) fa[ch[x][k ^ 1]] = y;\n    ch[x][k ^ 1] = y; fa[y] = x;\n    pushup(y); pushup(x);\n}\nvoid splay(int x, int goal) {\n    while (fa[x] != goal) {\n        int y = fa[x], z = fa[y];\n        if (z != goal) rotate((ch[y][1] == x) ^ (ch[z][1] == y) ? x : y);\n        rotate(x);\n    }\n    if (!goal) root = x;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.16.1 Splay 树",
+          "summary": "【主要应用】文本编辑器、维护数列、报表统计、文艺平衡树、书架、甲苯先生的滚榜、巴邻旁之桥、郁闷的出纳员、数列、永无乡、方伯伯的OJ、送别。\n【应用方式】Splay 维护区间，通过分裂与合并实现插入删除；打翻转标记；结合并查集或线段树合并。\n【模板代码】\n```cpp\n// Splay 区间操作\nvoid build(int l, int r, int fa) {\n    if (l > r) return;\n    int mid = (l + r) >> 1;\n    // 递归建树\n}\n// 提取区间 [l, r]\nint find(int k) { /* 找第 k 个节点 */ }\nsplay(find(l - 1), 0);\nsplay(find(r + 1), root);\n// 此时 ch[ch[root][1]][0] 即为区间 [l, r]\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P4008", "title": "P4008 [NOI2003] 文本编辑器", "src": "https://www.luogu.com.cn/problem/P4008", "score": 80, "isPremium": false },
+            { "id": "P2042", "title": "P2042 [NOI2005] 维护数列", "src": "https://www.luogu.com.cn/problem/P2042", "score": 100, "isPremium": false },
+            { "id": "P1110", "title": "P1110 [ZJOI2007] 报表统计", "src": "https://www.luogu.com.cn/problem/P1110", "score": 80, "isPremium": false },
+            { "id": "P3391", "title": "P3391 【模板】文艺平衡树", "src": "https://www.luogu.com.cn/problem/P3391", "score": 80, "isPremium": false },
+            { "id": "P3850", "title": "P3850 [TJOI2007] 书架", "src": "https://www.luogu.com.cn/problem/P3850", "score": 80, "isPremium": false },
+            { "id": "P5338", "title": "P5338 [TJOI2019] 甲苯先生的滚榜", "src": "https://www.luogu.com.cn/problem/P5338", "score": 100, "isPremium": false },
+            { "id": "P3644", "title": "P3644 [APIO2015] 巴邻旁之桥", "src": "https://www.luogu.com.cn/problem/P3644", "score": 100, "isPremium": false },
+            { "id": "P1486", "title": "P1486 [NOI2004] 郁闷的出纳员", "src": "https://www.luogu.com.cn/problem/P1486", "score": 80, "isPremium": false },
+            { "id": "P2710", "title": "P2710 数列", "src": "https://www.luogu.com.cn/problem/P2710", "score": 100, "isPremium": false },
+            { "id": "P3224", "title": "P3224 [HNOI2012] 永无乡", "src": "https://www.luogu.com.cn/problem/P3224", "score": 80, "isPremium": false },
+            { "id": "P3285", "title": "P3285 [SCOI2014] 方伯伯的OJ", "src": "https://www.luogu.com.cn/problem/P3285", "score": 100, "isPremium": false },
+            { "id": "P5321", "title": "P5321 [BJOI2019] 送别", "src": "https://www.luogu.com.cn/problem/P5321", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.17 K-D 树",
+      "summary": "【主要应用】多维空间最近点、k 远点对、矩形区域查询、平面最近点对。\n【应用方式】按维度交替划分建树；查询时剪枝；支持插入时重构或替罪羊式重建。\n【模板代码】\n```cpp\n// K-D 树建树\nint build(int l, int r, int d) {\n    if (l > r) return 0;\n    int mid = (l + r) >> 1;\n    nth_element(p + l, p + mid, p + r + 1, cmp[d]);\n    ls[mid] = build(l, mid - 1, d ^ 1);\n    rs[mid] = build(mid + 1, r, d ^ 1);\n    pushup(mid);\n    return mid;\n}\n// 最近点查询\nvoid query(int p, int d, Point x) {\n    if (!p) return;\n    // 计算当前点距离\n    // 根据划分维度决定先搜哪边\n    // 剪枝：若另一侧矩形距离大于当前答案则跳过\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.17.1 K-D 树",
+          "summary": "【主要应用】简单题、天使玩偶/SJY摆棋子、K远点对、平面最近点对、捉迷藏、TATT、Mokia、巧克力王国、JZPFAR、弹跳。\n【应用方式】建树后查询最近/最远点；插入时若不平衡则重构；可结合 CDQ 分治或线段树。\n【模板代码】\n```cpp\n// K-D 树最近点查询\nvoid query(int p, int d, Point x) {\n    if (!p) return;\n    int dist = dis(p, x);\n    ans = min(ans, dist);\n    int k = (x[d] > p[d]);\n    query(ch[p][k], d ^ 1, x);\n    if (dis_rect(ch[p][k ^ 1], x) < ans) query(ch[p][k ^ 1], d ^ 1, x);\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P4148", "title": "P4148 简单题", "src": "https://www.luogu.com.cn/problem/P4148", "score": 80, "isPremium": false },
+            { "id": "P4169", "title": "P4169 [Violet] 天使玩偶/SJY摆棋子", "src": "https://www.luogu.com.cn/problem/P4169", "score": 100, "isPremium": false },
+            { "id": "P4357", "title": "P4357 [CQOI2016] K 远点对", "src": "https://www.luogu.com.cn/problem/P4357", "score": 80, "isPremium": false },
+            { "id": "P7883", "title": "P7883 平面最近点对（加强加强版）", "src": "https://www.luogu.com.cn/problem/P7883", "score": 80, "isPremium": false },
+            { "id": "P2479", "title": "P2479 [SDOI2010] 捉迷藏", "src": "https://www.luogu.com.cn/problem/P2479", "score": 80, "isPremium": false },
+            { "id": "P3769", "title": "P3769 [CH弱省胡策R2] TATT", "src": "https://www.luogu.com.cn/problem/P3769", "score": 100, "isPremium": false },
+            { "id": "P4390", "title": "P4390 [BalkanOI 2007] Mokia 摩基亚", "src": "https://www.luogu.com.cn/problem/P4390", "score": 80, "isPremium": false },
+            { "id": "P4475", "title": "P4475 巧克力王国", "src": "https://www.luogu.com.cn/problem/P4475", "score": 80, "isPremium": false },
+            { "id": "P2093", "title": "P2093 [国家集训队] JZPFAR", "src": "https://www.luogu.com.cn/problem/P2093", "score": 100, "isPremium": false },
+            { "id": "P5471", "title": "P5471 [NOI2019] 弹跳", "src": "https://www.luogu.com.cn/problem/P5471", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "4.18 动态树与 LCT",
+      "summary": "【主要应用】动态连通性、动态路径查询、动态最小生成树、维护森林。\n【应用方式】LCT 用 Splay 维护每一条偏爱路径；支持 access、makeroot、link、cut、findroot；常用于动态图问题。\n【模板代码】\n```cpp\n// LCT 核心操作\nvoid access(int x) {\n    for (int y = 0; x; x = fa[y = x]) splay(x), ch[x][1] = y, pushup(x);\n}\nvoid makeroot(int x) { access(x); splay(x); rev[x] ^= 1; }\nint findroot(int x) {\n    access(x); splay(x);\n    while (ch[x][0]) pushdown(x), x = ch[x][0];\n    splay(x); return x;\n}\nvoid split(int x, int y) { makeroot(x); access(y); splay(y); }\nvoid link(int x, int y) { makeroot(x); if (findroot(y) != x) fa[x] = y; }\nvoid cut(int x, int y) {\n    makeroot(x);\n    if (findroot(y) == x && fa[y] == x && !ch[y][0]) ch[x][1] = fa[y] = 0, pushup(x);\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§4.18.1 动态树与 LCT",
+          "summary": "【主要应用】动态树模板、弹飞绵羊、历史、Tree II、大森林、树点涂色、水管局长、大融合、EntropyIncreaser 与动态图、魔法森林。\n【应用方式】LCT 维护动态森林；结合边权化点权；维护虚子树信息处理子树查询。\n【模板代码】\n```cpp\n// LCT 维护边权（边化点）\n// 每条边新建一个节点，点权为边权\nlink(u, e); link(e, v);\n// 查询路径最值\nsplit(u, v);\nprintf(\"%d\\n\", mx[v]);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3690", "title": "P3690 【模板】动态树（LCT）", "src": "https://www.luogu.com.cn/problem/P3690", "score": 80, "isPremium": false },
+            { "id": "P3203", "title": "P3203 [HNOI2010] 弹飞绵羊", "src": "https://www.luogu.com.cn/problem/P3203", "score": 80, "isPremium": false },
+            { "id": "P4338", "title": "P4338 [ZJOI2018] 历史", "src": "https://www.luogu.com.cn/problem/P4338", "score": 100, "isPremium": false },
+            { "id": "P1501", "title": "P1501 [国家集训队] Tree II", "src": "https://www.luogu.com.cn/problem/P1501", "score": 80, "isPremium": false },
+            { "id": "P3348", "title": "P3348 [ZJOI2016] 大森林", "src": "https://www.luogu.com.cn/problem/P3348", "score": 100, "isPremium": false },
+            { "id": "P3703", "title": "P3703 [SDOI2017] 树点涂色", "src": "https://www.luogu.com.cn/problem/P3703", "score": 100, "isPremium": false },
+            { "id": "P4172", "title": "P4172 [WC2006] 水管局长", "src": "https://www.luogu.com.cn/problem/P4172", "score": 100, "isPremium": false },
+            { "id": "P4219", "title": "P4219 [BJOI2014] 大融合", "src": "https://www.luogu.com.cn/problem/P4219", "score": 80, "isPremium": false },
+            { "id": "P5489", "title": "P5489 EntropyIncreaser 与 动态图", "src": "https://www.luogu.com.cn/problem/P5489", "score": 100, "isPremium": false },
+            { "id": "P2387", "title": "P2387 [NOI2014] 魔法森林", "src": "https://www.luogu.com.cn/problem/P2387", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    }
+  ]
+}

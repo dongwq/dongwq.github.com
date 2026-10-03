@@ -1,0 +1,194 @@
+{
+  "title": "洛谷《算法竞赛》字符串专题题目整理",
+  "src": "https://www.luogu.com.cn/training/1016093",
+  "last_update": "2026-10-03T00:00:00+08:00",
+  "difficulty_mapping": {
+    "入门（红）": 10,
+    "普及-（橙）": 20,
+    "普及（黄）": 30,
+    "普及+/提高-（绿）": 40,
+    "提高（青）": 50,
+    "提高+/省选-（蓝）": 60,
+    "省选/NOI-（紫）": 80,
+    "NOI/NOI+/CTS（黑）": 100
+  },
+  "children": [
+    {
+      "title": "9.1 进制哈希",
+      "summary": "【主要应用】字符串快速比较、子串判等、回文判定、最长公共前缀、去重统计。\n【应用方式】选取进制 base 与模数 mod，预处理前缀哈希与幂次；子串哈希 = h[r] - h[l-1] * p[r-l+1]；常用双哈希降低冲突。\n【模板代码】\n```cpp\n// 字符串哈希（单哈希）\nconst int BASE = 131, MOD = 1e9 + 7;\nlong long h[N], p[N];\nvoid init(string s) {\n    p[0] = 1;\n    for (int i = 1; i <= s.size(); i++) {\n        h[i] = (h[i-1] * BASE + s[i-1]) % MOD;\n        p[i] = p[i-1] * BASE % MOD;\n    }\n}\nlong long get_hash(int l, int r) {\n    return (h[r] - h[l-1] * p[r-l+1] % MOD + MOD) % MOD;\n}\n\n// 双哈希\npair<long long, long long> get_hash2(int l, int r) {\n    return {get_hash1(l, r), get_hash2(l, r)};\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§9.1.1 进制哈希",
+          "summary": "【主要应用】字符串哈希模板、ANT-Antisymmetry、Radio Transmission、无论怎样神树大人都会删库跑路、系统设计。\n【应用方式】哈希 + 二分求 LCP；哈希 + Manacher 判回文；哈希 + 树结构（系统设计）；双哈希防冲突。\n【模板代码】\n```cpp\n// 哈希 + 二分求最长公共前缀\nint lcp(int i, int j) {\n    int l = 0, r = min(n - i + 1, n - j + 1);\n    while (l < r) {\n        int mid = (l + r + 1) >> 1;\n        if (get_hash(i, i + mid - 1) == get_hash(j, j + mid - 1)) l = mid;\n        else r = mid - 1;\n    }\n    return l;\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3370", "title": "P3370 【模板】字符串哈希", "src": "https://www.luogu.com.cn/problem/P3370", "score": 50, "isPremium": false },
+            { "id": "P3501", "title": "P3501 [POI 2010] ANT-Antisymmetry", "src": "https://www.luogu.com.cn/problem/P3501", "score": 80, "isPremium": false },
+            { "id": "P4391", "title": "P4391 [BalticOI 2009] Radio Transmission 无线传输", "src": "https://www.luogu.com.cn/problem/P4391", "score": 60, "isPremium": false },
+            { "id": "P5270", "title": "P5270 无论怎样神树大人都会删库跑路", "src": "https://www.luogu.com.cn/problem/P5270", "score": 100, "isPremium": false },
+            { "id": "P5537", "title": "P5537 【XR-3】系统设计", "src": "https://www.luogu.com.cn/problem/P5537", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "9.2 Manacher",
+      "summary": "【主要应用】最长回文子串、回文子串计数、回文半径统计、双回文串。\n【应用方式】在字符间插入分隔符统一奇偶回文；维护当前最右回文右边界与中心；利用对称性 O(n) 求所有回文半径。\n【模板代码】\n```cpp\n// Manacher\nstring s, t;\nint p[N]; // p[i] 表示以 i 为中心的回文半径\nvoid manacher() {\n    t = \"$#\";\n    for (char c : s) t += c, t += '#';\n    t += '^';\n    int n = t.size(), mid = 0, mr = 0;\n    for (int i = 1; i < n - 1; i++) {\n        p[i] = (i < mr) ? min(p[2 * mid - i], mr - i) : 1;\n        while (t[i - p[i]] == t[i + p[i]]) p[i]++;\n        if (i + p[i] > mr) mr = i + p[i], mid = i;\n    }\n}\n// 最长回文子串长度 = max(p[i]) - 1\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§9.2.1 Manacher",
+          "summary": "【主要应用】Manacher 模板、拉拉队排练、最长双回文串。\n【应用方式】Manacher 求回文半径；拉拉队排练统计奇回文并按长度排序；最长双回文串枚举分割点 + 前缀/后缀回文。\n【模板代码】\n```cpp\n// 最长双回文串\n// 预处理每个位置结尾的最长回文长度 L[i]\n// 预处理每个位置开头的最长回文长度 R[i]\n// 枚举分割点求 L[i] + R[i+1] 的最大值\nint ans = 0;\nfor (int i = 1; i < n; i++)\n    ans = max(ans, L[i] + R[i+1]);\nprintf(\"%d\\n\", ans);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3805", "title": "P3805 【模板】Manacher", "src": "https://www.luogu.com.cn/problem/P3805", "score": 60, "isPremium": false },
+            { "id": "P1659", "title": "P1659 [国家集训队] 拉拉队排练", "src": "https://www.luogu.com.cn/problem/P1659", "score": 80, "isPremium": false },
+            { "id": "P4555", "title": "P4555 [国家集训队] 最长双回文串", "src": "https://www.luogu.com.cn/problem/P4555", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "9.3 字典树",
+      "summary": "【主要应用】字符串前缀查询、单词检索、异或最值、AC 自动机前置、字符串排序。\n【应用方式】每个节点代表一个前缀，边代表字符；插入与查询 O(L)；01 字典树求异或最值；可持久化字典树处理区间查询。\n【模板代码】\n```cpp\n// 字典树\nint ch[N][26], cnt[N], tot = 1;\nvoid insert(string s) {\n    int u = 1;\n    for (char c : s) {\n        int v = c - 'a';\n        if (!ch[u][v]) ch[u][v] = ++tot;\n        u = ch[u][v];\n    }\n    cnt[u]++;\n}\nbool query(string s) {\n    int u = 1;\n    for (char c : s) {\n        int v = c - 'a';\n        if (!ch[u][v]) return false;\n        u = ch[u][v];\n    }\n    return cnt[u] > 0;\n}\n\n// 01 字典树求最大异或\nint ch[N][2], tot = 1;\nvoid insert(int x) {\n    int u = 1;\n    for (int i = 30; i >= 0; i--) {\n        int v = (x >> i) & 1;\n        if (!ch[u][v]) ch[u][v] = ++tot;\n        u = ch[u][v];\n    }\n}\nint query(int x) {\n    int u = 1, res = 0;\n    for (int i = 30; i >= 0; i--) {\n        int v = (x >> i) & 1;\n        if (ch[u][v ^ 1]) res |= 1 << i, u = ch[u][v ^ 1];\n        else u = ch[u][v];\n    }\n    return res;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§9.3.1 字典树",
+          "summary": "【主要应用】错误的点名、阅读理解、L 语言、Secret Message、背单词、电子字典、First!、最长异或路径、Type Printer、天才黑客。\n【应用方式】字典树 + DP（L 语言）；01 字典树求异或最值（最长异或路径）；字典树 + 拓扑排序（First!）；字典树 + 最短路（天才黑客）。\n【模板代码】\n```cpp\n// 最长异或路径（01 字典树 + 树上异或）\nvoid dfs(int u, int fa, int xorsum) {\n    insert(xorsum);\n    for (auto [v, w] : g[u]) if (v != fa) dfs(v, u, xorsum ^ w);\n}\nint ans = 0;\n// 对每个点的异或值查询最大异或\nfor (int i = 1; i <= n; i++) ans = max(ans, query(xor_val[i]));\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P2580", "title": "P2580 于是他错误的点名开始了", "src": "https://www.luogu.com.cn/problem/P2580", "score": 50, "isPremium": false },
+            { "id": "P3879", "title": "P3879 [TJOI2010] 阅读理解", "src": "https://www.luogu.com.cn/problem/P3879", "score": 60, "isPremium": false },
+            { "id": "P2292", "title": "P2292 [HNOI2004] L 语言", "src": "https://www.luogu.com.cn/problem/P2292", "score": 80, "isPremium": false },
+            { "id": "P2922", "title": "P2922 [USACO08DEC] Secret Message G", "src": "https://www.luogu.com.cn/problem/P2922", "score": 60, "isPremium": false },
+            { "id": "P3294", "title": "P3294 [SCOI2016] 背单词", "src": "https://www.luogu.com.cn/problem/P3294", "score": 100, "isPremium": false },
+            { "id": "P4407", "title": "P4407 [JSOI2009] 电子字典", "src": "https://www.luogu.com.cn/problem/P4407", "score": 80, "isPremium": false },
+            { "id": "P3065", "title": "P3065 [USACO12DEC] First! G", "src": "https://www.luogu.com.cn/problem/P3065", "score": 80, "isPremium": false },
+            { "id": "P4551", "title": "P4551 最长异或路径", "src": "https://www.luogu.com.cn/problem/P4551", "score": 60, "isPremium": false },
+            { "id": "P4683", "title": "P4683 [IOI 2008] Type Printer", "src": "https://www.luogu.com.cn/problem/P4683", "score": 80, "isPremium": false },
+            { "id": "P3783", "title": "P3783 [SDOI2017] 天才黑客", "src": "https://www.luogu.com.cn/problem/P3783", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "9.4 回文树",
+      "summary": "【主要应用】回文子串计数、本质不同回文串个数、回文串出现次数、双倍回文。\n【应用方式】回文自动机（PAM）每个节点代表一个本质不同回文串；fail 指针指向最长回文后缀；len 表示回文长度，cnt 表示出现次数。\n【模板代码】\n```cpp\n// 回文树（PAM）\nint ch[N][26], fail[N], len[N], cnt[N], tot = 1, last = 0;\nchar s[N];\nvoid init() {\n    fail[0] = 1; len[1] = -1; tot = 1; last = 0;\n}\nvoid insert(int pos) {\n    int u = last;\n    while (s[pos - len[u] - 1] != s[pos]) u = fail[u];\n    if (!ch[u][s[pos] - 'a']) {\n        int v = ++tot, p = fail[u];\n        len[v] = len[u] + 2;\n        while (s[pos - len[p] - 1] != s[pos]) p = fail[p];\n        fail[v] = ch[p][s[pos] - 'a'];\n        ch[u][s[pos] - 'a'] = v;\n    }\n    last = ch[u][s[pos] - 'a'];\n    cnt[last]++;\n}\n// 统计出现次数\nfor (int i = tot; i >= 2; i--) cnt[fail[i]] += cnt[i];\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§9.4.1 回文树",
+          "summary": "【主要应用】回文树模板、回文串、双倍回文、Virus synthesis。\n【应用方式】PAM 统计回文出现次数与长度；双倍回文用 fail 树 + 倍增；Virus synthesis 用 PAM + DP。\n【模板代码】\n```cpp\n// 回文串（APIO2014）：求 max(len[i] * cnt[i])\nlong long ans = 0;\nfor (int i = 2; i <= tot; i++)\n    ans = max(ans, 1LL * len[i] * cnt[i]);\nprintf(\"%lld\\n\", ans);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P5496", "title": "P5496 【模板】回文树 / 回文自动机（PAM）", "src": "https://www.luogu.com.cn/problem/P5496", "score": 80, "isPremium": false },
+            { "id": "P3649", "title": "P3649 [APIO2014] 回文串", "src": "https://www.luogu.com.cn/problem/P3649", "score": 80, "isPremium": false },
+            { "id": "P4287", "title": "P4287 [SHOI2011] 双倍回文", "src": "https://www.luogu.com.cn/problem/P4287", "score": 80, "isPremium": false },
+            { "id": "P4762", "title": "P4762 [CERC2014] Virus synthesis", "src": "https://www.luogu.com.cn/problem/P4762", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "9.5 KMP",
+      "summary": "【主要应用】字符串匹配、最小循环节、前缀函数、扩展 KMP、Z 函数、字符串删除。\n【应用方式】next 数组表示最长公共前后缀；匹配时利用 next 跳转；最小循环节 = n - next[n]；exKMP 求每个后缀与原串的 LCP。\n【模板代码】\n```cpp\n// KMP\nint nxt[N];\nvoid get_next(string s) {\n    nxt[0] = -1;\n    int i = 0, j = -1;\n    while (i < s.size()) {\n        if (j == -1 || s[i] == s[j]) nxt[++i] = ++j;\n        else j = nxt[j];\n    }\n}\nvoid kmp(string s, string t) {\n    int i = 0, j = 0;\n    while (i < s.size()) {\n        if (j == -1 || s[i] == t[j]) i++, j++;\n        else j = nxt[j];\n        if (j == t.size()) {\n            printf(\"%d\\n\", i - j + 1);\n            j = nxt[j];\n        }\n    }\n}\n\n// 扩展 KMP（Z 函数）\nvoid z_function(string s) {\n    int n = s.size();\n    vector<int> z(n);\n    for (int i = 1, l = 0, r = 0; i < n; i++) {\n        if (i <= r) z[i] = min(r - i + 1, z[i - l]);\n        while (i + z[i] < n && s[z[i]] == s[i + z[i]]) z[i]++;\n        if (i + z[i] - 1 > r) l = i, r = i + z[i] - 1;\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§9.5.1 KMP",
+          "summary": "【主要应用】Radio Transmission、Censoring S、扩展 KMP、KMP 模板、OKR-Periods of Words、动物园、SZA-Template、GT 考试。\n【应用方式】KMP 求最小循环节；KMP + 栈实现删除；扩展 KMP 求 LCP；KMP + DP（GT 考试）；fail 树 + 倍增（动物园）。\n【模板代码】\n```cpp\n// 最小循环节\nint period = n - nxt[n];\nif (n % period == 0) printf(\"%d\\n\", period);\nelse printf(\"%d\\n\", n);\n\n// KMP + 栈（Censoring）\nstack<int> st;\nfor (int i = 0; i < s.size(); i++) {\n    st.push(i);\n    // 检查是否匹配模式串\n    // 若匹配则弹出\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P4391", "title": "P4391 [BalticOI 2009] Radio Transmission 无线传输", "src": "https://www.luogu.com.cn/problem/P4391", "score": 60, "isPremium": false },
+            { "id": "P4824", "title": "P4824 [USACO15FEB] Censoring S", "src": "https://www.luogu.com.cn/problem/P4824", "score": 80, "isPremium": false },
+            { "id": "P5410", "title": "P5410 【模板】扩展 KMP / exKMP（Z 函数）", "src": "https://www.luogu.com.cn/problem/P5410", "score": 80, "isPremium": false },
+            { "id": "P3375", "title": "P3375 【模板】KMP", "src": "https://www.luogu.com.cn/problem/P3375", "score": 60, "isPremium": false },
+            { "id": "P3435", "title": "P3435 [POI 2006] OKR-Periods of Words", "src": "https://www.luogu.com.cn/problem/P3435", "score": 80, "isPremium": false },
+            { "id": "P2375", "title": "P2375 [NOI2014] 动物园", "src": "https://www.luogu.com.cn/problem/P2375", "score": 80, "isPremium": false },
+            { "id": "P3426", "title": "P3426 [POI 2005] SZA-Template", "src": "https://www.luogu.com.cn/problem/P3426", "score": 100, "isPremium": false },
+            { "id": "P3193", "title": "P3193 [HNOI2008] GT考试", "src": "https://www.luogu.com.cn/problem/P3193", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "9.6 AC 自动机",
+      "summary": "【主要应用】多模式串匹配、文本生成器、病毒检测、单词统计、字符串 DP。\n【应用方式】Trie 树 + fail 指针；fail 指针指向最长后缀；匹配时沿 fail 跳转统计；fail 树 + 拓扑排序统计出现次数；ACAM + DP 处理限制。\n【模板代码】\n```cpp\n// AC 自动机\nint ch[N][26], fail[N], cnt[N], tot = 1;\nvoid insert(string s) {\n    int u = 1;\n    for (char c : s) {\n        int v = c - 'a';\n        if (!ch[u][v]) ch[u][v] = ++tot;\n        u = ch[u][v];\n    }\n    cnt[u]++;\n}\nvoid build() {\n    queue<int> q;\n    for (int i = 0; i < 26; i++) {\n        if (ch[1][i]) fail[ch[1][i]] = 1, q.push(ch[1][i]);\n        else ch[1][i] = 1;\n    }\n    while (!q.empty()) {\n        int u = q.front(); q.pop();\n        for (int i = 0; i < 26; i++) {\n            if (ch[u][i]) fail[ch[u][i]] = ch[fail[u]][i], q.push(ch[u][i]);\n            else ch[u][i] = ch[fail[u]][i];\n        }\n    }\n}\nint query(string s) {\n    int u = 1, res = 0;\n    for (char c : s) {\n        u = ch[u][c - 'a'];\n        for (int j = u; j > 1 && cnt[j] != -1; j = fail[j])\n            res += cnt[j], cnt[j] = -1;\n    }\n    return res;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§9.6.1 AC 自动机",
+          "summary": "【主要应用】AC 自动机简单版、简单版 II、阿狸的打字机、AC 自动机模板、单词、数数、文本生成器、文本编辑器、Censoring G、病毒。\n【应用方式】fail 树 + 拓扑排序统计；ACAM + DP（文本生成器、数数）；ACAM + 栈（Censoring G）；ACAM 判环（病毒）。\n【模板代码】\n```cpp\n// AC 自动机 + DP（文本生成器）\ndp[0][1] = 1;\nfor (int i = 0; i < m; i++)\n    for (int u = 1; u <= tot; u++)\n        for (int c = 0; c < 26; c++) {\n            int v = ch[u][c];\n            if (cnt[v]) continue;\n            dp[i+1][v] = (dp[i+1][v] + dp[i][u]) % MOD;\n        }\n// 答案 = 26^m - Σ dp[m][u]\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3808", "title": "P3808 AC 自动机（简单版）", "src": "https://www.luogu.com.cn/problem/P3808", "score": 60, "isPremium": false },
+            { "id": "P3796", "title": "P3796 AC 自动机（简单版 II）", "src": "https://www.luogu.com.cn/problem/P3796", "score": 60, "isPremium": false },
+            { "id": "P2414", "title": "P2414 [NOI2011] 阿狸的打字机", "src": "https://www.luogu.com.cn/problem/P2414", "score": 100, "isPremium": false },
+            { "id": "P5357", "title": "P5357 【模板】AC 自动机", "src": "https://www.luogu.com.cn/problem/P5357", "score": 80, "isPremium": false },
+            { "id": "P3966", "title": "P3966 [TJOI2013] 单词", "src": "https://www.luogu.com.cn/problem/P3966", "score": 80, "isPremium": false },
+            { "id": "P3311", "title": "P3311 [SDOI2014] 数数", "src": "https://www.luogu.com.cn/problem/P3311", "score": 100, "isPremium": false },
+            { "id": "P4052", "title": "P4052 [JSOI2007] 文本生成器", "src": "https://www.luogu.com.cn/problem/P4052", "score": 80, "isPremium": false },
+            { "id": "P5599", "title": "P5599 【XR-4】文本编辑器", "src": "https://www.luogu.com.cn/problem/P5599", "score": 100, "isPremium": false },
+            { "id": "P3121", "title": "P3121 [USACO15FEB] Censoring G", "src": "https://www.luogu.com.cn/problem/P3121", "score": 80, "isPremium": false },
+            { "id": "P2444", "title": "P2444 [POI 2000 R1] 病毒", "src": "https://www.luogu.com.cn/problem/P2444", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "9.7 后缀树和后缀数组",
+      "summary": "【主要应用】后缀排序、最长公共前缀、本质不同子串计数、重复子串、字符串匹配。\n【应用方式】后缀数组 SA + height 数组；倍增法或 SA-IS 构造；height 表示相邻后缀 LCP；结合单调栈、并查集、RMQ 处理问题。\n【模板代码】\n```cpp\n// 后缀数组（倍增法）\nint sa[N], rk[N], tmp[N], height[N];\nvoid build_sa(string s) {\n    int n = s.size();\n    for (int i = 0; i < n; i++) sa[i] = i, rk[i] = s[i];\n    for (int k = 1; k < n; k <<= 1) {\n        sort(sa, sa + n, [&](int i, int j) {\n            return rk[i] == rk[j] ? rk[i + k] < rk[j + k] : rk[i] < rk[j];\n        });\n        tmp[sa[0]] = 0;\n        for (int i = 1; i < n; i++)\n            tmp[sa[i]] = tmp[sa[i-1]] + (rk[sa[i]] != rk[sa[i-1]] || rk[sa[i]+k] != rk[sa[i-1]+k]);\n        for (int i = 0; i < n; i++) rk[i] = tmp[i];\n    }\n}\nvoid get_height(string s) {\n    int n = s.size(), k = 0;\n    for (int i = 0; i < n; i++) {\n        if (rk[i] == 0) continue;\n        if (k) k--;\n        int j = sa[rk[i] - 1];\n        while (i + k < n && j + k < n && s[i+k] == s[j+k]) k++;\n        height[rk[i]] = k;\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§9.7.1 后缀树和后缀数组",
+          "summary": "【主要应用】后缀排序、树上后缀排序、喵星球上的点名、Sandy 的卡片、Milk Patterns、字符加密、优秀的拆分、品酒大会、柯南家族、口头禅。\n【应用方式】SA + height + 单调栈/并查集；后缀数组 + 二分求重复子串；后缀数组 + RMQ 求 LCP；后缀数组 + 并查集（品酒大会）。\n【模板代码】\n```cpp\n// 本质不同子串个数\nlong long ans = 1LL * n * (n + 1) / 2;\nfor (int i = 1; i < n; i++) ans -= height[i];\nprintf(\"%lld\\n\", ans);\n\n// 品酒大会（并查集 + 后缀数组）\n// 按 height 从大到小合并后缀\n// 维护每个集合大小与最大/最小值\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3809", "title": "P3809 【模板】后缀排序", "src": "https://www.luogu.com.cn/problem/P3809", "score": 80, "isPremium": false },
+            { "id": "P5353", "title": "P5353 树上后缀排序", "src": "https://www.luogu.com.cn/problem/P5353", "score": 100, "isPremium": false },
+            { "id": "P2336", "title": "P2336 [SCOI2012] 喵星球上的点名", "src": "https://www.luogu.com.cn/problem/P2336", "score": 100, "isPremium": false },
+            { "id": "P2463", "title": "P2463 [SDOI2008] Sandy 的卡片", "src": "https://www.luogu.com.cn/problem/P2463", "score": 100, "isPremium": false },
+            { "id": "P2852", "title": "P2852 [USACO06DEC] Milk Patterns G", "src": "https://www.luogu.com.cn/problem/P2852", "score": 80, "isPremium": false },
+            { "id": "P4051", "title": "P4051 [JSOI2007] 字符加密", "src": "https://www.luogu.com.cn/problem/P4051", "score": 80, "isPremium": false },
+            { "id": "P1117", "title": "P1117 [NOI2016] 优秀的拆分", "src": "https://www.luogu.com.cn/problem/P1117", "score": 100, "isPremium": false },
+            { "id": "P2178", "title": "P2178 [NOI2015] 品酒大会", "src": "https://www.luogu.com.cn/problem/P2178", "score": 100, "isPremium": false },
+            { "id": "P5346", "title": "P5346 【XR-1】柯南家族", "src": "https://www.luogu.com.cn/problem/P5346", "score": 100, "isPremium": false },
+            { "id": "P5576", "title": "P5576 [CmdOI2019] 口头禅", "src": "https://www.luogu.com.cn/problem/P5576", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "9.8 后缀自动机",
+      "summary": "【主要应用】本质不同子串计数、子串出现次数、最长公共子串、字符串 DP、SAM 上拓扑排序。\n【应用方式】SAM 每个状态表示一组 endpos 相同的子串；len 表示最长子串长度，link 指向后缀；parent 树 + 拓扑排序统计出现次数；SAM 上 DP 求第 k 小子串。\n【模板代码】\n```cpp\n// 后缀自动机（SAM）\nstruct SAM {\n    int ch[N][26], len[N], link[N], cnt[N], tot = 1, last = 1;\n    void extend(int c) {\n        int cur = ++tot, p = last;\n        len[cur] = len[p] + 1;\n        while (p && !ch[p][c]) ch[p][c] = cur, p = link[p];\n        if (!p) link[cur] = 1;\n        else {\n            int q = ch[p][c];\n            if (len[q] == len[p] + 1) link[cur] = q;\n            else {\n                int clone = ++tot;\n                len[clone] = len[p] + 1;\n                link[clone] = link[q];\n                memcpy(ch[clone], ch[q], sizeof(ch[q]));\n                while (p && ch[p][c] == q) ch[p][c] = clone, p = link[p];\n                link[q] = link[cur] = clone;\n            }\n        }\n        last = cur;\n        cnt[cur] = 1;\n    }\n    void build(string s) { for (char c : s) extend(c - 'a'); }\n    // 统计出现次数\n    void count() {\n        // 按 len 排序后累加 cnt\n    }\n};\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§9.8.1 后缀自动机",
+          "summary": "【主要应用】后缀自动机模板、弦论、差异、甲苯先生和大中锋的字符串、你的名字、字符串问题、奥术神杖。\n【应用方式】SAM 统计本质不同子串与出现次数；SAM + DP 求第 k 小子串；SAM + 线段树合并（你的名字）；SAM + 拓扑排序（差异）。\n【模板代码】\n```cpp\n// 本质不同子串个数\nlong long ans = 0;\nfor (int i = 2; i <= tot; i++)\n    ans += len[i] - len[link[i]];\nprintf(\"%lld\\n\", ans);\n\n// 弦论（第 k 小子串）\n// 按拓扑序 DP 求出每个状态出发的子串数\n// 从根开始按字典序贪心走\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3804", "title": "P3804 【模板】后缀自动机（SAM）", "src": "https://www.luogu.com.cn/problem/P3804", "score": 80, "isPremium": false },
+            { "id": "P3975", "title": "P3975 [TJOI2015] 弦论", "src": "https://www.luogu.com.cn/problem/P3975", "score": 80, "isPremium": false },
+            { "id": "P4248", "title": "P4248 [AHOI2013] 差异", "src": "https://www.luogu.com.cn/problem/P4248", "score": 80, "isPremium": false },
+            { "id": "P5341", "title": "P5341 [TJOI2019] 甲苯先生和大中锋的字符串", "src": "https://www.luogu.com.cn/problem/P5341", "score": 80, "isPremium": false },
+            { "id": "P4770", "title": "P4770 [NOI2018] 你的名字", "src": "https://www.luogu.com.cn/problem/P4770", "score": 100, "isPremium": false },
+            { "id": "P5284", "title": "P5284 [十二省联考 2019] 字符串问题", "src": "https://www.luogu.com.cn/problem/P5284", "score": 100, "isPremium": false },
+            { "id": "P5319", "title": "P5319 [BJOI2019] 奥术神杖", "src": "https://www.luogu.com.cn/problem/P5319", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    }
+  ]
+}

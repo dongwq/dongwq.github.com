@@ -1,0 +1,123 @@
+{
+  "title": "洛谷《算法竞赛》基础数据结构专题题目整理",
+  "src": "https://www.luogu.com.cn/training/1016020",
+  "last_update": "2026-10-03T00:00:00+08:00",
+  "difficulty_mapping": {
+    "入门（红）": 10,
+    "普及-（橙）": 20,
+    "普及（黄）": 30,
+    "普及+/提高-（绿）": 40,
+    "提高（青）": 50,
+    "提高+/省选-（蓝）": 60,
+    "省选/NOI-（紫）": 80,
+    "NOI/NOI+/CTS（黑）": 100
+  },
+  "children": [
+    {
+      "title": "1.1 链表",
+      "summary": "【主要应用】频繁在序列中间插入、删除元素；实现队列安排、约瑟夫环、邻接表等。\n【应用方式】数组模拟链表（静态链表）用 nxt/pre 指针快速定位；双向链表支持 O(1) 插入与删除；循环链表用于约瑟夫问题。\n【模板代码】\n```cpp\n// 数组模拟双向链表\nint nxt[N], pre[N];\nvoid insert(int p, int x) { // 在 p 后插入 x\n    nxt[x] = nxt[p];\n    pre[x] = p;\n    pre[nxt[p]] = x;\n    nxt[p] = x;\n}\nvoid erase(int x) {\n    nxt[pre[x]] = nxt[x];\n    pre[nxt[x]] = pre[x];\n}\n\n// 约瑟夫环（循环链表）\nint cur = 1;\nwhile (cnt < n) {\n    for (int i = 1; i < m; i++) cur = nxt[cur];\n    printf(\"%d \", cur);\n    erase(cur);\n    cur = nxt[cur];\n    cnt++;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§1.1.1 链表",
+          "summary": "【主要应用】约瑟夫问题、队列安排。\n【应用方式】用数组模拟双向链表，支持 O(1) 插入删除；约瑟夫环可循环遍历并删除节点。\n【模板代码】\n```cpp\n// 队列安排：每个人左右两边插入\nint nxt[N], pre[N];\nvoid add_left(int p, int x) {\n    pre[x] = pre[p];\n    nxt[x] = p;\n    nxt[pre[p]] = x;\n    pre[p] = x;\n}\nvoid add_right(int p, int x) {\n    nxt[x] = nxt[p];\n    pre[x] = p;\n    pre[nxt[p]] = x;\n    nxt[p] = x;\n}\nvoid remove(int x) {\n    if (pre[x]) nxt[pre[x]] = nxt[x];\n    if (nxt[x]) pre[nxt[x]] = pre[x];\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1996", "title": "P1996 约瑟夫问题", "src": "https://www.luogu.com.cn/problem/P1996", "score": 40, "isPremium": false },
+            { "id": "P1160", "title": "P1160 队列安排", "src": "https://www.luogu.com.cn/problem/P1160", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "1.2 队列",
+      "summary": "【主要应用】BFS、滑动窗口最值（单调队列）、任务调度、模拟队列、分组队列。\n【应用方式】普通队列先进先出；单调队列维护滑动窗口最大值/最小值，队首为最优；分组队列按组维护多个子队列。\n【模板代码】\n```cpp\n// 单调队列求滑动窗口最大值\ndeque<int> q;\nfor (int i = 1; i <= n; i++) {\n    while (!q.empty() && q.front() <= i - k) q.pop_front();\n    while (!q.empty() && a[q.back()] <= a[i]) q.pop_back();\n    q.push_back(i);\n    if (i >= k) printf(\"%d \", a[q.front()]);\n}\n\n// 普通队列\nqueue<int> q;\nq.push(x);\nq.front(); q.pop(); q.empty();\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§1.2.1 队列",
+          "summary": "【主要应用】机器翻译、单调队列/滑动窗口、求 m 区间内的最小值、扫描、切蛋糕、好消息坏消息、良好的感觉、跳房子、琪露诺、小组队列。\n【应用方式】单调队列维护窗口最值；环形问题复制一倍或断环成链；分组队列用多个 queue 按组管理。\n【模板代码】\n```cpp\n// 分组队列\nqueue<int> q[305];\nqueue<int> group_order;\nvoid push(int gid, int x) {\n    if (q[gid].empty()) group_order.push(gid);\n    q[gid].push(x);\n}\nint pop() {\n    int gid = group_order.front();\n    int x = q[gid].front(); q[gid].pop();\n    if (q[gid].empty()) group_order.pop();\n    return x;\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1540", "title": "P1540 [NOIP 2010 提高组] 机器翻译", "src": "https://www.luogu.com.cn/problem/P1540", "score": 40, "isPremium": false },
+            { "id": "P1886", "title": "P1886 【模板】单调队列 / 滑动窗口", "src": "https://www.luogu.com.cn/problem/P1886", "score": 50, "isPremium": false },
+            { "id": "P1440", "title": "P1440 求m区间内的最小值", "src": "https://www.luogu.com.cn/problem/P1440", "score": 60, "isPremium": false },
+            { "id": "P2032", "title": "P2032 扫描", "src": "https://www.luogu.com.cn/problem/P2032", "score": 50, "isPremium": false },
+            { "id": "P1714", "title": "P1714 切蛋糕", "src": "https://www.luogu.com.cn/problem/P1714", "score": 60, "isPremium": false },
+            { "id": "P2629", "title": "P2629 好消息，坏消息", "src": "https://www.luogu.com.cn/problem/P2629", "score": 60, "isPremium": false },
+            { "id": "P2422", "title": "P2422 良好的感觉", "src": "https://www.luogu.com.cn/problem/P2422", "score": 60, "isPremium": false },
+            { "id": "P3957", "title": "P3957 [NOIP 2017 普及组] 跳房子", "src": "https://www.luogu.com.cn/problem/P3957", "score": 80, "isPremium": false },
+            { "id": "P1725", "title": "P1725 琪露诺", "src": "https://www.luogu.com.cn/problem/P1725", "score": 60, "isPremium": false },
+            { "id": "P2776", "title": "P2776 [SDOI2007] 小组队列", "src": "https://www.luogu.com.cn/problem/P2776", "score": 50, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "1.3 栈",
+      "summary": "【主要应用】括号匹配、表达式求值、单调栈求下一个更大/更小元素、后缀表达式计算。\n【应用方式】普通栈后进先出；单调栈维护单调递增/递减序列，用于求左右第一个更大/更小值；表达式求值用双栈或转后缀。\n【模板代码】\n```cpp\n// 单调栈求下一个更大元素\nstack<int> st;\nfor (int i = n; i >= 1; i--) {\n    while (!st.empty() && a[st.top()] <= a[i]) st.pop();\n    ans[i] = st.empty() ? 0 : st.top();\n    st.push(i);\n}\n\n// 括号匹配\nstack<char> st;\nfor (char c : s) {\n    if (c == '(') st.push(c);\n    else if (c == ')') {\n        if (st.empty()) { ok = 0; break; }\n        st.pop();\n    }\n}\nif (!st.empty()) ok = 0;\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§1.3.1 栈",
+          "summary": "【主要应用】Look Up、单调栈模板、表达式括号匹配、后缀表达式、表达式求值、表达式的转换。\n【应用方式】单调栈求右侧第一个更大值；表达式求值用双栈（操作数栈 + 运算符栈）；中缀转后缀用栈处理优先级。\n【模板代码】\n```cpp\n// 后缀表达式求值\nstack<int> st;\nfor (int i = 0; i < s.size(); i++) {\n    if (isdigit(s[i])) {\n        int x = 0;\n        while (i < s.size() && isdigit(s[i])) x = x * 10 + s[i++] - '0';\n        i--;\n        st.push(x);\n    } else {\n        int b = st.top(); st.pop();\n        int a = st.top(); st.pop();\n        if (s[i] == '+') st.push(a + b);\n        if (s[i] == '-') st.push(a - b);\n        if (s[i] == '*') st.push(a * b);\n        if (s[i] == '/') st.push(a / b);\n    }\n}\nprintf(\"%d\\n\", st.top());\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P2947", "title": "P2947 [USACO09MAR] Look Up S", "src": "https://www.luogu.com.cn/problem/P2947", "score": 50, "isPremium": false },
+            { "id": "P5788", "title": "P5788 【模板】单调栈", "src": "https://www.luogu.com.cn/problem/P5788", "score": 50, "isPremium": false },
+            { "id": "P1739", "title": "P1739 表达式括号匹配", "src": "https://www.luogu.com.cn/problem/P1739", "score": 40, "isPremium": false },
+            { "id": "P1449", "title": "P1449 后缀表达式", "src": "https://www.luogu.com.cn/problem/P1449", "score": 40, "isPremium": false },
+            { "id": "P1981", "title": "P1981 [NOIP 2013 普及组] 表达式求值", "src": "https://www.luogu.com.cn/problem/P1981", "score": 50, "isPremium": false },
+            { "id": "P1175", "title": "P1175 表达式的转换", "src": "https://www.luogu.com.cn/problem/P1175", "score": 60, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "1.4 二叉树和哈夫曼树",
+      "summary": "【主要应用】二叉树的遍历与重建、哈夫曼编码、最优前缀码、合并果子类问题。\n【应用方式】前序 + 中序或后序 + 中序可唯一确定二叉树；哈夫曼树用优先队列每次取两个最小权值合并；哈夫曼编码用于数据压缩。\n【模板代码】\n```cpp\n// 由前序和中序求后序\nvoid build(int l1, int r1, int l2, int r2) {\n    if (l1 > r1) return;\n    int root = pre[l1];\n    int pos = l2;\n    while (in[pos] != root) pos++;\n    int len = pos - l2;\n    build(l1 + 1, l1 + len, l2, pos - 1);\n    build(l1 + len + 1, r1, pos + 1, r2);\n    printf(\"%d \", root);\n}\n\n// 哈夫曼树\npriority_queue<int, vector<int>, greater<int>> pq;\nfor (int i = 1; i <= n; i++) pq.push(w[i]);\nint ans = 0;\nwhile (pq.size() > 1) {\n    int a = pq.top(); pq.pop();\n    int b = pq.top(); pq.pop();\n    ans += a + b;\n    pq.push(a + b);\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§1.4.1 二叉树和哈夫曼树",
+          "summary": "【主要应用】FBI 树、求先序排列、新二叉树、遍历问题、对称二叉树、复读、荷马史诗。\n【应用方式】遍历序列重建二叉树；对称二叉树用递归比较左右子树；哈夫曼编码用优先队列合并最小权值。\n【模板代码】\n```cpp\n// 对称二叉树判断\nbool check(int u, int v) {\n    if (!u && !v) return true;\n    if (!u || !v) return false;\n    if (val[u] != val[v]) return false;\n    return check(lc[u], rc[v]) && check(rc[u], lc[v]);\n}\n\n// 哈夫曼编码（带权路径长度）\nwhile (pq.size() > 1) {\n    auto a = pq.top(); pq.pop();\n    auto b = pq.top(); pq.pop();\n    ans += a.w + b.w;\n    pq.push({a.w + b.w, ++tot});\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1087", "title": "P1087 [NOIP 2004 普及组] FBI 树", "src": "https://www.luogu.com.cn/problem/P1087", "score": 50, "isPremium": false },
+            { "id": "P1030", "title": "P1030 [NOIP 2001 普及组] 求先序排列", "src": "https://www.luogu.com.cn/problem/P1030", "score": 50, "isPremium": false },
+            { "id": "P1305", "title": "P1305 新二叉树", "src": "https://www.luogu.com.cn/problem/P1305", "score": 40, "isPremium": false },
+            { "id": "P1229", "title": "P1229 遍历问题", "src": "https://www.luogu.com.cn/problem/P1229", "score": 50, "isPremium": false },
+            { "id": "P5018", "title": "P5018 [NOIP 2018 普及组] 对称二叉树", "src": "https://www.luogu.com.cn/problem/P5018", "score": 60, "isPremium": false },
+            { "id": "P5597", "title": "P5597 【XR-4】复读", "src": "https://www.luogu.com.cn/problem/P5597", "score": 80, "isPremium": false },
+            { "id": "P2168", "title": "P2168 [NOI2015] 荷马史诗", "src": "https://www.luogu.com.cn/problem/P2168", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "1.5 堆",
+      "summary": "【主要应用】动态维护最值、优先队列、合并果子、中位数维护、多路归并。\n【应用方式】小根堆/大根堆用 priority_queue；对顶堆维护中位数；合并果子用哈夫曼思想；多路归并用堆每次取最小。\n【模板代码】\n```cpp\n// 小根堆\npriority_queue<int, vector<int>, greater<int>> pq;\npq.push(x);\npq.top(); pq.pop();\n\n// 大根堆\npriority_queue<int> pq;\n\n// 对顶堆求中位数\npriority_queue<int> small; // 大根堆\npriority_queue<int, vector<int>, greater<int>> large; // 小根堆\nvoid insert(int x) {\n    if (small.empty() || x <= small.top()) small.push(x);\n    else large.push(x);\n    if (small.size() > large.size() + 1) large.push(small.top()), small.pop();\n    if (large.size() > small.size()) small.push(large.top()), large.pop();\n}\nint median() { return small.top(); }\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§1.5.1 堆",
+          "summary": "【主要应用】堆模板、合并果子、中位数、最小函数值、蚯蚓、Cow Coupons。\n【应用方式】合并果子用优先队列每次取两个最小；中位数用对顶堆；蚯蚓用三个队列维护单调性；最小函数值用堆多路归并。\n【模板代码】\n```cpp\n// 合并果子\npriority_queue<int, vector<int>, greater<int>> pq;\nint ans = 0;\nwhile (pq.size() > 1) {\n    int a = pq.top(); pq.pop();\n    int b = pq.top(); pq.pop();\n    ans += a + b;\n    pq.push(a + b);\n}\nprintf(\"%d\\n\", ans);\n\n// 蚯蚓（三个队列）\nqueue<int> q1, q2, q3;\n// q1 原序列, q2 切后较长, q3 切后较短\n// 每次取三个队首最大值\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3378", "title": "P3378 【模板】堆", "src": "https://www.luogu.com.cn/problem/P3378", "score": 40, "isPremium": false },
+            { "id": "P1090", "title": "P1090 [NOIP 2004 提高组] 合并果子", "src": "https://www.luogu.com.cn/problem/P1090", "score": 50, "isPremium": false },
+            { "id": "P1168", "title": "P1168 中位数", "src": "https://www.luogu.com.cn/problem/P1168", "score": 60, "isPremium": false },
+            { "id": "P2085", "title": "P2085 最小函数值", "src": "https://www.luogu.com.cn/problem/P2085", "score": 60, "isPremium": false },
+            { "id": "P2827", "title": "P2827 [NOIP 2016 提高组] 蚯蚓", "src": "https://www.luogu.com.cn/problem/P2827", "score": 80, "isPremium": false },
+            { "id": "P3045", "title": "P3045 [USACO12FEB] Cow Coupons G", "src": "https://www.luogu.com.cn/problem/P3045", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    }
+  ]
+}

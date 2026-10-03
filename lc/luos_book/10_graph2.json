@@ -1,0 +1,315 @@
+{
+  "title": "洛谷《算法竞赛》图论专题题目整理",
+  "src": "https://www.luogu.com.cn/training/1016094",
+  "last_update": "2026-10-03T00:00:00+08:00",
+  "difficulty_mapping": {
+    "入门（红）": 10,
+    "普及-（橙）": 20,
+    "普及（黄）": 30,
+    "普及+/提高-（绿）": 40,
+    "提高（青）": 50,
+    "提高+/省选-（蓝）": 60,
+    "省选/NOI-（紫）": 80,
+    "NOI/NOI+/CTS（黑）": 100
+  },
+  "children": [
+    {
+      "title": "10.1 图的存储",
+      "summary": "【主要应用】图的存储是图论算法的基础，决定了后续遍历、最短路、网络流等算法的效率与实现难度。\n【应用方式】常见存储方式有：邻接矩阵（适合稠密图、点数少）、邻接表（适合稀疏图、最常用）、链式前向星（适合卡常、网络流、需要快速遍历所有边）。\n【模板代码】\n```cpp\n// 邻接表（vector 版）\nvector<int> g[N];\nvoid add(int u, int v) { g[u].push_back(v); }\n\n// 链式前向星\nint head[N], to[M], nxt[M], ecnt = 0;\nvoid add(int u, int v) {\n    to[++ecnt] = v;\n    nxt[ecnt] = head[u];\n    head[u] = ecnt;\n}\n// 遍历\nfor (int i = head[u]; i; i = nxt[i]) {\n    int v = to[i];\n    // ...\n}\n```",
+      "isLeaf": true,
+      "children": [],
+      "problems": []
+    },
+    {
+      "title": "10.2 拓扑排序",
+      "summary": "【主要应用】有向无环图（DAG）上的拓扑排序，常用于任务调度、依赖关系判定、DAG 上 DP、判环。\n【应用方式】不断取出入度为 0 的点加入队列，删除其出边并更新邻点入度；若最终输出点数小于总点数，说明有环。也可用 DFS 后序逆序实现。\n【模板代码】\n```cpp\nint in[N];\nqueue<int> q;\nvector<int> topo;\nfor (int i = 1; i <= n; i++)\n    if (!in[i]) q.push(i);\nwhile (!q.empty()) {\n    int u = q.front(); q.pop();\n    topo.push_back(u);\n    for (int v : g[u]) {\n        if (--in[v] == 0) q.push(v);\n    }\n}\nif ((int)topo.size() < n) puts(\"有环\");\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§10.2.1 拓扑排序",
+          "summary": "【主要应用】DAG 上的顺序求解、依赖判定、最长/最短路、方案合法性判断。\n【应用方式】在拓扑序上做 DP，如 f[v] = max(f[v], f[u] + w)；或反向建图求最长链。\n【模板代码】\n```cpp\n// DAG 上 DP 求最长路\nfor (int u : topo)\n    for (int v : g[u])\n        f[v] = max(f[v], f[u] + w[u][v]);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1113", "title": "P1113 [USACO02FEB] 杂务", "src": "https://www.luogu.com.cn/problem/P1113", "score": 40, "isPremium": false },
+            { "id": "P1347", "title": "P1347 [ECNA 2001] 排序", "src": "https://www.luogu.com.cn/problem/P1347", "score": 50, "isPremium": false },
+            { "id": "P1685", "title": "P1685 游览", "src": "https://www.luogu.com.cn/problem/P1685", "score": 50, "isPremium": false },
+            { "id": "P3243", "title": "P3243 [HNOI2015] 菜肴制作", "src": "https://www.luogu.com.cn/problem/P3243", "score": 60, "isPremium": false },
+            { "id": "P1983", "title": "P1983 [NOIP 2013 普及组] 车站分级", "src": "https://www.luogu.com.cn/problem/P1983", "score": 50, "isPremium": false },
+            { "id": "P1038", "title": "P1038 [NOIP 2003 提高组] 神经网络", "src": "https://www.luogu.com.cn/problem/P1038", "score": 50, "isPremium": false },
+            { "id": "P4934", "title": "P4934 礼物", "src": "https://www.luogu.com.cn/problem/P4934", "score": 60, "isPremium": false },
+            { "id": "P4017", "title": "P4017 最大食物链计数", "src": "https://www.luogu.com.cn/problem/P4017", "score": 40, "isPremium": false },
+            { "id": "P2597", "title": "P2597 [ZJOI2012] 灾难", "src": "https://www.luogu.com.cn/problem/P2597", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "10.3 欧拉路",
+      "summary": "【主要应用】一笔画问题、边不重复遍历、字符串拼接成链、邮递员问题。\n【应用方式】先判断奇度点个数：无向图中 0 或 2 个奇度点存在欧拉路；有向图中所有点入度等于出度（欧拉回路）或仅起点出度=入度+1、终点入度=出度+1（欧拉路径）。然后用 Hierholzer 算法求路径。\n【模板代码】\n```cpp\nvoid dfs(int u) {\n    for (int i = head[u]; i; i = nxt[i]) {\n        if (vis[i]) continue;\n        vis[i] = vis[i ^ 1] = 1;\n        dfs(to[i]);\n    }\n    ans.push_back(u);\n}\n// 输出时逆序输出 ans\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§10.3.1 欧拉路",
+          "summary": "【主要应用】字符串词链、栅栏修补、图的一笔画构造。\n【应用方式】建图后统计度数，选取合法起点 DFS，回溯记录路径；注意重边与自环的处理。\n【模板代码】\n```cpp\n// 无向图欧拉路判定\nint cnt = 0, st = 1;\nfor (int i = 1; i <= n; i++) {\n    if (deg[i] % 2) cnt++, st = i;\n}\nif (cnt != 0 && cnt != 2) puts(\"No Euler path\");\nelse dfs(st);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "UVA10054", "title": "UVA10054 The Necklace", "src": "https://www.luogu.com.cn/problem/UVA10054", "score": 50, "isPremium": false },
+            { "id": "P1341", "title": "P1341 无序字母对", "src": "https://www.luogu.com.cn/problem/P1341", "score": 50, "isPremium": false },
+            { "id": "P1333", "title": "P1333 瑞瑞的木棍", "src": "https://www.luogu.com.cn/problem/P1333", "score": 50, "isPremium": false },
+            { "id": "P2731", "title": "P2731 [USACO3.3] 骑马修栅栏 Riding the Fences", "src": "https://www.luogu.com.cn/problem/P2731", "score": 50, "isPremium": false },
+            { "id": "P1127", "title": "P1127 词链", "src": "https://www.luogu.com.cn/problem/P1127", "score": 50, "isPremium": false },
+            { "id": "P6066", "title": "P6066 [USACO05JAN] Watchcow S", "src": "https://www.luogu.com.cn/problem/P6066", "score": 50, "isPremium": false },
+            { "id": "P6628", "title": "P6628 [省选联考 2020 B 卷] 丁香之路", "src": "https://www.luogu.com.cn/problem/P6628", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "10.4 无向图的连通性",
+      "summary": "【主要应用】割点、桥、点双连通分量、边双连通分量、圆方树。\n【应用方式】用 Tarjan 算法求 dfn 与 low；若 low[v] >= dfn[u] 则 u 为割点；若 low[v] > dfn[u] 则边 (u,v) 为桥。点双用栈维护，边双对桥标记后 dfs 分块。\n【模板代码】\n```cpp\nvoid tarjan(int u, int fa) {\n    dfn[u] = low[u] = ++idx;\n    int child = 0;\n    for (int v : g[u]) {\n        if (!dfn[v]) {\n            child++;\n            tarjan(v, u);\n            low[u] = min(low[u], low[v]);\n            if (low[v] >= dfn[u]) isCut[u] = 1;\n        } else if (v != fa) {\n            low[u] = min(low[u], dfn[v]);\n        }\n    }\n    if (fa == 0 && child == 1) isCut[u] = 0;\n}\n```",
+      "isLeaf": true,
+      "children": [],
+      "problems": []
+    },
+    {
+      "title": "10.5 有向图的连通性",
+      "summary": "【主要应用】强连通分量（SCC）、缩点、DAG 上 DP、割点、2-SAT 前置。\n【应用方式】Tarjan 或 Kosaraju 求 SCC；缩点后得到 DAG，再在 DAG 上做拓扑 DP；割点可结合无向图 Tarjan 处理。\n【模板代码】\n```cpp\nvoid tarjan(int u) {\n    dfn[u] = low[u] = ++idx;\n    stk[++top] = u; ins[u] = 1;\n    for (int v : g[u]) {\n        if (!dfn[v]) {\n            tarjan(v);\n            low[u] = min(low[u], low[v]);\n        } else if (ins[v]) {\n            low[u] = min(low[u], dfn[v]);\n        }\n    }\n    if (low[u] == dfn[u]) {\n        ++scc_cnt;\n        int v;\n        do {\n            v = stk[top--]; ins[v] = 0;\n            scc[v] = scc_cnt;\n        } while (v != u);\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§10.5.1 有向图连通性",
+          "summary": "【主要应用】缩点后求最长路、受欢迎度统计、网络可达性、稳定婚姻模型。\n【应用方式】SCC 缩点重建图，统计入度出度；或在 DAG 上 DP 求最大权路径。\n【模板代码】\n```cpp\n// 缩点后重建\nfor (int u = 1; u <= n; u++)\n    for (int v : g[u])\n        if (scc[u] != scc[v])\n            ng[scc[u]].push_back(scc[v]);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3387", "title": "P3387 【模板】缩点", "src": "https://www.luogu.com.cn/problem/P3387", "score": 50, "isPremium": false },
+            { "id": "P3388", "title": "P3388 【模板】割点（割顶）", "src": "https://www.luogu.com.cn/problem/P3388", "score": 50, "isPremium": false },
+            { "id": "P2341", "title": "P2341 [USACO03FALL / HAOI2006] 受欢迎的牛 G", "src": "https://www.luogu.com.cn/problem/P2341", "score": 50, "isPremium": false },
+            { "id": "P2863", "title": "P2863 [USACO06JAN] The Cow Prom S", "src": "https://www.luogu.com.cn/problem/P2863", "score": 50, "isPremium": false },
+            { "id": "P2746", "title": "P2746 [IOI 1996 / USACO5.3] 校园网 Network of Schools", "src": "https://www.luogu.com.cn/problem/P2746", "score": 60, "isPremium": false },
+            { "id": "P1407", "title": "P1407 [国家集训队] 稳定婚姻", "src": "https://www.luogu.com.cn/problem/P1407", "score": 60, "isPremium": false },
+            { "id": "P2272", "title": "P2272 [ZJOI2007] 最大半连通子图", "src": "https://www.luogu.com.cn/problem/P2272", "score": 80, "isPremium": false },
+            { "id": "P3225", "title": "P3225 [HNOI2012] 矿场搭建", "src": "https://www.luogu.com.cn/problem/P3225", "score": 80, "isPremium": false },
+            { "id": "P5058", "title": "P5058 [ZJOI2004] 嗅探器", "src": "https://www.luogu.com.cn/problem/P5058", "score": 80, "isPremium": false },
+            { "id": "P2515", "title": "P2515 [HAOI2010] 软件安装", "src": "https://www.luogu.com.cn/problem/P2515", "score": 60, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "10.6 基环树",
+      "summary": "【主要应用】环套树结构上的 DP、断环成树、树上问题扩展。\n【应用方式】找出环，枚举环上断边，转化为树形 DP；或对环上做单调队列优化 DP。\n【模板代码】\n```cpp\n// 找环（无向基环树）\nvoid get_cycle(int u, int fa) {\n    dfn[u] = ++idx;\n    for (int v : g[u]) {\n        if (v == fa) continue;\n        if (!dfn[v]) pre[v] = u, get_cycle(v, u);\n        else if (dfn[v] < dfn[u]) {\n            // 找到环，从 u 沿 pre 回到 v\n        }\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§10.6.1 基环树",
+          "summary": "【主要应用】骑士、旅行、快餐店、城市环路、岛屿问题。\n【应用方式】断环后树形 DP，再单独考虑环上相邻点的冲突；或环上倍增处理。\n【模板代码】\n```cpp\n// 树形 DP 基础\nvoid dfs(int u, int fa) {\n    f[u][0] = 0; f[u][1] = w[u];\n    for (int v : g[u]) {\n        if (v == fa) continue;\n        dfs(v, u);\n        f[u][0] += max(f[v][0], f[v][1]);\n        f[u][1] += f[v][0];\n    }\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P2607", "title": "P2607 [ZJOI2008] 骑士", "src": "https://www.luogu.com.cn/problem/P2607", "score": 60, "isPremium": false },
+            { "id": "P5049", "title": "P5049 [NOIP 2018 提高组] 旅行 加强版", "src": "https://www.luogu.com.cn/problem/P5049", "score": 80, "isPremium": false },
+            { "id": "P1399", "title": "P1399 [NOI2013] 快餐店", "src": "https://www.luogu.com.cn/problem/P1399", "score": 100, "isPremium": false },
+            { "id": "P1453", "title": "P1453 城市环路", "src": "https://www.luogu.com.cn/problem/P1453", "score": 60, "isPremium": false },
+            { "id": "P4381", "title": "P4381 [IOI 2008] Island", "src": "https://www.luogu.com.cn/problem/P4381", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "10.7 2-SAT",
+      "summary": "【主要应用】布尔变量约束可满足性、选择问题、游戏地图合法性、精准预测。\n【应用方式】将每个变量拆成两个点（真/假），对每个限制连有向边，跑 Tarjan 求 SCC；若同一变量两个点在同一 SCC 则无解，否则按 SCC 编号选择拓扑序靠后的作为答案。\n【模板代码】\n```cpp\nvoid add(int u, int v) { g[u].push_back(v); }\n// x 为真/假, 2*i 表示假, 2*i+1 表示真\n// 若 x 为真则 y 为假: add(2*x+1, 2*y); add(2*y+1, 2*x);\nvoid tarjan(int u) { /* 同 SCC 模板 */ }\n// 判定\nfor (int i = 0; i < n; i++)\n    if (scc[2*i] == scc[2*i+1]) puts(\"No\");\n// 选择\nval[i] = (scc[2*i] > scc[2*i+1]);\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§10.7.1 2-SAT",
+          "summary": "【主要应用】满汉全席、游戏、精准预测等约束满足问题。\n【应用方式】建图后 Tarjan 缩点，利用 SCC 编号判断选择；注意变量下标映射。\n【模板代码】\n```cpp\n// 常见建边：若 a 则 b\nadd(a, b);\n// 逆否：若非 b 则非 a\nadd(b ^ 1, a ^ 1);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P4782", "title": "P4782 【模板】2-SAT", "src": "https://www.luogu.com.cn/problem/P4782", "score": 60, "isPremium": false },
+            { "id": "P4171", "title": "P4171 [JSOI2010] 满汉全席", "src": "https://www.luogu.com.cn/problem/P4171", "score": 60, "isPremium": false },
+            { "id": "P3825", "title": "P3825 [NOI2017] 游戏", "src": "https://www.luogu.com.cn/problem/P3825", "score": 100, "isPremium": false },
+            { "id": "P5332", "title": "P5332 [JSOI2019] 精准预测", "src": "https://www.luogu.com.cn/problem/P5332", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "10.8 最短路径",
+      "summary": "【主要应用】路径规划、地图导航、差分约束、分层图、最短路计数。\n【应用方式】Floyd 适合多源小图；Dijkstra 适合非负权单源；SPFA 可处理负权但易被卡；Johnson 用重赋权实现全源最短路；差分约束转化为最短路。\n【模板代码】\n```cpp\n// Dijkstra 堆优化\nvoid dijkstra(int s) {\n    memset(dis, 0x3f, sizeof(dis));\n    dis[s] = 0;\n    priority_queue<pair<int,int>, vector<pair<int,int>>, greater<>> pq;\n    pq.push({0, s});\n    while (!pq.empty()) {\n        auto [d, u] = pq.top(); pq.pop();\n        if (d != dis[u]) continue;\n        for (auto [v, w] : g[u]) {\n            if (dis[v] > dis[u] + w) {\n                dis[v] = dis[u] + w;\n                pq.push({dis[v], v});\n            }\n        }\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§10.8.1 最短路模板与基础",
+          "summary": "【主要应用】最短路模板题、负环判定、差分约束系统。\n【应用方式】Floyd 三重循环；Dijkstra 堆优化；SPFA 判负环；Johnson 重赋权后跑 Dijkstra。\n【模板代码】\n```cpp\n// Floyd\nfor (int k = 1; k <= n; k++)\n    for (int i = 1; i <= n; i++)\n        for (int j = 1; j <= n; j++)\n            dis[i][j] = min(dis[i][j], dis[i][k] + dis[k][j]);\n\n// SPFA 判负环\nif (++cnt[v] >= n) return false;\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "B3647", "title": "B3647 【模板】Floyd", "src": "https://www.luogu.com.cn/problem/B3647", "score": 30, "isPremium": false },
+            { "id": "P3371", "title": "P3371 【模板】单源最短路径（弱化版）", "src": "https://www.luogu.com.cn/problem/P3371", "score": 40, "isPremium": false },
+            { "id": "P4779", "title": "P4779 【模板】单源最短路径（标准版）", "src": "https://www.luogu.com.cn/problem/P4779", "score": 40, "isPremium": false },
+            { "id": "P5905", "title": "P5905 【模板】全源最短路（Johnson）", "src": "https://www.luogu.com.cn/problem/P5905", "score": 60, "isPremium": false },
+            { "id": "P3385", "title": "P3385 【模板】负环", "src": "https://www.luogu.com.cn/problem/P3385", "score": 40, "isPremium": false },
+            { "id": "P5960", "title": "P5960 【模板】差分约束", "src": "https://www.luogu.com.cn/problem/P5960", "score": 50, "isPremium": false }
+          ]
+        },
+        {
+          "title": "§10.8.2 最短路应用",
+          "summary": "【主要应用】灾后重建、跑路、次短路、最优比率环、最小密度路径、Cow Contest、最短路计数、分层图。\n【应用方式】结合二分、倍增、拓扑、DAG 上 DP；或对状态分层建图。\n【模板代码】\n```cpp\n// 次短路（Dijkstra 变形）\nif (dis[v] > d + w) { dis2[v] = dis[v]; dis[v] = d + w; }\nelse if (dis2[v] > d + w && dis[v] < d + w) dis2[v] = d + w;\n\n// 分层图\nfor (int k = 0; k <= K; k++) {\n    // 同一层\n    add(u + k*n, v + k*n, w);\n    // 跨层\n    if (k < K) add(u + k*n, v + (k+1)*n, 0);\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1119", "title": "P1119 灾后重建", "src": "https://www.luogu.com.cn/problem/P1119", "score": 60, "isPremium": false },
+            { "id": "P1613", "title": "P1613 跑路", "src": "https://www.luogu.com.cn/problem/P1613", "score": 60, "isPremium": false },
+            { "id": "P2865", "title": "P2865 [USACO06NOV] Roadblocks G", "src": "https://www.luogu.com.cn/problem/P2865", "score": 50, "isPremium": false },
+            { "id": "P2868", "title": "P2868 [USACO07DEC] Sightseeing Cows G", "src": "https://www.luogu.com.cn/problem/P2868", "score": 80, "isPremium": false },
+            { "id": "P1730", "title": "P1730 最小密度路径", "src": "https://www.luogu.com.cn/problem/P1730", "score": 60, "isPremium": false },
+            { "id": "P2419", "title": "P2419 [USACO08JAN] Cow Contest S", "src": "https://www.luogu.com.cn/problem/P2419", "score": 50, "isPremium": false },
+            { "id": "P1144", "title": "P1144 最短路计数", "src": "https://www.luogu.com.cn/problem/P1144", "score": 50, "isPremium": false },
+            { "id": "P1462", "title": "P1462 通往奥格瑞玛的道路", "src": "https://www.luogu.com.cn/problem/P1462", "score": 60, "isPremium": false },
+            { "id": "P1522", "title": "P1522 [USACO2.4] 牛的旅行 Cow Tours", "src": "https://www.luogu.com.cn/problem/P1522", "score": 60, "isPremium": false },
+            { "id": "P1266", "title": "P1266 [BalticOI 2002] 速度限制", "src": "https://www.luogu.com.cn/problem/P1266", "score": 80, "isPremium": false },
+            { "id": "P4568", "title": "P4568 [JLOI2011] 飞行路线", "src": "https://www.luogu.com.cn/problem/P4568", "score": 60, "isPremium": false },
+            { "id": "P3238", "title": "P3238 [HNOI2014] 道路堵塞", "src": "https://www.luogu.com.cn/problem/P3238", "score": 100, "isPremium": false },
+            { "id": "P5304", "title": "P5304 [GXOI/GZOI2019] 旅行者", "src": "https://www.luogu.com.cn/problem/P5304", "score": 100, "isPremium": false },
+            { "id": "P3275", "title": "P3275 [SCOI2011] 糖果", "src": "https://www.luogu.com.cn/problem/P3275", "score": 60, "isPremium": false },
+            { "id": "P2294", "title": "P2294 [HNOI2005] 狡猾的商人", "src": "https://www.luogu.com.cn/problem/P2294", "score": 60, "isPremium": false },
+            { "id": "P4926", "title": "P4926 [1007] 倍杀测量者", "src": "https://www.luogu.com.cn/problem/P4926", "score": 80, "isPremium": false },
+            { "id": "P5590", "title": "P5590 赛车游戏", "src": "https://www.luogu.com.cn/problem/P5590", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "10.9 最小生成树",
+      "summary": "【主要应用】网络建设、部落划分、次小生成树、货车运输、最小瓶颈路。\n【应用方式】Kruskal 按边权排序加并查集；Prim 适合稠密图；次小生成树通过枚举非树边替换最大边；瓶颈路可用 MST 上倍增求最大边。\n【模板代码】\n```cpp\n// Kruskal\nsort(edges, edges + m, [](Edge a, Edge b) { return a.w < b.w; });\nfor (auto e : edges) {\n    int u = find(e.u), v = find(e.v);\n    if (u != v) {\n        fa[u] = v;\n        ans += e.w;\n        cnt++;\n        if (cnt == n - 1) break;\n    }\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§10.9.1 最小生成树",
+          "summary": "【主要应用】最小生成树模板、拆地毯、严格次小生成树、无线通讯网、部落划分、货车运输。\n【应用方式】Kruskal 并查集判环；Prim 堆优化；次小生成树枚举非树边；MST 上倍增求最大边。\n【模板代码】\n```cpp\n// 并查集\nint find(int x) { return fa[x] == x ? x : fa[x] = find(fa[x]); }\n// 次小生成树：枚举每条非树边，替换路径上最大边\n// 倍增求路径最大边\nvoid dfs(int u, int fa) {\n    up[u][0] = fa; dep[u] = dep[fa] + 1;\n    for (int i = 1; i < LOG; i++) up[u][i] = up[up[u][i-1]][i-1];\n    for (auto [v, w] : g[u]) if (v != fa) maxw[v][0] = w, dfs(v, u);\n}\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3366", "title": "P3366 【模板】最小生成树", "src": "https://www.luogu.com.cn/problem/P3366", "score": 40, "isPremium": false },
+            { "id": "P2121", "title": "P2121 拆地毯", "src": "https://www.luogu.com.cn/problem/P2121", "score": 40, "isPremium": false },
+            { "id": "P4180", "title": "P4180 [BJWC2010] 严格次小生成树", "src": "https://www.luogu.com.cn/problem/P4180", "score": 80, "isPremium": false },
+            { "id": "P4951", "title": "P4951 [USACO01OPEN] Earthquake", "src": "https://www.luogu.com.cn/problem/P4951", "score": 60, "isPremium": false },
+            { "id": "P2872", "title": "P2872 [USACO07DEC] Building Roads S", "src": "https://www.luogu.com.cn/problem/P2872", "score": 50, "isPremium": false },
+            { "id": "P1991", "title": "P1991 无线通讯网", "src": "https://www.luogu.com.cn/problem/P1991", "score": 50, "isPremium": false },
+            { "id": "P4047", "title": "P4047 [JSOI2010] 部落划分", "src": "https://www.luogu.com.cn/problem/P4047", "score": 50, "isPremium": false },
+            { "id": "P1967", "title": "P1967 [NOIP 2013 提高组] 货车运输", "src": "https://www.luogu.com.cn/problem/P1967", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "10.10 最大流",
+      "summary": "【主要应用】网络流建模、二分图匹配、最小割、最大权闭合子图、星际转移。\n【应用方式】Dinic 多路增广 + 当前弧优化；ISAP 或 HLPP 处理大规模数据；建图时拆点、分层、源汇连接。\n【模板代码】\n```cpp\nstruct Edge { int to, nxt, cap; } e[M];\nint head[N], ecnt = 1, dep[N], cur[N];\nvoid add(int u, int v, int c) {\n    e[++ecnt] = {v, head[u], c}; head[u] = ecnt;\n    e[++ecnt] = {u, head[v], 0}; head[v] = ecnt;\n}\nbool bfs(int s, int t) {\n    memset(dep, 0, sizeof(dep));\n    queue<int> q; q.push(s); dep[s] = 1;\n    while (!q.empty()) {\n        int u = q.front(); q.pop();\n        for (int i = head[u]; i; i = e[i].nxt) {\n            int v = e[i].to;\n            if (e[i].cap && !dep[v]) dep[v] = dep[u] + 1, q.push(v);\n        }\n    }\n    return dep[t];\n}\nint dfs(int u, int t, int f) {\n    if (u == t) return f;\n    int flow = 0;\n    for (int &i = cur[u]; i; i = e[i].nxt) {\n        int v = e[i].to;\n        if (e[i].cap && dep[v] == dep[u] + 1) {\n            int d = dfs(v, t, min(f, e[i].cap));\n            if (d) {\n                e[i].cap -= d; e[i^1].cap += d;\n                f -= d; flow += d;\n                if (!f) break;\n            }\n        }\n    }\n    return flow;\n}\nint dinic(int s, int t) {\n    int flow = 0;\n    while (bfs(s, t)) {\n        memcpy(cur, head, sizeof(head));\n        flow += dfs(s, t, INF);\n    }\n    return flow;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§10.10.1 最大流",
+          "summary": "【主要应用】蜥蜴、家园、最长不下降子序列、魔术球、植物大战僵尸。\n【应用方式】拆点限制流量；源点连入、汇点连出；二分答案或分层建图。\n【模板代码】\n```cpp\n// 拆点：u -> u' 容量为点容量\nadd(u, u + n, cap);\n// 源点 S 连源集合，汇点 T 连汇集合\nadd(S, u, INF); add(v, T, INF);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3376", "title": "P3376 【模板】网络最大流", "src": "https://www.luogu.com.cn/problem/P3376", "score": 60, "isPremium": false },
+            { "id": "P2472", "title": "P2472 [SCOI2007] 蜥蜴", "src": "https://www.luogu.com.cn/problem/P2472", "score": 80, "isPremium": false },
+            { "id": "P2754", "title": "P2754 [CTSC1999] 家园 / 星际转移问题", "src": "https://www.luogu.com.cn/problem/P2754", "score": 80, "isPremium": false },
+            { "id": "P2766", "title": "P2766 最长不下降子序列问题", "src": "https://www.luogu.com.cn/problem/P2766", "score": 80, "isPremium": false },
+            { "id": "P2765", "title": "P2765 魔术球问题", "src": "https://www.luogu.com.cn/problem/P2765", "score": 80, "isPremium": false },
+            { "id": "P2805", "title": "P2805 [NOI2009] 植物大战僵尸", "src": "https://www.luogu.com.cn/problem/P2805", "score": 100, "isPremium": false },
+            { "id": "P4722", "title": "P4722 【模板】最大流 加强版 / 预流推进", "src": "https://www.luogu.com.cn/problem/P4722", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "10.11 二分图",
+      "summary": "【主要应用】匹配问题、任务分配、最小路径覆盖、最大独立集、矩阵游戏。\n【应用方式】匈牙利算法求最大匹配；KM 算法求带权最大匹配；Dinic 也可求二分图最大匹配；最小路径覆盖 = 点数 - 最大匹配。\n【模板代码】\n```cpp\n// 匈牙利算法\nint match[N]; bool vis[N];\nbool dfs(int u) {\n    for (int v : g[u]) {\n        if (vis[v]) continue;\n        vis[v] = 1;\n        if (!match[v] || dfs(match[v])) {\n            match[v] = u;\n            return true;\n        }\n    }\n    return false;\n}\nint solve() {\n    int res = 0;\n    for (int i = 1; i <= n; i++) {\n        memset(vis, 0, sizeof(vis));\n        if (dfs(i)) res++;\n    }\n    return res;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§10.11.1 二分图",
+          "summary": "【主要应用】座位安排、飞行员配对、矩阵游戏、运动员最佳匹配、朋友圈、最小路径覆盖、试题库。\n【应用方式】左右部点建边，跑最大匹配；带权用 KM 或费用流；输出方案通过 match 数组。\n【模板代码】\n```cpp\n// 输出匹配方案\nfor (int v = 1; v <= m; v++)\n    if (match[v]) printf(\"%d %d\\n\", match[v], v);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3386", "title": "P3386 【模板】二分图最大匹配", "src": "https://www.luogu.com.cn/problem/P3386", "score": 50, "isPremium": false },
+            { "id": "P2071", "title": "P2071 座位安排", "src": "https://www.luogu.com.cn/problem/P2071", "score": 50, "isPremium": false },
+            { "id": "P2756", "title": "P2756 飞行员配对方案问题", "src": "https://www.luogu.com.cn/problem/P2756", "score": 50, "isPremium": false },
+            { "id": "P1129", "title": "P1129 [ZJOI2007] 矩阵游戏", "src": "https://www.luogu.com.cn/problem/P1129", "score": 60, "isPremium": false },
+            { "id": "P1559", "title": "P1559 运动员最佳匹配问题", "src": "https://www.luogu.com.cn/problem/P1559", "score": 60, "isPremium": false },
+            { "id": "P2423", "title": "P2423 [HEOI2012] 朋友圈", "src": "https://www.luogu.com.cn/problem/P2423", "score": 80, "isPremium": false },
+            { "id": "P2764", "title": "P2764 最小路径覆盖问题", "src": "https://www.luogu.com.cn/problem/P2764", "score": 80, "isPremium": false },
+            { "id": "P2825", "title": "P2825 [HEOI2016/TJOI2016] 游戏", "src": "https://www.luogu.com.cn/problem/P2825", "score": 80, "isPremium": false },
+            { "id": "P3033", "title": "P3033 [USACO11NOV] Cow Steeplechase G", "src": "https://www.luogu.com.cn/problem/P3033", "score": 80, "isPremium": false },
+            { "id": "P3731", "title": "P3731 [HAOI2017] 新型城市化", "src": "https://www.luogu.com.cn/problem/P3731", "score": 100, "isPremium": false },
+            { "id": "P4014", "title": "P4014 分配问题", "src": "https://www.luogu.com.cn/problem/P4014", "score": 60, "isPremium": false },
+            { "id": "P4617", "title": "P4617 [COCI 2017/2018 #5] Planinarenje", "src": "https://www.luogu.com.cn/problem/P4617", "score": 80, "isPremium": false },
+            { "id": "P2065", "title": "P2065 [TJOI2011] 卡片", "src": "https://www.luogu.com.cn/problem/P2065", "score": 80, "isPremium": false },
+            { "id": "P2763", "title": "P2763 试题库问题", "src": "https://www.luogu.com.cn/problem/P2763", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "10.12 最小割",
+      "summary": "【主要应用】最小割建模、最大权闭合子图、二元关系最小代价、最小割树。\n【应用方式】最大流 = 最小割；源点连正权、汇点连负权、中间边容量为代价；最小割树用 Gomory-Hu 算法求任意两点最小割。\n【模板代码】\n```cpp\n// 最大权闭合子图\n// 正权点连源点，负权点连汇点，原边容量 INF\nint ans = sum_positive - maxflow(S, T);\n\n// 二元关系最小割\n// u 选 A 连 S，u 选 B 连 T，不同选择代价建边\nadd(u, v, cost);\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§10.12.1 最小割",
+          "summary": "【主要应用】追查坏牛奶、奶牛的电信、善意的投票、狼和羊、方格取数、最小割树、寿司餐厅、狼抓兔子。\n【应用方式】将选择问题转化为割边代价；对偶图最短路加速平面图最小割。\n【模板代码】\n```cpp\n// 平面图最小割转最短路（狼抓兔子）\n// 每个面作为节点，边作为连接，跑 Dijkstra\n// 注意源汇面编号与边界处理\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P1344", "title": "P1344 [USACO4.4] 追查坏牛奶 Pollutant Control", "src": "https://www.luogu.com.cn/problem/P1344", "score": 80, "isPremium": false },
+            { "id": "P1345", "title": "P1345 [USACO5.4] 奶牛的电信 Telecowmunication", "src": "https://www.luogu.com.cn/problem/P1345", "score": 80, "isPremium": false },
+            { "id": "P2057", "title": "P2057 [SHOI2007] 善意的投票 / [JLOI2010] 冠军调查", "src": "https://www.luogu.com.cn/problem/P2057", "score": 80, "isPremium": false },
+            { "id": "P2598", "title": "P2598 [ZJOI2009] 狼和羊的故事", "src": "https://www.luogu.com.cn/problem/P2598", "score": 80, "isPremium": false },
+            { "id": "P2774", "title": "P2774 方格取数问题", "src": "https://www.luogu.com.cn/problem/P2774", "score": 80, "isPremium": false },
+            { "id": "P4126", "title": "P4126 [AHOI2009] 最小割", "src": "https://www.luogu.com.cn/problem/P4126", "score": 100, "isPremium": false },
+            { "id": "P5039", "title": "P5039 [SHOI2010] 最小生成树", "src": "https://www.luogu.com.cn/problem/P5039", "score": 80, "isPremium": false },
+            { "id": "P4897", "title": "P4897 【模板】最小割树（Gomory-Hu Tree）", "src": "https://www.luogu.com.cn/problem/P4897", "score": 80, "isPremium": false },
+            { "id": "P3749", "title": "P3749 [六省联考 2017] 寿司餐厅", "src": "https://www.luogu.com.cn/problem/P3749", "score": 100, "isPremium": false },
+            { "id": "P4001", "title": "P4001 [ICPC 2006 Beijing R] 狼抓兔子", "src": "https://www.luogu.com.cn/problem/P4001", "score": 80, "isPremium": false }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "10.13 费用流",
+      "summary": "【主要应用】带权匹配、运输问题、修车、美食节、网络扩容、航空路线。\n【应用方式】在最大流基础上，每条边增加单位费用；用 SPFA 或 Dijkstra（势能）找最小费用增广路；也可用 zkw 费用流。\n【模板代码】\n```cpp\nstruct Edge { int to, nxt, cap, cost; } e[M];\nint head[N], ecnt = 1, dis[N], vis[N], pre[N];\nvoid add(int u, int v, int cap, int cost) {\n    e[++ecnt] = {v, head[u], cap, cost}; head[u] = ecnt;\n    e[++ecnt] = {u, head[v], 0, -cost}; head[v] = ecnt;\n}\nbool spfa(int s, int t) {\n    memset(dis, 0x3f, sizeof(dis));\n    memset(vis, 0, sizeof(vis));\n    queue<int> q; q.push(s); dis[s] = 0; vis[s] = 1;\n    while (!q.empty()) {\n        int u = q.front(); q.pop(); vis[u] = 0;\n        for (int i = head[u]; i; i = e[i].nxt) {\n            int v = e[i].to;\n            if (e[i].cap && dis[v] > dis[u] + e[i].cost) {\n                dis[v] = dis[u] + e[i].cost;\n                pre[v] = i;\n                if (!vis[v]) vis[v] = 1, q.push(v);\n            }\n        }\n    }\n    return dis[t] != INF;\n}\nint mcmf(int s, int t) {\n    int flow = 0, cost = 0;\n    while (spfa(s, t)) {\n        int f = INF;\n        for (int i = t; i != s; i = e[pre[i]^1].to)\n            f = min(f, e[pre[i]].cap);\n        for (int i = t; i != s; i = e[pre[i]^1].to) {\n            e[pre[i]].cap -= f;\n            e[pre[i]^1].cap += f;\n        }\n        flow += f;\n        cost += f * dis[t];\n    }\n    return cost;\n}\n```",
+      "isLeaf": false,
+      "children": [
+        {
+          "title": "§10.13.1 费用流",
+          "summary": "【主要应用】航班安排、方格取数加强版、美食节、修车、网络扩容、航空路线、交换棋子、火星探险、最长 k 可重区间集、数字梯形、运输问题、通信、新生舞会。\n【应用方式】拆点限制流量与费用；对时间、地点分层建图；用势能 Dijkstra 优化。\n【模板代码】\n```cpp\n// 拆点费用流\nadd(u, u + n, 1, -w); // 第一次经过获得收益\nadd(u, u + n, INF, 0); // 后续经过无收益\n// 源汇\nadd(S, 1, K, 0);\nadd(n, T, K, 0);\n```",
+          "isLeaf": true,
+          "children": [],
+          "problems": [
+            { "id": "P3381", "title": "P3381 【模板】最小费用最大流", "src": "https://www.luogu.com.cn/problem/P3381", "score": 60, "isPremium": false },
+            { "id": "P4452", "title": "P4452 [国家集训队] 航班安排", "src": "https://www.luogu.com.cn/problem/P4452", "score": 100, "isPremium": false },
+            { "id": "P2045", "title": "P2045 方格取数加强版", "src": "https://www.luogu.com.cn/problem/P2045", "score": 80, "isPremium": false },
+            { "id": "P2050", "title": "P2050 [NOI2012] 美食节", "src": "https://www.luogu.com.cn/problem/P2050", "score": 100, "isPremium": false },
+            { "id": "P2053", "title": "P2053 [SCOI2007] 修车", "src": "https://www.luogu.com.cn/problem/P2053", "score": 80, "isPremium": false },
+            { "id": "P2604", "title": "P2604 [ZJOI2010] 网络扩容", "src": "https://www.luogu.com.cn/problem/P2604", "score": 80, "isPremium": false },
+            { "id": "P2770", "title": "P2770 航空路线问题", "src": "https://www.luogu.com.cn/problem/P2770", "score": 80, "isPremium": false },
+            { "id": "P3159", "title": "P3159 [CQOI2012] 交换棋子", "src": "https://www.luogu.com.cn/problem/P3159", "score": 100, "isPremium": false },
+            { "id": "P3356", "title": "P3356 火星探险问题", "src": "https://www.luogu.com.cn/problem/P3356", "score": 80, "isPremium": false },
+            { "id": "P3358", "title": "P3358 最长 k 可重区间集问题", "src": "https://www.luogu.com.cn/problem/P3358", "score": 80, "isPremium": false },
+            { "id": "P4013", "title": "P4013 数字梯形问题", "src": "https://www.luogu.com.cn/problem/P4013", "score": 80, "isPremium": false },
+            { "id": "P4015", "title": "P4015 运输问题", "src": "https://www.luogu.com.cn/problem/P4015", "score": 80, "isPremium": false },
+            { "id": "P5331", "title": "P5331 [SNOI2019] 通信", "src": "https://www.luogu.com.cn/problem/P5331", "score": 100, "isPremium": false },
+            { "id": "P3705", "title": "P3705 [SDOI2017] 新生舞会", "src": "https://www.luogu.com.cn/problem/P3705", "score": 100, "isPremium": false }
+          ]
+        }
+      ]
+    }
+  ]
+}
