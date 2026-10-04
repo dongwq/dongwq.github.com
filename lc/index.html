@@ -1,33 +1,270 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<title>算法动画演示</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>二级分类 · 清单</title>
+  <style>
+    /* 极简重置 + 基础色调 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #f6f8fa;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem 1.5rem;
+      line-height: 1.5;
+      color: #1e293b;
+    }
+
+    /* 主卡片容器 */
+    .category-panel {
+      max-width: 1100px;
+      width: 100%;
+      background-color: #ffffff;
+      border-radius: 28px;
+      box-shadow: 0 15px 35px -8px rgba(0, 0, 0, 0.08), 0 5px 10px -4px rgba(0, 0, 0, 0.02);
+      padding: 2.5rem 2.2rem;
+      transition: box-shadow 0.2s ease;
+    }
+
+    /* 简洁标题 */
+    .panel-header {
+      margin-bottom: 2.5rem;
+      text-align: left;
+    }
+
+    .panel-header h1 {
+      font-size: 1.9rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: #0f172a;
+      margin-bottom: 0.3rem;
+    }
+
+    .panel-header .subhead {
+      font-size: 0.95rem;
+      color: #64748b;
+      font-weight: 400;
+      border-left: 4px solid #94a3b8;
+      padding-left: 1rem;
+    }
+
+    /* 一级分类网格 —— 清晰的两列，移动端一列 */
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem 2.5rem;
+    }
+
+    /* 一级分类卡片 (无边框，仅靠背景区分) */
+    .category-card {
+      background-color: #f9fbfd;
+      border-radius: 20px;
+      padding: 1.6rem 1.8rem 1.8rem 1.8rem;
+      transition: background-color 0.2s ease, transform 0.15s ease;
+      border: 1px solid #e9edf2;
+    }
+
+    .category-card:hover {
+      background-color: #ffffff;
+      border-color: #d0d9e4;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.02);
+    }
+
+    /* 一级分类标题 + 小标记 */
+    .category-title {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: #0b1e33;
+      margin-bottom: 1.4rem;
+      padding-bottom: 0.7rem;
+      border-bottom: 2px solid #dee5ed;
+    }
+
+    .category-title span {
+      background-color: #ffffff;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 0.2rem 0.8rem;
+      color: #4b5b6b;
+      border: 1px solid #cdd9e6;
+      margin-left: auto;
+    }
+
+    /* 二级分类列表 —— 简洁的列表项 */
+    .subcategory-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .subcategory-item {
+      display: flex;
+      align-items: center;
+      padding: 0.45rem 0.5rem 0.45rem 1rem;
+      background-color: #ffffff;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 450;
+      color: #253746;
+      border: 1px solid #e2e8f0;
+      transition: all 0.15s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    .subcategory-item:hover {
+      border-color: #b9c8da;
+      background-color: #fdfdfe;
+      transform: translateX(3px);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    /* 左侧小圆点装饰 (替代冗杂图标) */
+    .subcategory-item::before {
+      content: "•";
+      font-size: 1.6rem;
+      line-height: 1;
+      color: #8199b0;
+      margin-right: 0.75rem;
+      transition: color 0.15s ease;
+      display: inline-block;
+      width: 0.6rem;
+      text-align: center;
+    }
+
+    .subcategory-item:hover::before {
+      color: #3d6a9b;
+    }
+
+    /* 可选：浅色数字标记（保持干净） */
+    .item-meta {
+      margin-left: auto;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #a0b2c6;
+      background: #f1f5f9;
+      padding: 0.15rem 0.6rem;
+      border-radius: 20px;
+      letter-spacing: 0.01em;
+    }
+
+    /* 移动端调整 */
+    @media (max-width: 700px) {
+      body {
+        padding: 1.2rem 0.9rem;
+      }
+
+      .category-panel {
+        padding: 1.8rem 1.2rem;
+        border-radius: 24px;
+      }
+
+      .panel-header h1 {
+        font-size: 1.6rem;
+      }
+
+      .category-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .category-card {
+        padding: 1.3rem 1.2rem 1.4rem 1.2rem;
+      }
+
+      .category-title {
+        font-size: 1.25rem;
+      }
+
+      .subcategory-item {
+        font-size: 0.95rem;
+        padding: 0.4rem 0.5rem 0.4rem 0.9rem;
+      }
+
+      .subcategory-item::before {
+        font-size: 1.4rem;
+        margin-right: 0.6rem;
+      }
+    }
+
+    /* 极简细节：超小屏微调 */
+    @media (max-width: 400px) {
+      .category-panel {
+        padding: 1.4rem 0.9rem;
+      }
+
+      .subcategory-item {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
 </head>
-
 <body>
-	
-	<div style="margin-left:5em">
-		<h2>刷题列表</h2>
-		<li><a href="./0x3f_list.html">灵神(0x3f)题单</a></li>
-		<li><a href="./luos_book.html">算法竞赛（罗永军）题单</a></li>
+  <div class="category-panel">
+    <div class="panel-header">
+      <h1>清单</h1>
+      <div class="subhead">二级分类 · 简明目录</div>
+    </div>
 
-		<h2>小工具</h2>
-		<li><a href="./tools/graph_lab_v1.9.html">图论画图</a></li>
-		<li><a href="./tools/xy.html">直角坐标</a></li>
+    <!-- 一级分类网格 -->
+    <div class="category-grid">
+      <!-- 前端开发 一级分类 -->
+      <div class="category-card">
+        <div class="category-title">
+          <!-- <span>6 项</span> -->
+          算法
+        </div>
+        <ul class="subcategory-list">
 
-		<h2>算法动画演示</h2>
-		<li><a href="./algo_animate/01_heap.html">堆</a></li>
+          <h2>刷题列表</h2>
+          <li class="subcategory-item"><a href="./0x3f_list.html">灵神(0x3f)题单</a>
+            <span class="item-meta">基础</span>
+          </li>
+          <li class="subcategory-item"><a href="./luos_book.html">算法竞赛（罗永军）题单</a>
+            <span class="item-meta">进阶</span>
+          </li>
 
-		<br/>
-	
-		<h2>算法PPT演示</h2>
-		<li><a href="./ppt/bit.html">树状数组</a></li>
-		<li><a href="./ppt/py_to_cpp.html">Python to CPP</a></li>
-		<li><a href="./ppt/py_to_cpp_v3_p27.html">比较全的 py_to_cpp</a></li>
-		<li><a href="./ppt/dp_01_seq.html">dp 序列类型</a></li>
-		<li><a href="./ppt/dp_01_pkgs.html">dp 背包类型</a></li>
-		<li><a href="./ppt/balance_tree.html">平衡树</a></li>
+           <h2>算法PPT演示</h2>
+          <li class="subcategory-item"><a href="./ppt/bit.html">树状数组</a></li>
+          <li class="subcategory-item"><a href="./ppt/py_to_cpp.html">Python to CPP</a></li>
+          <li class="subcategory-item"><a href="./ppt/py_to_cpp_v3_p27.html">比较全的 py_to_cpp</a></li>
+          <li class="subcategory-item"><a href="./ppt/dp_01_seq.html">dp 序列类型</a></li>
+          <li class="subcategory-item"><a href="./ppt/dp_01_pkgs.html">dp 背包类型</a></li>
+          <li class="subcategory-item"><a href="./ppt/balance_tree.html">平衡树</a></li>
 
+        </ul>
+      </div>
 
-	</div>
+      <!-- 后端开发 一级分类 -->
+      <div class="category-card">
+        <div class="category-title">
+          <span>2 项</span>
+          工具
+        </div>
+        <ul class="subcategory-list">
+          <h2>小工具</h2>
+          <li class="subcategory-item"><a href="./tools/graph_lab_v1.9.html">图论画图</a></li>
+          <li class="subcategory-item"><a href="./tools/xy.html">直角坐标</a></li>
+
+          <h2>算法动画演示</h2>
+          <li class="subcategory-item"><a href="./algo_animate/01_heap.html">堆</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
