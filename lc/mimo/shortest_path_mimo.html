@@ -1,0 +1,2910 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>最短路的思想与应用 · 完整讲义 · 34 页</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --canvas:#FBF6ED; --s1:#FFFFFF; --s2:#F4EDE0;
+  --hair:#E7DCC8; --hair2:#D6C6A9;
+  --ink:#241A11; --ink2:#4B3A29; --muted:#8E7B62;
+  --volt:#D9541F; --moss:#2F7D5D; --gold:#B8860B; --hot:#A32132;
+  --disp:'Space Grotesk',Archivo,system-ui,sans-serif;
+  --han:'Noto Sans SC',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+  --shadow:0 1px 2px rgba(140,105,60,.05), 0 12px 30px rgba(140,105,60,.06);
+}
+html{scroll-behavior:smooth}
+body{
+  background:linear-gradient(180deg,#FCF8F1 0%,#F7F0E3 100%);
+  background-attachment:fixed;
+  color:var(--ink);font-family:var(--han);font-size:20px;line-height:1.72;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;scroll-snap-type:y proximity;
+}
+::selection{background:rgba(217,84,31,.18)}
+b{font-weight:500;color:var(--ink)}
+.g{color:var(--volt)}.m{color:var(--moss)}.a{color:var(--gold)}.p{color:var(--hot)}
+.mono{font-family:var(--mono)}
+
+a.lc{font-family:var(--mono);font-size:.88em;letter-spacing:.05em;color:var(--volt);
+  text-decoration:none;border-bottom:1px solid rgba(217,84,31,.36);padding-bottom:1px;
+  transition:.15s;white-space:nowrap}
+a.lc:hover{color:#B0431F;border-color:#B0431F}
+
+.progress{position:fixed;top:0;left:0;height:5px;width:0;background:var(--volt);z-index:80;transition:width .25s ease}
+.topbar{position:fixed;top:0;left:0;right:0;height:48px;z-index:70;background:rgba(251,246,237,.92);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--hair);display:flex;align-items:center;
+  justify-content:space-between;padding:0 30px;font-family:var(--mono);font-size:12.5px;
+  letter-spacing:.12em;color:var(--muted)}
+.topbar .r{display:flex;gap:20px;align-items:center}
+.topbar .count{color:var(--ink)}
+.topbar .clock.done{color:var(--volt);font-weight:500}
+
+.rail{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:60;
+  display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.rail button{background:none;border:0;cursor:pointer;font-family:var(--mono);font-size:11px;
+  letter-spacing:.10em;color:var(--muted);opacity:.4;display:flex;align-items:center;gap:9px;
+  padding:0;transition:opacity .25s,color .25s}
+.rail button i{display:block;width:15px;height:1.5px;background:currentColor;transition:width .25s}
+.rail button.on{opacity:1;color:var(--volt)}
+.rail button.on i{width:28px}
+.rail button:hover{opacity:.85}
+
+.navctl{position:fixed;left:30px;bottom:22px;z-index:60;display:flex;gap:10px;align-items:center}
+.navctl button{height:40px;padding:0 17px;background:var(--s1);border:1px solid var(--hair2);
+  border-radius:4px;color:var(--ink2);font-family:var(--mono);font-size:12px;letter-spacing:.12em;
+  cursor:pointer;transition:.16s;box-shadow:0 1px 2px rgba(140,105,60,.06)}
+.navctl button:hover{color:var(--volt);border-color:var(--volt);background:#fff}
+.navctl button:active{transform:translateY(1px)}
+.navctl .key{color:var(--muted);opacity:.7;font-family:var(--mono);font-size:12px}
+
+.slide{min-height:100vh;display:flex;align-items:center;padding:78px 0 74px;
+  scroll-snap-align:start;position:relative}
+.wrap{width:100%;max-width:1320px;margin:0 auto;padding:0 50px}
+
+.s-head{display:flex;gap:20px;align-items:flex-start;margin-bottom:18px}
+.s-num{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;color:var(--volt);
+  padding-top:11px;flex:0 0 auto;font-weight:500}
+.s-head h2{font-family:var(--disp);font-size:34px;font-weight:600;line-height:1.18;letter-spacing:-.016em}
+.s-head .sub{margin-top:8px;color:var(--muted);font-size:16.5px;line-height:1.62;max-width:1000px}
+.s-head .sub b{color:var(--ink)}
+
+.pill{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.13em;
+  padding:3px 9px;border-radius:3px;vertical-align:middle;margin-right:8px}
+.pill.base{background:var(--s2);color:var(--muted);border:1px solid var(--hair2)}
+.pill.main{background:#FFF4EF;color:var(--volt);border:1px solid rgba(217,84,31,.34)}
+.pill.opt{background:#F7F2E8;color:var(--muted);border:1px dashed var(--hair2)}
+.pill.hot{background:#FDF2F1;color:var(--hot);border:1px solid rgba(163,33,50,.3)}
+
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+.c1-6{grid-column:1/7}.c7-12{grid-column:7/13}
+.c1-5{grid-column:1/6}.c6-12{grid-column:6/13}
+.c1-7{grid-column:1/8}.c8-12{grid-column:8/13}
+.c1-4{grid-column:1/5}.c5-8{grid-column:5/9}.c9-12{grid-column:9/13}
+.full{grid-column:1/13}
+
+.card{background:var(--s1);border:1px solid var(--hair);border-radius:11px;padding:19px 21px;box-shadow:var(--shadow)}
+.card.volt{border-color:rgba(217,84,31,.34);background:linear-gradient(180deg,#FFF9F4,#FFFFFF)}
+.card.moss{border-color:rgba(47,125,93,.32);background:linear-gradient(180deg,#F5FBF7,#FFFFFF)}
+.card.hot{border-color:rgba(163,33,50,.28);background:linear-gradient(180deg,#FFF6F5,#FFFFFF)}
+.card.gold{border-color:rgba(184,134,11,.32);background:linear-gradient(180deg,#FFFBEE,#FFFFFF)}
+.ct{font-family:var(--disp);font-size:19.5px;font-weight:600;letter-spacing:-.010em;line-height:1.3}
+.ct .ix{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  color:var(--muted);font-weight:400;margin-bottom:5px}
+.card p{margin-top:7px;font-size:16.5px;color:var(--ink2);line-height:1.6}
+.card p b{color:var(--ink)}
+.card + .card{margin-top:15px}
+
+.kv{display:flex;gap:12px;align-items:baseline;padding:6px 0;border-top:1px solid var(--hair)}
+.kv:first-of-type{border-top:0}
+.kv .k{font-family:var(--mono);font-size:12px;letter-spacing:.10em;color:var(--muted);flex:0 0 106px}
+.kv .v{font-size:16.5px;line-height:1.5;color:var(--ink2)}
+
+.stat{display:flex;flex-direction:column;gap:3px}
+.stat .n{font-family:var(--disp);font-size:42px;font-weight:600;line-height:1;letter-spacing:-.025em}
+.stat .l{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted)}
+
+.tagrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
+.tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;color:var(--muted);
+  border:1px solid var(--hair2);border-radius:4px;padding:5px 9px;background:var(--s1);
+  text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:.16s}
+.tag:hover{border-color:var(--volt);color:var(--volt);background:#FFF4EF;transform:translateY(-1px)}
+.tag.moss{color:var(--moss);border-color:rgba(47,125,93,.38);background:#F4FAF6}
+.tag.moss:hover{border-color:var(--moss);background:#EAF5EE;color:#256349}
+.tag.bt{color:var(--gold);border-color:rgba(184,134,11,.38);background:#FFFBEE}
+.tag.bt:hover{border-color:var(--gold);background:#FAF0D2;color:#8C5A00}
+.tag .ar{opacity:.5;font-size:10px}
+
+.chip{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.08em;border-radius:4px;padding:5px 10px;margin-top:10px}
+.chip.warn{color:var(--gold);border:1px solid rgba(184,134,11,.35);background:#FDF7E6}
+.chip.bad{color:var(--hot);border:1px solid rgba(163,33,50,.32);background:#FDF2F1}
+.chip.good{color:var(--moss);border:1px solid rgba(47,125,93,.32);background:#F2F9F4}
+
+.dg{width:100%;height:auto;display:block;overflow:visible}
+.dg .cell{fill:#FFFFFF;stroke:var(--hair2);stroke-width:1.6}
+.dg .lb{font-family:var(--mono);font-size:18px;fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.dg .lb.volt{fill:var(--volt)}.dg .lb.moss{fill:var(--moss)}
+.dg .lb.gold{fill:var(--gold)}.dg .lb.hot{fill:var(--hot)}
+.dg .ed{stroke:var(--hair2);stroke-width:1.6;fill:none}
+.dg .ed.volt{stroke:var(--volt);stroke-width:2.8}
+.dg .ed.moss{stroke:var(--moss);stroke-width:2.8}
+.dg .ed.hot{stroke:var(--hot);stroke-width:2.8}
+.dg .ed.gold{stroke:var(--gold);stroke-width:2.8}
+.dg .lead{stroke:var(--hair2);stroke-width:1.2;fill:none}
+.dg .cap{font-family:var(--mono);font-size:12.5px;fill:var(--muted);letter-spacing:.07em}
+.dg .capv{font-family:var(--mono);font-size:12.5px;fill:var(--volt);letter-spacing:.07em}
+.dg .capm{font-family:var(--mono);font-size:12.5px;fill:var(--moss);letter-spacing:.07em}
+.dg .capa{font-family:var(--mono);font-size:12.5px;fill:var(--gold);letter-spacing:.07em}
+.dg .caph{font-family:var(--mono);font-size:12.5px;fill:var(--hot);letter-spacing:.07em}
+.dg .cn{font-family:var(--han);font-size:14.5px;fill:var(--ink2)}
+.dg .wt{font-family:var(--mono);font-size:11.5px;fill:var(--gold);letter-spacing:.05em}
+
+.figure{background:var(--s1);border:1px solid var(--hair);border-radius:11px;padding:19px 21px;box-shadow:var(--shadow)}
+.figure .fcap{margin-top:9px;font-family:var(--mono);font-size:11.5px;letter-spacing:.10em;color:var(--muted)}
+
+.code{background:#F7F1E3;border:1px solid var(--hair);border-radius:8px;padding:15px 17px;overflow:auto}
+.code pre{font-family:var(--mono);font-size:13px;line-height:1.62;color:#2A2016;white-space:pre}
+.code.sm pre{font-size:12px;line-height:1.55}
+.code .kw{color:#B0431F}.code .cm{color:#A2907A}.code .nu{color:#2F7D5D}
+.code .fn{color:#8C5A00}.code .st{color:#2F7D5D}
+.codelabel{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;color:var(--muted);margin-bottom:8px}
+.codenote{margin-top:9px;padding-top:8px;border-top:1px solid var(--hair);
+  display:flex;gap:11px;align-items:baseline;flex-wrap:wrap}
+.codenote .n-k{font-family:var(--mono);font-size:11px;letter-spacing:.13em;color:var(--volt);flex:0 0 auto}
+.codenote .n-v{font-size:15px;color:var(--ink2);line-height:1.5}
+
+ol.steps{list-style:none;counter-reset:s}
+ol.steps li{counter-increment:s;position:relative;padding:6px 0 6px 40px;border-top:1px solid var(--hair);
+  font-size:16px;line-height:1.55;color:var(--ink2)}
+ol.steps li:before{content:counter(s,decimal-leading-zero);position:absolute;left:0;top:9px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.10em;color:var(--volt);font-weight:500}
+ul.pit{list-style:none}
+ul.pit li{padding:6px 0 6px 24px;border-top:1px solid var(--hair);font-size:16px;line-height:1.52;
+  position:relative;color:var(--ink2)}
+ul.pit li:before{content:"✕";position:absolute;left:0;top:8px;color:var(--hot);font-family:var(--mono);font-size:12.5px}
+ul.ok{list-style:none}
+ul.ok li{padding:6px 0 6px 24px;border-top:1px solid var(--hair);font-size:16px;line-height:1.52;
+  position:relative;color:var(--ink2)}
+ul.ok li:before{content:"✓";position:absolute;left:0;top:8px;color:var(--moss);font-family:var(--mono);font-size:12.5px}
+
+table.cmp{width:100%;border-collapse:collapse;font-size:15.5px}
+table.cmp th{font-family:var(--mono);font-size:11px;letter-spacing:.11em;color:var(--muted);
+  text-align:left;padding:6px 8px;border-bottom:1px solid var(--hair2);font-weight:400}
+table.cmp td{padding:6px 8px;border-bottom:1px solid var(--hair);color:var(--ink2);line-height:1.45}
+table.cmp td:first-child{color:var(--ink)}
+table.cmp tr:last-child td{border-bottom:0}
+table.cmp tr.hi td{background:#FFF7F2}
+
+.chant{display:flex;flex-direction:column;gap:10px;margin-top:11px}
+.chant .row{display:grid;grid-template-columns:126px 22px 1fr;gap:13px;align-items:center;
+  background:var(--s2);border:1px solid var(--hair);border-radius:9px;padding:11px 14px}
+.chant .q{font-family:var(--disp);font-size:15.5px;font-weight:600;letter-spacing:-.012em}
+.chant .ar{font-family:var(--mono);font-size:14px;color:var(--muted);text-align:center}
+.chant .v{font-family:var(--disp);font-size:18px;font-weight:600;letter-spacing:-.014em}
+.chant .v small{display:block;font-family:var(--han);font-size:13.5px;font-weight:400;
+  color:var(--muted);letter-spacing:0;line-height:1.5;margin-top:1px}
+.chant .row.volt{border-color:rgba(217,84,31,.36);background:#FFF4EF}
+.chant .row.volt .q,.chant .row.volt .v{color:var(--volt)}
+.chant .row.moss{border-color:rgba(47,125,93,.32);background:#F2F9F4}
+.chant .row.moss .q,.chant .row.moss .v{color:var(--moss)}
+.chant .row.hot{border-color:rgba(163,33,50,.3);background:#FDF2F1}
+.chant .row.hot .q,.chant .row.hot .v{color:var(--hot)}
+.chant .row.gold{border-color:rgba(184,134,11,.34);background:#FFFBEE}
+.chant .row.gold .q,.chant .row.gold .v{color:var(--gold)}
+.chant .row.gray{border-color:var(--hair2);background:#F7F2E8}
+.chant .row.gray .q{color:var(--ink2)}.chant .row.gray .v{color:var(--ink2)}
+
+.pl{border-top:1px solid var(--hair)}
+.pl a{display:grid;grid-template-columns:76px 1fr 82px 62px;gap:11px;align-items:baseline;
+  padding:7px 4px;border-bottom:1px solid var(--hair);text-decoration:none;color:var(--ink2);
+  transition:background .15s}
+.pl a:hover{background:#FFF6F1}
+.pl .no{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;color:var(--volt)}
+.pl .ti{font-size:15.5px;line-height:1.42}
+.pl .ti small{display:block;color:var(--muted);font-size:13px;margin-top:1px}
+.pl .src{font-family:var(--mono);font-size:10px;letter-spacing:.07em;color:var(--muted)}
+.pl .pt{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--muted);text-align:right}
+
+.bigbtn{height:44px;padding:0 20px;font-family:var(--han);font-size:16px;border-radius:5px;
+  cursor:pointer;transition:.16s;display:inline-flex;align-items:center}
+.btn-volt{background:#FFF4EF;border:1px solid var(--volt);color:var(--volt);text-decoration:none}
+.btn-hot{background:#FDF2F1;border:1px solid var(--hot);color:var(--hot);text-decoration:none}
+
+.rv{opacity:0;transform:translateY(18px);
+  transition:opacity .55s ease,transform .55s cubic-bezier(.22,1,.36,1);transition-delay:var(--d,0s)}
+.slide.on .rv{opacity:1;transform:none}
+
+@media (max-width:1320px){ .rail{display:none} }
+@media (max-width:1040px){ .wrap{padding:0 32px} }
+@media (max-width:980px){
+  .grid{grid-template-columns:1fr}
+  .c1-6,.c7-12,.c1-5,.c6-12,.c1-7,.c8-12,.c1-4,.c5-8,.c9-12,.full{grid-column:1/2}
+  .slide{padding:82px 0 82px}
+}
+@media (max-width:680px){
+  body{scroll-snap-type:none;font-size:16px}
+  .s-head h2{font-size:25px}.s-head .sub{font-size:15px}
+  .navctl{left:16px;bottom:16px}.stat .n{font-size:32px}
+  .pl a{grid-template-columns:62px 1fr;gap:9px}
+  .pl .src,.pl .pt{display:none}
+  .chant .row{grid-template-columns:1fr;gap:3px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms!important;animation-duration:.01ms!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="prog"></div>
+
+<div class="topbar">
+  <div>最短路的思想与应用 · SHORTEST PATHS · 34 SLIDES</div>
+  <div class="r">
+    <span class="clock" id="clock">00:00 / 40:00</span>
+    <span class="count" id="count">01 / 34</span>
+  </div>
+</div>
+
+<nav class="rail" id="rail"></nav>
+
+<div class="navctl">
+  <button id="prevBtn">← PREV</button>
+  <button id="nextBtn">NEXT →</button>
+  <span class="key">↑↓ / SPACE 翻页</span>
+</div>
+
+<main id="deck">
+
+<!-- ==================== 01 封面 ==================== -->
+<section class="slide" data-t="封面">
+  <div class="wrap">
+    <div class="grid">
+      <div class="c1-6">
+        <div class="mono rv" style="--d:.05s;font-size:12px;letter-spacing:.16em;color:var(--volt)">
+          BFS · DIJKSTRA · BELLMAN-FORD · SPFA · FLOYD
+        </div>
+        <h1 class="rv" style="--d:.12s;font-family:var(--disp);font-size:62px;font-weight:700;
+          line-height:1.05;letter-spacing:-.032em;margin-top:18px">最短路的<br>思想与应用</h1>
+        <div class="rv" style="--d:.18s;font-family:var(--disp);font-size:20px;color:var(--muted);
+          letter-spacing:.02em;margin-top:10px">五次被逼出来的转变</div>
+        <p class="rv" style="--d:.24s;margin-top:20px;font-size:20px;line-height:1.72;max-width:520px">
+          从 A 到 B，怎么走<b>最短</b>？<br>
+          这个问题<b class="p">骗了我们四次</b>——<br>
+          每换一次算法，都是因为上一个办法<b class="g">真的不行了</b>。
+        </p>
+        <div class="grid rv" style="--d:.3s;margin-top:24px;grid-template-columns:repeat(3,1fr);gap:16px">
+          <div class="stat"><div class="n g">5</div><div class="l">核心算法</div></div>
+          <div class="stat"><div class="n g">12</div><div class="l">PYTHON 模板</div></div>
+          <div class="stat"><div class="n a">28</div><div class="l">洛谷 + LC 题</div></div>
+        </div>
+        <div class="rv" style="--d:.36s;margin-top:22px;display:flex;gap:9px;flex-wrap:wrap">
+          <span class="pill main">主线 40 MIN</span>
+          <span class="pill opt">★ 选讲 15 MIN</span>
+          <span class="pill base">面向算法初学者</span>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.26s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 560 330">
+            <text class="cap" x="20" y="26">同一个起点终点，代价的定义一变，答案就变</text>
+            <circle cx="80" cy="190" r="24" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.2"/>
+            <text class="lb volt" x="80" y="191" style="font-size:15px">A</text>
+            <circle cx="480" cy="190" r="24" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.2"/>
+            <text class="lb moss" x="480" y="191" style="font-size:15px">B</text>
+
+            <path class="ed moss" d="M104 190 L456 190" stroke-width="3"/>
+            <path class="ed moss" d="M448 182 L458 190 L448 198"/>
+            <text class="capm" x="280" y="176" text-anchor="middle">① 步数最少</text>
+
+            <path class="ed volt" d="M104 180 C 200 90, 360 90, 456 180" stroke-width="3"/>
+            <text class="capv" x="280" y="102" text-anchor="middle">② 时间最短</text>
+
+            <path class="ed gold" d="M104 202 C 200 292, 360 292, 456 202" stroke-width="3" stroke-dasharray="7 5"/>
+            <text class="capa" x="280" y="288" text-anchor="middle">③ 金钱最省</text>
+
+            <path class="ed hot" d="M104 184 C 220 236, 340 150, 456 186" stroke-width="3"/>
+            <text class="caph" x="280" y="236" text-anchor="middle">④ 换乘最少</text>
+
+            <line class="lead" x1="20" y1="312" x2="540" y2="312"/>
+            <text class="cap" x="20" y="328">「最短」不是客观事实，是你选的代价函数</text>
+          </svg>
+          <div class="fcap">FIG.01 · 四种代价，四条最优路径</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 02 最短路在问什么 ==================== -->
+<section class="slide" data-t="最短路到底在问什么">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">02</div>
+      <div>
+        <h2>先问清楚：<b>最短路到底在问什么</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>这一页解决<b class="g">「问题的形状」</b>。<b>形状看清了，后面每一步的选择都是自然的。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 300">
+            <text class="cap" x="20" y="22">图 = 点（决策对象）+ 边（一步操作）+ 权（代价）</text>
+            <g class="lead" stroke="#C7B18B" stroke-width="1.8">
+              <path d="M80 90 L220 60 M220 60 L380 110 M80 90 L160 200
+                       M160 200 L300 250 M300 250 L380 110 M380 110 L520 200
+                       M300 250 L520 200 M160 200 L220 60"/>
+            </g>
+            <circle cx="80" cy="90" r="21" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.4"/>
+            <text class="lb volt" x="80" y="91" style="font-size:14px">A</text>
+            <circle cx="520" cy="200" r="21" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.4"/>
+            <text class="lb moss" x="520" y="201" style="font-size:14px">B</text>
+            <circle class="cell" cx="220" cy="60" r="19" fill="#FFF"/><text class="lb" x="220" y="61" style="font-size:13px">1</text>
+            <circle class="cell" cx="380" cy="110" r="19" fill="#FFF"/><text class="lb" x="380" y="111" style="font-size:13px">2</text>
+            <circle class="cell" cx="160" cy="200" r="19" fill="#FFF"/><text class="lb" x="160" y="201" style="font-size:13px">3</text>
+            <circle class="cell" cx="300" cy="250" r="19" fill="#FFF"/><text class="lb" x="300" y="251" style="font-size:13px">4</text>
+
+            <text class="wt" x="142" y="62">12</text>
+            <text class="wt" x="298" y="72">25</text>
+            <text class="wt" x="104" y="148">8</text>
+            <text class="wt" x="212" y="232">30</text>
+            <text class="wt" x="336" y="182">6</text>
+            <text class="wt" x="452" y="148">18</text>
+            <text class="wt" x="404" y="232">15</text>
+            <text class="capv" x="20" y="284">求：A → B 上「边权之和」最小的路径与数值</text>
+          </svg>
+          <div class="fcap">FIG.02 · 「最短」= 边权之和最小</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">THREE MISREADINGS</span>三个常见误解</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>「段数少」就更短 —— <b class="p">错</b>，段数 ≠ 代价</li>
+            <li>「先走最近的点」就一定对 —— <b class="p">未必</b>，要看边权</li>
+            <li>问的是「<b>怎么走</b>」—— <b class="p">错</b>，问的是「<b>怎么算出怎么走</b>」</li>
+          </ul>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">THE REAL PROBLEM</span>真正在解决的事</div>
+          <p>人眼能看懂 6 个点，但 <b>10⁵ 个点</b>就不行了。</p>
+          <p>我们要的是一套<b class="a">可重复、可验证</b>的机械步骤。</p>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">HOW</span>今天怎么讲</div>
+          <p>不并列讲五个算法，而是<b class="m">一次次被失败逼着换方法</b>。</p>
+          <p>这样你遇到新题，能<b>自己推</b>出该用哪个。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 03 演化路线图 ==================== -->
+<section class="slide" data-t="演化路线图：一次被逼出来的转变">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">03</div>
+      <div>
+        <h2>演化路线图：<b>五级阶梯，四次被迫转变</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">这张图就是全篇的目录</b>，也是唯一的演化总览。<b>记住它，后面都不容易迷路。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="full rv" style="--d:.06s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 1240 400">
+            <!-- 失效标注 -->
+            <text class="caph" x="196" y="30">↑ 边权不同时，「层数 ≠ 距离」</text>
+            <text class="caph" x="452" y="30">↑ 存在负权边时，「绕路会变短」</text>
+            <text class="caph" x="708" y="30">↑ 需要判负环时，「贪心不再安全」</text>
+            <text class="caph" x="964" y="30">↑ 要所有点对时，「跑 n 次太贵」</text>
+
+            <!-- 台阶 -->
+            <rect x="20" y="300" width="220" height="76" rx="10" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="2.4"/>
+            <text class="capm" x="130" y="326" text-anchor="middle">STEP 1</text>
+            <text class="cn" x="130" y="352" text-anchor="middle" style="fill:#2F7D5D;font-size:17px">无权图</text>
+            <text class="capm" x="130" y="372" text-anchor="middle">BFS · O(n+m)</text>
+
+            <rect x="276" y="230" width="220" height="146" rx="10" fill="#FFF4EF" stroke="#D9541F" stroke-width="2.6"/>
+            <text class="capv" x="386" y="256" text-anchor="middle">STEP 2</text>
+            <text class="cn" x="386" y="284" text-anchor="middle" style="fill:#D9541F;font-size:18px">非负带权</text>
+            <text class="capv" x="386" y="312" text-anchor="middle">Dijkstra</text>
+            <text class="capv" x="386" y="336" text-anchor="middle">贪心挑最近 + 松弛</text>
+            <text class="cap" x="386" y="358" text-anchor="middle" style="font-size:11px">O(m log n)</text>
+
+            <rect x="532" y="158" width="220" height="218" rx="10" fill="#FFF6F5" stroke="#A32132" stroke-width="2.6"/>
+            <text class="caph" x="642" y="184" text-anchor="middle">STEP 3</text>
+            <text class="cn" x="642" y="212" text-anchor="middle" style="fill:#A32132;font-size:18px">含负权边</text>
+            <text class="caph" x="642" y="240" text-anchor="middle">Bellman-Ford</text>
+            <text class="cap" x="642" y="264" text-anchor="middle" style="font-size:11px">反复松弛 n−1 轮</text>
+            <text class="caph" x="642" y="290" text-anchor="middle">SPFA</text>
+            <text class="cap" x="642" y="312" text-anchor="middle" style="font-size:11px">队列优化</text>
+            <text class="caph" x="642" y="338" text-anchor="middle" style="font-size:11px">+ 负环检测</text>
+            <text class="cap" x="642" y="362" text-anchor="middle" style="font-size:11px">O(nm) 最坏</text>
+
+            <rect x="788" y="86" width="220" height="290" rx="10" fill="#FFFBEE" stroke="#B8860B" stroke-width="2.6"/>
+            <text class="capa" x="898" y="112" text-anchor="middle">STEP 4</text>
+            <text class="cn" x="898" y="140" text-anchor="middle" style="fill:#B8860B;font-size:18px">所有点对</text>
+            <text class="capa" x="898" y="168" text-anchor="middle">Floyd</text>
+            <text class="cap" x="898" y="192" text-anchor="middle" style="font-size:11px">枚举中间点 k</text>
+            <text class="cap" x="898" y="216" text-anchor="middle" style="font-size:11px">k 必须最外层</text>
+            <text class="capa" x="898" y="246" text-anchor="middle" style="font-size:11px">四妙用</text>
+            <text class="cap" x="898" y="268" text-anchor="middle" style="font-size:11px">传递闭包 / 最小环</text>
+            <text class="cap" x="898" y="288" text-anchor="middle" style="font-size:11px">最大乘积 / 还原</text>
+            <text class="cap" x="898" y="318" text-anchor="middle" style="font-size:11px">O(n³) · n≤400</text>
+            <text class="cap" x="898" y="350" text-anchor="middle" style="font-size:11px">可判负环</text>
+
+            <rect x="1044" y="20" width="180" height="356" rx="10" fill="#F7F2E8" stroke="#D6C6A9" stroke-width="2.2"/>
+            <text class="cap" x="1134" y="48" text-anchor="middle">STEP 5</text>
+            <text class="cn" x="1134" y="78" text-anchor="middle" style="font-size:18px">加上约束</text>
+            <line class="lead" x1="1064" y1="98" x2="1204" y2="98"/>
+            <text class="cap" x="1064" y="124">分层图</text>
+            <text class="cap" x="1064" y="148" style="font-size:11px">最多 k 次机会</text>
+            <text class="cap" x="1064" y="176">0-1 BFS</text>
+            <text class="cap" x="1064" y="200" style="font-size:11px">边权只有 0/1</text>
+            <text class="cap" x="1064" y="228">二分答案</text>
+            <text class="cap" x="1064" y="252" style="font-size:11px">求最小的 X</text>
+            <text class="cap" x="1064" y="280">反向建图</text>
+            <text class="cap" x="1064" y="304" style="font-size:11px">多点 → 一点</text>
+            <text class="cap" x="1064" y="332">状态扩维</text>
+            <text class="cap" x="1064" y="356" style="font-size:11px">(点, 拥有物)</text>
+
+            <!-- 上升箭头 -->
+            <path class="lead" d="M130 296 L266 226 M386 226 L522 154 M642 154 L778 82 M898 82 L1034 22"
+                  stroke="#C7B18B" stroke-width="1.6" stroke-dasharray="6 5"/>
+          </svg>
+          <div class="fcap">FIG.03 · 每一级都是被上一级的失败逼出来的</div>
+        </div>
+      </div>
+
+      <div class="c1-6 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">READING</span>怎么读这张图</div>
+          <p>横着看是<b>能力递增</b>，竖着看<b class="g">每次跨越都要付代价</b>：</p>
+          <div class="kv"><div class="k">①→②</div><div class="v">快的 BFS → 慢一点的堆</div></div>
+          <div class="kv"><div class="k">②→③</div><div class="v">O(m log n) → O(nm)</div></div>
+          <div class="kv"><div class="k">③→④</div><div class="v">O(m log n) → O(n³)</div></div>
+          <p style="margin-top:10px"><b>没有免费的午餐，只有「为了解决什么」。</b></p>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.22s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">TAKEAWAY</span>记三句就够</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>算法之间<b>不是平级</b>，是<b class="m">层层放宽限制</b></li>
+            <li>每一步的驱动力都是<b class="p">上一个方法在某类输入上失效</b></li>
+            <li>Step 5 是<b>技巧层</b>，不改算法，只改<b>「图长什么样」</b></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 04 术语与分类 ==================== -->
+<section class="slide" data-t="术语与四类图">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">04</div>
+      <div>
+        <h2>术语与四类图：<b>把话说清楚</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>这一页是<b class="g">全文唯一一次术语页</b>。<b>后面所有页都只用这里定义过的词。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card">
+          <div class="ct"><span class="ix">VOCABULARY</span>六个词</div>
+          <div class="kv"><div class="k">点 / 边</div><div class="v">决策对象 / 一步操作</div></div>
+          <div class="kv"><div class="k">权 w</div><div class="v">走这条边的<b>代价</b></div></div>
+          <div class="kv"><div class="k">路径长度</div><div class="v">路径上<b>边权之和</b></div></div>
+          <div class="kv"><div class="k">环</div><div class="v">起点 = 终点的路径</div></div>
+          <div class="kv"><div class="k">dist(v)</div><div class="v">起点到 v 的最短距离</div></div>
+          <div class="kv"><div class="k">松弛</div><div class="v"><b>发现更短的路就改小记录</b></div></div>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">RELAX</span>「松弛」的正式定义</div>
+          <p>这个词听上去吓人，本质就是<b>比较 + 取小</b>：</p>
+          <div class="mono g" style="margin-top:10px;font-size:16px;line-height:1.7">
+            if dist[u] + w(u,v) &lt; dist[v]:<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;dist[v] = dist[u] + w(u,v)
+          </div>
+          <p style="margin-top:10px"><b>所有最短路算法都在做这一件事，只是「谁来松弛、松弛几次」不同。</b></p>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 230">
+            <text class="cap" x="20" y="22">四类图，直接决定「能不能用某个算法」</text>
+
+            <rect x="20" y="40" width="285" height="82" rx="9" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="1.8"/>
+            <text class="capm" x="36" y="64">① 无权图</text>
+            <text class="cn" x="36" y="92" style="font-size:14px">所有 w = 1</text>
+            <text class="capm" x="36" y="114">→ 最简单，BFS 搞定</text>
+
+            <rect x="315" y="40" width="285" height="82" rx="9" fill="#FFF4EF" stroke="#D9541F" stroke-width="1.8"/>
+            <text class="capv" x="331" y="64">② 非负带权</text>
+            <text class="cn" x="331" y="92" style="font-size:14px">所有 w ≥ 0</text>
+            <text class="capv" x="331" y="114">→ Dijkstra 主场</text>
+
+            <rect x="20" y="132" width="285" height="82" rx="9" fill="#FFFBEE" stroke="#B8860B" stroke-width="1.8"/>
+            <text class="capa" x="36" y="156">③ 含负权边</text>
+            <text class="cn" x="36" y="184" style="font-size:14px">存在 w &lt; 0 的边</text>
+            <text class="capa" x="36" y="206">→ BF / SPFA</text>
+
+            <rect x="315" y="132" width="285" height="82" rx="9" fill="#FDF2F1" stroke="#A32132" stroke-width="1.8"/>
+            <text class="caph" x="331" y="156">④ 含负环</text>
+            <text class="cn" x="331" y="184" style="font-size:14px">环上边权和 &lt; 0</text>
+            <text class="caph" x="331" y="206">→ 最短路不存在，只能判负环</text>
+          </svg>
+          <div class="fcap">FIG.04 · 分类是选算法的第一步</div>
+        </div>
+
+        <div class="card volt">
+          <div class="ct"><span class="ix">SINGLE / ALL</span>单源 vs 多源</div>
+          <div class="kv"><div class="k">单源</div><div class="v">「<b>从 s 到所有点</b>」→ BFS / Dijkstra / BF</div></div>
+          <div class="kv"><div class="k">多源</div><div class="v">「<b>任意两点</b>」→ Floyd，一次算完 n×n</div></div>
+          <p style="margin-top:9px"><b>问什么决定了用什么，不是反过来。</b></p>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">NEGATIVE CYCLE</span>负环为什么无解</div>
+          <p>环上总权 &lt; 0，<b>每绕一圈距离就再减一点</b>，可以绕无限圈。</p>
+          <p>所以<b class="m">没有「最短」，只有「负无穷」</b>——这时候题目通常要你判负环。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 05 图的存储 ==================== -->
+<section class="slide" data-t="图怎么存进程序">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">05</div>
+      <div>
+        <h2>图怎么<b>存进程序</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>写代码前必须先定的事。<b>存法选错，再好的算法也快不起来。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · 邻接表（推荐，90% 的题用它）</div>
+        <div class="code"><pre><span class="cm"># n 个点，边 (u, v, w)：u→v，代价 w</span>
+g = [[] <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]
+
+<span class="kw">def</span> <span class="fn">add</span>(u, v, w):
+    g[u].append((v, w))
+    <span class="cm"># 无向图再补一条 g[v].append((u, w))</span>
+
+add(<span class="nu">0</span>, <span class="nu">1</span>, <span class="nu">5</span>)
+add(<span class="nu">0</span>, <span class="nu">2</span>, <span class="nu">3</span>)
+
+<span class="kw">for</span> v, w <span class="kw">in</span> g[<span class="nu">0</span>]:     <span class="cm"># 遍历 0 的所有出边</span>
+    <span class="fn">print</span>(v, w)</pre></div>
+        <div class="codenote">
+          <div class="n-k">复杂度</div>
+          <div class="n-v">建图 <b>O(n + m)</b>，遍历邻边 <b>O(度数)</b>，稀疏图极快</div>
+        </div>
+
+        <div class="codelabel" style="margin-top:16px">PYTHON · 邻接矩阵（稠密图 / Floyd 用）</div>
+        <div class="code sm"><pre>INF = <span class="nu">10</span>**<span class="nu">18</span>
+d = [[INF]*n <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]
+<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n):
+    d[i][i] = <span class="nu">0</span>
+d[<span class="nu">0</span>][<span class="nu">1</span>] = <span class="fn">min</span>(d[<span class="nu">0</span>][<span class="nu">1</span>], <span class="nu">5</span>)   <span class="cm"># 重边取小</span></pre></div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">COMPARE</span>两种存法</div>
+          <table class="cmp" style="margin-top:7px">
+            <tr><th></th><th>邻接表</th><th>邻接矩阵</th></tr>
+            <tr><td>空间</td><td><b class="m">O(n+m)</b></td><td><b class="p">O(n²)</b></td></tr>
+            <tr><td>查 u→v</td><td>O(度数)</td><td class="m">O(1)</td></tr>
+            <tr><td>遍历邻边</td><td class="m">O(度数)</td><td>O(n)</td></tr>
+            <tr class="hi"><td>用途</td><td><b>绝大多数</b></td><td>Floyd / 稠密图</td></tr>
+          </table>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">THREE DETAIL</span>三个存储细节</div>
+          <ul class="ok" style="margin-top:8px">
+            <li><b class="a">重边</b>：Dijkstra 自动处理，Floyd 要 <span class="mono">min</span></li>
+            <li><b class="a">自环</b>：自己到自己，负自环 = 负环</li>
+            <li>点编号<b class="a">从 0 还是 1 开始</b>，数组大小差 1</li>
+          </ul>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">PYTHON</span>Python 性能三句</div>
+          <ul class="ok" style="margin-top:8px">
+            <li>图用 <b class="m">list of list</b>，别用 dict</li>
+            <li>大输入用 <b class="m">sys.stdin.readline</b></li>
+            <li>INF 统一 <span class="mono">10**18</span>，加法前先判一下</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 06 反向建图 ==================== -->
+<section class="slide" data-t="反向建图：一个被低估的技巧">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">06</div>
+      <div>
+        <h2>反向建图：<b>一个被低估的技巧</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>这一页解决<b class="g">「所有点到一个点」怎么算</b>。<b>它不是新算法，是换个方向跑同一个算法。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 280">
+            <text class="cap" x="20" y="22">问题：所有人到「终点 s」的最短距离</text>
+
+            <text class="cap" x="60" y="62">正向：每个点跑一次，O(n · m log n)</text>
+            <g class="lead" stroke="#C7B18B" stroke-width="1.8">
+              <path d="M70 96 L180 84 M70 130 L180 120 M70 164 L180 156 M70 198 L180 192"/>
+              <path d="M200 84 L300 130 M200 120 L300 130 M200 156 L300 130 M200 192 L300 130"/>
+            </g>
+            <circle class="cell" cx="60" cy="96" r="18" fill="#FFF"/><text class="lb" x="60" y="97" style="font-size:12px">a</text>
+            <circle class="cell" cx="60" cy="130" r="18" fill="#FFF"/><text class="lb" x="60" y="131" style="font-size:12px">b</text>
+            <circle class="cell" cx="60" cy="164" r="18" fill="#FFF"/><text class="lb" x="60" y="165" style="font-size:12px">c</text>
+            <circle class="cell" cx="60" cy="198" r="18" fill="#FFF"/><text class="lb" x="60" y="199" style="font-size:12px">d</text>
+            <circle cx="310" cy="130" r="22" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.4"/>
+            <text class="lb moss" x="310" y="131" style="font-size:13px">s</text>
+            <text class="caph" x="380" y="132">→ 要跑 n 次</text>
+
+            <line class="lead" x1="20" y1="232" x2="600" y2="232"/>
+
+            <text class="capm" x="60" y="256">反向：把所有边反向，从 s 跑一次</text>
+            <path class="ed moss" d="M120 268 L262 268" stroke-width="2.6"/>
+            <path class="ed moss" d="M254 260 L264 268 L254 276"/>
+            <text class="capm" x="400" y="272">= 所有点到 s 的距离</text>
+          </svg>
+          <div class="fcap">FIG.06 · 反向一次就够</div>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">WHY</span>为什么反向就对</div>
+          <p>「<b>x → s</b> 的最短路」，等价于反向图上「<b>s → x</b> 的最短路」。</p>
+          <p>只是<b class="a">把每条边的方向掉个头</b>，距离数值完全一样。</p>
+          <p>于是 <b>n 次单源</b>变成 <b class="g">1 次单源</b>。</p>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="codelabel">PYTHON · 反向建图</div>
+        <div class="code sm"><pre><span class="cm"># 原图 gr，反向图 gr2</span>
+gr  = [[] <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]
+gr2 = [[] <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]
+
+<span class="kw">def</span> <span class="fn">add</span>(u, v, w):
+    gr[u].append((v, w))
+    gr2[v].append((u, w))    <span class="cm"># ★ 方向反过来</span>
+
+<span class="cm"># 从终点 s 在 gr2 上跑一次 Dijkstra</span>
+dist_to_s = dijkstra(gr2, n, s)</pre></div>
+        <div class="codenote">
+          <div class="n-k">信号</div>
+          <div class="n-v">题目问「<b>所有 X 到某一个点</b>」，先想反向建图</div>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">WHEN</span>常见触发场景</div>
+          <ul class="ok" style="margin-top:8px">
+            <li>「所有人<b>回家</b>的最短时间，再回派对」</li>
+            <li>「<b>寄信</b>给所有人，求总路程」</li>
+            <li>「<b>能到达终点</b>的点有哪些」（反向 BFS）</li>
+          </ul>
+        </div>
+
+        <div class="card volt">
+          <div class="ct"><span class="ix">SIDE</span>对称技巧：无向图</div>
+          <p>无向图<b>不需要反向</b>，方向本来就对称。</p>
+          <p>反向建图<b>只对有向图有意义</b>。</p>
+        </div>
+
+        <div class="mono" style="font-size:10.5px;letter-spacing:.15em;color:var(--muted);margin-top:14px">
+          PRACTICE · 反向建图
+        </div>
+        <div class="tagrow">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P1821" target="_blank" rel="noopener">P1821 Cow Party <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P1629" target="_blank" rel="noopener">P1629 邮递员送信 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2296" target="_blank" rel="noopener">P2296 寻找道路 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 07 BFS 思想 ==================== -->
+<section class="slide" data-t="阶梯一：BFS 的思想">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">07</div>
+      <div>
+        <h2>阶梯一 · <b>BFS</b>：边权全是 1 时怎么办</h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>每一步代价都一样时，怎么用<b>最少时间</b>算出最短距离。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 290">
+            <text class="cap" x="20" y="22">BFS 像水波：一层一层向外扩散</text>
+            <circle cx="90" cy="150" r="26" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.6"/>
+            <text class="lb volt" x="90" y="151" style="font-size:14px">src</text>
+            <circle cx="240" cy="90" r="23" fill="#FFF4EF" stroke="#D9541F" stroke-width="1.8"/>
+            <text class="lb volt" x="240" y="91" style="font-size:13px">1</text>
+            <circle cx="240" cy="210" r="23" fill="#FFF4EF" stroke="#D9541F" stroke-width="1.8"/>
+            <text class="lb volt" x="240" y="211" style="font-size:13px">2</text>
+            <circle cx="400" cy="60" r="23" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="1.8"/>
+            <text class="lb moss" x="400" y="61" style="font-size:13px">3</text>
+            <circle cx="400" cy="150" r="23" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="1.8"/>
+            <text class="lb moss" x="400" y="151" style="font-size:13px">4</text>
+            <circle cx="400" cy="240" r="23" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="1.8"/>
+            <text class="lb moss" x="400" y="241" style="font-size:13px">5</text>
+            <circle cx="545" cy="150" r="23" fill="#FFFBEE" stroke="#B8860B" stroke-width="2.2"/>
+            <text class="lb gold" x="545" y="151" style="font-size:13px">B</text>
+
+            <g class="lead" stroke="#C7B18B" stroke-width="1.8">
+              <path d="M116 138 L217 98 M116 162 L217 202
+                       M263 88 L377 62 M263 98 L377 142
+                       M263 202 L377 158 M263 212 L377 236
+                       M423 70 L522 138 M423 150 L522 150 M423 232 L522 162"/>
+            </g>
+            <text class="cap" x="62" y="200">第 0 层</text>
+            <text class="capv" x="222" y="264">第 1 层</text>
+            <text class="capm" x="382" y="284">第 2 层</text>
+            <text class="capa" x="512" y="200">第 3 层</text>
+          </svg>
+          <div class="fcap">FIG.07 · 层 = 距离，前提是等权</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">THE IDEA</span>核心：按层访问</div>
+          <p>用<b>队列</b>维持顺序：<b>先被发现的，先被处理</b>。</p>
+          <p>于是访问顺序就是<b class="g">距离递增的顺序</b>。</p>
+          <div class="mono g" style="margin-top:9px;font-size:15px">from collections import deque</div>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">WHY CORRECT</span>为什么第一次访问就是最短</div>
+          <p>因为 BFS <b>严格按层出队</b>。</p>
+          <p>若某点在第 k 层被首次访问，那它<b>不可能有 &lt; k 的路</b>——</p>
+          <p><b class="m">更短的路会让它更早被访问。</b></p>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">LIMIT</span>它只对「等权」有效</div>
+          <p>一旦边权<b>不相等</b>，「第几层」<b class="p">就不再等于「距离」</b>。</p>
+          <p>那时 BFS 只保证<b>「步数最少」</b>，不保证<b>「代价最小」</b>。</p>
+          <p><b>下一页代码，第 9 页看它怎么崩。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 08 BFS 代码 ==================== -->
+<section class="slide" data-t="BFS 代码与三个变体">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">08</div>
+      <div>
+        <h2>BFS：<b>代码</b>与三个常用变体</h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>把思想变成<b>可提交的程序</b>，并应付题目常见的三种变形。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · 无权图单源最短路</div>
+        <div class="code"><pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">bfs_shortest</span>(g, n, src):
+    <span class="st">"""g: 无权邻接表，g[u] = [v, ...]"""</span>
+    INF = <span class="nu">10</span>**<span class="nu">18</span>
+    dist = [INF] * n
+    dist[src] = <span class="nu">0</span>
+    q = deque([src])
+
+    <span class="kw">while</span> q:
+        u = q.popleft()
+        <span class="kw">for</span> v <span class="kw">in</span> g[u]:
+            <span class="kw">if</span> dist[v] == INF:        <span class="cm"># 第一次访问</span>
+                dist[v] = dist[u] + <span class="nu">1</span>
+                q.append(v)
+    <span class="kw">return</span> dist</pre></div>
+        <div class="codenote">
+          <div class="n-k">代价</div>
+          <div class="n-v">时间 <b>O(n + m)</b> · 空间 <b>O(n + m)</b> · <b>所有最短路算法里最快</b></div>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">PITFALL</span>两处易错</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>入队 / 出队<b class="p">两边都判访问</b>，条件写重复</li>
+            <li>网格题把 <b class="p">4 方向 / 8 方向</b>搞混</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">VARIANT 1</span>多源 BFS</div>
+          <p>把<b>所有起点一次性入队</b>，答案是「离最近起点的距离」。</p>
+          <div class="code sm" style="margin-top:9px"><pre><span class="kw">for</span> s <span class="kw">in</span> sources:
+    dist[s] = <span class="nu">0</span>
+    q.append(s)</pre></div>
+        </div>
+        <div class="card volt">
+          <div class="ct"><span class="ix">VARIANT 2</span>网格方向</div>
+          <div class="code sm" style="margin-top:9px"><pre><span class="cm"># 4 方向</span>
+DIRS = [(<span class="nu">1</span>,<span class="nu">0</span>),(-<span class="nu">1</span>,<span class="nu">0</span>),(<span class="nu">0</span>,<span class="nu">1</span>),(<span class="nu">0</span>,-<span class="nu">1</span>)]
+<span class="cm"># 8 方向（再加四个斜向）</span>
+DIRS += [(<span class="nu">1</span>,<span class="nu">1</span>),(<span class="nu">1</span>,-<span class="nu">1</span>),(-<span class="nu">1</span>,<span class="nu">1</span>),(-<span class="nu">1</span>,-<span class="nu">1</span>)]</pre></div>
+          <p style="margin-top:9px"><b>答案往往差 1，题目写「四连通」还是「八连通」要读准。</b></p>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">VARIANT 3</span>反向思考</div>
+          <p>问「<b>谁能到达终点</b>」时，<b class="a">从终点反向 BFS</b> 更省事。</p>
+          <p>见第 06 页。<b>两者是同一个思路。</b></p>
+        </div>
+
+        <div class="mono" style="font-size:10.5px;letter-spacing:.15em;color:var(--muted);margin-top:14px">
+          PRACTICE · BFS
+        </div>
+        <div class="tagrow">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P1144" target="_blank" rel="noopener">P1144 最短路计数 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/01-matrix/" target="_blank" rel="noopener">LC 542 01 矩阵 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/rotting-oranges/" target="_blank" rel="noopener">LC 994 腐烂的橘子 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 09 转折：BFS 失效 ==================== -->
+<section class="slide" data-t="转折一：带权图下 BFS 失效">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">09</div>
+      <div>
+        <h2>转折一：<b>带权图下，BFS 失效</b></h2>
+        <p class="sub"><span class="pill hot">TURNING POINT</span><b class="p">这是全篇最重要的一次失败。</b>看清它为什么错，后面才是理解而不是背诵。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 280">
+            <text class="cap" x="20" y="22">反例：步数少的路，代价反而大</text>
+            <circle cx="90" cy="150" r="24" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.4"/>
+            <text class="lb volt" x="90" y="151" style="font-size:14px">A</text>
+            <circle class="cell" cx="310" cy="70" r="22" fill="#FFF"/><text class="lb" x="310" y="71" style="font-size:13px">1</text>
+            <circle class="cell" cx="310" cy="230" r="22" fill="#FFF"/><text class="lb" x="310" y="231" style="font-size:13px">2</text>
+            <circle cx="530" cy="150" r="24" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.4"/>
+            <text class="lb moss" x="530" y="151" style="font-size:14px">B</text>
+
+            <path class="ed hot" d="M114 140 L288 78" stroke-width="3"/>
+            <path class="ed hot" d="M332 78 L508 140" stroke-width="3"/>
+            <text class="caph" x="200" y="106" text-anchor="middle">100</text>
+            <text class="caph" x="420" y="106" text-anchor="middle">100</text>
+
+            <path class="ed moss" d="M114 162 L288 224" stroke-width="3" stroke-dasharray="6 5"/>
+            <path class="ed moss" d="M332 224 L508 162" stroke-width="3" stroke-dasharray="6 5"/>
+            <text class="capm" x="200" y="212" text-anchor="middle">3</text>
+            <text class="capm" x="420" y="212" text-anchor="middle">3</text>
+
+            <line class="lead" x1="20" y1="256" x2="600" y2="256"/>
+            <text class="caph" x="20" y="280">BFS：两条路都是「2 步」，一样好（错误）</text>
+            <text class="capm" x="330" y="280">实际：200 vs 6</text>
+          </svg>
+          <div class="fcap">FIG.09 · BFS 数的是「步数」，不是「代价」</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">WHAT BROKE</span>到底错在哪</div>
+          <p>BFS 的正确性依赖一句话：<b>「层数 = 距离」</b>。</p>
+          <p>边权不同时，这句<b class="p">彻底不成立</b>：</p>
+          <div class="mono p" style="margin-top:9px;font-size:15px;line-height:1.7">
+            第 k 层 ≠ 距离为 k<br>
+            第一次访问 ≠ 距离最短
+          </div>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">NEW REQUIREMENT</span>新的要求</div>
+          <p>不能按「<b>层</b>」排，得按「<b>当前已知距离</b>」排。</p>
+          <p><b class="a">距离小的先处理</b>——这就是下一阶梯的入口。</p>
+        </div>
+        <div class="card volt">
+          <div class="ct"><span class="ix">HINT</span>先别急着想算法</div>
+          <p>先想清楚：<b>「先访问哪个点」才安全？</b></p>
+          <p>如果能证明「<b>挑最近的一定不会错</b>」，算法就出来了。</p>
+          <p><b>下一页回答这个。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 10 Dijkstra 思想 ==================== -->
+<section class="slide" data-t="阶梯二：Dijkstra 的思想">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">10</div>
+      <div>
+        <h2>阶梯二 · <b>Dijkstra</b>：贪心 + 松弛</h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>边权任意非负时，怎么<b>安全地</b>挑下一个点。<b>整个算法只有两句口诀。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">TWO LINES</span>两句口诀</div>
+          <div class="chant">
+            <div class="row volt">
+              <div class="q">① 挑最近</div>
+              <div class="ar">→</div>
+              <div class="v">在「还没确定」的点里挑<b>距离最小</b>的<small>它现在的距离就是最终答案</small></div>
+            </div>
+            <div class="row gold">
+              <div class="q">② 松弛</div>
+              <div class="ar">→</div>
+              <div class="v">用它<b>更新邻居</b>的距离<small>走它更近，就改小记录</small></div>
+            </div>
+          </div>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">PROOF</span>为什么贪心是安全的</div>
+          <p>因为<b class="g">所有边权 ≥ 0</b>，绕路<b>只会更贵</b>。</p>
+          <p>一旦挑中最小的 u*，任何别的路径都要<b>多付非负的代价</b>，不可能更短。</p>
+          <div class="chip good">◆ 前提是「边权非负」，缺一不可</div>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 560 300">
+            <text class="cap" x="20" y="22">两个集合：tentative / confirmed</text>
+            <rect x="20" y="42" width="240" height="112" rx="10" fill="#F7F2E8" stroke="#D6C6A9" stroke-width="1.8"/>
+            <text class="cap" x="140" y="72" text-anchor="middle">TENTATIVE</text>
+            <text class="cn" x="140" y="104" text-anchor="middle" style="font-size:15px">还没确定</text>
+            <text class="cap" x="140" y="132" text-anchor="middle" style="font-size:11px">距离可能还会变小</text>
+
+            <rect x="300" y="42" width="240" height="112" rx="10" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="2.2"/>
+            <text class="capm" x="420" y="72" text-anchor="middle">CONFIRMED</text>
+            <text class="cn" x="420" y="104" text-anchor="middle" style="font-size:15px;fill:#2F7D5D">已确定</text>
+            <text class="capm" x="420" y="132" text-anchor="middle" style="font-size:11px">不会再变，写进答案</text>
+
+            <path class="ed gold" d="M262 98 L298 98" stroke-width="2.6"/>
+            <path class="ed gold" d="M290 90 L300 98 L290 106"/>
+
+            <line class="lead" x1="20" y1="182" x2="540" y2="182"/>
+            <text class="capv" x="20" y="214">每一轮：从 TENTATIVE 里挑最小的，搬到 CONFIRMED</text>
+            <text class="capm" x="20" y="242">搬一次少一个，最多 n 轮</text>
+            <text class="cap" x="20" y="270">「灯一圈圈往外亮，就是最短路树在生长」</text>
+          </svg>
+          <div class="fcap">FIG.10 · 每轮确定一个点</div>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">REST</span>剩下的只有两件事</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>怎么<b>高效挑最小</b>（第 12、13 页）</li>
+            <li>松弛怎么写（第 04 页已给）</li>
+          </ol>
+          <p style="margin-top:10px"><b>思想部分到此为止，接下来都是工程细节。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 11 手推 ==================== -->
+<section class="slide" data-t="Dijkstra 手工模拟">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">11</div>
+      <div>
+        <h2>Dijkstra：<b>手工走一遍</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>先在纸上验证思路，<b>代码只是这张表的直译</b>。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 250">
+            <text class="cap" x="20" y="22">图：起点 A，求到所有点的最短距离</text>
+            <circle cx="80" cy="150" r="24" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.6"/>
+            <text class="lb volt" x="80" y="151" style="font-size:14px">A</text>
+            <circle class="cell" cx="270" cy="70" r="22" fill="#FFF"/><text class="lb" x="270" y="71" style="font-size:13px">B</text>
+            <circle class="cell" cx="270" cy="230" r="22" fill="#FFF"/><text class="lb" x="270" y="231" style="font-size:13px">C</text>
+            <circle class="cell" cx="470" cy="70" r="22" fill="#FFF"/><text class="lb" x="470" y="71" style="font-size:13px">D</text>
+            <circle class="cell" cx="470" cy="230" r="22" fill="#FFF"/><text class="lb" x="470" y="231" style="font-size:13px">E</text>
+            <g class="lead" stroke="#C7B18B" stroke-width="1.8">
+              <path d="M104 140 L246 80 M104 162 L246 222
+                      M292 78 L448 78 M292 222 L448 222
+                      M282 92 L458 210 M282 210 L458 92"/>
+            </g>
+            <text class="wt" x="168" y="92">4</text>
+            <text class="wt" x="168" y="216">2</text>
+            <text class="wt" x="368" y="62">3</text>
+            <text class="wt" x="368" y="252">5</text>
+            <text class="wt" x="352" y="136">1</text>
+            <text class="wt" x="352" y="180">7</text>
+          </svg>
+          <div class="fcap">FIG.11 · 边权都为正，Dijkstra 适用</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">TRACE</span>过程跟踪</div>
+          <div class="code sm" style="margin-top:9px"><pre>初始   {A:<span class="nu">0</span>, B:∞, C:∞, D:∞, E:∞}
+<span class="cm"># ① 挑 A(0)，松弛：B=4, C=2</span>
+       {A:<span class="nu">0</span>, B:<span class="nu">4</span>, C:<span class="nu">2</span>, D:∞, E:∞}
+<span class="cm"># ② 挑 C(2)，松弛：B=min(4,2+7)=4, D=2+5=7</span>
+       {A:<span class="nu">0</span>, B:<span class="nu">4</span>, C:<span class="nu">2</span>, D:<span class="nu">7</span>, E:∞}
+<span class="cm"># ③ 挑 B(4)，松弛：D=min(7,4+3)=7</span>
+       {A:<span class="nu">0</span>, B:<span class="nu">4</span>, C:<span class="nu">2</span>, D:<span class="nu">7</span>, E:∞}
+<span class="cm"># ④ 挑 D(7)，松弛：E=7+1=8</span>
+       {A:<span class="nu">0</span>, B:<span class="nu">4</span>, C:<span class="nu">2</span>, D:<span class="nu">7</span>, E:<span class="nu">8</span>}
+<span class="cm"># ⑤ 挑 E(8)，无邻居，结束 ✓</span></pre></div>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">WATCH</span>两个容易混的点</div>
+          <div class="kv"><div class="k">挑谁</div><div class="v">挑<b>当前距离最小的点</b>，不是<b>边权最小的边</b></div></div>
+          <div class="kv"><div class="k">更新谁</div><div class="v">只更新<b>已选点的邻居</b>，不是所有点</div></div>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">NOTE</span>第 ③ 步要注意</div>
+          <p>B 已确定是 <b>4</b>，D 走 B 不会更近，所以 D <b>保持 7</b>。</p>
+          <p><b class="m">「确定」的意思就是：以后不再改。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 12 朴素版 ==================== -->
+<section class="slide" data-t="Dijkstra 朴素版与瓶颈">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">12</div>
+      <div>
+        <h2>Dijkstra：<b>朴素版</b>与瓶颈分析</h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>把思路写成代码，并<b>找出慢在哪里</b>，为下一页的优化铺路。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · 朴素 Dijkstra（O(n²)）</div>
+        <div class="code"><pre><span class="kw">def</span> <span class="fn">dijkstra_naive</span>(g, n, src):
+    <span class="st">"""g[u] = [(v, w)]，w >= 0"""</span>
+    INF = <span class="nu">10</span>**<span class="nu">18</span>
+    dist = [INF] * n
+    done = [<span class="kw">False</span>] * n
+    dist[src] = <span class="nu">0</span>
+
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n):            <span class="cm"># 最多确定 n 个点</span>
+        <span class="cm"># ① 挑最近的未确定点</span>
+        u = -<span class="nu">1</span>
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n):
+            <span class="kw">if</span> <span class="kw">not</span> done[i] <span class="kw">and</span> (u == -<span class="nu">1</span> <span class="kw">or</span> dist[i] &lt; dist[u]):
+                u = i
+        <span class="kw">if</span> u == -<span class="nu">1</span> <span class="kw">or</span> dist[u] == INF:
+            <span class="kw">break</span>                 <span class="cm"># 剩下的都到不了</span>
+
+        <span class="cm"># ② 标记确定</span>
+        done[u] = <span class="kw">True</span>
+
+        <span class="cm"># ③ 松弛邻居</span>
+        <span class="kw">for</span> v, w <span class="kw">in</span> g[u]:
+            <span class="kw">if</span> dist[u] + w &lt; dist[v]:
+                dist[v] = dist[u] + w
+    <span class="kw">return</span> dist</pre></div>
+        <div class="codenote">
+          <div class="n-k">对照第 11 页</div>
+          <div class="n-v">① 挑最小 → ② 标确定 → ③ 松弛，<b>逐行对应</b></div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">BOTTLENECK</span>慢在哪</div>
+          <div class="kv"><div class="k">挑最小</div><div class="v"><b class="p">每轮 O(n) 扫一遍</b> ← 就是它</div></div>
+          <div class="kv"><div class="k">松弛</div><div class="v">总共 O(m)，本来就不是问题</div></div>
+          <div class="kv"><div class="k">合计</div><div class="v"><b class="p">O(n² + m)</b></div></div>
+          <p style="margin-top:10px"><b>只要把「挑最小」降下来，整体就快了。</b></p>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">WHEN OK</span>什么时候朴素版够用</div>
+          <ul class="ok" style="margin-top:8px">
+            <li>n ≤ <b>5000</b> 左右，完全够用</li>
+            <li>图<b class="m">很稠密</b>（m ≈ n²），朴素版<b>反而更快</b></li>
+            <li>初学时<b class="m">用它验证正确性</b>，再换堆版</li>
+          </ul>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">PITFALL</span>三处易错</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>INF 取 <span class="mono p">10⁹</span>，加法会溢出</li>
+            <li>忘了 <b class="p">done</b> 标记，重复确定</li>
+            <li>图不连通时，到不了的点要输出 <b class="p">INF / −1</b></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 13 堆优化 ==================== -->
+<section class="slide" data-t="Dijkstra 堆优化">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">13</div>
+      <div>
+        <h2>Dijkstra：<b>堆优化版</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>用最小堆替换「扫一遍找最小」，把复杂度降到 <b>O(m log n)</b>。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · 堆优化 Dijkstra</div>
+        <div class="code"><pre><span class="kw">import</span> heapq
+
+<span class="kw">def</span> <span class="fn">dijkstra</span>(g, n, src):
+    <span class="st">"""g[u] = [(v, w)]，w >= 0；返回 dist"""</span>
+    INF = <span class="nu">10</span>**<span class="nu">18</span>
+    dist = [INF] * n
+    dist[src] = <span class="nu">0</span>
+    pq = [(<span class="nu">0</span>, src)]                <span class="cm"># (距离, 点号)</span>
+
+    <span class="kw">while</span> pq:
+        d, u = heapq.heappop(pq)
+        <span class="kw">if</span> d &gt; dist[u]:
+            <span class="kw">continue</span>            <span class="cm"># 过期记录，跳过</span>
+
+        <span class="kw">for</span> v, w <span class="kw">in</span> g[u]:
+            nd = d + w
+            <span class="kw">if</span> nd &lt; dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+
+    <span class="kw">return</span> dist</pre></div>
+        <div class="codenote">
+          <div class="n-k">14 行</div>
+          <div class="n-v"><b>记住这一段，能应付大部分最短路题</b></div>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">LAZY</span>为什么「多塞几条」也对</div>
+          <p>堆里可能有<b>同一个点的好几条记录</b>，我们<b class="a">只认最小的那条</b>。</p>
+          <p>弹出时 <span class="mono">d &gt; dist[u]</span> 就是<b class="p">过期</b>，跳过即可。</p>
+          <p>这叫<b>懒惰删除</b>——省掉「在堆里改值」的麻烦。</p>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 520 210">
+            <text class="cap" x="20" y="22">朴素：每轮扫一遍找最小 vs 堆：自动维护最小</text>
+            <rect x="20" y="40" width="42" height="32" rx="6" fill="#FFF" stroke="#D6C6A9" stroke-width="1.4"/>
+            <text class="lb" x="41" y="56" style="font-size:12px">7</text>
+            <rect x="68" y="40" width="42" height="32" rx="6" fill="#FFF" stroke="#D6C6A9" stroke-width="1.4"/>
+            <text class="lb" x="89" y="56" style="font-size:12px">3</text>
+            <rect x="116" y="40" width="42" height="32" rx="6" fill="#FFF" stroke="#D6C6A9" stroke-width="1.4"/>
+            <text class="lb" x="137" y="56" style="font-size:12px">9</text>
+            <rect x="164" y="40" width="42" height="32" rx="6" fill="#FFF" stroke="#D6C6A9" stroke-width="1.4"/>
+            <text class="lb" x="185" y="56" style="font-size:12px">1</text>
+            <text class="caph" x="230" y="56">每轮 O(n) 扫一遍</text>
+
+            <line class="lead" x1="20" y1="96" x2="500" y2="96"/>
+
+            <rect x="20" y="116" width="220" height="72" rx="9" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="2"/>
+            <text class="capm" x="130" y="146" text-anchor="middle">最小堆 priority queue</text>
+            <text class="cap" x="130" y="172" text-anchor="middle" style="font-size:11px">取最小 O(log n) · 整体 O(m log n)</text>
+
+            <path class="ed moss" d="M244 152 L290 152" stroke-width="2.6"/>
+            <path class="ed moss" d="M282 144 L292 152 L282 160"/>
+            <text class="capm" x="330" y="156">稀疏图快 10~50 倍</text>
+          </svg>
+          <div class="fcap">FIG.13 · 用堆替换「找最小」</div>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">COMPLEXITY</span>代价</div>
+          <div class="kv"><div class="k">入堆</div><div class="v">最多 m 次，每次 <b>O(log m)</b></div></div>
+          <div class="kv"><div class="k">出堆</div><div class="v">最多 m 次，每次 <b>O(log m)</b></div></div>
+          <div class="kv"><div class="k">合计</div><div class="v"><b class="g">O(m log m)</b> ≈ O(m log n)</div></div>
+        </div>
+        <div class="card volt">
+          <div class="ct"><span class="ix">READ</span>四行读法</div>
+          <div class="kv"><div class="k">pq</div><div class="v">最小堆，存 <b>(当前距离, 点)</b></div></div>
+          <div class="kv"><div class="k">if d &gt;</div><div class="v">跳过<b>过期记录</b></div></div>
+          <div class="kv"><div class="k">for v,w</div><div class="v">遍历邻居，<b>尝试更新</b></div></div>
+          <div class="kv"><div class="k">push</div><div class="v">只有<b>变小了才塞</b>进堆</div></div>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">WARN</span>一条铁律</div>
+          <p><b class="p">边权有负，Dijkstra 一定不能用</b>（下一页和第 15 页讲为什么）。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 14 四个变形 ==================== -->
+<section class="slide" data-t="Dijkstra 的四个变形">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">14</div>
+      <div>
+        <h2>Dijkstra 的<b>四个变形</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>题目不会只问距离。<b>算法不变，只改「往哪记东西」。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">V1</span>最短路计数</div>
+          <p>问「<b>有多少条</b>最短路」。</p>
+          <div class="code sm" style="margin-top:9px"><pre>cnt = [<span class="nu">0</span>]*n; cnt[src] = <span class="nu">1</span>
+<span class="kw">if</span> nd &lt; dist[v]:
+    dist[v] = nd;  cnt[v] = cnt[u]
+<span class="kw">elif</span> nd == dist[v]:
+    cnt[v] += cnt[u]        <span class="cm"># 多一条等长路</span></pre></div>
+          <p style="margin-top:9px"><b>记得取模</b>（题目一般给 MOD）。</p>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">V2</span>路径还原</div>
+          <p>问「<b>具体怎么走</b>」。</p>
+          <div class="code sm" style="margin-top:9px"><pre>prev = [-<span class="nu">1</span>]*n
+<span class="kw">if</span> nd &lt; dist[v]:
+    dist[v] = nd
+    prev[v] = u            <span class="cm"># ★ 记前驱</span>
+<span class="cm"># 最后从 dst 往前回溯</span></pre></div>
+          <p style="margin-top:9px">要<b>字典序最小</b>时，等长情况下再比一次路径。</p>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">V3</span>最大化版本（概率 / 乘积）</div>
+          <p>问「<b>成功率最大</b>」的路径。</p>
+          <div class="code sm" style="margin-top:9px"><pre><span class="cm"># 用「负数」把最小堆变最大堆</span>
+pq = [(-<span class="nu">1.0</span>, src)]
+prob = [<span class="nu">0.0</span>]*n; prob[src] = <span class="nu">1.0</span>
+
+<span class="kw">if</span> p &gt; prob[v]:            <span class="cm"># 反向比较</span>
+    prob[v] = p
+    heapq.heappush(pq, (-p, v))</pre></div>
+          <p style="margin-top:9px"><b class="m">思想不变，只是「大小」和「运算」换了。</b></p>
+        </div>
+
+        <div class="card hot">
+          <div class="ct"><span class="ix">V4</span>带约束的路径</div>
+          <p>问「<b>最多走 k 条边</b>」的最短路。</p>
+          <p><b class="p">Dijkstra 不能直接用</b>——距离最小的路可能超过 k 站。</p>
+          <p><b>解法：</b>把状态扩成 <span class="mono">dist[v][t]</span>（已走 t 条边），或用分层图。</p>
+          <p><b>见第 26 页。</b></p>
+        </div>
+
+        <div class="card">
+          <div class="ct"><span class="ix">SUMMARY</span>四者共同点</div>
+          <p><b>贪心挑最近、松弛邻居</b>的骨架<b>完全不动</b>。</p>
+          <p>变的只是<b class="g">「记录什么」「怎么比较」</b>。</p>
+        </div>
+
+        <div class="mono" style="font-size:10.5px;letter-spacing:.15em;color:var(--muted);margin-top:14px">
+          PRACTICE · Dijkstra
+        </div>
+        <div class="tagrow">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P4779" target="_blank" rel="noopener">P4779 单源最短路 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P1144" target="_blank" rel="noopener">P1144 最短路计数 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/network-delay-time/" target="_blank" rel="noopener">LC 743 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/number-of-ways-to-arrive-at-destination/" target="_blank" rel="noopener">LC 1976 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15 转折：负权 ==================== -->
+<section class="slide" data-t="转折二：负权与负环">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">15</div>
+      <div>
+        <h2>转折二：<b>负权边</b>让 Dijkstra 崩塌</h2>
+        <p class="sub"><span class="pill hot">TURNING POINT</span><b class="g">要解决的问题：</b>负权在现实中真实存在（返现、优惠、负利率），<b>不能假装没有</b>。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 290">
+            <text class="cap" x="20" y="22">反例：Dijkstra 给出错误答案</text>
+            <circle cx="90" cy="150" r="24" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.6"/>
+            <text class="lb volt" x="90" y="151" style="font-size:14px">A</text>
+            <circle class="cell" cx="300" cy="80" r="22" fill="#FFF"/><text class="lb" x="300" y="81" style="font-size:13px">B</text>
+            <circle class="cell" cx="300" cy="230" r="22" fill="#FFF"/><text class="lb" x="300" y="231" style="font-size:13px">C</text>
+            <circle cx="530" cy="150" r="24" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.4"/>
+            <text class="lb moss" x="530" y="151" style="font-size:14px">D</text>
+
+            <path class="ed" d="M114 142 L278 90" stroke-width="2.4"/>
+            <text class="cap" x="192" y="108">1</text>
+            <path class="ed" d="M114 160 L278 222" stroke-width="2.4"/>
+            <text class="cap" x="192" y="212">10</text>
+            <path class="ed hot" d="M322 88 L508 142" stroke-width="2.8"/>
+            <text class="caph" x="418" y="102">100</text>
+            <path class="ed moss" d="M322 222 L508 160" stroke-width="2.8"/>
+            <text class="capm" x="418" y="212">−100</text>
+
+            <line class="lead" x1="20" y1="256" x2="600" y2="256"/>
+            <text class="caph" x="20" y="280">Dijkstra：先确定 B(1)，得 D = 1+100 = 101</text>
+            <text class="capm" x="330" y="280">实际最短：A→C→D = −90</text>
+          </svg>
+          <div class="fcap">FIG.15 · 「确定」不再安全</div>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">ROOT</span>失败的根因</div>
+          <p>Dijkstra 依赖「<b>绕路只会更贵</b>」，负权让<b class="p">绕路能便宜</b>。</p>
+          <p>于是<b>已确定的点会被翻案</b>，整个贪心逻辑塌掉。</p>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">NEG CYCLE</span>更狠的：负环</div>
+          <p>环上边权和 &lt; 0，<b>每绕一圈就再减一点</b>。</p>
+          <p>于是最短路 = <b class="p">−∞</b>，根本不存在。</p>
+          <div class="mono p" style="margin-top:9px;font-size:15px">3 + (−7) + 2 = −2 &lt; 0</div>
+          <p style="margin-top:9px"><b>算法必须能「判负环」，而不是硬算一个数。</b></p>
+        </div>
+        <div class="card volt">
+          <div class="ct"><span class="ix">NEW IDEA</span>那怎么办</div>
+          <p><b>不能一次确定</b>，那就<b class="g">反复更新，直到改不动为止</b>。</p>
+          <p>这就是下一阶梯 <b class="a">Bellman-Ford</b> 的思路。</p>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">SPECIAL</span>无向图的特殊性</div>
+          <p>无向图只要有一条<b class="p">负权边</b>，<b>来回走就构成负环</b>。</p>
+          <p>所以<b class="m">无向最短路边权必须非负</b>。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 16 BF 思想 ==================== -->
+<section class="slide" data-t="阶梯三：Bellman-Ford 的思想">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">16</div>
+      <div>
+        <h2>阶梯三 · <b>Bellman-Ford</b>：反复松弛 n−1 轮</h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>负权下不能一次确定，那就<b>刷够次数</b>。<b>关键是理解「n−1」这个数字从哪来。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 300">
+            <text class="cap" x="20" y="22">每一轮，对所有边尝试松弛</text>
+            <rect x="20" y="40" width="128" height="44" rx="8" fill="#FFF9F4" stroke="#D9541F" stroke-width="1.8"/>
+            <text class="capv" x="84" y="62" text-anchor="middle">第 1 轮</text>
+            <text class="cap" x="162" y="68">最多走 1 条边的最短路</text>
+
+            <rect x="20" y="94" width="128" height="44" rx="8" fill="#FFF4EF" stroke="#D9541F" stroke-width="1.8"/>
+            <text class="capv" x="84" y="116" text-anchor="middle">第 2 轮</text>
+            <text class="cap" x="162" y="122">最多走 2 条边的最短路</text>
+
+            <rect x="20" y="148" width="128" height="44" rx="8" fill="#FFF4EF" stroke="#D9541F" stroke-width="1.8"/>
+            <text class="capv" x="84" y="170" text-anchor="middle">第 3 轮</text>
+            <text class="cap" x="162" y="176">最多走 3 条边的最短路</text>
+
+            <rect x="20" y="202" width="128" height="44" rx="8" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="2.2"/>
+            <text class="capm" x="84" y="224" text-anchor="middle">第 n−1 轮</text>
+            <text class="capm" x="162" y="230">最多走 n−1 条边 = 任意简单路径</text>
+
+            <line class="lead" x1="20" y1="264" x2="600" y2="264"/>
+            <text class="capv" x="20" y="288">第 i 轮的含义：「最多经过 i 条边」的最短路</text>
+          </svg>
+          <div class="fcap">FIG.16 · 每轮多允许走一条边</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">WHY n-1</span>为什么是 n−1 轮</div>
+          <p>任何<b>简单路径</b>（不重复走点）最多 <b class="g">n−1 条边</b>。</p>
+          <p>所以刷 <b>n−1 轮</b>就覆盖了所有可能的路径。</p>
+          <p><b>再多一轮还能变小 → 有负环。</b></p>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">BONUS</span>这个性质很有用</div>
+          <p>「<b>最多 k 条边</b>」的题，<b class="a">直接只刷 k 轮</b>就是答案。</p>
+          <p>这是 BF 相对 Dijkstra 的<b>独特价值</b>。</p>
+          <div class="tagrow">
+            <a class="tag" href="https://leetcode.cn/problems/cheapest-flights-within-k-stops/" target="_blank" rel="noopener">LC 787 <span class="ar">↗</span></a>
+          </div>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">COST</span>代价</div>
+          <div class="kv"><div class="k">时间</div><div class="v"><span class="mono">O(n · m)</span>，比 Dijkstra 慢</div></div>
+          <div class="kv"><div class="k">能力</div><div class="v"><b class="m">支持负权</b> + <b class="m">检测负环</b></div></div>
+          <div class="kv"><div class="k">交换</div><div class="v">用<b>慢</b>换<b>能处理负权</b></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 17 BF 代码 ==================== -->
+<section class="slide" data-t="Bellman-Ford 代码与三细节">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">17</div>
+      <div>
+        <h2>Bellman-Ford：<b>代码</b>与三个细节</h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>把思想变成<b>可提交、能判负环</b>的代码。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · Bellman-Ford（含负环检测）</div>
+        <div class="code"><pre><span class="kw">def</span> <span class="fn">bellman_ford</span>(n, edges, src):
+    <span class="st">"""edges: [(u, v, w)]，可含负权</span>
+<span class="st">    返回 dist；有可达负环返回 None"""</span>
+    INF = <span class="nu">10</span>**<span class="nu">18</span>
+    dist = [INF] * n
+    dist[src] = <span class="nu">0</span>
+
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n - <span class="nu">1</span>):
+        upd = <span class="kw">False</span>
+        <span class="kw">for</span> u, v, w <span class="kw">in</span> edges:
+            <span class="kw">if</span> dist[u] != INF <span class="kw">and</span> dist[u] + w &lt; dist[v]:
+                dist[v] = dist[u] + w
+                upd = <span class="kw">True</span>
+        <span class="kw">if</span> <span class="kw">not</span> upd:
+            <span class="kw">break</span>              <span class="cm"># 已收敛，提前结束</span>
+
+    <span class="cm"># 负环检测</span>
+    <span class="kw">for</span> u, v, w <span class="kw">in</span> edges:
+        <span class="kw">if</span> dist[u] != INF <span class="kw">and</span> dist[u] + w &lt; dist[v]:
+            <span class="kw">return</span> <span class="kw">None</span>
+    <span class="kw">return</span> dist</pre></div>
+        <div class="codenote">
+          <div class="n-k">亮点</div>
+          <div class="n-v"><span class="mono">if not upd: break</span> —— 大多数图<b>远跑不满 n−1 轮</b></div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">D1</span>为什么要判 dist[u] != INF</div>
+          <p>u 到不了时 dist[u] 是 INF。</p>
+          <p><b class="p">INF + 负数</b>会让 v 「莫名其妙变近」。</p>
+          <p><b>这个判断必须有。</b></p>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">D2</span>为什么可以提前 break</div>
+          <p>一轮下来<b>没有任何距离变小</b> = <b class="g">已收敛</b>。</p>
+          <p>再刷也没用，<b>省下大量时间</b>（随机图常 3~5 轮就停）。</p>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">D3</span>负环检测怎么写</div>
+          <p>最后<b class="p">再扫一遍所有边</b>，还能松弛就说明有负环。</p>
+          <ul class="pit" style="margin-top:8px">
+            <li>循环写成 <span class="mono p">range(n)</span> 而不是 <span class="mono">range(n-1)</span>，多跑一轮误判</li>
+            <li>检测时<b class="p">忘判 INF</b>，把到不了的点误判</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 18 SPFA ==================== -->
+<section class="slide" data-t="SPFA：队列优化">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">18</div>
+      <div>
+        <h2><b>SPFA</b>：Bellman-Ford 的队列优化</h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>BF 每轮刷<b>所有边</b>，绝大多数是白刷。<b>只让「有变化」的点去干活。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · SPFA</div>
+        <div class="code"><pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">spfa</span>(g, n, src):
+    <span class="st">"""返回 dist；有可达负环返回 None"""</span>
+    INF = <span class="nu">10</span>**<span class="nu">18</span>
+    dist = [INF]*n; dist[src] = <span class="nu">0</span>
+    inq  = [<span class="kw">False</span>]*n
+    cnt  = [<span class="nu">0</span>]*n            <span class="cm"># 入队次数，用于判负环</span>
+
+    q = deque([src]); inq[src] = <span class="kw">True</span>; cnt[src] = <span class="nu">1</span>
+
+    <span class="kw">while</span> q:
+        u = q.popleft(); inq[u] = <span class="kw">False</span>
+        <span class="kw">for</span> v, w <span class="kw">in</span> g[u]:
+            <span class="kw">if</span> dist[u] + w &lt; dist[v]:
+                dist[v] = dist[u] + w
+                <span class="kw">if</span> <span class="kw">not</span> inq[v]:
+                    q.append(v); inq[v] = <span class="kw">True</span>
+                    cnt[v] += <span class="nu">1</span>
+                    <span class="kw">if</span> cnt[v] &gt;= n:
+                        <span class="kw">return</span> <span class="kw">None</span>   <span class="cm"># 负环</span>
+    <span class="kw">return</span> dist</pre></div>
+        <div class="codenote">
+          <div class="n-k">判负环</div>
+          <div class="n-v"><b>入队 ≥ n 次</b>，说明在环上绕了不止一圈</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 520 200">
+            <text class="cap" x="20" y="22">BF：每轮刷所有边，绝大多数是白刷</text>
+            <rect x="20" y="38" width="112" height="38" rx="8" fill="#FDF2F1" stroke="#A32132" stroke-width="1.8"/>
+            <text class="caph" x="76" y="57" text-anchor="middle">全部边</text>
+            <text class="caph" x="150" y="57">O(m) × n 轮</text>
+
+            <line class="lead" x1="20" y1="96" x2="500" y2="96"/>
+
+            <rect x="20" y="112" width="112" height="38" rx="8" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="2"/>
+            <text class="capm" x="76" y="131" text-anchor="middle">被更新的点</text>
+            <text class="capm" x="150" y="131">平均快 5~20 倍</text>
+
+            <rect x="20" y="158" width="112" height="34" rx="8" fill="#FFFBEE" stroke="#B8860B" stroke-width="1.6"/>
+            <text class="capa" x="76" y="175" text-anchor="middle">最坏仍 O(nm)</text>
+            <text class="capa" x="150" y="175">竞赛可能被卡</text>
+          </svg>
+          <div class="fcap">FIG.18 · 只让「有变化」的点干活</div>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">WHY</span>为什么安全</div>
+          <p>u 的距离<b>没变</b>时，它去松弛邻居<b>不会有任何效果</b>。</p>
+          <p><b class="m">那就别浪费时间。</b></p>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">WARNING</span>SPFA 会被卡</div>
+          <p>最坏仍是 <b class="p">O(nm)</b>，竞赛存在<b>专门卡 SPFA</b> 的数据。</p>
+          <p><b class="a">边权非负时老实用 Dijkstra</b>，别为省事用 SPFA。</p>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="ix">NOTE</span>怎么选（详见第 23 页）</div>
+          <p>一句话：<b class="g">非负 → Dijkstra；有负 → BF / SPFA</b>。</p>
+          <p>要「<b>最多 k 条边</b>」→ <b class="a">BF</b>（语义最清楚）。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 19 负环专题 ==================== -->
+<section class="slide" data-t="负环专题：判有无与找出来">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">19</div>
+      <div>
+        <h2>★ 负环专题：<b>从「判有无」到「找出来」</b></h2>
+        <p class="sub"><span class="pill opt">★ OPTIONAL</span><b class="g">要解决的问题：</b>竞赛常问「<b>哪些点的距离是 −∞</b>」，光判有无不够。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · 找出受负环影响的所有点</div>
+        <div class="code sm"><pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">neg_cycle_nodes</span>(g, n, edges, src):
+    <span class="st">"""返回受负环影响（距离可无限小）的点"""</span>
+    INF = <span class="nu">10</span>**<span class="nu">18</span>
+    dist = [INF]*n; dist[src] = <span class="nu">0</span>
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n-<span class="nu">1</span>):
+        <span class="kw">for</span> u, v, w <span class="kw">in</span> edges:
+            <span class="kw">if</span> dist[u] != INF <span class="kw">and</span> dist[u]+w &lt; dist[v]:
+                dist[v] = dist[u] + w
+
+    bad = [<span class="kw">False</span>]*n
+    <span class="kw">for</span> u, v, w <span class="kw">in</span> edges:
+        <span class="kw">if</span> dist[u] != INF <span class="kw">and</span> dist[u]+w &lt; dist[v]:
+            bad[v] = <span class="kw">True</span>       <span class="cm"># v 在负环上或其后</span>
+
+    <span class="cm"># 沿出边扩散，标记所有下游</span>
+    q = deque([i <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n) <span class="kw">if</span> bad[i]])
+    <span class="kw">while</span> q:
+        u = q.popleft()
+        <span class="kw">for</span> v, w <span class="kw">in</span> g[u]:
+            <span class="kw">if</span> <span class="kw">not</span> bad[v]:
+                bad[v] = <span class="kw">True</span>
+                q.append(v)
+    <span class="kw">return</span> bad</pre></div>
+        <div class="codenote">
+          <div class="n-k">两步</div>
+          <div class="n-v">先找<b>还能被松弛</b>的点，再沿<b>出边扩散</b>到所有下游</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card gold">
+          <div class="ct"><span class="ix">WHY SPREAD</span>为什么要扩散</div>
+          <p>负环<b>之后</b>的点，距离也能无限小——<b>它们同样没答案</b>。</p>
+          <p>所以从负环出发<b>能走到的点</b>都要标掉。</p>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">ALTERNATIVE</span>另一种写法</div>
+          <p>用 <b class="m">SPFA 判负环</b>：某个点<b>入队 ≥ n 次</b>即有负环。</p>
+          <p>代码更短，但要小心被卡。</p>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="ix">FLOYD</span>多源时更简单</div>
+          <p>Floyd 跑完，若 <b class="m">存在 d[i][i] &lt; 0</b>，点 i 在负环上。</p>
+          <p>见第 21 页。</p>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">SCOPE</span>问法要看清</div>
+          <div class="kv"><div class="k">问有无</div><div class="v">最后扫一遍，<b>有松弛就有负环</b></div></div>
+          <div class="kv"><div class="k">问哪些</div><div class="v">标记 + <b class="p">扩散</b>，两种问法答案不同</div></div>
+        </div>
+
+        <div class="mono" style="font-size:10.5px;letter-spacing:.15em;color:var(--muted);margin-top:14px">
+          PRACTICE · 负环
+        </div>
+        <div class="tagrow">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2850" target="_blank" rel="noopener">P2850 Wormholes <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/cheapest-flights-within-k-stops/" target="_blank" rel="noopener">LC 787 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 20 Floyd 思想 ==================== -->
+<section class="slide" data-t="阶梯四：Floyd 的思想">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">20</div>
+      <div>
+        <h2>阶梯四 · <b>Floyd</b>：所有点对最短路</h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>问「<b>任意两点</b>」时，跑 n 次单源太贵。<b>能不能一次算完。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 290">
+            <text class="cap" x="20" y="22">朴素：跑 n 次 Dijkstra，O(n · m log n)</text>
+
+            <circle cx="120" cy="120" r="22" fill="#FFF" stroke="#D6C6A9" stroke-width="1.8"/>
+            <text class="lb" x="120" y="121" style="font-size:13px">i</text>
+            <circle cx="310" cy="120" r="26" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.6"/>
+            <text class="lb volt" x="310" y="121" style="font-size:13px">k</text>
+            <circle cx="500" cy="120" r="22" fill="#FFF" stroke="#D6C6A9" stroke-width="1.8"/>
+            <text class="lb" x="500" y="121" style="font-size:13px">j</text>
+
+            <path class="ed volt" d="M142 112 L284 112" stroke-width="3"/>
+            <path class="ed volt" d="M336 112 L478 112" stroke-width="3"/>
+            <text class="capv" x="212" y="96" text-anchor="middle">i → k</text>
+            <text class="capv" x="408" y="96" text-anchor="middle">k → j</text>
+
+            <line class="lead" x1="20" y1="166" x2="600" y2="166"/>
+
+            <text class="capv" x="20" y="198">Floyd 的想法：枚举「中间点 k」来更新 i → j</text>
+            <div></div>
+            <text class="capm" x="20" y="232">if d[i][k] + d[k][j] &lt; d[i][j] → 更新</text>
+            <text class="capa" x="20" y="262">核心只有一行，剩下都是「枚举谁在外层」的问题</text>
+          </svg>
+          <div class="fcap">FIG.20 · 用中间点 k 更新 i→j</div>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">WHY</span>为什么枚举中间点就够了</div>
+          <p>任何 i→j 的路径，<b>中间一定经过某个点 k</b>。</p>
+          <p>把「<b>能不能经过 k 让它更短</b>」问遍所有 k，答案就出来了。</p>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">THE CRUX</span>k 为什么必须最外层</div>
+          <p>k 的语义是：<b>「只允许经过 0..k 作为中间点」</b>。</p>
+          <p>所以必须<b>先把 k 及之前的点用完</b>，再放开 k+1。</p>
+          <div class="mono p" style="margin-top:9px;font-size:15px;line-height:1.7">
+            第 k 轮后：<br>
+            d[i][j] = 只用 0..k 作中转的最短路
+          </div>
+          <p style="margin-top:9px"><b class="p">k 放里面就失去这个语义，结果会错。</b></p>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">COST</span>代价</div>
+          <div class="kv"><div class="k">时间</div><div class="v"><span class="mono">O(n³)</span>，n ≤ 400 左右</div></div>
+          <div class="kv"><div class="k">空间</div><div class="v"><span class="mono">O(n²)</span>，邻接矩阵</div></div>
+          <div class="kv"><div class="k">优点</div><div class="v"><b class="m">代码极短</b>，可处理负权</div></div>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">TRAP</span>三处易错</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>忘了 <b class="p">d[i][i] = 0</b></li>
+            <li><b class="p">重边</b>要取 min，不能直接覆盖</li>
+            <li>INF 加法<b class="p">会溢出</b>，要判 <span class="mono">d[i][k] == INF</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 21 Floyd 代码 ==================== -->
+<section class="slide" data-t="Floyd 代码">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">21</div>
+      <div>
+        <h2>Floyd：<b>代码</b>与负环判断</h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>写出<b>高效且不易错</b>的三重循环，并顺手解决负环。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · Floyd-Warshall</div>
+        <div class="code"><pre><span class="kw">def</span> <span class="fn">floyd</span>(n, edges):
+    <span class="st">"""返回 d，d[i][j] = i 到 j 最短距离"""</span>
+    INF = <span class="nu">10</span>**<span class="nu">18</span>
+    d = [[INF]*n <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n):
+        d[i][i] = <span class="nu">0</span>
+    <span class="kw">for</span> u, v, w <span class="kw">in</span> edges:
+        <span class="kw">if</span> w &lt; d[u][v]:            <span class="cm"># 处理重边</span>
+            d[u][v] = w
+
+    <span class="kw">for</span> k <span class="kw">in</span> <span class="fn">range</span>(n):          <span class="cm"># ★ k 在最外层</span>
+        dk = d[k]
+        <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n):
+            dik = d[i][k]
+            <span class="kw">if</span> dik == INF:
+                <span class="kw">continue</span>
+            di = d[i]
+            <span class="kw">for</span> j <span class="kw">in</span> <span class="fn">range</span>(n):
+                nd = dik + dk[j]
+                <span class="kw">if</span> nd &lt; di[j]:
+                    di[j] = nd
+    <span class="kw">return</span> d</pre></div>
+        <div class="codenote">
+          <div class="n-k">省时技巧</div>
+          <div class="n-v"><b>把 d[k]、d[i][k] 取到局部变量</b>，Python 下能省 30%+</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">NEG CYCLE</span>怎么判负环</div>
+          <p>跑完后若 <b class="m">存在 i 使 d[i][i] &lt; 0</b>，点 i 就在负环上。</p>
+          <div class="mono g" style="margin-top:8px;font-size:14px">any(d[i][i] &lt; 0 for i in range(n))</div>
+          <p style="margin-top:9px">比 BF 写法<b class="m">简洁得多</b>，代价是 O(n³)。</p>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">UNREACHABLE</span>怎么表示到不了</div>
+          <p>跑完还是 <span class="mono">INF</span> 就是<b>不连通</b>。</p>
+          <p>输出前<b class="a">先判断</b>，别把 INF 直接打出来。</p>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="ix">WHEN</span>什么时候用 Floyd</div>
+          <ul class="ok" style="margin-top:8px">
+            <li>问「<b>任意两点</b>」或<b class="m">n ≤ 400</b></li>
+            <li>图<b>带负权</b>但又要<b>所有点对</b></li>
+            <li>想要<b class="m">顺手判负环</b></li>
+            <li>图会<b>动态加边</b>（重建成本高）</li>
+          </ul>
+        </div>
+
+        <div class="mono" style="font-size:10.5px;letter-spacing:.15em;color:var(--muted);margin-top:14px">
+          PRACTICE · Floyd
+        </div>
+        <div class="tagrow">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P1119" target="_blank" rel="noopener">P1119 灾后重建 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P1522" target="_blank" rel="noopener">P1522 Cow Travels <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/find-the-city-with-the-smallest-number-of-neighbors-at-a-threshold-distance/" target="_blank" rel="noopener">LC 1334 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 22 Floyd 妙用 ==================== -->
+<section class="slide" data-t="Floyd 的四种妙用">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">22</div>
+      <div>
+        <h2>Floyd 的<b>四种妙用</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>它<b>不只是最短路</b>。<b>换个「运算」和「比较」，就变成别的工具。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">U1</span>传递闭包（可达性）</div>
+          <p><span class="mono">+</span> 换成 <b>「或」</b>，<span class="mono">min</span> 换成 <b>「与」</b>。</p>
+          <div class="code sm" style="margin-top:9px"><pre><span class="kw">for</span> k <span class="kw">in</span> <span class="fn">range</span>(n):
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n):
+        <span class="kw">if</span> reach[i][k]:
+            <span class="kw">for</span> j <span class="kw">in</span> <span class="fn">range</span>(n):
+                reach[i][j] |= reach[k][j]</pre></div>
+          <p style="margin-top:9px">用处：<b>判断谁是谁的后代</b>、<b>找入度为 0 的点</b>。</p>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">U2</span>求最小环</div>
+          <p>枚举到 k 时，<b class="a">在 d[i][j] 更新之前</b>考察：</p>
+          <div class="mono g" style="margin-top:8px;font-size:14px">
+            d[i][j] + w(i,k) + w(k,j)
+          </div>
+          <p style="margin-top:9px">拿到<b>不含 k 之前点的最小环</b>。</p>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">U3</span>最大乘积 / 最大概率</div>
+          <p><span class="mono">+</span> 换成 <span class="mono">*</span>，<span class="mono">min</span> 换成 <span class="mono">max</span>。</p>
+          <div class="mono g" style="margin-top:9px;font-size:15px">
+            d[i][j] = max(d[i][j], d[i][k] * d[k][j])
+          </div>
+          <p style="margin-top:9px">用处：<b>货币兑换</b>、<b>可靠度</b>、<b>汇率套利</b>。</p>
+          <div class="tagrow">
+            <a class="tag" href="https://leetcode.cn/problems/evaluate-division/" target="_blank" rel="noopener">LC 399 除法求值 <span class="ar">↗</span></a>
+            <a class="tag" href="https://leetcode.cn/problems/minimum-cost-to-convert-string-i/" target="_blank" rel="noopener">LC 2976 <span class="ar">↗</span></a>
+          </div>
+        </div>
+
+        <div class="card hot">
+          <div class="ct"><span class="ix">U4</span>路径还原</div>
+          <p>再开一张 <span class="mono">nxt[i][j]</span> 记「<b>下一步走哪</b>」。</p>
+          <div class="code sm" style="margin-top:9px"><pre><span class="cm"># 松弛成功时</span>
+nxt[i][j] = nxt[i][k]
+
+<span class="cm"># 还原</span>
+<span class="kw">def</span> <span class="fn">path</span>(i, j):
+    <span class="kw">if</span> nxt[i][j] == -<span class="nu">1</span>: <span class="kw">return</span> [i]
+    <span class="kw">return</span> [i] + path(nxt[i][j], j)</pre></div>
+        </div>
+
+        <div class="card">
+          <div class="ct"><span class="ix">TAKEAWAY</span>一句话</div>
+          <div style="font-family:var(--disp);font-size:22px;font-weight:600;letter-spacing:-.016em;
+            line-height:1.5;margin-top:8px">
+            Floyd = <b class="g">「枚举中间点」</b>的通用框架。<br>
+            换掉 <b>运算</b> 和 <b>比较</b>，就是新算法。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 23 总表 ==================== -->
+<section class="slide" data-t="五大算法总表">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">23</div>
+      <div>
+        <h2>五大算法：<b>一张表看清</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>全文<b class="g">唯一一张对比表</b>。<b>建议截图带走。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="full rv" style="--d:.06s">
+        <div class="card" style="padding:24px">
+          <table class="cmp" style="font-size:16px">
+            <tr>
+              <th>算法</th><th>适用</th><th>负权</th><th>判负环</th>
+              <th>时间</th><th>空间</th><th>记忆点</th>
+            </tr>
+            <tr>
+              <td><b class="m">BFS</b></td><td>无权图</td><td class="p">✗</td><td class="p">✗</td>
+              <td><span class="mono">O(n+m)</span></td><td><span class="mono">O(n)</span></td>
+              <td>逐层扩散，队列</td>
+            </tr>
+            <tr>
+              <td><b class="g">Dijkstra</b></td><td>非负带权</td><td class="p">✗</td><td class="p">✗</td>
+              <td><span class="mono">O(m log n)</span></td><td><span class="mono">O(n+m)</span></td>
+              <td>贪心挑最近 + 松弛</td>
+            </tr>
+            <tr>
+              <td><b class="a">Bellman-Ford</b></td><td>带负权 / k 条边限制</td><td class="m">✓</td><td class="m">✓</td>
+              <td><span class="mono">O(nm)</span></td><td><span class="mono">O(m)</span></td>
+              <td>刷 n−1 轮；第 i 轮 = i 条边</td>
+            </tr>
+            <tr>
+              <td><b class="a">SPFA</b></td><td>带负权（大图）</td><td class="m">✓</td><td class="m">✓</td>
+              <td><span class="mono">O(nm)</span> 最坏</td><td><span class="mono">O(n+m)</span></td>
+              <td>队列优化 BF；入队 n 次判负环</td>
+            </tr>
+            <tr class="hi">
+              <td><b class="p">Floyd</b></td><td>所有点对</td><td class="m">✓</td><td class="m">✓</td>
+              <td><span class="mono">O(n³)</span></td><td><span class="mono">O(n²)</span></td>
+              <td>k 放最外层</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="c1-6 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">SPEED</span>按快到慢</div>
+          <div class="chant">
+            <div class="row moss"><div class="q">BFS</div><div class="ar">→</div>
+              <div class="v">O(n+m)<small>最快</small></div></div>
+            <div class="row volt"><div class="q">Dijkstra</div><div class="ar">→</div>
+              <div class="v">O(m log n)<small>最常用</small></div></div>
+            <div class="row gold"><div class="q">BF / SPFA</div><div class="ar">→</div>
+              <div class="v">O(nm)<small>能负权</small></div></div>
+            <div class="row hot"><div class="q">Floyd</div><div class="ar">→</div>
+              <div class="v">O(n³)<small>n 小才用</small></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.22s">
+        <div class="card gold">
+          <div class="ct"><span class="ix">LOGIC</span>它们的关系是一条「放宽限制」的链</div>
+          <div class="kv"><div class="k">BFS</div><div class="v">要求<b>边权全 1</b></div></div>
+          <div class="kv"><div class="k">Dijkstra</div><div class="v">放宽到<b>非负任意权</b></div></div>
+          <div class="kv"><div class="k">BF / SPFA</div><div class="v">再放宽到<b>负权</b></div></div>
+          <div class="kv"><div class="k">Floyd</div><div class="v">换问题：<b>单源 → 多源</b></div></div>
+          <p style="margin-top:11px"><b class="m">每一步都是被「前一个不行」逼出来的，不是凭空发明。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 24 决策 ==================== -->
+<section class="slide" data-t="决策流程与四句口诀">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">24</div>
+      <div>
+        <h2>拿到题，<b>怎么选</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>全文<b class="g">唯一的选型页</b>。<b>照着走，基本不会选错。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 430">
+            <rect x="10" y="20" width="230" height="62" rx="10" fill="#FFF" stroke="#D9541F" stroke-width="2"/>
+            <text class="cn" x="125" y="46" text-anchor="middle">① 问的是所有点对？</text>
+            <text class="cap" x="125" y="70" text-anchor="middle" style="font-size:11px">ALL PAIRS?</text>
+            <path class="ed" d="M240 51 L278 51"/>
+            <text class="capm" x="259" y="38" text-anchor="middle" style="font-size:12px">是</text>
+            <rect x="278" y="20" width="190" height="62" rx="10" fill="#FDF2F1" stroke="#A32132" stroke-width="2.6"/>
+            <text class="cn" x="373" y="48" text-anchor="middle" style="fill:#A32132;font-weight:500">Floyd</text>
+            <text class="caph" x="373" y="72" text-anchor="middle" style="font-size:11px">n ≤ 400 时</text>
+
+            <path class="ed" d="M125 82 L125 116"/>
+            <text class="cap" x="143" y="104" style="font-size:12px">否</text>
+
+            <rect x="10" y="116" width="230" height="62" rx="10" fill="#FFF" stroke="#D9541F" stroke-width="2"/>
+            <text class="cn" x="125" y="142" text-anchor="middle">② 边权全是 1？</text>
+            <text class="cap" x="125" y="166" text-anchor="middle" style="font-size:11px">UNWEIGHTED?</text>
+            <path class="ed" d="M240 147 L278 147"/>
+            <text class="capm" x="259" y="134" text-anchor="middle" style="font-size:12px">是</text>
+            <rect x="278" y="116" width="190" height="62" rx="10" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="2.6"/>
+            <text class="cn" x="373" y="144" text-anchor="middle" style="fill:#2F7D5D;font-weight:500">BFS</text>
+            <text class="capm" x="373" y="168" text-anchor="middle" style="font-size:11px">多源就一起入队</text>
+
+            <path class="ed" d="M125 178 L125 212"/>
+            <text class="cap" x="143" y="200" style="font-size:12px">否</text>
+
+            <rect x="10" y="212" width="230" height="62" rx="10" fill="#FFF" stroke="#D9541F" stroke-width="2"/>
+            <text class="cn" x="125" y="238" text-anchor="middle">③ 有负权边吗？</text>
+            <text class="cap" x="125" y="262" text-anchor="middle" style="font-size:11px">NEGATIVE EDGES?</text>
+            <path class="ed" d="M240 243 L278 243"/>
+            <text class="capm" x="259" y="230" text-anchor="middle" style="font-size:12px">是</text>
+            <rect x="278" y="212" width="190" height="62" rx="10" fill="#FFFBEE" stroke="#B8860B" stroke-width="2.6"/>
+            <text class="cn" x="373" y="240" text-anchor="middle" style="fill:#B8860B;font-weight:500">BF / SPFA</text>
+            <text class="capa" x="373" y="264" text-anchor="middle" style="font-size:11px">要 k 限制用 BF</text>
+
+            <path class="ed" d="M125 274 L125 308"/>
+            <text class="cap" x="143" y="296" style="font-size:12px">否</text>
+
+            <rect x="10" y="308" width="230" height="62" rx="10" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.6"/>
+            <text class="cn" x="125" y="336" text-anchor="middle" style="fill:#D9541F;font-weight:500">Dijkstra</text>
+            <text class="capv" x="125" y="360" text-anchor="middle" style="font-size:11px">默认首选</text>
+
+            <line class="lead" x1="20" y1="392" x2="600" y2="392"/>
+            <text class="capm" x="20" y="418">特殊约束再换：最多 k 次 → 分层图；最小化最大值 → 二分答案</text>
+          </svg>
+          <div class="fcap">FIG.24 · 四问决策树</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">CHANT</span>四句口诀</div>
+          <div class="chant">
+            <div class="row moss">
+              <div class="q">「边权为 1」</div>
+              <div class="ar">→</div>
+              <div class="v">BFS<small>逐层扩散，队列</small></div>
+            </div>
+            <div class="row volt">
+              <div class="q">「边权非负」</div>
+              <div class="ar">→</div>
+              <div class="v">Dijkstra<small>贪心挑最近 + 堆</small></div>
+            </div>
+            <div class="row gold">
+              <div class="q">「有负权」</div>
+              <div class="ar">→</div>
+              <div class="v">Bellman-Ford<small>刷 n−1 轮，判负环</small></div>
+            </div>
+            <div class="row hot">
+              <div class="q">「所有点对」</div>
+              <div class="ar">→</div>
+              <div class="v">Floyd<small>k 放最外层</small></div>
+            </div>
+          </div>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">CHECKLIST</span>选之前先过三关</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>边权<b class="g">符号</b>？（正 / 负 / 有负环）</li>
+            <li>问<b>一个起点</b>还是<b>所有点对</b>？</li>
+            <li>有没有「<b>k 条边</b>」「<b>k 次机会</b>」？</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 25 建模 ==================== -->
+<section class="slide" data-t="建模三步：把题变成图">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">25</div>
+      <div>
+        <h2>建模三步：<b>把看不懂的题变成图</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>最难的<b>不是算法，是认出「这是最短路」</b>。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">METHOD</span>三步翻译</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>什么算「<b>点</b>」？<br><span style="color:var(--muted)">决策对象：路口 / 格子 / 单词 / 状态</span></li>
+            <li>什么算「<b>边</b>」？<br><span style="color:var(--muted)">一步操作：走一步 / 换一次 / 改一字母</span></li>
+            <li>什么算「<b>代价</b>」？<br><span style="color:var(--muted)">时间 / 金钱 / 次数 / 概率</span></li>
+          </ol>
+          <p style="margin-top:11px"><b>想清楚这三样，题就解了一半。</b></p>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">WHICH</span>问的是「最小」还是「最大」</div>
+          <div class="kv"><div class="k">最小</div><div class="v">距离 / 时间 / 代价 → 直接跑</div></div>
+          <div class="kv"><div class="k">最大</div><div class="v">概率 / 乘积 → <b class="a">换运算</b>或<b>最大堆</b></div></div>
+          <div class="kv"><div class="k">最小的最大</div><div class="v">→ <b class="a">二分答案</b>（第 28 页）</div></div>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">EXAMPLE A</span>单词接龙：字符串是点</div>
+          <p>「一次改一个字母，问最少几步。」</p>
+          <p><b>翻译：</b>单词是点，能互变的是边，权 1 → <b class="m">BFS</b>。</p>
+        </div>
+        <div class="card volt">
+          <div class="ct"><span class="ix">EXAMPLE B</span>公交线路：线路是点</div>
+          <p>「每条公交线经若干站，问最少换乘几次。」</p>
+          <p><b>转变：</b>把「<b>线路</b>」当点，同站换乘当边——<b class="g">比把站当点更好</b>。</p>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">EXAMPLE C</span>换汇：操作是点</div>
+          <p>「给定兑换关系，求最优兑换路径。」</p>
+          <p><b>翻译：</b>货币是点，兑换率是边权（乘法 → 取 log，或 Floyd 求最大乘积）。</p>
+        </div>
+
+        <div class="mono" style="font-size:10.5px;letter-spacing:.15em;color:var(--muted);margin-top:14px">
+          PRACTICE · 建模
+        </div>
+        <div class="tagrow">
+          <a class="tag" href="https://leetcode.cn/problems/word-ladder/" target="_blank" rel="noopener">LC 127 单词接龙 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/bus-routes/" target="_blank" rel="noopener">LC 815 公交路线 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/evaluate-division/" target="_blank" rel="noopener">LC 399 除法求值 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 26 分层图 ==================== -->
+<section class="slide" data-t="★ 分层图与状态扩维">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">26</div>
+      <div>
+        <h2>★ 进阶一：<b>分层图</b> / 状态扩维</h2>
+        <p class="sub"><span class="pill opt">★ OPTIONAL</span><b class="g">要解决的问题：</b>有「<b>最多 k 次机会</b>」这种约束时，Dijkstra 直接跑会错。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 300">
+            <text class="cap" x="20" y="22">「最多 k 次免费」→ 复制 k+1 层图</text>
+            <rect x="20" y="42" width="240" height="66" rx="10" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="2"/>
+            <text class="capm" x="140" y="68" text-anchor="middle">第 0 层：还没用机会</text>
+            <text class="cap" x="140" y="92" text-anchor="middle" style="font-size:11px">v0</text>
+
+            <rect x="20" y="122" width="240" height="66" rx="10" fill="#FFFBEE" stroke="#B8860B" stroke-width="2"/>
+            <text class="capa" x="140" y="148" text-anchor="middle">第 1 层：用了 1 次</text>
+            <text class="cap" x="140" y="172" text-anchor="middle" style="font-size:11px">v1</text>
+
+            <rect x="20" y="202" width="240" height="66" rx="10" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.4"/>
+            <text class="capv" x="140" y="228" text-anchor="middle">第 k 层：用完 k 次</text>
+            <text class="cap" x="140" y="252" text-anchor="middle" style="font-size:11px">vk</text>
+
+            <path class="ed moss" d="M262 88 L340 88" stroke-width="2.2"/>
+            <text class="capm" x="392" y="92">同层：代价 w</text>
+            <path class="ed gold" d="M262 155 L340 155" stroke-width="2.2"/>
+            <text class="capa" x="392" y="159">同层：代价 w</text>
+            <path class="ed hot" d="M280 108 L340 142" stroke-width="2.4" stroke-dasharray="5 4"/>
+            <text class="caph" x="392" y="122">跨层：用一次机会，代价 0</text>
+
+            <text class="capv" x="20" y="292">答案 = 所有层中 dst 的最小值</text>
+          </svg>
+          <div class="fcap">FIG.26 · 把「剩余机会」也当成一个维度</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">KEY</span>核心：状态 = (点, 剩余次数)</div>
+          <p>原本状态是 <span class="mono">点 v</span>，现在是 <span class="mono">(v, k)</span>。</p>
+          <p><b class="g">图变大了，但问题变普通了</b>——跑 Dijkstra 即可。</p>
+          <div class="mono g" style="margin-top:9px;font-size:14px;line-height:1.7">
+            节点数：n × (k+1)<br>
+            边数：m × (k+1) + n×k
+          </div>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">WHEN</span>什么信号提示用它</div>
+          <ul class="ok" style="margin-top:8px">
+            <li>「<b>最多 k 次</b>」「<b>最多 k 站</b>」「<b>k 个障碍</b>」</li>
+            <li>「<b>可以改变一次</b>」「<b>免费一次</b>」</li>
+            <li>「<b>带状态的移动</b>」（拿钥匙、开灯）</li>
+          </ul>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">IMPLICIT</span>有时不用真建图</div>
+          <div class="code sm" style="margin-top:9px"><pre>dist = [[INF]*(k+<span class="nu">1</span>) <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]
+<span class="cm"># 堆里存 (d, v, used)</span></pre></div>
+          <p style="margin-top:9px"><b class="m">用 dist[v][t] 隐式表达，代码更短。</b></p>
+        </div>
+
+        <div class="mono" style="font-size:10.5px;letter-spacing:.15em;color:var(--muted);margin-top:14px">
+          PRACTICE · 分层图
+        </div>
+        <div class="tagrow">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2939" target="_blank" rel="noopener">P2939 Revamping Trails <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P1073" target="_blank" rel="noopener">P1073 最优贸易 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/cheapest-flights-within-k-stops/" target="_blank" rel="noopener">LC 787 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/shortest-path-in-a-grid-with-obstacles-elimination/" target="_blank" rel="noopener">LC 1293 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 27 0-1 BFS ==================== -->
+<section class="slide" data-t="★ 0-1 BFS">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">27</div>
+      <div>
+        <h2>★ 进阶二：<b>0-1 BFS</b></h2>
+        <p class="sub"><span class="pill opt">★ OPTIONAL</span><b class="g">要解决的问题：</b>边权<b>只有 0 和 1</b> 时，用堆太重，用普通 BFS 又不对。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · 0-1 BFS</div>
+        <div class="code"><pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">zero_one_bfs</span>(g, n, src):
+    <span class="st">"""g[u] = [(v, w)]，w 只能是 0 或 1"""</span>
+    INF = <span class="nu">10</span>**<span class="nu">18</span>
+    dist = [INF]*n; dist[src] = <span class="nu">0</span>
+    dq = deque([src])
+
+    <span class="kw">while</span> dq:
+        u = dq.popleft()
+        <span class="kw">for</span> v, w <span class="kw">in</span> g[u]:
+            <span class="kw">if</span> dist[u] + w &lt; dist[v]:
+                dist[v] = dist[u] + w
+                <span class="kw">if</span> w == <span class="nu">0</span>:
+                    dq.appendleft(v)   <span class="cm"># 权 0：放左边，优先</span>
+                <span class="kw">else</span>:
+                    dq.append(v)       <span class="cm"># 权 1：放右边，延后</span>
+    <span class="kw">return</span> dist</pre></div>
+        <div class="codenote">
+          <div class="n-k">识别信号</div>
+          <div class="n-v">题目出现「<b>改变一次方向</b>」「<b>翻转一次</b>」「<b>消除一堵墙</b>」</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 520 190">
+            <text class="cap" x="20" y="22">用 deque 两端操作模拟「小顶堆」</text>
+            <rect x="20" y="40" width="460" height="46" rx="10" fill="#F7F2E8" stroke="#D6C6A9" stroke-width="1.8"/>
+            <text class="cap" x="250" y="63" text-anchor="middle">deque：左 ← 弹出 / 右 → 加入</text>
+
+            <path class="ed moss" d="M80 110 L80 92" stroke-width="2.6"/>
+            <path class="ed moss" d="M72 100 L80 90 L88 100"/>
+            <text class="capm" x="80" y="136" text-anchor="middle">权 0</text>
+            <text class="capm" x="80" y="158" text-anchor="middle" style="font-size:11px">放左边，先处理</text>
+
+            <path class="ed hot" d="M230 110 L230 92" stroke-width="2.6"/>
+            <path class="ed hot" d="M222 100 L230 90 L238 100"/>
+            <text class="caph" x="230" y="136" text-anchor="middle">权 1</text>
+            <text class="caph" x="230" y="158" text-anchor="middle" style="font-size:11px">放右边，稍后处理</text>
+          </svg>
+          <div class="fcap">FIG.27 · 队列里的距离只可能差 1</div>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">WHY</span>为什么这样就对</div>
+          <p>队列中的距离<b>只可能取两个值</b>（差 1），<b class="a">简单分层</b>就够。</p>
+          <p>不用堆 → <b class="g">O(n+m)</b>，比 Dijkstra 快一大截。</p>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">PITFALL</span>两处易错</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>appendleft / append <b class="p">写反</b></li>
+            <li>忘判 <span class="mono p">dist[u] + w &lt; dist[v]</span>，无限循环</li>
+          </ul>
+        </div>
+
+        <div class="tagrow" style="margin-top:14px">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P4667" target="_blank" rel="noopener">P4667 打地鼠 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/minimum-cost-to-make-at-least-one-valid-path-in-a-grid/" target="_blank" rel="noopener">LC 1368 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/minimum-obstacle-removal-to-reach-corner/" target="_blank" rel="noopener">LC 2290 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 28 二分答案 ==================== -->
+<section class="slide" data-t="★ 二分答案 + 最短路">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">28</div>
+      <div>
+        <h2>★ 进阶三：<b>二分答案 + 最短路</b></h2>
+        <p class="sub"><span class="pill opt">★ OPTIONAL</span><b class="g">要解决的问题：</b>问的不是最短，而是「<b>满足条件的最小 X</b>」。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 250">
+            <text class="cap" x="20" y="22">典型问法：「最小的最大代价」</text>
+            <rect x="20" y="40" width="560" height="40" rx="9" fill="#FDF2F1" stroke="#A32132" stroke-width="1.6"/>
+            <text class="caph" x="300" y="60" text-anchor="middle">❌ 不合法（X 太小）</text>
+            <rect x="20" y="90" width="560" height="40" rx="9" fill="#FFFBEE" stroke="#B8860B" stroke-width="1.8"/>
+            <text class="capa" x="300" y="110" text-anchor="middle">X 的临界点</text>
+            <rect x="20" y="140" width="560" height="40" rx="9" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="1.6"/>
+            <text class="capm" x="300" y="160" text-anchor="middle">✓ 合法（X 够大）</text>
+            <text class="capa" x="300" y="212" text-anchor="middle">二分找最小的合法 X，每次判定跑一遍最短路</text>
+          </svg>
+          <div class="fcap">FIG.28 · 单调性使二分可行</div>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">TEMPLATE</span>骨架</div>
+          <div class="code sm" style="margin-top:9px"><pre><span class="kw">def</span> <span class="fn">ok</span>(x):
+    <span class="cm"># 只保留「代价 ≤ x」的边，判断能否到达</span>
+    <span class="kw">return</span> reachable_with_limit(x)
+
+lo, hi = <span class="nu">0</span>, MAX
+<span class="kw">while</span> lo &lt; hi:
+    mid = (lo + hi) // <span class="nu">2</span>
+    <span class="kw">if</span> ok(mid): hi = mid
+    <span class="kw">else</span>:       lo = mid + <span class="nu">1</span>
+<span class="kw">return</span> lo</pre></div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">WHY</span>为什么能二分</div>
+          <p>关键在 <b class="g">「合法性」单调</b>：</p>
+          <p>X 合法 ⇒ 更大的 X <b>也合法</b>。</p>
+          <p>只要单调<b>就能二分</b>，和最短路无关。</p>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">SIGNS</span>什么提示用这招</div>
+          <ul class="ok" style="margin-top:8px">
+            <li>「<b>最小的最大</b>」「<b>最大的最小</b>」</li>
+            <li>「<b>能否在 X 代价内完成</b>」</li>
+            <li>「<b>瓶颈</b>」「<b>上限</b>」「<b>阈值</b>」</li>
+          </ul>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">EXAMPLE</span>一个例子</div>
+          <p>「找一条路径，使<b>路径上最大边权最小</b>。」</p>
+          <p><b>解法：</b>二分 X，只保留 ≤ X 的边，<b>判连通</b>。</p>
+          <p>复杂度 <b class="m">O((n+m) log W)</b>。</p>
+        </div>
+
+        <div class="tagrow" style="margin-top:14px">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P1462" target="_blank" rel="noopener">P1462 通往奥格瑞玛 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P5837" target="_blank" rel="noopener">P5837 Milk Pump <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/swim-in-rising-water/" target="_blank" rel="noopener">LC 778 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 29 变体地图 ==================== -->
+<section class="slide" data-t="变体地图：还会遇到什么">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">29</div>
+      <div>
+        <h2>★ 变体地图：<b>你还会遇到什么</b></h2>
+        <p class="sub"><span class="pill opt">★ OPTIONAL</span>这一页<b class="g">不教新算法</b>，只画一张<b>「还有哪些问法」的地图</b>，方便你以后自己找资料。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">GROUP A</span>改「问什么」</div>
+          <div class="kv"><div class="k">计数</div><div class="v">最短路有几条（第 14 页）</div></div>
+          <div class="kv"><div class="k">还原</div><div class="v">输出具体路径（第 14 页）</div></div>
+          <div class="kv"><div class="k">次短路</div><div class="v">比最短长、次短的那条</div></div>
+          <div class="kv"><div class="k">第 k 短</div><div class="v">A* / 优先队列扩展</div></div>
+          <div class="kv"><div class="k">字典序</div><div class="v">多条等长中取最小</div></div>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">GROUP B</span>改「图怎么长」</div>
+          <div class="kv"><div class="k">分层图</div><div class="v">带次数限制（第 26 页）</div></div>
+          <div class="kv"><div class="k">状态扩维</div><div class="v">(点, 拥有物) 当新点</div></div>
+          <div class="kv"><div class="k">反向建图</div><div class="v">多点 → 一点（第 06 页）</div></div>
+          <div class="kv"><div class="k">虚拟点</div><div class="v">多源 / 多汇各加一个超级点</div></div>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">GROUP C</span>改「代价怎么算」</div>
+          <div class="kv"><div class="k">最大乘积</div><div class="v">换运算（第 22 页 U3）</div></div>
+          <div class="kv"><div class="k">最小化最大</div><div class="v">二分答案（第 28 页）</div></div>
+          <div class="kv"><div class="k">多维代价</div><div class="v">时间 + 金钱，取一维主、另一维约束</div></div>
+          <div class="kv"><div class="k">概率</div><div class="v">取 log 转加法，或最大堆</div></div>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">GROUP D</span>改「图会变」</div>
+          <div class="kv"><div class="k">动态加边</div><div class="v">增量维护 / 重新跑</div></div>
+          <div class="kv"><div class="k">删边</div><div class="v">离线倒序 / 分治</div></div>
+          <div class="kv"><div class="k">带限制</div><div class="v">只能走某些点（预处理可达性）</div></div>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="ix">ADVICE</span>怎么用这张图</div>
+          <p>遇到新题先问：<b>「它属于哪一类变化？」</b></p>
+          <p>然后<b class="g">拿第 23、24 页的骨架套</b>，比硬想算法有效得多。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 30 常见坑 ==================== -->
+<section class="slide" data-t="常见坑汇总">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">30</div>
+      <div>
+        <h2>常见坑汇总：<b>一处看完</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>全文<b class="g">唯一的坑汇总页</b>。<b>代码不长，但坑很密。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.05s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">WRONG ANSWER</span>会直接出错的五处</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>有<b class="p">负权</b>却用了 Dijkstra</li>
+            <li>BF 循环写成 <span class="mono p">range(n)</span>，多跑一轮</li>
+            <li>松弛时忘判 <span class="mono p">dist[u] != INF</span></li>
+            <li>忘设 <span class="mono p">dist[src] = 0</span> / <span class="mono p">d[i][i] = 0</span></li>
+            <li>Floyd <b class="p">重边</b>没取 min</li>
+          </ul>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">TLE</span>会超时的四处</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>INF 取 <span class="mono p">10⁹</span>，加法溢出</li>
+            <li>Python 大图<b class="p">没用 sys.stdin</b></li>
+            <li>用 <b class="p">dict 存图</b>，常数巨大</li>
+            <li>该用堆版却用朴素版（n &gt; 5000）</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.14s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">SEMANTIC</span>语义上的三处错</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>用 Dijkstra 解「<b class="p">最多 k 站</b>」</li>
+            <li>问「<b>哪些点</b>」时只答了「<b>有没有</b>」</li>
+            <li>到不了的点输出了 <b class="p">INF</b>（应输出 −1）</li>
+          </ul>
+        </div>
+        <div class="card volt">
+          <div class="ct"><span class="ix">HABITS</span>四个好习惯</div>
+          <ul class="ok" style="margin-top:8px">
+            <li><b class="g">INF 统一 10¹⁸</b>，加法前先判一下</li>
+            <li>先跑<b class="g">样例</b>，再跑<b class="g">边界</b>（n=1 / 不连通 / 自环）</li>
+            <li>不确定稠稀时，<b class="g">默认堆优化 Dijkstra</b></li>
+            <li>看到「<b>最多 k 次</b>」<b class="g">立刻想分层图</b></li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="ix">DEBUG</span>答案不对，按顺序查</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>图<b>建对了吗</b>？（有向 / 无向，方向反没反）</li>
+            <li><b>边权符号</b>对吗？（负权 → 换算法）</li>
+            <li><b>起点</b>设置对吗？</li>
+            <li>输出格式：到不了要输出 <b>−1</b> 还是 INF？</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 31 题单 A ==================== -->
+<section class="slide" data-t="题单 A：入门">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">31</div>
+      <div>
+        <h2>题单 A：<b>入门热身</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>八道必做题，<b class="g">把模板写成肌肉记忆</b>。每题标注「练什么」。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="pl">
+          <a href="https://www.luogu.com.cn/problem/P4779" target="_blank" rel="noopener">
+            <div class="no">P4779</div>
+            <div class="ti">【模板】单源最短路径<small>堆优化 Dijkstra，<b>必背</b></small></div>
+            <div class="src">洛谷</div><div class="pt">标准</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P3371" target="_blank" rel="noopener">
+            <div class="no">P3371</div>
+            <div class="ti">【模板】单源最短路径<small>朴素版 / SPFA 对照</small></div>
+            <div class="src">洛谷</div><div class="pt">标准</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P1144" target="_blank" rel="noopener">
+            <div class="no">P1144</div>
+            <div class="ti">最短路计数<small><b>最短路计数</b>变形</small></div>
+            <div class="src">洛谷</div><div class="pt">普及-</div>
+          </a>
+          <a href="https://leetcode.cn/problems/rotting-oranges/" target="_blank" rel="noopener">
+            <div class="no">LC 994</div>
+            <div class="ti">腐烂的橘子<small><b>多源 BFS</b> 入门</small></div>
+            <div class="src">LeetCode</div><div class="pt">中等</div>
+          </a>
+          <a href="https://leetcode.cn/problems/01-matrix/" target="_blank" rel="noopener">
+            <div class="no">LC 542</div>
+            <div class="ti">01 矩阵<small>反向起点入队</small></div>
+            <div class="src">LeetCode</div><div class="pt">中等</div>
+          </a>
+          <a href="https://leetcode.cn/problems/network-delay-time/" target="_blank" rel="noopener">
+            <div class="no">LC 743</div>
+            <div class="ti">网络延迟时间<small><b>Dijkstra 标准题</b></small></div>
+            <div class="src">LeetCode</div><div class="pt">中等</div>
+          </a>
+          <a href="https://leetcode.cn/problems/find-the-city-with-the-smallest-number-of-neighbors-at-a-threshold-distance/" target="_blank" rel="noopener">
+            <div class="no">LC 1334</div>
+            <div class="ti">阈值距离内可达城市<small><b>Floyd 入门</b></small></div>
+            <div class="src">LeetCode</div><div class="pt">中等</div>
+          </a>
+          <a href="https://leetcode.cn/problems/cheapest-flights-within-k-stops/" target="_blank" rel="noopener">
+            <div class="no">LC 787</div>
+            <div class="ti">K 站中转内最便宜的航班<small>BF / 分层图，<b>高频面试</b></small></div>
+            <div class="src">LeetCode</div><div class="pt">中等</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">ORDER</span>推荐顺序</div>
+          <div class="kv"><div class="k">第 1 天</div><div class="v">P4779 → LC 743（同一件事）</div></div>
+          <div class="kv"><div class="k">第 2 天</div><div class="v">LC 994 → LC 542（多源 BFS）</div></div>
+          <div class="kv"><div class="k">第 3 天</div><div class="v">LC 1334（Floyd）</div></div>
+          <div class="kv"><div class="k">第 4 天</div><div class="v">P1144 → LC 787（变形）</div></div>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">FOCUS</span>每题要看懂什么</div>
+          <ul class="ok" style="margin-top:8px">
+            <li>P4779：<b>堆优化</b>的通用结构</li>
+            <li>LC 994：<b>多源入队</b>怎么写</li>
+            <li>LC 787：<b>为什么不能直接用 Dijkstra</b></li>
+            <li>P1144：<b>等长路径计数</b>的两个分支</li>
+          </ul>
+        </div>
+        <div class="card volt">
+          <div class="ct"><span class="ix">MILESTONE</span>过关标准</div>
+          <p>能在 <b class="g">15 分钟内闭卷写出 Dijkstra 堆版</b>，不看提示。</p>
+          <p>做到就可以进 B 级了。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 32 题单 B ==================== -->
+<section class="slide" data-t="题单 B：巩固">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">32</div>
+      <div>
+        <h2>题单 B：<b>巩固与建模</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>把最短路<b class="g">和别的技巧拼起来</b>。<b>这一档是「会不会用」的分水岭。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="pl">
+          <a href="https://www.luogu.com.cn/problem/P1821" target="_blank" rel="noopener">
+            <div class="no">P1821</div>
+            <div class="ti">[USACO07OPEN] Cow Party S<small><b>反向建图</b>的标准题</small></div>
+            <div class="src">洛谷</div><div class="pt">普及-</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P1629" target="_blank" rel="noopener">
+            <div class="no">P1629</div>
+            <div class="ti">邮递员送信<small>去 + 回，反向建图</small></div>
+            <div class="src">洛谷</div><div class="pt">普及-</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P2296" target="_blank" rel="noopener">
+            <div class="no">P2296</div>
+            <div class="ti">寻找道路<small>反向 BFS + 正向 BFS 组合</small></div>
+            <div class="src">洛谷</div><div class="pt">普及+/提高</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P2850" target="_blank" rel="noopener">
+            <div class="no">P2850</div>
+            <div class="ti">[USACO06DEC] Wormholes G<small><b>负环检测</b>经典</small></div>
+            <div class="src">洛谷</div><div class="pt">普及-</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P1119" target="_blank" rel="noopener">
+            <div class="no">P1119</div>
+            <div class="ti">灾后重建<small><b>Floyd 时序</b>，很妙</small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+          <a href="https://leetcode.cn/problems/path-with-maximum-probability/" target="_blank" rel="noopener">
+            <div class="no">LC 1514</div>
+            <div class="ti">最大概率路径<small>最大堆变体</small></div>
+            <div class="src">LeetCode</div><div class="pt">中等</div>
+          </a>
+          <a href="https://leetcode.cn/problems/number-of-ways-to-arrive-at-destination/" target="_blank" rel="noopener">
+            <div class="no">LC 1976</div>
+            <div class="ti">到达目的地的方案数<small>计数 + Dijkstra</small></div>
+            <div class="src">LeetCode</div><div class="pt">中等</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">SKILL</span>B 级在练什么</div>
+          <div class="kv"><div class="k">建模</div><div class="v">把题目<b>翻译成图</b>（点/边/权）</div></div>
+          <div class="kv"><div class="k">组合</div><div class="v">最短路 + <b>反向 / 计数 / 判负环</b></div></div>
+          <div class="kv"><div class="k">选型</div><div class="v">认清「<b>为什么这题不能用 Dijkstra</b>」</div></div>
+          <p style="margin-top:11px"><b>真正的难度在「翻译」，不在模板。</b></p>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">STRUGGLE</span>卡住了怎么办</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>先<b>画一张小图</b>，手工模拟</li>
+            <li>问「<b>一步操作是什么</b>」→ 这就是边</li>
+            <li>问「<b>代价是什么</b>」→ 这就是权</li>
+            <li>最后才问「<b>有没有次数限制</b>」</li>
+          </ol>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="ix">PACE</span>时间与复盘</div>
+          <div class="kv"><div class="k">时间</div><div class="v">每题 <b>45 分钟</b>独立 AC</div></div>
+          <div class="kv"><div class="k">复盘</div><div class="v">写完<b>整理成自己的模板</b>，不要只抄</div></div>
+          <div class="kv"><div class="k">检验</div><div class="v">三天后<b>闭卷重写 P4779</b></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 33 题单 C ==================== -->
+<section class="slide" data-t="题单 C：挑战">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">33</div>
+      <div>
+        <h2>题单 C：<b>挑战</b>（选做）</h2>
+        <p class="sub"><span class="pill opt">★ OPTIONAL</span>这些题<b class="g">看得懂思路即可</b>。<b>它们展示了最短路的边界。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="pl">
+          <a href="https://www.luogu.com.cn/problem/P2939" target="_blank" rel="noopener">
+            <div class="no">P2939</div>
+            <div class="ti">[USACO09FEB] Revamping Trails G<small><b>分层图</b>必做</small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P1462" target="_blank" rel="noopener">
+            <div class="no">P1462</div>
+            <div class="ti">通往奥格瑞玛的道路<small><b>二分答案 + Dijkstra</b></small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P2865" target="_blank" rel="noopener">
+            <div class="no">P2865</div>
+            <div class="ti">[USACO06NOV] Roadblocks G<small><b>次短路</b>入门</small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P1073" target="_blank" rel="noopener">
+            <div class="no">P1073</div>
+            <div class="ti">最优贸易<small>状态 + Dijkstra / DP</small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+          <a href="https://leetcode.cn/problems/shortest-path-visiting-all-nodes/" target="_blank" rel="noopener">
+            <div class="no">LC 847</div>
+            <div class="ti">访问所有节点的最短路径<small>状态压缩 + BFS</small></div>
+            <div class="src">LeetCode</div><div class="pt">困难</div>
+          </a>
+          <a href="https://leetcode.cn/problems/shortest-path-to-get-all-keys/" target="_blank" rel="noopener">
+            <div class="no">LC 864</div>
+            <div class="ti">获得所有钥匙的最少代价<small>状态 + BFS</small></div>
+            <div class="src">LeetCode</div><div class="pt">困难</div>
+          </a>
+          <a href="https://leetcode.cn/problems/word-ladder-ii/" target="_blank" rel="noopener">
+            <div class="no">LC 126</div>
+            <div class="ti">单词接龙 II<small>BFS 建图 + DFS 回溯</small></div>
+            <div class="src">LeetCode</div><div class="pt">困难</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card gold">
+          <div class="ct"><span class="ix">PATTERN</span>C 级题的共性</div>
+          <div class="kv"><div class="k">① 状态多</div><div class="v">点不够，要<b>带上「拥有的东西」</b></div></div>
+          <div class="kv"><div class="k">② 反问</div><div class="v">问的<b>不是最短</b>，是次短 / 方案数</div></div>
+          <div class="kv"><div class="k">③ 组合</div><div class="v">最短路 + <b>二分 / 状态压缩 / 排序</b></div></div>
+          <p style="margin-top:11px"><b>核心还是最短路，只是「图长什么样」变了。</b></p>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">ADVICE</span>初学者怎么看</div>
+          <ul class="ok" style="margin-top:8px">
+            <li><b>先读懂题解的「建图」部分</b>，代码可以不写</li>
+            <li>想清楚「<b>状态是什么</b>」比「怎么跑最短路」重要</li>
+            <li>遇到不会的，<b class="m">记下关键词</b>（状态压缩 / 分层图）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="ix">NEXT</span>接下去学什么</div>
+          <div class="kv"><div class="k">同源</div><div class="v">A* · 双向 BFS · 次短路</div></div>
+          <div class="kv"><div class="k">图论</div><div class="v">最小生成树 · 拓扑排序 · 差分约束</div></div>
+          <div class="kv"><div class="k">进阶</div><div class="v">网络流 · 二分图 · 树上问题</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 34 总结 ==================== -->
+<section class="slide" data-t="总结与复习路线">
+  <div class="wrap">
+    <div class="grid">
+      <div class="c1-7">
+        <div class="mono rv" style="--d:.05s;font-size:12px;letter-spacing:.16em;color:var(--volt)">
+          END OF DECK · SHORTEST PATHS · 34 SLIDES
+        </div>
+        <h2 class="rv" style="--d:.12s;font-family:var(--disp);font-size:50px;font-weight:700;
+          line-height:1.16;letter-spacing:-.028em;margin-top:16px">
+          「<span class="g">看边权</span>，选算法；<br><span class="a">看约束</span>，换模型。」
+        </h2>
+        <p class="rv" style="--d:.2s;margin-top:18px;font-size:19px;line-height:1.76;max-width:530px;color:var(--ink2)">
+          最短路不难，难在<b>认出它</b>。<br>
+          下次看到「<b class="g">最少几步</b>」「<b class="a">最少代价</b>」「<b class="p">最多 k 次</b>」，<br>
+          先停下来想一想：<b>这是哪一级阶梯？</b>
+        </p>
+
+        <div class="grid rv" style="--d:.28s;margin-top:26px;grid-template-columns:repeat(3,1fr);gap:16px">
+          <div class="stat"><div class="n g">5</div><div class="l">核心算法</div></div>
+          <div class="stat"><div class="n g">12</div><div class="l">PYTHON 模板</div></div>
+          <div class="stat"><div class="n a">28</div><div class="l">洛谷 + LC 题</div></div>
+        </div>
+
+        <div class="rv" style="--d:.36s;margin-top:26px;display:flex;gap:11px;flex-wrap:wrap">
+          <a class="bigbtn btn-volt" href="https://www.luogu.com.cn/problem/P4779"
+             target="_blank" rel="noopener">先做 P4779</a>
+          <a class="bigbtn btn-hot" href="https://leetcode.cn/problems/rotting-oranges/"
+             target="_blank" rel="noopener">或 LC 994 热身</a>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.22s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 420 300">
+            <text class="cap" x="20" y="24">复习路线 · 四天</text>
+            <path class="lead" d="M20 266 L400 266"/>
+            <rect x="30" y="212" width="86" height="54" rx="8" fill="#FFF" stroke="#D6C6A9" stroke-width="1.8"/>
+            <text class="lb" x="73" y="239" style="font-size:13px">BFS</text>
+            <rect x="128" y="158" width="86" height="108" rx="8" fill="#FFF4EF" stroke="#D9541F" stroke-width="2"/>
+            <text class="lb volt" x="171" y="186" style="font-size:13px">Dijkstra</text>
+            <text class="capv" x="171" y="234" text-anchor="middle" style="font-size:11px">必背</text>
+            <rect x="226" y="104" width="86" height="162" rx="8" fill="#FFFBEE" stroke="#B8860B" stroke-width="2"/>
+            <text class="lb gold" x="269" y="132" style="font-size:13px">BF/SPFA</text>
+            <text class="capa" x="269" y="182" text-anchor="middle" style="font-size:11px">判负环</text>
+            <rect x="324" y="30" width="86" height="236" rx="8" fill="#FDF2F1" stroke="#A32132" stroke-width="2.2"/>
+            <text class="lb hot" x="367" y="58" style="font-size:13px">Floyd</text>
+            <text class="caph" x="367" y="108" text-anchor="middle" style="font-size:11px">k 最外层</text>
+            <text class="caph" x="367" y="128" text-anchor="middle" style="font-size:11px">四种妙用</text>
+            <text class="cap" x="20" y="292">从左到右，每天复习一级</text>
+          </svg>
+          <div class="fcap">FIG.34 · 四天复习路线</div>
+        </div>
+
+        <div class="card">
+          <div class="ct"><span class="ix">RECAP</span>五个算法一句话</div>
+          <div class="kv"><div class="k">BFS</div><div class="v">边权 1，逐层扩散</div></div>
+          <div class="kv"><div class="k">Dijkstra</div><div class="v">非负权，挑最近 + 松弛</div></div>
+          <div class="kv"><div class="k">BF</div><div class="v">有负权，刷 n−1 轮</div></div>
+          <div class="kv"><div class="k">SPFA</div><div class="v">BF 的队列优化</div></div>
+          <div class="kv"><div class="k">Floyd</div><div class="v">所有点对，k 在最外层</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function(){
+"use strict";
+
+var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+var total = slides.length;
+var current = 0;
+
+var rail = document.getElementById('rail');
+slides.forEach(function(s, i){
+  var b = document.createElement('button');
+  b.innerHTML = '<span>' + (i+1 < 10 ? '0' : '') + (i+1) + '</span><i></i>';
+  b.title = s.dataset.t || '';
+  b.addEventListener('click', function(){ go(i); });
+  rail.appendChild(b);
+});
+var railBtns = Array.prototype.slice.call(rail.children);
+
+function go(i){
+  if(i < 0) i = 0;
+  if(i > total - 1) i = total - 1;
+  slides[i].scrollIntoView({ behavior:'smooth', block:'start' });
+}
+document.getElementById('prevBtn').addEventListener('click', function(){ go(current - 1); });
+document.getElementById('nextBtn').addEventListener('click', function(){ go(current + 1); });
+
+document.addEventListener('keydown', function(e){
+  var tag = (e.target.tagName || '').toLowerCase();
+  if(tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if(e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' '){
+    e.preventDefault(); go(current + 1);
+  }else if(e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp'){
+    e.preventDefault(); go(current - 1);
+  }else if(e.key === 'Home'){ e.preventDefault(); go(0); }
+  else if(e.key === 'End'){ e.preventDefault(); go(total - 1); }
+});
+
+var prog = document.getElementById('prog');
+var countEl = document.getElementById('count');
+function pad2(n){ return (n < 10 ? '0' : '') + n; }
+
+var io = new IntersectionObserver(function(ents){
+  ents.forEach(function(e){
+    if(e.isIntersecting && e.intersectionRatio > 0.35){
+      var i = slides.indexOf(e.target);
+      if(i < 0) return;
+      current = i;
+      e.target.classList.add('on');
+      countEl.textContent = pad2(i + 1) + ' / ' + pad2(total);
+      prog.style.width = ((i + 1) / total * 100) + '%';
+      railBtns.forEach(function(b, k){ b.classList.toggle('on', k === i); });
+    }
+  });
+}, { threshold: [0, 0.35, 0.7] });
+slides.forEach(function(s){ io.observe(s); });
+slides[0].classList.add('on');
+
+var t0 = Date.now(), clock = document.getElementById('clock');
+setInterval(function(){
+  var s = Math.floor((Date.now() - t0) / 1000);
+  var over = s > 2400;
+  var v = over ? 2400 : s;
+  clock.textContent = pad2(Math.floor(v / 60)) + ':' + pad2(v % 60) + ' / 40:00';
+  if(over) clock.classList.add('done');
+}, 1000);
+
+})();
+</script>
+</body>
+</html>

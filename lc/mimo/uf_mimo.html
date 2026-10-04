@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>并查集 Union-Find · 4 分钟讲义</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --canvas:#0A0B0E; --s1:#12141A; --s2:#1A1D24; --hair:#262A33;
+  --ink:#F2F0EA; --muted:#8A9099;
+  --volt:#17E39A; --hot:#FF5B7F; --warn:#FFB240; --indigo:#C9B8FF;
+  --disp:'Space Grotesk',Archivo,system-ui,sans-serif;
+  --han:'Noto Sans SC',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--canvas);color:var(--ink);font-family:var(--han);font-size:23px;line-height:1.85;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  scroll-snap-type:y proximity;
+}
+::selection{background:rgba(23,227,154,.25)}
+b{font-weight:500;color:var(--ink)}
+.g{color:var(--volt)}
+.p{color:var(--hot)}
+.a{color:var(--warn)}
+.m{color:var(--muted)}
+.mono{font-family:var(--mono)}
+
+/* ============ chrome ============ */
+.progress{position:fixed;top:0;left:0;height:5px;width:0;background:var(--volt);z-index:80;
+  box-shadow:0 0 12px rgba(23,227,154,.5);transition:width .25s ease}
+.topbar{position:fixed;top:0;left:0;right:0;height:48px;z-index:70;background:var(--canvas);
+  border-bottom:1px solid var(--hair);display:flex;align-items:center;justify-content:space-between;
+  padding:0 30px;font-family:var(--mono);font-size:14px;letter-spacing:.12em;color:var(--muted)}
+.topbar .r{display:flex;gap:22px;align-items:center}
+.topbar .count{color:var(--ink)}
+.topbar .clock.done{color:var(--volt)}
+
+.rail{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:60;
+  display:flex;flex-direction:column;gap:12px;align-items:flex-end}
+.rail button{background:none;border:0;cursor:pointer;font-family:var(--mono);font-size:12px;
+  letter-spacing:.10em;color:var(--muted);opacity:.32;display:flex;align-items:center;gap:9px;
+  padding:0;transition:opacity .25s,color .25s}
+.rail button i{display:block;width:15px;height:1px;background:currentColor;transition:width .25s}
+.rail button.on{opacity:1;color:var(--volt)}
+.rail button.on i{width:30px}
+.rail button:hover{opacity:.8}
+
+.navctl{position:fixed;left:30px;bottom:24px;z-index:60;display:flex;gap:10px;align-items:center}
+.navctl button{height:44px;padding:0 20px;background:var(--s1);border:1px solid var(--hair);
+  border-radius:0;color:var(--muted);font-family:var(--mono);font-size:13px;letter-spacing:.12em;
+  cursor:pointer;transition:.16s}
+.navctl button:hover{color:var(--ink);border-color:var(--muted)}
+.navctl button:active{transform:translateY(1px)}
+.navctl .key{color:var(--muted);opacity:.55;display:flex;align-items:center;font-family:var(--mono);font-size:13px}
+
+/* ============ slides ============ */
+.slide{min-height:100vh;display:flex;align-items:center;padding:88px 0 84px;
+  scroll-snap-align:start;position:relative}
+.wrap{width:100%;max-width:1320px;margin:0 auto;padding:0 52px}
+
+.s-head{display:flex;gap:26px;align-items:flex-start;margin-bottom:32px}
+.s-num{font-family:var(--mono);font-size:15px;letter-spacing:.16em;color:var(--muted);
+  padding-top:17px;flex:0 0 auto}
+.s-head h2{font-family:var(--disp);font-size:52px;font-weight:600;line-height:1.12;letter-spacing:-.018em}
+.s-head .sub{margin-top:13px;color:var(--muted);font-size:22px;line-height:1.7;max-width:900px}
+.s-head .sub b{color:var(--ink)}
+
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:26px}
+.c1-6{grid-column:1/7}.c7-12{grid-column:7/13}
+.c1-5{grid-column:1/6}.c6-12{grid-column:6/13}
+.c1-7{grid-column:1/8}.c8-12{grid-column:8/13}
+.c1-4{grid-column:1/5}.c5-8{grid-column:5/9}.c9-12{grid-column:9/13}
+.full{grid-column:1/13}
+
+/* ============ cards / blocks ============ */
+.card{background:var(--s1);border:1px solid var(--hair);border-radius:12px;padding:32px}
+.card.volt{border-color:rgba(23,227,154,.32)}
+.card.hot{border-color:rgba(255,91,127,.30)}
+.ct{font-family:var(--disp);font-size:29px;font-weight:600;letter-spacing:-.012em;line-height:1.28}
+.ct .ix{display:block;font-family:var(--mono);font-size:14px;letter-spacing:.14em;
+  color:var(--muted);font-weight:400;margin-bottom:10px}
+.card p{margin-top:14px;font-size:21px;color:var(--muted);line-height:1.75}
+.card p b{color:var(--ink)}
+
+.kv{display:flex;gap:16px;align-items:baseline;padding:15px 0;border-top:1px solid var(--hair)}
+.kv:first-child{border-top:0}
+.kv .k{font-family:var(--mono);font-size:15px;letter-spacing:.11em;color:var(--muted);flex:0 0 142px}
+.kv .v{font-size:21px;line-height:1.6}
+.kv .v .mono{font-size:19px}
+
+.stat{display:flex;flex-direction:column;gap:5px}
+.stat .n{font-family:var(--disp);font-size:66px;font-weight:600;line-height:1;letter-spacing:-.025em}
+.stat .l{font-family:var(--mono);font-size:14px;letter-spacing:.14em;color:var(--muted)}
+.stat .d{font-size:19px;color:var(--muted);line-height:1.6;margin-top:8px}
+
+.tagrow{display:flex;flex-wrap:wrap;gap:11px;margin-top:20px}
+.tag{font-family:var(--mono);font-size:14px;letter-spacing:.10em;color:var(--muted);
+  border:1px solid var(--hair);border-radius:5px;padding:9px 16px}
+.tag.on{color:var(--volt);border-color:rgba(23,227,154,.4)}
+.tag.hot{color:var(--hot);border-color:rgba(255,91,127,.35)}
+
+/* ============ diagram commons ============ */
+.dg{width:100%;height:auto;display:block;overflow:visible}
+.dg .nd{fill:#12141A;stroke:#262A33;stroke-width:1.8}
+.dg .nd.root{stroke:#17E39A;stroke-width:2.5}
+.dg .nd.hot{stroke:#FF5B7F;stroke-width:2.5}
+.dg .nd.rhot{stroke:#FF5B7F;stroke-width:2.8}
+.dg .lb{font-family:var(--mono);font-size:21px;fill:#F2F0EA;text-anchor:middle;dominant-baseline:central}
+.dg .lb.root{fill:#17E39A}
+.dg .lb.hot{fill:#FF5B7F}
+.dg .ed{stroke:#262A33;stroke-width:1.6;fill:none}
+.dg .ed.tr{stroke:#3B424D;stroke-width:2}
+.dg .ed.hot{stroke:#FF5B7F;stroke-width:2.8}
+.dg .ed.volt{stroke:#17E39A;stroke-width:2.8}
+.dg .lead{stroke:#3B424D;stroke-width:1.2;fill:none}
+.dg .cap{font-family:var(--mono);font-size:15px;fill:#8A9099;letter-spacing:.08em}
+.dg .capv{font-family:var(--mono);font-size:15px;fill:#17E39A;letter-spacing:.08em}
+.dg .caph{font-family:var(--mono);font-size:15px;fill:#FF5B7F;letter-spacing:.08em}
+.dg .cn{font-family:var(--han);font-size:18px;fill:#8A9099}
+.dg .big{font-family:var(--disp);font-size:56px;font-weight:600;letter-spacing:-.02em}
+.figure{background:var(--s1);border:1px solid var(--hair);border-radius:12px;padding:32px 34px}
+.figure.narrow{max-width:880px;margin:0 auto}
+.figure .fcap{margin-top:18px;font-family:var(--mono);font-size:14px;letter-spacing:.10em;color:var(--muted)}
+
+/* ============ code ============ */
+.code{background:var(--canvas);border:1px solid var(--hair);border-radius:8px;padding:24px 26px;overflow:auto}
+.code pre{font-family:var(--mono);font-size:16px;line-height:1.72;color:var(--ink);white-space:pre}
+.code .kw{color:var(--indigo)}
+.code .cm{color:var(--muted)}
+.code .nu{color:var(--warn)}
+.code .fn{color:var(--volt)}
+.codelabel{font-family:var(--mono);font-size:14px;letter-spacing:.14em;color:var(--muted);margin-bottom:12px}
+.codenote{margin-top:16px;padding-top:14px;border-top:1px solid var(--hair);
+  display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.codenote .n-k{font-family:var(--mono);font-size:13px;letter-spacing:.13em;color:var(--volt);flex:0 0 auto}
+.codenote .n-v{font-size:18px;color:var(--muted);line-height:1.6}
+
+/* ============ lists ============ */
+ol.steps{list-style:none;counter-reset:s}
+ol.steps li{counter-increment:s;position:relative;padding:13px 0 13px 54px;border-top:1px solid var(--hair);
+  font-size:20px;line-height:1.65}
+ol.steps li:before{content:counter(s,decimal-leading-zero);position:absolute;left:0;top:16px;
+  font-family:var(--mono);font-size:15px;letter-spacing:.10em;color:var(--volt)}
+ul.pit{list-style:none}
+ul.pit li{padding:13px 0 13px 32px;border-top:1px solid var(--hair);font-size:20px;line-height:1.65;position:relative}
+ul.pit li:before{content:"✕";position:absolute;left:0;top:15px;color:var(--hot);font-family:var(--mono);font-size:16px}
+
+table.cmp{width:100%;border-collapse:collapse;font-size:19px}
+table.cmp th{font-family:var(--mono);font-size:14px;letter-spacing:.11em;color:var(--muted);
+  text-align:left;padding:12px 12px;border-bottom:1px solid var(--hair);font-weight:400}
+table.cmp td{padding:13px 12px;border-bottom:1px solid var(--hair);color:var(--muted);line-height:1.55}
+table.cmp td:first-child{color:var(--ink)}
+table.cmp tr:last-child td{border-bottom:0}
+
+/* ============ complexity bars ============ */
+.crow{padding:17px 0;border-top:1px solid var(--hair);display:grid;
+  grid-template-columns:190px 1fr 215px;gap:22px;align-items:center}
+.crow:last-child{border-bottom:1px solid var(--hair)}
+.crow .nm{font-size:21px}
+.crow .nm small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.11em;
+  color:var(--muted);margin-top:4px}
+.track{height:18px;background:var(--hair);border-radius:2px;overflow:hidden}
+.track i{display:block;height:100%;width:0;border-radius:2px;background:var(--volt);
+  transition:width .9s cubic-bezier(.22,1,.36,1)}
+.track i.warn{background:var(--warn)}
+.track i.mute{background:#3C424D}
+.crow .cp{font-family:var(--mono);font-size:15px;color:var(--muted);text-align:right;line-height:1.5}
+.crow .cp b{display:block;color:var(--ink);font-size:17px;font-weight:400}
+
+/* ============ apps ============ */
+.apps{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.app{background:var(--s1);border:1px solid var(--hair);border-radius:12px;padding:26px;transition:border-color .18s}
+.app:hover{border-color:rgba(23,227,154,.35)}
+.app .thumb{height:58px;width:100%;margin-bottom:16px}
+.app h3{font-family:var(--disp);font-size:23px;font-weight:600;letter-spacing:-.01em}
+.app p{margin-top:9px;font-size:18px;color:var(--muted);line-height:1.62}
+.app .tg{margin-top:14px;display:inline-block;font-family:var(--mono);font-size:13px;
+  letter-spacing:.11em;color:var(--hot);border:1px solid rgba(255,91,127,.32);border-radius:5px;padding:4px 10px}
+
+/* ============ flatten demo ============ */
+.flat .fl-c{fill:#1A1D24;stroke:#262A33;stroke-width:1.8}
+.flat .fl-root .fl-c{stroke:#17E39A;stroke-width:2.6;fill:#12141A}
+.flat .fl-t{font-family:var(--mono);font-size:22px;fill:#F2F0EA;text-anchor:middle;dominant-baseline:central}
+.flat .fl-root .fl-t{fill:#17E39A}
+.flat .fl-h{stroke:#FF5B7F;stroke-width:2.8;fill:none;
+  filter:drop-shadow(0 0 7px rgba(255,91,127,.65))}
+.flat .fl-v{stroke:#17E39A;stroke-width:2.8;fill:none;
+  filter:drop-shadow(0 0 7px rgba(23,227,154,.6))}
+.fbadge{margin-top:20px;font-family:var(--mono);font-size:17px;letter-spacing:.05em;color:var(--volt);
+  border:1px solid rgba(23,227,154,.32);border-radius:5px;padding:11px 17px;display:inline-block}
+.bigbtn{height:52px;padding:0 26px;font-family:var(--han);font-size:19px;border-radius:5px;cursor:pointer}
+.btn-volt{background:transparent;border:1px solid var(--volt);color:var(--volt)}
+.btn-mute{background:var(--s2);border:1px solid var(--hair);color:var(--ink)}
+.bigbtn:active{transform:translateY(1px)}
+.bigbtn:disabled{opacity:.45;cursor:default}
+
+/* ============ reveal ============ */
+.rv{opacity:0;transform:translateY(18px);
+  transition:opacity .55s ease,transform .55s cubic-bezier(.22,1,.36,1);
+  transition-delay:var(--d,0s)}
+.slide.on .rv{opacity:1;transform:none}
+
+/* ============ responsive ============ */
+@media (max-width:1280px){ .rail{display:none} }
+@media (max-width:1040px){ .wrap{padding:0 34px} }
+@media (max-width:980px){
+  .grid{grid-template-columns:1fr}
+  .c1-6,.c7-12,.c1-5,.c6-12,.c1-7,.c8-12,.c1-4,.c5-8,.c9-12,.full{grid-column:1/2}
+  .slide{padding:92px 0 92px}
+  .apps{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:680px){
+  body{scroll-snap-type:none}
+  .s-head h2{font-size:38px}
+  .s-head .sub{font-size:19px}
+  body{font-size:19px}
+  .apps{grid-template-columns:1fr}
+  .crow{grid-template-columns:1fr;gap:10px}
+  .crow .cp{text-align:left}
+  .navctl{left:18px;bottom:18px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms!important;animation-duration:.01ms!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="prog"></div>
+
+<div class="topbar">
+  <div>UNION-FIND · 并查集 · 15 SLIDES</div>
+  <div class="r">
+    <span class="clock" id="clock">00:00 / 04:00</span>
+    <span class="count" id="count">01 / 15</span>
+  </div>
+</div>
+
+<nav class="rail" id="rail"></nav>
+
+<div class="navctl">
+  <button id="prevBtn">← PREV</button>
+  <button id="nextBtn">NEXT →</button>
+  <span class="key">↑↓ / SPACE 翻页</span>
+</div>
+
+<main id="deck">
+
+<!-- ============ 01 封面 ============ -->
+<section class="slide" data-t="封面">
+  <div class="wrap">
+    <div class="grid">
+      <div class="c1-6">
+        <div class="mono rv" style="--d:.05s;font-size:15px;letter-spacing:.16em;color:var(--volt)">
+          UNION-FIND / DISJOINT SET UNION · 4 MIN
+        </div>
+        <h1 class="rv" style="--d:.12s;font-family:var(--disp);font-size:98px;font-weight:700;
+          line-height:.98;letter-spacing:-.032em;margin-top:24px">并查集</h1>
+        <div class="rv" style="--d:.18s;font-family:var(--disp);font-size:29px;color:var(--muted);
+          letter-spacing:.02em;margin-top:12px">Disjoint Set Union</div>
+        <p class="rv" style="--d:.24s;margin-top:28px;font-size:25px;line-height:1.8;max-width:470px">
+          把元素分成<b>互不相交</b>的组。<br>它只回答一个问题：<br>
+          <b class="g">「两个东西，是不是一伙的？」</b>
+        </p>
+        <div class="grid rv" style="--d:.32s;margin-top:38px;grid-template-columns:repeat(3,1fr);gap:20px">
+          <div class="stat"><div class="n g">2</div><div class="l">OPERATIONS</div></div>
+          <div class="stat"><div class="n">α(n)</div><div class="l">TIME / FIND</div></div>
+          <div class="stat"><div class="n">n</div><div class="l">SPACE</div></div>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.26s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 520 350">
+            <rect class="setbox" x="30" y="26" width="176" height="284" rx="14"/>
+            <rect class="setbox" x="212" y="26" width="164" height="186" rx="14"/>
+            <rect class="setbox" x="380" y="26" width="136" height="186" rx="14"/>
+
+            <path class="ed" d="M118 96 L70 170 M118 96 L166 170 M166 170 L166 280"/>
+            <path class="ed" d="M294 96 L250 170 M294 96 L338 170"/>
+            <path class="ed" d="M448 96 L414 170 M448 96 L482 170"/>
+
+            <circle class="nd root" cx="118" cy="70" r="28"/><text class="lb root" x="118" y="70">0</text>
+            <circle class="nd" cx="70" cy="170" r="25"/><text class="lb" x="70" y="170">1</text>
+            <circle class="nd" cx="166" cy="170" r="25"/><text class="lb" x="166" y="170">2</text>
+            <circle class="nd" cx="166" cy="280" r="25"/><text class="lb" x="166" y="280">3</text>
+
+            <circle class="nd root" cx="294" cy="70" r="28"/><text class="lb root" x="294" y="70">4</text>
+            <circle class="nd" cx="250" cy="170" r="25"/><text class="lb" x="250" y="170">5</text>
+            <circle class="nd" cx="338" cy="170" r="25"/><text class="lb" x="338" y="170">6</text>
+
+            <circle class="nd root" cx="448" cy="70" r="28"/><text class="lb root" x="448" y="70">7</text>
+            <circle class="nd" cx="414" cy="170" r="25"/><text class="lb" x="414" y="170">8</text>
+            <circle class="nd" cx="482" cy="170" r="25"/><text class="lb" x="482" y="170">9</text>
+
+            <text class="capv" x="32" y="336">SET A</text>
+            <text class="capv" x="214" y="336">SET B</text>
+            <text class="capv" x="382" y="336">SET C</text>
+          </svg>
+          <div class="fcap">FIG.01 · 三个集合 · 十个元素 · 树高各不相同</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 为什么 ============ -->
+<section class="slide" data-t="为什么需要它">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">02</div>
+      <div>
+        <h2>为什么需要它</h2>
+        <p class="sub">一堆关系，一堆询问。<b>暴力做法的时间撑不住。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 680 290">
+            <text class="caph" x="170" y="28" text-anchor="middle">朴素做法 · 两两比较</text>
+            <g opacity=".32">
+              <path class="ed hot" d="M60 120 L150 80 M60 120 L250 110 M60 120 L70 215 M60 120 L170 235 M60 120 L265 200
+                M150 80 L250 110 M150 80 L70 215 M150 80 L170 235 M150 80 L265 200
+                M250 110 L70 215 M250 110 L170 235 M250 110 L265 200
+                M70 215 L170 235 M70 215 L265 200 M170 235 L265 200"/>
+            </g>
+            <circle class="nd hot" cx="60" cy="120" r="21"/><circle class="nd hot" cx="150" cy="80" r="21"/>
+            <circle class="nd hot" cx="250" cy="110" r="21"/><circle class="nd hot" cx="70" cy="215" r="21"/>
+            <circle class="nd hot" cx="170" cy="235" r="21"/><circle class="nd hot" cx="265" cy="200" r="21"/>
+            <text class="cn" x="170" y="278" text-anchor="middle">6 点 → 15 次比较</text>
+
+            <text class="capv" x="515" y="28" text-anchor="middle">并查集 · 维护分组</text>
+            <rect class="setbox" x="366" y="56" width="138" height="92" rx="12"/>
+            <rect class="setbox" x="516" y="56" width="138" height="92" rx="12"/>
+            <rect class="setbox" x="441" y="170" width="138" height="92" rx="12"/>
+            <circle class="nd root" cx="402" cy="102" r="20"/><circle class="nd" cx="468" cy="102" r="20"/>
+            <circle class="nd root" cx="552" cy="102" r="20"/><circle class="nd" cx="618" cy="102" r="20"/>
+            <circle class="nd root" cx="477" cy="216" r="20"/><circle class="nd" cx="543" cy="216" r="20"/>
+            <text class="cn" x="515" y="278" text-anchor="middle">同不同组？只比两棵树的根</text>
+          </svg>
+          <div class="fcap">FIG.02 · 从「比所有对」到「只比代表元」；1 万个元素要 5000 万次比较</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">THE POINT</span>差别在哪</div>
+          <div class="kv"><div class="k">朴素</div><div class="v">每来一条关系就比一次，<b class="p">O(n²)</b> 起步</div></div>
+          <div class="kv"><div class="k">并查集</div><div class="v">每来一条关系并一次，查询只找根，<b class="g">近似 O(1)</b></div></div>
+          <div class="kv"><div class="k">本质</div><div class="v">把「谁和谁有关」这件事<b>结构化</b>地存起来</div></div>
+        </div>
+        <div class="tagrow">
+          <span class="tag on">认亲戚</span><span class="tag on">修路连通</span>
+          <span class="tag on">好友分组</span><span class="tag on">检测成环</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 定义与术语 ============ -->
+<section class="slide" data-t="定义与术语">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">03</div>
+      <div>
+        <h2>定义与术语</h2>
+        <p class="sub">并查集维护 n 个元素的一个<b>划分</b>：若干个互不相交的集合（也叫等价类）。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 760 320">
+            <rect class="setbox" x="196" y="24" width="474" height="276" rx="14"/>
+            <text class="capv" x="212" y="16">集合 SET · 一个等价类</text>
+
+            <path class="ed" d="M430 88 L320 152 M430 88 L540 152 M320 186 L250 252 M320 186 L390 252 M540 186 L540 252"/>
+            <circle class="nd root" cx="430" cy="60" r="28"/><text class="lb root" x="430" y="60">0</text>
+            <circle class="nd" cx="320" cy="168" r="26"/><text class="lb" x="320" y="168">1</text>
+            <circle class="nd" cx="540" cy="168" r="26"/><text class="lb" x="540" y="168">2</text>
+            <circle class="nd" cx="250" cy="266" r="26"/><text class="lb" x="250" y="266">3</text>
+            <circle class="nd" cx="390" cy="266" r="26"/><text class="lb" x="390" y="266">4</text>
+            <circle class="nd" cx="540" cy="266" r="26"/><text class="lb" x="540" y="266">5</text>
+
+            <line class="lead" x1="228" y1="262" x2="146" y2="238"/>
+            <text class="cap" x="8" y="232">parent[3]=1</text>
+            <line class="lead" x1="228" y1="292" x2="146" y2="304"/>
+            <text class="cap" x="8" y="310">depth(3)=2</text>
+            <line class="lead" x1="302" y1="150" x2="146" y2="122"/>
+            <text class="cap" x="8" y="116">parent[1]=0</text>
+
+            <text class="capv" x="430" y="316" text-anchor="middle">根 ROOT = 0 · 代表元</text>
+          </svg>
+          <div class="fcap">FIG.03 · 一棵树 = 一个集合</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">VOCABULARY</span>四个术语</div>
+          <div class="kv"><div class="k">元素</div><div class="v"><span class="mono">element</span> · 要分组的个体</div></div>
+          <div class="kv"><div class="k">集合</div><div class="v"><span class="mono">set</span> · 互不相交的一组元素</div></div>
+          <div class="kv"><div class="k">代表元</div><div class="v"><span class="mono">root</span> · 树根，代表整个集合</div></div>
+          <div class="kv"><div class="k">森林</div><div class="v"><span class="mono">forest</span> · 所有树的全体</div></div>
+        </div>
+        <div class="card volt" style="margin-top:22px">
+          <div class="ct" style="font-family:var(--mono);font-size:22px">
+            <span class="ix">KEY JUDGEMENT</span>
+            a 与 b 同组 ⟺ <span class="g">find(a)==find(b)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 三个操作 ============ -->
+<section class="slide" data-t="三个操作">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">04</div>
+      <div>
+        <h2>三个操作</h2>
+        <p class="sub">除此之外没有别的动作。查询 <b>same(a,b)</b> 只是 find 的组合。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-4 rv" style="--d:.06s">
+        <div class="card">
+          <div class="ct"><span class="ix">OP 01</span>make_set(x)</div>
+          <svg class="dg" viewBox="0 0 240 116" style="margin-top:14px">
+            <rect class="setbox" x="82" y="12" width="76" height="76" rx="12"/>
+            <circle class="nd root" cx="120" cy="50" r="26"/><text class="lb root" x="120" y="50">x</text>
+            <text class="cap" x="120" y="108" text-anchor="middle">单独成组</text>
+          </svg>
+          <p>把 <b>x</b> 放进一个只含自己的集合。</p>
+        </div>
+      </div>
+
+      <div class="c5-8 rv" style="--d:.12s">
+        <div class="card">
+          <div class="ct"><span class="ix">OP 02</span>find(x)</div>
+          <svg class="dg" viewBox="0 0 240 116" style="margin-top:14px">
+            <defs>
+              <marker id="m-op2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                <path d="M0 0 L9 4.5 L0 9 z" fill="#FF5B7F"/>
+              </marker>
+            </defs>
+            <path class="ed hot" d="M52 88 L120 56 L167 34" marker-end="url(#m-op2)"/>
+            <circle class="nd hot" cx="52" cy="88" r="22"/><text class="lb hot" x="52" y="88">x</text>
+            <circle class="nd hot" cx="120" cy="56" r="21"/><text class="lb hot" x="120" y="56">·</text>
+            <circle class="nd root" cx="188" cy="24" r="23"/><text class="lb root" x="188" y="24">r</text>
+            <text class="caph" x="120" y="112" text-anchor="middle">沿 parent 一路向上</text>
+          </svg>
+          <p>返回 <b>x</b> 所在集合的代表元。</p>
+        </div>
+      </div>
+
+      <div class="c9-12 rv" style="--d:.18s">
+        <div class="card">
+          <div class="ct"><span class="ix">OP 03</span>union(a, b)</div>
+          <svg class="dg" viewBox="0 0 240 118" style="margin-top:14px">
+            <defs>
+              <marker id="m-op3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+                <path d="M0 0 L9 4.5 L0 9 z" fill="#17E39A"/>
+              </marker>
+            </defs>
+            <path class="ed" d="M58 46 L30 98 M58 46 L86 98"/>
+            <path class="ed" d="M182 46 L154 98 M182 46 L210 98"/>
+            <circle class="nd root" cx="58" cy="46" r="22"/><text class="lb root" x="58" y="46">a</text>
+            <circle class="nd" cx="30" cy="98" r="18"/><text class="lb" x="30" y="98">1</text>
+            <circle class="nd" cx="86" cy="98" r="18"/><text class="lb" x="86" y="98">2</text>
+            <circle class="nd root" cx="182" cy="46" r="22"/><text class="lb root" x="182" y="46">b</text>
+            <circle class="nd" cx="154" cy="98" r="18"/><text class="lb" x="154" y="98">3</text>
+            <circle class="nd" cx="210" cy="98" r="18"/><text class="lb" x="210" y="98">4</text>
+            <path class="ed volt" d="M158 46 L82 46" stroke-dasharray="6 4" marker-end="url(#m-op3)"/>
+            <text class="capv" x="120" y="18" text-anchor="middle">parent[b]=a</text>
+          </svg>
+          <p>先各找根，再挂根。<b>不是把 a 挂到 b。</b></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:24px">
+      <div class="full rv" style="--d:.24s">
+        <div class="card" style="display:flex;gap:36px;align-items:center;flex-wrap:wrap">
+          <div class="mono" style="font-size:19px;color:var(--volt);letter-spacing:.04em">
+            same(a, b) = ( find(a) == find(b) )
+          </div>
+          <div style="flex:1;min-width:300px;color:var(--muted);font-size:21px">
+            并查集<b class="g">不保存成员列表</b>，只保存「谁的父节点是谁」，成员靠 find 现算。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 05 怎么存 ============ -->
+<section class="slide" data-t="怎么存：一个数组">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">05</div>
+      <div>
+        <h2>怎么存：一个数组就够</h2>
+        <p class="sub"><b>数组下标 = 元素编号，数组的值 = 它的父节点。</b>根的特征是 <span class="mono g">parent[i] == i</span>。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="full rv" style="--d:.08s">
+        <div class="figure narrow">
+          <svg class="dg" viewBox="0 0 720 356">
+            <text class="cap" x="4" y="15">PARENT[]</text>
+            <rect x="2" y="22" width="716" height="64" rx="8" fill="none" stroke="#262A33"/>
+            <g id="ar-cells"></g>
+            <g id="ar-drops"></g>
+            <g id="ar-edges"></g>
+            <g id="ar-nodes"></g>
+            <text class="capv" x="4" y="348">ROOTS = { 0, 4, 7 }</text>
+            <text class="cap" x="716" y="348" text-anchor="end">下标 = 元素 · 值 = 父节点</text>
+          </svg>
+          <div class="fcap">FIG.05 · 上：数组视图　下：森林视图　淡绿虚线是同一件事的两种画法</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:24px">
+      <div class="c1-4 rv" style="--d:.14s">
+        <div class="card"><div class="ct"><span class="ix">INIT</span>初始状态</div>
+          <p>每人自成一派：<span class="mono g">parent[i] = i</span></p></div>
+      </div>
+      <div class="c5-8 rv" style="--d:.2s">
+        <div class="card"><div class="ct"><span class="ix">SPACE</span>空间开销</div>
+          <p>一个 <span class="mono">parent[]</span> 即可，优化时再加 <span class="mono">rank[]</span>。</p></div>
+      </div>
+      <div class="c9-12 rv" style="--d:.26s">
+        <div class="card"><div class="ct"><span class="ix">SHAPE</span>数据结构</div>
+          <p>每棵树只有一个父指针，<b>没有兄弟、没有子表</b>。</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 06 find ============ -->
+<section class="slide" data-t="find：一直往上走">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">06</div>
+      <div>
+        <h2>find：一直往上走</h2>
+        <p class="sub">从 x 出发，只要 <span class="mono">parent[x] ≠ x</span> 就往上跳。走到头就是根。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-5 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 380 320">
+            <path class="ed hot" d="M80 272 L80 208 M80 208 L80 144 M80 144 L80 80"/>
+            <circle class="nd hot" cx="80" cy="272" r="26"/><text class="lb hot" x="80" y="272">3</text>
+            <circle class="nd hot" cx="80" cy="208" r="26"/><text class="lb hot" x="80" y="208">2</text>
+            <circle class="nd hot" cx="80" cy="144" r="26"/><text class="lb hot" x="80" y="144">1</text>
+            <circle class="nd root" cx="80" cy="80" r="27"/><text class="lb root" x="80" y="80">0</text>
+            <text class="caph" x="128" y="242">step 1</text>
+            <text class="caph" x="128" y="178">step 2</text>
+            <text class="caph" x="128" y="114">step 3</text>
+            <line class="lead" x1="112" y1="80" x2="248" y2="80"/>
+            <text class="capv" x="254" y="76">root = 0</text>
+            <line class="lead" x1="112" y1="272" x2="228" y2="272"/>
+            <text class="cap" x="234" y="268">find(3) = 3 步</text>
+          </svg>
+          <div class="fcap">FIG.06 · find(3) 的完整过程</div>
+        </div>
+      </div>
+
+      <div class="c6-12 rv" style="--d:.16s">
+        <div class="codelabel">PSEUDOCODE · NAIVE FIND</div>
+        <div class="code"><pre><span class="kw">function</span> <span class="fn">find</span>(x)
+    <span class="kw">while</span> parent[x] != x
+        x = parent[x]        <span class="cm"># 往上跳一格</span>
+    <span class="kw">return</span> x               <span class="cm"># 走到头，就是根</span></pre></div>
+
+        <div class="grid" style="margin-top:22px">
+          <div style="grid-column:1/7">
+            <div class="card"><div class="ct"><span class="ix">COST</span>代价</div>
+              <p>走了多少步 = 这个节点的<b>深度</b>，也就是<b class="a">树有多高</b>。</p></div>
+          </div>
+          <div style="grid-column:7/13">
+            <div class="card"><div class="ct"><span class="ix">NOTE</span>注意</div>
+              <p>路径上的每个节点都<b>顺路经过了</b>。这句话是「路径压缩」的伏笔。</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 07 union ============ -->
+<section class="slide" data-t="union：先找根再挂">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">07</div>
+      <div>
+        <h2>union：先找根，再挂根</h2>
+        <p class="sub">合并的是<b>两个集合</b>，所以要挂的是两个<b class="g">根</b>，不是随便两个节点。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 640 280">
+            <defs>
+              <marker id="m-u7" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+                <path d="M0 0 L10 5 L0 10 z" fill="#17E39A"/>
+              </marker>
+            </defs>
+
+            <text class="cap" x="150" y="22">合并前 · 两棵树</text>
+            <path class="ed" d="M80 68 L44 134 M80 68 L116 134"/>
+            <circle class="nd root" cx="80" cy="62" r="25"/><text class="lb root" x="80" y="62">0</text>
+            <circle class="nd" cx="44" cy="140" r="23"/><text class="lb" x="44" y="140">1</text>
+            <circle class="nd" cx="116" cy="140" r="23"/><text class="lb" x="116" y="140">2</text>
+
+            <path class="ed" d="M232 68 L196 134 M232 68 L268 134"/>
+            <circle class="nd root" cx="232" cy="62" r="25"/><text class="lb root" x="232" y="62">4</text>
+            <circle class="nd" cx="196" cy="140" r="23"/><text class="lb" x="196" y="140">5</text>
+            <circle class="nd" cx="268" cy="140" r="23"/><text class="lb" x="268" y="140">6</text>
+
+            <path class="ed volt" d="M204 62 L108 62" stroke-dasharray="6 4" marker-end="url(#m-u7)"/>
+            <text class="capv" x="156" y="28" text-anchor="middle">parent[4] = 0</text>
+
+            <text class="cap" x="440" y="22">合并后 · 一棵树</text>
+            <path class="ed volt" d="M440 70 L368 138 M440 70 L440 138 M440 70 L512 138
+              M440 142 L406 212 M440 142 L474 212"/>
+            <circle class="nd root" cx="440" cy="62" r="25"/><text class="lb root" x="440" y="62">0</text>
+            <circle class="nd" cx="368" cy="142" r="23"/><text class="lb" x="368" y="142">1</text>
+            <circle class="nd" cx="440" cy="142" r="23"/><text class="lb" x="440" y="142">4</text>
+            <circle class="nd" cx="512" cy="142" r="23"/><text class="lb" x="512" y="142">2</text>
+            <circle class="nd" cx="406" cy="216" r="22"/><text class="lb" x="406" y="216">5</text>
+            <circle class="nd" cx="474" cy="216" r="22"/><text class="lb" x="474" y="216">6</text>
+            <text class="capv" x="440" y="266" text-anchor="middle">现在 2 和 6 同组了</text>
+          </svg>
+          <div class="fcap">FIG.07 · union(2, 6) 的前后对照</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="codelabel">PSEUDOCODE · UNION</div>
+        <div class="code"><pre><span class="kw">function</span> <span class="fn">union</span>(a, b)
+    ra = <span class="fn">find</span>(a)         <span class="cm"># 各自找根</span>
+    rb = <span class="fn">find</span>(b)
+    <span class="kw">if</span> ra == rb: <span class="kw">return</span>  <span class="cm"># 已同组</span>
+    parent[rb] = ra      <span class="cm"># 根挂到根</span></pre></div>
+
+        <div class="card hot" style="margin-top:22px">
+          <div class="ct"><span class="ix">COMMON MISTAKE</span>常见错误</div>
+          <p>写成 <span class="mono p">parent[a] = b</span>。这是把 <b>a</b> 挂到 <b>b</b> 上，
+          如果 a 原本有子树，整棵子树的归属就被搞乱了。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 08 退化 ============ -->
+<section class="slide" data-t="问题：树会长歪">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">08</div>
+      <div>
+        <h2>问题：树会长歪</h2>
+        <p class="sub">不断 union 之后，树可能退化成<b class="a">一条链</b>。此时 find 又变回了 O(n)。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-8 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 800 330">
+            <path class="ed hot" d="M58 44 L126 76 M126 76 L194 108 M194 108 L262 140 M262 140 L330 172
+              M330 172 L398 204 M398 204 L466 236 M466 236 L534 268"/>
+            <circle class="nd root" cx="58" cy="44" r="24"/><text class="lb root" x="58" y="44">0</text>
+            <circle class="nd hot" cx="126" cy="76" r="22"/><text class="lb hot" x="126" y="76">1</text>
+            <circle class="nd hot" cx="194" cy="108" r="22"/><text class="lb hot" x="194" y="108">2</text>
+            <circle class="nd hot" cx="262" cy="140" r="22"/><text class="lb hot" x="262" y="140">3</text>
+            <circle class="nd hot" cx="330" cy="172" r="22"/><text class="lb hot" x="330" y="172">4</text>
+            <circle class="nd hot" cx="398" cy="204" r="22"/><text class="lb hot" x="398" y="204">5</text>
+            <circle class="nd hot" cx="466" cy="236" r="22"/><text class="lb hot" x="466" y="236">6</text>
+            <circle class="nd hot" cx="534" cy="268" r="22"/><text class="lb hot" x="534" y="268">7</text>
+
+            <line class="lead" x1="558" y1="268" x2="622" y2="268"/>
+            <text class="caph" x="630" y="264">find(7) = 7 步</text>
+            <text class="cn" x="52" y="318">n 个节点的链 → find 最坏 n 步</text>
+          </svg>
+          <div class="fcap">FIG.08 · 链状退化：深度 = 节点数</div>
+        </div>
+      </div>
+
+      <div class="c9-12 rv" style="--d:.16s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">THE DANGER</span>会发生什么</div>
+          <p>不做干预，union 的顺序是<b>随机</b>的，树高不可控。</p>
+          <div class="kv"><div class="k">最好</div><div class="v">树高 <b class="g">O(log n)</b></div></div>
+          <div class="kv"><div class="k">最坏</div><div class="v">树高 <b class="p">O(n)</b>，退化成链表</div></div>
+          <div class="kv"><div class="k">解法</div><div class="v"><b class="g">① 按秩合并</b>　<b class="g">② 路径压缩</b></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 09 按秩合并 ============ -->
+<section class="slide" data-t="优化一：按秩合并">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">09</div>
+      <div>
+        <h2>优化一：按秩合并</h2>
+        <p class="sub">合并时<b>永远让矮的树挂到高的树下面</b>。树高就被压住了。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="figure" style="border-color:rgba(255,91,127,.28)">
+          <div class="mono" style="font-size:14px;letter-spacing:.14em;color:var(--hot);margin-bottom:16px">
+            WRONG · 高挂矮
+          </div>
+          <svg class="dg" viewBox="0 0 440 232">
+            <path class="ed hot" d="M38 46 L86 72 M86 72 L134 98 M134 98 L182 124 M182 124 L230 150
+              M230 150 L278 176 M278 176 L326 202"/>
+            <circle class="nd rhot" cx="38" cy="26" r="22"/><text class="lb hot" x="38" y="26">B</text>
+            <circle class="nd hot" cx="86" cy="52" r="20"/><text class="lb hot" x="86" y="52">4</text>
+            <circle class="nd hot" cx="134" cy="78" r="20"/><text class="lb hot" x="134" y="78">5</text>
+            <circle class="nd hot" cx="182" cy="104" r="22"/><text class="lb hot" x="182" y="104">A</text>
+            <circle class="nd hot" cx="230" cy="130" r="20"/><text class="lb hot" x="230" y="130">1</text>
+            <circle class="nd hot" cx="278" cy="156" r="20"/><text class="lb hot" x="278" y="156">2</text>
+            <circle class="nd hot" cx="326" cy="182" r="20"/><text class="lb hot" x="326" y="182">3</text>
+            <text class="caph" x="20" y="222">B→4→5→A→1→2→3 · 一条链</text>
+          </svg>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-top:22px">
+            <div class="mono" style="font-size:14px;letter-spacing:.14em;color:var(--muted)">合并后树高</div>
+            <div style="font-family:var(--disp);font-size:56px;font-weight:600;color:var(--hot);line-height:1">7</div>
+            <div class="mono" style="font-size:16px;color:var(--hot)">层</div>
+            <div style="color:var(--muted);font-size:19px">把 A 挂到 B 的<b>叶子</b>下</div>
+          </div>
+          <div class="fcap">FIG.09A · 高的挂到矮的下面，高度暴涨</div>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="figure" style="border-color:rgba(23,227,154,.28)">
+          <div class="mono" style="font-size:14px;letter-spacing:.14em;color:var(--volt);margin-bottom:16px">
+            RIGHT · 矮挂高
+          </div>
+          <svg class="dg" viewBox="0 0 440 232">
+            <path class="ed volt" d="M182 44 L112 92 M182 44 L252 92 M112 92 L112 144 M112 144 L112 196
+              M252 92 L252 144 M252 144 L252 196"/>
+            <circle class="nd root" cx="182" cy="24" r="23"/><text class="lb root" x="182" y="24">A</text>
+            <circle class="nd" cx="112" cy="76" r="21"/><text class="lb" x="112" y="76">1</text>
+            <circle class="nd" cx="252" cy="76" r="21"/><text class="lb" x="252" y="76">B</text>
+            <circle class="nd" cx="112" cy="128" r="21"/><text class="lb" x="112" y="128">2</text>
+            <circle class="nd" cx="252" cy="128" r="21"/><text class="lb" x="252" y="128">4</text>
+            <circle class="nd" cx="112" cy="180" r="21"/><text class="lb" x="112" y="180">3</text>
+            <circle class="nd" cx="252" cy="180" r="21"/><text class="lb" x="252" y="180">5</text>
+            <text class="capv" x="20" y="222">B 挂到 A 的根下 · 左右各一条链</text>
+          </svg>
+          <div style="display:flex;align-items:baseline;gap:14px;margin-top:22px">
+            <div class="mono" style="font-size:14px;letter-spacing:.14em;color:var(--muted)">合并后树高</div>
+            <div style="font-family:var(--disp);font-size:56px;font-weight:600;color:var(--volt);line-height:1">4</div>
+            <div class="mono" style="font-size:16px;color:var(--volt)">层</div>
+            <div style="color:var(--muted);font-size:19px">和 A 原来的高度<b class="g">持平</b></div>
+          </div>
+          <div class="fcap">FIG.09B · 矮根挂高根，树高最多只加 1</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:24px">
+      <div class="full rv" style="--d:.22s">
+        <div class="card" style="display:flex;gap:38px;flex-wrap:wrap;align-items:center">
+          <div><div class="mono" style="font-size:14px;letter-spacing:.14em;color:var(--muted)">RANK</div>
+            <div style="font-size:22px;margin-top:6px"><span class="mono g">rank[i]</span> = 树高上界</div></div>
+          <div style="flex:1;min-width:320px;color:var(--muted);font-size:21px">
+            等高时合并树高 <b>+1</b>，不等高时<b class="g">不变</b>，于是树高被控制在 <b class="g">O(log n)</b> 以内。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 10 路径压缩 ============ -->
+<section class="slide" data-t="优化二：路径压缩">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">10</div>
+      <div>
+        <h2>优化二：路径压缩</h2>
+        <p class="sub">find 的路上，<b>顺手把路径上每个节点直接挂到根上</b>。下一次再找，就是一步。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <div class="mono" style="font-size:14px;letter-spacing:.14em;color:var(--muted);margin-bottom:16px">
+            SIGNATURE DEMO · 点击播放
+          </div>
+          <svg class="dg flat" id="flatSvg" viewBox="0 0 560 320">
+            <g id="flatEdges"></g>
+            <g id="flatNodes"></g>
+          </svg>
+          <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:20px">
+            <button class="bigbtn btn-volt" id="playFlat">▶ 路径压缩</button>
+            <button class="bigbtn btn-mute" id="resetFlat">还原</button>
+            <div class="fbadge" id="flatBadge">find(4)：4 步 → 1 步</div>
+          </div>
+          <div class="fcap">FIG.10 · 五个节点从一条链被压成一颗星</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="codelabel">PSEUDOCODE · PATH COMPRESSION</div>
+        <div class="code"><pre><span class="kw">function</span> <span class="fn">find</span>(x)
+    <span class="kw">if</span> parent[x] != x
+        parent[x] = <span class="fn">find</span>(parent[x])
+    <span class="kw">return</span> parent[x]</pre></div>
+
+        <div class="card volt" style="margin-top:22px">
+          <div class="ct"><span class="ix">ONE LINE</span>一句话</div>
+          <p><b>走过的每个点，都直连根。</b>递归返回时改写 <span class="mono">parent[]</span>，
+          代价一次遍历，收益<b>永久</b>。</p>
+        </div>
+
+        <div class="codenote">
+          <div class="n-k">路径减半</div>
+          <div class="n-v"><span class="mono">parent[x] = parent[parent[x]]</span>，只跳一半</div>
+        </div>
+        <div class="codenote" style="margin-top:0">
+          <div class="n-k">路径分裂</div>
+          <div class="n-v">每个点直接指向祖父，效果接近压缩</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11 复杂度 ============ -->
+<section class="slide" data-t="合体：O(α(n))">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">11</div>
+      <div>
+        <h2>合体：O(α(n))</h2>
+        <p class="sub">两个优化同时用，复杂度掉进<b class="g">反阿克曼函数</b>——实际等同常数。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="crow"><div class="nm">朴素<small>NAIVE</small></div>
+          <div class="track"><i class="warn" data-w="100"></i></div>
+          <div class="cp"><b>O(m · n)</b>m 次 find 最坏 m×n</div></div>
+        <div class="crow"><div class="nm">按秩合并<small>BY RANK</small></div>
+          <div class="track"><i class="mute" data-w="44"></i></div>
+          <div class="cp"><b>O(m · log n)</b>树高 ≤ log n</div></div>
+        <div class="crow"><div class="nm">按秩 + 压缩<small>RANK + COMPRESS</small></div>
+          <div class="track"><i data-w="14"></i></div>
+          <div class="cp"><b>O(m · α(n))</b>实际就是常数</div></div>
+
+        <div class="figure" style="margin-top:24px">
+          <svg class="dg" viewBox="0 0 620 168">
+            <text class="cap" x="6" y="24">n</text>
+            <text class="cap" x="186" y="24">最大树高</text>
+            <text class="cap" x="410" y="24">α(n)</text>
+            <line class="lead" x1="0" y1="38" x2="620" y2="38"/>
+            <text class="cap" x="6" y="66">10</text>
+            <text class="capv" x="186" y="66">3</text>
+            <text class="cap" x="410" y="66">1</text>
+            <line class="lead" x1="0" y1="82" x2="620" y2="82"/>
+            <text class="cap" x="6" y="110">10 000</text>
+            <text class="capv" x="186" y="110">4</text>
+            <text class="cap" x="410" y="110">2</text>
+            <line class="lead" x1="0" y1="126" x2="620" y2="126"/>
+            <text class="cap" x="6" y="154">10^80</text>
+            <text class="capv" x="186" y="154">5</text>
+            <text class="cap" x="410" y="154">4</text>
+          </svg>
+          <div class="fcap">TAB.11 · 约数；n 涨到 10^80（宇宙原子数），树高也只到 5</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">FORMULA</span>公式</div>
+          <div class="mono" style="font-size:24px;line-height:1.9;margin-top:10px">
+            m 次 <span class="g">find</span> ≈ O( m · <span class="g">α(n)</span> )
+          </div>
+          <p><b>α(n)</b> 是反阿克曼函数，增长慢到「宇宙级」，任何现实规模下 <b class="g">α(n) ≤ 4</b>。</p>
+        </div>
+        <div class="card" style="margin-top:22px">
+          <div class="ct"><span class="ix">PRACTICE</span>工程结论</div>
+          <p>直接把 find / union 当 <b class="g">O(1)</b> 用，整个算法的复杂度就变成
+          <b>读入数据本身的复杂度</b>。</p>
+          <p style="margin-top:10px">记不住就记：<b>该合并就合并，该找根就找根，剩下的交给压缩。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12 模板代码 ============ -->
+<section class="slide" data-t="模板代码">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">12</div>
+      <div>
+        <h2>模板代码</h2>
+        <p class="sub">背下来即可。比赛 / 面试里<b>逐字默写</b>，不要现场发挥。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="codelabel">C++ · 按秩合并 + 路径压缩</div>
+        <div class="code"><pre><span class="kw">int</span> fa[N], rnk[N];
+
+<span class="kw">void</span> <span class="fn">init</span>(<span class="kw">int</span> n) {
+  <span class="kw">for</span> (<span class="kw">int</span> i=1; i&lt;=n; i++) fa[i]=i, rnk[i]=0;
+}
+<span class="kw">int</span> <span class="fn">find</span>(<span class="kw">int</span> x) {
+  <span class="kw">return</span> fa[x]==x ? x : fa[x]=<span class="fn">find</span>(fa[x]);  <span class="cm">// 压缩</span>
+}
+<span class="kw">void</span> <span class="fn">merge</span>(<span class="kw">int</span> a, <span class="kw">int</span> b) {
+  <span class="kw">int</span> ra=<span class="fn">find</span>(a), rb=<span class="fn">find</span>(b);
+  <span class="kw">if</span> (ra==rb) <span class="kw">return</span>;
+  <span class="kw">if</span> (rnk[ra]&lt;rnk[rb]) swap(ra,rb);
+  fa[rb]=ra;
+  <span class="kw">if</span> (rnk[ra]==rnk[rb]) rnk[ra]++;
+}</pre></div>
+        <div class="codenote">
+          <div class="n-k">SIZE</div>
+          <div class="n-v">想统计人数，再开 <span class="mono">sz[]</span>，查询用 <span class="mono g">sz[find(x)]</span></div>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="codelabel">PYTHON · 迭代写法（递归版可能爆栈）</div>
+        <div class="code"><pre>fa = list(range(n + <span class="nu">1</span>)); rnk = [<span class="nu">0</span>] * (n + <span class="nu">1</span>)
+
+<span class="kw">def</span> <span class="fn">find</span>(x):
+    <span class="kw">while</span> fa[x] != x:
+        fa[x] = fa[fa[x]]      <span class="cm"># 路径减半</span>
+        x = fa[x]
+    <span class="kw">return</span> x
+
+<span class="kw">def</span> <span class="fn">union</span>(a, b):
+    ra, rb = <span class="fn">find</span>(a), <span class="fn">find</span>(b)
+    <span class="kw">if</span> ra == rb: <span class="kw">return</span>
+    <span class="kw">if</span> rnk[ra] &lt; rnk[rb]: ra, rb = rb, ra
+    fa[rb] = ra
+    <span class="kw">if</span> rnk[ra] == rnk[rb]: rnk[ra] += <span class="nu">1</span></pre></div>
+        <div class="codenote">
+          <div class="n-k">COUNT</div>
+          <div class="n-v">想数集合个数，<span class="mono">cnt = n</span>，真正合并成功才 <span class="mono g">cnt -= 1</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 13 应用图谱 ============ -->
+<section class="slide" data-t="应用图谱">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">13</div>
+      <div>
+        <h2>应用图谱</h2>
+        <p class="sub">八个最常见落点。<b>题目里出现这些词，先想并查集。</b></p>
+      </div>
+    </div>
+
+    <div class="apps">
+      <div class="app rv" style="--d:.05s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#8A9099" stroke-width="1.4" fill="none"><line x1="12" y1="12" x2="28" y2="12"/><line x1="28" y1="12" x2="20" y2="28"/><line x1="44" y1="18" x2="56" y2="32"/><line x1="44" y1="18" x2="52" y2="10"/></g><g fill="#12141A" stroke="#17E39A" stroke-width="1.6"><circle cx="12" cy="12" r="3.6"/><circle cx="28" cy="12" r="3.6"/><circle cx="20" cy="28" r="3.6"/></g><g fill="#12141A" stroke="#8A9099" stroke-width="1.4"><circle cx="44" cy="18" r="3.6"/><circle cx="56" cy="32" r="3.6"/><circle cx="52" cy="10" r="3.6"/></g></svg>
+        <h3>连通块</h3><p>动态维护图的连通性，随时加边。</p><div class="tg">CONNECTIVITY</div>
+      </div>
+
+      <div class="app rv" style="--d:.1s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#17E39A" stroke-width="1.6" fill="none"><path d="M10 32 L26 12 L44 20 L56 34"/><line x1="26" y1="12" x2="46" y2="36"/></g><g fill="#12141A" stroke="#8A9099" stroke-width="1.4"><circle cx="10" cy="32" r="3.6"/><circle cx="26" cy="12" r="3.6"/><circle cx="44" cy="20" r="3.6"/><circle cx="56" cy="34" r="3.6"/><circle cx="46" cy="36" r="3.6"/></g></svg>
+        <h3>最小生成树</h3><p>Kruskal：按边权排序，不成环就收下。</p><div class="tg">MST · KRUSKAL</div>
+      </div>
+
+      <div class="app rv" style="--d:.15s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#17E39A" stroke-width="1.4" fill="none" stroke-dasharray="3 3"><ellipse cx="18" cy="20" rx="13" ry="15"/><ellipse cx="46" cy="24" rx="12" ry="13"/></g><g fill="#12141A" stroke="#8A9099" stroke-width="1.4"><circle cx="14" cy="14" r="3.4"/><circle cx="23" cy="25" r="3.4"/><circle cx="42" cy="18" r="3.4"/><circle cx="51" cy="29" r="3.4"/></g></svg>
+        <h3>等价类划分</h3><p>把等价关系下的元素自动归成若干组。</p><div class="tg">EQUIVALENCE</div>
+      </div>
+
+      <div class="app rv" style="--d:.2s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#8A9099" stroke-width="1.4" fill="none"><line x1="12" y1="12" x2="24" y2="24"/><line x1="12" y1="36" x2="24" y2="24"/></g><g stroke="#17E39A" stroke-width="1.6" fill="none"><line x1="24" y1="24" x2="48" y2="24"/><path d="M44 20 L49 24 L44 28"/></g><g fill="#12141A" stroke="#8A9099" stroke-width="1.4"><circle cx="12" cy="12" r="3.4"/><circle cx="12" cy="36" r="3.4"/></g><g fill="#12141A" stroke="#17E39A" stroke-width="1.7"><circle cx="24" cy="24" r="3.8"/><circle cx="52" cy="24" r="3.8"/></g></svg>
+        <h3>账号合并</h3><p>多个身份指向同一人，合并后统一归属。</p><div class="tg">MERGE</div>
+      </div>
+
+      <div class="app rv" style="--d:.25s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#8A9099" stroke-width="1.4" fill="none"><line x1="14" y1="10" x2="50" y2="10"/><line x1="14" y1="10" x2="14" y2="34"/><line x1="50" y1="10" x2="50" y2="34"/><line x1="14" y1="34" x2="50" y2="34"/><line x1="14" y1="10" x2="50" y2="34"/></g><g fill="#12141A" stroke="#17E39A" stroke-width="1.6"><circle cx="14" cy="10" r="3.6"/><circle cx="50" cy="10" r="3.6"/><circle cx="14" cy="34" r="3.6"/><circle cx="50" cy="34" r="3.6"/></g></svg>
+        <h3>图着色 / 判二分</h3><p>相邻点不能同色，冲突一次即失败。</p><div class="tg">COLORING</div>
+      </div>
+
+      <div class="app rv" style="--d:.3s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#8A9099" stroke-width="1.4" fill="none"><line x1="12" y1="10" x2="52" y2="10"/><line x1="12" y1="22" x2="52" y2="22"/><line x1="12" y1="34" x2="52" y2="34"/><line x1="12" y1="10" x2="12" y2="34"/><line x1="32" y1="10" x2="32" y2="34"/><line x1="52" y1="10" x2="52" y2="34"/></g><g fill="#12141A" stroke="#17E39A" stroke-width="1.6"><circle cx="12" cy="10" r="3.2"/><circle cx="32" cy="10" r="3.2"/><circle cx="52" cy="10" r="3.2"/><circle cx="12" cy="22" r="3.2"/><circle cx="32" cy="22" r="3.2"/><circle cx="52" cy="22" r="3.2"/></g><g fill="#12141A" stroke="#8A9099" stroke-width="1.4"><circle cx="12" cy="34" r="3.2"/><circle cx="32" cy="34" r="3.2"/><circle cx="52" cy="34" r="3.2"/></g></svg>
+        <h3>矩阵行列替换</h3><p>同行 / 同列的元素属于同一组。</p><div class="tg">ROWS &amp; COLUMNS</div>
+      </div>
+
+      <div class="app rv" style="--d:.35s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#8A9099" stroke-width="1.4" fill="none"><line x1="32" y1="8" x2="16" y2="22"/><line x1="32" y1="8" x2="48" y2="22"/><line x1="16" y1="22" x2="10" y2="36"/><line x1="16" y1="22" x2="24" y2="36"/><line x1="48" y1="22" x2="56" y2="36"/></g><g stroke="#FF5B7F" stroke-width="1.5" fill="none" stroke-dasharray="3 3"><path d="M10 36 Q32 42 56 36"/></g><g fill="#12141A" stroke="#8A9099" stroke-width="1.4"><circle cx="32" cy="8" r="3.6"/><circle cx="16" cy="22" r="3.6"/><circle cx="48" cy="22" r="3.6"/></g><g fill="#12141A" stroke="#FF5B7F" stroke-width="1.6"><circle cx="10" cy="36" r="3.6"/><circle cx="56" cy="36" r="3.6"/></g></svg>
+        <h3>Tarjan 离线 LCA</h3><p>dfs 回溯时用并查集维护已访问祖先。</p><div class="tg">TARJAN LCA</div>
+      </div>
+
+      <div class="app rv" style="--d:.4s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#8A9099" stroke-width="1.4" fill="none"><circle cx="32" cy="22" r="15"/><line x1="17" y1="22" x2="47" y2="22"/><line x1="32" y1="7" x2="32" y2="37"/></g><g fill="#12141A" stroke="#17E39A" stroke-width="1.6"><circle cx="17" cy="22" r="3.4"/><circle cx="32" cy="22" r="3.4"/><circle cx="47" cy="22" r="3.4"/></g></svg>
+        <h3>判环 / 生成树</h3><p>加边前先查同组，同组即成环。</p><div class="tg">CYCLE CHECK</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 14 套路与坑 ============ -->
+<section class="slide" data-t="解题套路与常见坑">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">14</div>
+      <div>
+        <h2>解题套路 与 常见坑</h2>
+        <p class="sub">拿到题先跑这五步；写完再对照右边四个坑检查一遍。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card">
+          <div class="ct"><span class="ix">SOLVING ROUTINE</span>五步套路</div>
+          <ol class="steps" style="margin-top:12px">
+            <li>题目出现<b>「连通 / 同类 / 合并 / 分组」</b>，先想并查集。</li>
+            <li>确定元素编号范围，<span class="mono g">init(n)</span> 一次。</li>
+            <li>每条<b>关系</b> = 一次 <span class="mono g">union</span>。</li>
+            <li>每个<b>询问</b> = 一次 <span class="mono g">find</span>。</li>
+            <li>需要<b>统计</b>时，加 <span class="mono">sz[]</span> 或最后数根。</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">PITFALLS</span>四个最常见的坑</div>
+          <ul class="pit" style="margin-top:12px">
+            <li>忘了 <span class="mono">init</span>，<span class="mono">parent[]</span> 里是垃圾值。</li>
+            <li>合并写成 <span class="mono p">parent[a] = b</span>，没挂<b>根</b>。</li>
+            <li>不写路径压缩，链状数据直接 <b class="p">TLE</b>。</li>
+            <li>下标 0 / 1 混用，编号和数组长度对不上。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="c1-7 rv" style="--d:.22s">
+        <div class="card">
+          <div class="ct"><span class="ix">COMPARE</span>什么时候不用它</div>
+          <table class="cmp" style="margin-top:10px">
+            <tr><th></th><th>并查集</th><th>BFS / DFS</th></tr>
+            <tr><td>查询</td><td class="g">O(α(n))</td><td>O(n + m)</td></tr>
+            <tr><td>加边</td><td class="g">O(α(n))</td><td>需重新遍历</td></tr>
+            <tr><td>适用</td><td>只问「同不同组」</td><td>要路径 / 距离 / 顺序</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.28s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">SELF CHECK</span>写完自检</div>
+          <div class="kv"><div class="k">CHECK 1</div><div class="v">find 里有没有 <span class="mono g">fa[x]=find(fa[x])</span>？</div></div>
+          <div class="kv"><div class="k">CHECK 2</div><div class="v">merge 里挂的是 <span class="mono g">ra / rb</span> 吗？</div></div>
+          <div class="kv"><div class="k">CHECK 3</div><div class="v">合并成功才减 <span class="mono">cnt</span>。</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 15 总结 ============ -->
+<section class="slide" data-t="总结速查">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">15</div>
+      <div>
+        <h2>总结 · 速查条</h2>
+        <p class="sub">离开这一页之前，把下面这几行带走就够了。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="full rv" style="--d:.06s">
+        <div class="card volt" style="padding:44px">
+          <div class="mono" style="font-size:14px;letter-spacing:.16em;color:var(--muted)">ONE SENTENCE</div>
+          <div style="font-family:var(--disp);font-size:48px;font-weight:600;letter-spacing:-.022em;
+            line-height:1.28;margin-top:16px">
+            并查集 = 用一个 <span class="g">parent[]</span> 数组，<br>维护「谁和谁一伙」。
+          </div>
+        </div>
+      </div>
+
+      <div class="c1-4 rv" style="--d:.14s">
+        <div class="card"><div class="ct" style="font-family:var(--mono);font-size:22px">
+          <span class="ix">FIND</span>find(x)</div><p>找 x 的代表元，顺手压缩路径。</p></div>
+      </div>
+      <div class="c5-8 rv" style="--d:.2s">
+        <div class="card"><div class="ct" style="font-family:var(--mono);font-size:22px">
+          <span class="ix">UNION</span>union(a,b)</div><p>把两组合并，矮根挂高根。</p></div>
+      </div>
+      <div class="c9-12 rv" style="--d:.26s">
+        <div class="card"><div class="ct" style="font-family:var(--mono);font-size:22px">
+          <span class="ix">COST</span>O(α(n)) · O(n)</div><p>时间当常数，空间一个数组。</p></div>
+      </div>
+
+      <div class="full rv" style="--d:.32s">
+        <div class="tagrow" style="margin-top:24px">
+          <span class="tag on">按秩合并</span><span class="tag on">路径压缩</span>
+          <span class="tag on">连通块</span><span class="tag on">最小生成树</span>
+          <span class="tag on">等价类</span><span class="tag on">判环</span>
+          <span class="tag on">LCA</span><span class="tag">O(α(n)) ≈ O(1)</span>
+        </div>
+        <div class="mono" style="margin-top:32px;font-size:14px;letter-spacing:.16em;color:var(--muted)">
+          UNION-FIND · DISJOINT SET UNION · END OF DECK
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function(){
+"use strict";
+
+var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+var total = slides.length;
+var current = 0;
+var SVGNS = 'http://www.w3.org/2000/svg';
+
+/* ---------- 右侧 rail ---------- */
+var rail = document.getElementById('rail');
+slides.forEach(function(s, i){
+  var b = document.createElement('button');
+  b.innerHTML = '<span>' + (i+1 < 10 ? '0' : '') + (i+1) + '</span><i></i>';
+  b.title = s.dataset.t || '';
+  b.addEventListener('click', function(){ go(i); });
+  rail.appendChild(b);
+});
+var railBtns = Array.prototype.slice.call(rail.children);
+
+/* ---------- 翻页 ---------- */
+function go(i){
+  if(i < 0) i = 0;
+  if(i > total - 1) i = total - 1;
+  slides[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+document.getElementById('prevBtn').addEventListener('click', function(){ go(current - 1); });
+document.getElementById('nextBtn').addEventListener('click', function(){ go(current + 1); });
+
+document.addEventListener('keydown', function(e){
+  var tag = (e.target.tagName || '').toLowerCase();
+  if(tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if(e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' '){
+    e.preventDefault(); go(current + 1);
+  }else if(e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp'){
+    e.preventDefault(); go(current - 1);
+  }else if(e.key === 'Home'){ e.preventDefault(); go(0); }
+  else if(e.key === 'End'){ e.preventDefault(); go(total - 1); }
+});
+
+/* ---------- 进度 / 计数 / 揭示 ---------- */
+var prog = document.getElementById('prog');
+var countEl = document.getElementById('count');
+function pad2(n){ return (n < 10 ? '0' : '') + n; }
+
+var io = new IntersectionObserver(function(ents){
+  ents.forEach(function(e){
+    if(e.isIntersecting && e.intersectionRatio > 0.35){
+      var i = slides.indexOf(e.target);
+      if(i < 0) return;
+      current = i;
+      e.target.classList.add('on');
+      countEl.textContent = pad2(i + 1) + ' / ' + pad2(total);
+      prog.style.width = ((i + 1) / total * 100) + '%';
+      railBtns.forEach(function(b, k){ b.classList.toggle('on', k === i); });
+    }
+  });
+}, { threshold: [0, 0.35, 0.7] });
+slides.forEach(function(s){ io.observe(s); });
+slides[0].classList.add('on');
+
+/* ---------- 计时器 ---------- */
+var t0 = Date.now(), clock = document.getElementById('clock');
+setInterval(function(){
+  var s = Math.floor((Date.now() - t0) / 1000);
+  var over = s > 240;
+  var v = over ? 240 : s;
+  clock.textContent = pad2(Math.floor(v / 60)) + ':' + pad2(v % 60) + ' / 04:00';
+  if(over) clock.classList.add('done');
+}, 1000);
+
+/* ---------- 复杂度条 ---------- */
+var io2 = new IntersectionObserver(function(ents){
+  ents.forEach(function(e){
+    if(e.isIntersecting){
+      var bars = e.target.querySelectorAll('.track i');
+      Array.prototype.forEach.call(bars, function(b, k){
+        setTimeout(function(){ b.style.width = b.dataset.w + '%'; }, 120 + k * 140);
+      });
+      io2.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.25 });
+if(slides[10]) io2.observe(slides[10]);
+
+/* ============================================================
+   05 号图：数组条 + 树  （数组与树严格同源，边由 parent[] 生成）
+   ============================================================ */
+(function buildArrayDiagram(){
+  var P = [0, 0, 1, 2, 4, 4, 5, 7, 7, 8];   // parent[8]=7 → roots = {0,4,7}
+  var n = P.length, depth = [], i, d, c;
+  for(i = 0; i < n; i++){
+    d = 0; c = i;
+    while(P[c] !== c){ c = P[c]; d++; }
+    depth[i] = d;
+  }
+
+  var cellW = 64, gap = 8, x0 = 4;
+  function cx(k){ return x0 + k * (cellW + gap) + cellW / 2; }
+  function ny(k){ return 118 + depth[k] * 58; }
+
+  var cells = '', drops = '', edges = '', nodes = '';
+  for(i = 0; i < n; i++){
+    var x = x0 + i * (cellW + gap);
+    cells += '<text class="cap" x="' + (x + 2) + '" y="38">' + pad2(i) + '</text>';
+    cells += '<rect x="' + x + '" y="44" width="' + cellW + '" height="38" rx="7" fill="#1A1D24" stroke="#262A33"/>';
+    cells += '<text class="lb" x="' + cx(i) + '" y="63" style="font-size:20px">' + P[i] + '</text>';
+    drops += '<line x1="' + cx(i) + '" y1="82" x2="' + cx(i) + '" y2="' + (ny(i) - 24) +
+             '" stroke="#17E39A" stroke-opacity=".16" stroke-width="1" stroke-dasharray="2 5"/>';
+    if(P[i] !== i){
+      edges += '<line class="ed tr" x1="' + cx(P[i]) + '" y1="' + ny(P[i]) +
+               '" x2="' + cx(i) + '" y2="' + ny(i) + '"/>';
+    }
+  }
+  for(i = 0; i < n; i++){
+    var isRoot = (P[i] === i);
+    nodes += '<circle class="nd' + (isRoot ? ' root' : '') + '" cx="' + cx(i) + '" cy="' + ny(i) + '" r="24"/>';
+    nodes += '<text class="lb' + (isRoot ? ' root' : '') + '" x="' + cx(i) + '" y="' + ny(i) +
+             '" style="font-size:19px">' + i + '</text>';
+  }
+
+  var gCells = document.getElementById('ar-cells'),
+      gDrops = document.getElementById('ar-drops'),
+      gEdges = document.getElementById('ar-edges'),
+      gNodes = document.getElementById('ar-nodes');
+  if(gCells && gDrops && gEdges && gNodes){
+    gCells.innerHTML = cells;
+    gDrops.innerHTML = drops;
+    gEdges.innerHTML = edges;
+    gNodes.innerHTML = nodes;
+  }
+})();
+
+/* ============================================================
+   10 号图：路径压缩演示（纯 SVG，坐标随 viewBox 缩放）
+   ============================================================ */
+(function flattenDemo(){
+  var svg = document.getElementById('flatSvg');
+  if(!svg) return;
+  var gEdges = document.getElementById('flatEdges');
+  var gNodes = document.getElementById('flatNodes');
+
+  // 链 0←1←2←3←4
+  var PA = [[70, 46], [180, 102], [290, 158], [400, 214], [510, 270]];
+  // 压扁后：1,2,3,4 全部直连 0
+  var PB = [[280, 64], [108, 236], [236, 236], [364, 236], [492, 236]];
+  // 压缩前每条边的父端 = 子节点序号 - 1；压缩后 = 0
+  var EDGE = [[0, 0], [1, 0], [2, 0], [3, 0]];
+
+  var nodeEls = [], edgeEls = [], cur = [], i;
+
+  for(i = 0; i < 5; i++){
+    var g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('class', i === 0 ? 'fl-root' : '');
+    var c = document.createElementNS(SVGNS, 'circle');
+    c.setAttribute('class', 'fl-c');
+    c.setAttribute('r', i === 0 ? 27 : 24);
+    var t = document.createElementNS(SVGNS, 'text');
+    t.setAttribute('class', 'fl-t');
+    t.setAttribute('y', '1');
+    t.textContent = i;
+    g.appendChild(c); g.appendChild(t);
+    gNodes.appendChild(g);
+    nodeEls.push(g);
+    cur.push([PA[i][0], PA[i][1]]);
+  }
+  for(i = 0; i < 4; i++){
+    var l = document.createElementNS(SVGNS, 'line');
+    l.setAttribute('class', 'fl-h');
+    gEdges.appendChild(l);
+    edgeEls.push(l);
+  }
+
+  function draw(p){
+    for(var k = 0; k < 5; k++){
+      nodeEls[k].setAttribute('transform', 'translate(' + cur[k][0] + ',' + cur[k][1] + ')');
+    }
+    for(k = 0; k < 4; k++){
+      var child = k + 1;
+      var from = EDGE[k][0], to = EDGE[k][1];
+      var px = cur[from][0] + (cur[to][0] - cur[from][0]) * p[child];
+      var py = cur[from][1] + (cur[to][1] - cur[from][1]) * p[child];
+      edgeEls[k].setAttribute('x1', cur[child][0]);
+      edgeEls[k].setAttribute('y1', cur[child][1]);
+      edgeEls[k].setAttribute('x2', px);
+      edgeEls[k].setAttribute('y2', py);
+      edgeEls[k].setAttribute('class', p[0] > 0.5 ? 'fl-v' : 'fl-h');
+    }
+  }
+  draw([0, 0, 0, 0, 0]);
+
+  var raf = 0;
+  function animate(target, dur, stagger, done){
+    var from = cur.map(function(p){ return [p[0], p[1]]; });
+    var t0 = performance.now();
+    cancelAnimationFrame(raf);
+    function frame(now){
+      var el = now - t0, alive = false, p = [];
+      for(var k = 0; k < 5; k++){
+        var q = Math.min(1, Math.max(0, (el - k * stagger) / dur));
+        var e = 1 - Math.pow(1 - q, 4);
+        p.push(e);
+        cur[k][0] = from[k][0] + (target[k][0] - from[k][0]) * e;
+        cur[k][1] = from[k][1] + (target[k][1] - from[k][1]) * e;
+        if(q < 1) alive = true;
+      }
+      draw(p);
+      if(alive) raf = requestAnimationFrame(frame);
+      else if(done) done();
+    }
+    raf = requestAnimationFrame(frame);
+  }
+
+  var badge = document.getElementById('flatBadge');
+  var playBtn = document.getElementById('playFlat');
+  var flat = false;
+
+  playBtn.addEventListener('click', function(){
+    if(flat) return;
+    flat = true;
+    playBtn.disabled = true;
+    animate(PB, 700, 110, function(){
+      badge.textContent = '最深 4 步 → 1 步 · 下次 find 只要一步';
+      playBtn.disabled = false;
+    });
+  });
+
+  document.getElementById('resetFlat').addEventListener('click', function(){
+    flat = false;
+    badge.textContent = 'find(4)：4 步 → 1 步';
+    animate(PA, 520, 70);
+  });
+})();
+
+})();
+</script>
+</body>
+</html>

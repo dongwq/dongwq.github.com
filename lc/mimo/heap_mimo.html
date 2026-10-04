@@ -1,0 +1,3707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 4 章 · 堆与优先队列 —— 四天讲义</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+SC:wght@700;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EAE3D3;
+  --paper:#F6F2E8;
+  --ink:#12212B;
+  --ink2:#1B3446;
+  --dim:#5E5A50;
+  --hair:#12212B;
+  --hair2:#B7AD94;
+  --hair3:#D6CDB6;
+  --green:#1B4B3A;
+  --greenbg:#EAF1EC;
+  --amber:#C0703C;
+  --amberbg:#FAF0DE;
+  --red:#B94A2C;
+  --redbg:#F8E8E2;
+  --disp:'Noto Serif SC','Songti SC',serif;
+  --body:'Inter','Noto Sans SC',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  --mono:'JetBrains Mono','Noto Sans SC',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--body);
+  -webkit-font-smoothing:antialiased;
+  padding:38px 22px 90px;
+}
+main{max-width:1340px;margin:0 auto}
+
+/* ---------- 封面大字 ---------- */
+.cover{
+  background:var(--paper);
+  border:2px solid var(--hair);
+  border-radius:22px;
+  box-shadow:14px 14px 0 rgba(18,33,43,.1);
+  padding:58px 52px;
+  position:relative;
+  overflow:hidden;
+}
+.cover .tag{
+  display:inline-flex;align-items:center;gap:8px;
+  border:1.5px solid var(--hair);
+  border-radius:999px;padding:5px 13px;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;font-weight:600;
+  background:var(--paper);
+}
+.cover h1{
+  font-family:var(--disp);font-weight:900;
+  font-size:clamp(52px,8.4vw,112px);
+  line-height:.94;margin:26px 0 0;
+  letter-spacing:-.015em;
+}
+.cover h1 .en{
+  display:block;font-family:var(--body);font-weight:800;
+  font-size:.34em;letter-spacing:.22em;
+  color:var(--green);margin-top:16px;
+}
+.cover .sub{
+  font-size:17px;line-height:1.85;color:var(--dim);
+  max-width:60ch;margin:22px 0 0;
+}
+.cover .sub b{color:var(--ink);font-weight:700}
+
+/* ---------- 幻灯片 ---------- */
+.slide{
+  background:var(--paper);
+  border:2px solid var(--hair);
+  border-radius:22px;
+  box-shadow:12px 12px 0 rgba(18,33,43,.08);
+  padding:52px 52px 44px;
+  margin-top:44px;
+  position:relative;
+}
+.s-head{
+  display:flex;align-items:flex-start;gap:22px;
+  border-bottom:2px solid var(--hair);
+  padding-bottom:22px;
+}
+.s-num{
+  font-family:var(--mono);font-size:13px;font-weight:600;
+  letter-spacing:.16em;
+  border:1.5px solid var(--hair);
+  border-radius:8px;padding:7px 11px;
+  flex:0 0 auto;background:var(--paper);
+  margin-top:4px;
+}
+.s-head h2{
+  font-family:var(--disp);font-weight:900;
+  font-size:clamp(29px,3.3vw,44px);line-height:1.14;margin:0;
+  letter-spacing:-.01em;
+}
+.s-head .sub{
+  margin:9px 0 0;font-size:15.2px;line-height:1.72;color:var(--dim);max-width:76ch;
+}
+.s-head .sub b{color:var(--ink);font-weight:700}
+
+.pill{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.16em;
+  border:1.4px solid var(--hair);border-radius:999px;padding:3px 9px;
+  vertical-align:middle;
+}
+.pill.main{background:var(--green);color:#EAF1EC;border-color:var(--green)}
+.pill.aux{background:transparent;color:var(--green);border-color:var(--green)}
+.pill.case{background:var(--amber);color:#fff;border-color:var(--amber)}
+.pill.prac{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pill.kit{background:transparent;color:var(--ink);border-color:var(--hair)}
+
+/* ---------- 网格 ---------- */
+.grid{
+  display:grid;grid-template-columns:repeat(12,1fr);
+  gap:18px;align-items:start;
+}
+.c1-4{grid-column:1/5}.c5-8{grid-column:5/9}.c9-12{grid-column:9/13}
+.c1-6{grid-column:1/7}.c7-12{grid-column:7/13}
+.c1-5{grid-column:1/6}.c6-12{grid-column:6/13}
+.c1-7{grid-column:1/8}.c8-12{grid-column:8/13}
+.full{grid-column:1/13}
+
+/* ---------- 卡片 ---------- */
+.card{
+  background:var(--paper);
+  border:1.5px solid var(--hair);
+  border-radius:15px;
+  padding:22px 21px;
+  position:relative;
+}
+.card.red{background:var(--redbg);border-color:var(--red)}
+.card.amber{background:var(--amberbg);border-color:var(--amber)}
+.card.green{background:var(--greenbg);border-color:var(--green)}
+.card h3{
+  font-family:var(--disp);font-size:20px;font-weight:900;margin:0 0 11px;
+  display:flex;align-items:center;gap:9px;line-height:1.35;
+}
+.card p{margin:0;font-size:14.8px;line-height:1.82;color:var(--ink)}
+.card .small{font-size:13.2px;line-height:1.75;color:var(--dim)}
+.card + .card{margin-top:13px}
+.grid > div > * + *{margin-top:13px}
+
+/* 图版 + 图注 */
+.figure{
+  border:1.5px solid var(--hair2);border-radius:13px;
+  background:#FCFAF4;padding:18px 16px 12px;
+}
+.fcap{
+  font-family:var(--mono);font-size:10.2px;letter-spacing:.13em;
+  color:var(--dim);margin-top:10px;padding-left:2px;
+}
+.dg{width:100%;height:auto;display:block;overflow:visible}
+.dg text{font-family:var(--mono)}
+.lb{font-family:var(--mono);font-size:16px;fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.lb.green{fill:var(--green)}
+.num{font-family:var(--mono);font-size:13.5px;fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.edge{stroke:#12212B;stroke-width:1.7;fill:none}
+.node{fill:#FCFAF4;stroke:#12212B;stroke-width:1.7}
+.node.act{fill:#EAF1EC;stroke:#1B4B3A;stroke-width:2.3}
+.node.gone{fill:#EDE7D8;stroke:#B7AD94;stroke-width:1.4;stroke-dasharray:4 3}
+.lead{stroke:#B7AD94;stroke-width:1.6;fill:none;stroke-dasharray:5 4}
+.cap{font-family:var(--mono);font-size:12px;fill:#5E5A50;letter-spacing:.06em}
+.capg{font-family:var(--mono);font-size:12px;fill:#1B4B3A;letter-spacing:.06em}
+.capa{font-family:var(--mono);font-size:12px;fill:#C0703C;letter-spacing:.06em}
+.capr{font-family:var(--mono);font-size:12px;fill:#B94A2C;letter-spacing:.06em}
+.ed{stroke:#1B4B3A;stroke-width:1.9;fill:none}
+.ed.am{stroke:#C0703C}
+.ed.rd{stroke:#B94A2C}
+.arr{stroke:#1B4B3A;stroke-width:1.7;fill:none;stroke-dasharray:4 3}
+.arrowhead{stroke:#1B4B3A;stroke-width:1.7;fill:none}
+.hint{font-family:var(--mono);font-size:10.5px;fill:#B7AD94;letter-spacing:.12em}
+.dummy{opacity:.6}
+
+/* ---------- 代码块 ---------- */
+.codelabel{
+  display:flex;align-items:center;gap:11px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.17em;
+  color:var(--dim);margin-bottom:8px;
+}
+.codelabel::after{content:"";flex:1;height:1.5px;background:var(--hair2)}
+.code{
+  background:#12212B;color:#E8E2D2;
+  border:1.5px solid var(--hair);
+  border-radius:13px;
+  padding:17px 19px;
+  font-family:var(--mono);font-size:12.6px;line-height:1.82;
+  overflow-x:auto;
+}
+.code pre{margin:0;white-space:pre}
+.code .kw{color:#FFB37A;font-weight:600}
+.code .str{color:#9ED6A2}
+.code .cm{color:#8792A0}
+.code .st{color:#FFD39B}
+.code .fn{color:#8FC7FF}
+.code .cls{color:#FFD39B}
+.code .op{color:#E8E2D2}
+.codenote{
+  background:var(--amberbg);border:1.5px solid var(--amber);
+  border-left-width:6px;border-radius:11px;
+  padding:13px 15px;font-size:13px;line-height:1.76;color:var(--ink);margin-top:10px;
+}
+.codenote.green{background:var(--greenbg);border-color:var(--green)}
+.codenote.red{background:var(--redbg);border-color:var(--red)}
+.codenote b{font-family:var(--mono);font-size:11.5px;letter-spacing:.11em;display:block;margin-bottom:3px}
+
+/* ---------- 小块 ---------- */
+.tagrow{margin-top:11px;display:flex;flex-wrap:wrap;gap:8px}
+.tag{
+  font-family:var(--mono);font-size:10.2px;letter-spacing:.11em;
+  border:1.3px solid var(--hair2);border-radius:5px;padding:3px 8px;
+  color:var(--dim);background:var(--paper);
+}
+.tag.g{color:var(--green);border-color:var(--green);background:var(--greenbg)}
+.tag.a{color:var(--amber);border-color:var(--amber);background:var(--amberbg)}
+.tag.r{color:var(--red);border-color:var(--red);background:var(--redbg)}
+
+.chip{
+  display:block;border:1.5px solid var(--hair);border-radius:10px;
+  padding:11px 12px;font-family:var(--mono);font-size:11.6px;line-height:1.72;
+}
+.chip .k{letter-spacing:.12em;font-size:10px;color:var(--dim);display:block;margin-bottom:4px}
+.chip b{font-size:13px}
+.chip.g{border-color:var(--green);background:var(--greenbg)}
+.chip.a{border-color:var(--amber);background:var(--amberbg)}
+.chip.r{border-color:var(--red);background:var(--redbg)}
+ul,ol{margin:0;padding-left:18px}
+li{font-size:14.2px;line-height:1.78}
+li + li{margin-top:6px}
+
+.tbar{
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  border:1.5px solid var(--hair);border-radius:13px;overflow:hidden;
+}
+.t-cell{padding:18px 18px;background:var(--paper)}
+.t-cell + .t-cell{border-left:1.5px solid var(--hair)}
+.t-cell.red{background:var(--redbg)}
+.t-cell.amber{background:var(--amberbg)}
+.t-cell.green{background:var(--greenbg)}
+.t-k{font-family:var(--mono);font-size:10px;letter-spacing:.19em;color:var(--dim);margin-bottom:8px}
+.t-v{font-family:var(--disp);font-size:27px;font-weight:900;line-height:1.28}
+.t-v .sm{font-family:var(--body);font-size:12px;font-weight:500;display:block;color:var(--dim);margin-top:6px;letter-spacing:.02em}
+
+/* 小测页 */
+.pl{display:flex;gap:16px;align-items:flex-start}
+.pl + .pl{margin-top:18px;padding-top:18px;border-top:1.5px solid var(--hair2)}
+.pl .q{
+  flex:0 0 auto;width:38px;height:38px;border:2px solid var(--hair);
+  border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:15px;font-weight:600;background:var(--paper);
+}
+.pl .bd{flex:1}
+.pl .qy{font-family:var(--disp);font-size:22px;font-weight:900;line-height:1.42;margin:0}
+.pl .op{margin:9px 0 0;font-family:var(--mono);font-size:13px;line-height:1.95;color:var(--ink)}
+.pl .op span{display:block}
+.pl .op em{font-style:normal;color:var(--dim);margin-right:7px}
+
+/* 数据卡 */
+.stat{
+  border:1.5px solid var(--hair);border-radius:11px;
+  padding:16px 15px;background:var(--paper);
+}
+.stat .n{font-family:var(--disp);font-size:32px;font-weight:900;line-height:1}
+.stat .l{font-family:var(--mono);font-size:10.2px;letter-spacing:.15em;color:var(--dim);margin-top:8px}
+.stat.g{border-color:var(--green);background:var(--greenbg)}
+.stat.g .n{color:var(--green)}
+.stat.a{border-color:var(--amber);background:var(--amberbg)}
+.stat.a .n{color:var(--amber)}
+.stat.r{border-color:var(--red);background:var(--redbg)}
+.stat.r .n{color:var(--red)}
+
+/* 讲座脚 */
+.foot{
+  margin-top:44px;display:flex;justify-content:space-between;
+  align-items:center;font-family:var(--mono);font-size:11px;
+  letter-spacing:.17em;color:var(--dim);
+}
+.hr{height:2px;background:var(--hair);margin:26px 0 0}
+.mono{font-family:var(--mono)}
+.g{color:var(--green)}
+.r{color:var(--red)}
+.a{color:var(--amber)}
+
+/* 揭示动画 */
+.rv{opacity:0;transform:translateY(18px);transition:opacity .72s cubic-bezier(.16,1,.3,1),transform .72s cubic-bezier(.16,1,.3,1);transition-delay:var(--d,0s)}
+.rv.in{opacity:1;transform:none}
+
+@media (max-width:980px){
+  body{padding:20px 12px 50px}
+  .slide{padding:30px 22px 28px;border-radius:17px}
+  .cover{padding:34px 24px}
+  .c1-4,.c5-8,.c9-12,.c1-6,.c7-12,.c1-5,.c6-12,.c1-7,.c8-12,.full{grid-column:1/2}
+  .tbar{grid-template-columns:1fr}
+  .t-cell + .t-cell{border-left:0;border-top:1.5px solid var(--hair)}
+}
+</style>
+</head>
+<body>
+<main>
+
+<!-- ══════════════ 00 封面 ══════════════ -->
+<section class="slide cover rv in" id="s0">
+  <div class="tag">第 4 章 · <span class="g">FOUR DAYS</span> · 讲义 v3.2</div>
+  <h1>堆 与<br>优先队列
+    <span class="en">HEAP ／ PRIORITY QUEUE</span>
+  </h1>
+  <div class="grid rv" style="margin-top:30px;grid-template-columns:1fr">
+    <div style="width:100%">
+      <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:16px">
+        <div class="stat"><div class="n">D1</div><div class="l">结构与实现</div></div>
+        <div class="stat"><div class="n">D2</div><div class="l">TopK ／ 合并</div></div>
+        <div class="stat"><div class="n">D3</div><div class="l">贪心 · 图 · 二叉树</div></div>
+        <div class="stat"><div class="n">D4</div><div class="l">堆排序 · 坑 · 小测</div></div>
+      </div>
+    </div>
+  </div>
+  <p class="sub">这一章只讲<b>一个问题</b>：当你需要「反复问谁最大／谁最小」时，怎么做到<b>每次 O(log n)</b>。</p>
+  <div class="tagrow">
+    <span class="tag g">共 30 页</span>
+    <span class="tag">Python 3</span>
+    <span class="tag">A / B / C 三层题单</span>
+    <span class="tag">每页有 1 个抓手</span>
+    <span class="tag">含 3 套小测 + 答案</span>
+  </div>
+</section>
+
+
+<!-- ══════════════ 01 全章导航 ══════════════ -->
+<section class="slide rv" id="s1">
+  <div class="s-head">
+    <div class="s-num">01</div>
+    <div>
+      <h2>本章要<span class="g">解决的问题</span></h2>
+      <p class="sub">先看清<b>敌人长什么样</b>，再决定用什么武器。全章的题，本质上都落回右边那一栏。</p>
+    </div>
+  </div>
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 300">
+          <!-- 问题 -->
+          <rect x="14" y="18" width="230" height="96" rx="12" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.4"/>
+          <text class="capg" x="34" y="48">「谁最大？谁最小？」</text>
+          <text class="capg" x="34" y="76">每次问完，元素还可能被</text>
+          <text class="capg" x="34" y="102">取走 / 改掉 / 加进来</text>
+
+          <path class="ed" d="M252 66 L312 66"/>
+          <path class="ed" d="M304 58 L316 66 L304 74"/>
+
+          <!-- 三种做法 -->
+          <rect x="322" y="18" width="320" height="34" rx="8" fill="#FCFAF4" stroke="#B7AD94" stroke-width="1.8"/>
+          <text class="cap" x="340" y="40">每次扫一遍数组        O(n) / 次</text>
+
+          <rect x="322" y="62" width="320" height="34" rx="8" fill="#FCFAF4" stroke="#B7AD94" stroke-width="1.8"/>
+          <text class="cap" x="340" y="84">全部排好序再取        O(n log n) 前置</text>
+
+          <rect x="322" y="106" width="320" height="34" rx="8" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.4"/>
+          <text class="capg" x="340" y="128">堆：只要最值         O(log n) / 次</text>
+
+          <!-- 桥 -->
+          <path class="lead" d="M14 154 Q320 144 642 154"/>
+          <text class="capg" x="14" y="184">优先队列 = 堆的<b style="font-family:'Noto Serif SC',serif" font-size="14">接口名</b>；堆 = 优先队列的<b style="font-family:'Noto Serif SC',serif" font-size="14">实现</b></text>
+
+          <!-- 三个角色 -->
+          <rect x="14" y="206" width="200" height="80" rx="11" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.2"/>
+          <text class="capg" x="32" y="234">最值维护</text>
+          <text class="cap"  x="32" y="258">Dijkstra · 会议室 II</text>
+          <text class="cap"  x="32" y="278">IPO · 分配饼干</text>
+
+          <rect x="224" y="206" width="200" height="80" rx="11" fill="#FAF0DE" stroke="#C0703C" stroke-width="2.2"/>
+          <text class="capa" x="242" y="234">第 k 大 / 第 k 小</text>
+          <text class="cap"  x="242" y="258">TopK · 前 K 个高频</text>
+          <text class="cap"  x="242" y="278">数据流第 K 大</text>
+
+          <rect x="434" y="206" width="208" height="80" rx="11" fill="#F8E8E2" stroke="#B94A2C" stroke-width="2.2"/>
+          <text class="capr" x="452" y="234">多路合并</text>
+          <text class="cap"  x="452" y="258">合并 K 个有序表</text>
+          <text class="cap"  x="452" y="278">合并果子 · 哈夫曼</text>
+        </svg>
+        <div class="fcap">FIG.a · 堆的三种用法，全章 30 页都围着这张图转</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>本章主线</h3>
+        <p>只有一句话：<b class="g">如果你的算法反复要「当前最大」，那就不要让它每次现找。</b></p>
+        <p class="small" style="margin-top:9px">把「找最值」这件事，从 <span class="mono">O(n)</span> 挪到 <span class="mono">O(log n)</span>，靠的是一个「半有序」的结构 —— 堆。</p>
+      </div>
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>本章不解决</h3>
+        <p class="small"><b class="r">不解决</b>「全部有序」—— 要完整排序请用排序；<br>
+          <b class="r">不解决</b>「区间第 k 小」的在线查询 —— 那是持久化线段树 / 平衡树 / 二分套值域。<br>
+          <b class="r">不解决</b>「所有元素的 rank」—— 堆只给最值，不给排名。</p>
+      </div>
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>考试里的堆题画像</h3>
+        <p class="small">题面里出现 <span class="mono">「前 K 个」「第 K 大」「同时进行」「合并代价最小」「每次取最小的两个」「单源最短路 + 可走多次」</span> 其中任意一个 → 先想堆。</p>
+      </div>
+      <div class="tagrow">
+        <span class="tag g">23 题</span>
+        <span class="tag">2 题选做</span>
+        <span class="tag">全套 Python 实现</span>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 01 —</span></div>
+</section>
+
+
+<!-- ══════════════ 02 堆是什么 ══════════════ -->
+<section class="slide rv" id="s2">
+  <div class="s-head">
+    <div class="s-num">02</div>
+    <div>
+      <h2>堆是什么：<b>半有序</b>，不是全有序</h2>
+      <p class="sub">一个大顶堆，<b>唯一的承诺</b>是「每个节点 ≥ 它的孩子」。它明确<b>不承诺</b>兄弟之间的顺序。</p>
+    </div>
+  </div>
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 300">
+          <!-- 树 -->
+          <line class="edge" x1="330" y1="82" x2="190" y2="140"/>
+          <line class="edge" x1="330" y1="82" x2="470" y2="140"/>
+          <line class="edge" x1="190" y1="140" x2="110" y2="200"/>
+          <line class="edge" x1="190" y1="140" x2="270" y2="200"/>
+          <line class="edge" x1="470" y1="140" x2="390" y2="200"/>
+          <line class="edge" x1="470" y1="140" x2="550" y2="200"/>
+
+          <circle class="node act" cx="330" cy="60" r="26"/>
+          <text class="lb green" x="330" y="60">9</text>
+
+          <circle class="node" cx="190" cy="140" r="26"/>
+          <text class="lb" x="190" y="140">7</text>
+
+          <circle class="node" cx="470" cy="140" r="26"/>
+          <text class="lb" x="470" y="140">8</text>
+
+          <circle class="node" cx="110" cy="200" r="26"/>
+          <text class="lb" x="110" y="200">2</text>
+
+          <circle class="node" cx="270" cy="200" r="26"/>
+          <text class="lb" x="270" y="200">6</text>
+
+          <circle class="node" cx="390" cy="200" r="26"/>
+          <text class="lb" x="390" y="200">5</text>
+
+          <circle class="node" cx="550" cy="200" r="26"/>
+          <text class="lb" x="550" y="200">1</text>
+
+          <!-- 根注 -->
+          <path class="lead" d="M368 44 Q430 30 488 34"/>
+          <text class="capg" x="496" y="30">根 = 全局最大</text>
+          <text class="capg" x="496" y="48">唯一的「冠军」</text>
+
+          <!-- 兄弟比较警告 -->
+          <rect x="14" y="240" width="300" height="46" rx="10" fill="#F8E8E2" stroke="#B94A2C" stroke-width="2"/>
+          <text class="capr" x="32" y="262">7 vs 8 · 2 vs 6 · 5 vs 1</text>
+          <text class="cap"  x="32" y="280">兄弟之间没有顺序约束</text>
+
+          <!-- 合法 -->
+          <rect x="330" y="240" width="312" height="46" rx="10" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2"/>
+          <text class="capg" x="348" y="262">9 ≥ 7, 9 ≥ 8  ✓  7 ≥ 2, 7 ≥ 6  ✓</text>
+          <text class="cap"  x="348" y="280">父 ≥ 孩子 —— 这就是堆性质</text>
+
+          <text class="hint" x="14" y="18">MAX-HEAP · 大顶堆</text>
+        </svg>
+        <div class="fcap">FIG.a · 大顶堆：父 ≥ 孩子，但兄弟乱序</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>和「有序数组」对比</h3>
+        <div class="tagrow" style="margin-top:0;gap:11px">
+          <div class="chip" style="flex:1 1 170px">
+            <span class="k">有序数组</span>
+            <b>全有序</b> —— 任意两个元素都能比。<br>
+            插入 <span class="mono">O(n)</span>，取最值 <span class="mono">O(1)</span>。
+          </div>
+          <div class="chip g" style="flex:1 1 170px">
+            <span class="k">堆</span>
+            <b>半有序</b> —— 只保证「父 ≥ 孩」。<br>
+            插入 <span class="mono">O(log n)</span>，取最值 <span class="mono">O(log n)</span>。
+          </div>
+        </div>
+        <p class="small" style="margin-top:13px">堆用<b class="g">牺牲「兄弟顺序」</b>，换来 <b class="g">O(log n) 插入 + O(log n) 删除</b>。这就是它的全部卖点。</p>
+      </div>
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>堆 vs 平衡树 / 跳表</h3>
+        <p class="small">三者都支持「按大小顺序取出」。堆<b>常数最小</b>、代码最短、最省内存，但<b>只给最值</b>。<br>
+          平衡树 / 跳表<b>能给完整顺序</b>，但实现成本高、常数大。<br>
+          <b class="g">面试里 90% 的题，堆就够。</b></p>
+      </div>
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>为什么叫「半有序」</h3>
+        <p class="small">把堆完全排序，成本 <span class="mono">O(n log n)</span>；<br>
+          但只要「谁最大」，堆给的是 <span class="mono">O(1)</span>。<br>
+          <b class="a">它精确地只做你真正需要的那一件事。</b></p>
+      </div>
+      <div class="tagrow">
+        <span class="tag g">父 ≥ 孩子</span>
+        <span class="tag r">兄弟无序</span>
+        <span class="tag">半有序结构</span>
+        <span class="tag">卖点 = O(log n) 双操作</span>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 02 —</span></div>
+</section>
+
+
+<!-- ══════════════ 03 数组存树 ══════════════ -->
+<section class="slide rv" id="s3">
+  <div class="s-head">
+    <div class="s-num">03</div>
+    <div>
+      <h2>数组存树：<span class="g">下标公式</span> 与三个关键量</h2>
+      <p class="sub">堆不是链式树，它<b>压在数组里</b>。所以父子关系<b>算得出来</b>，不用存指针。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="full">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 1300 250">
+          <!-- 数组 -->
+          <text class="cap" x="20" y="26">数组 index</text>
+          <g>
+            <rect x="20" y="38" width="80" height="60" rx="8" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.4"/>
+            <text class="num" x="60" y="62" fill="#1B4B3A">9</text>
+            <text class="hint" x="60" y="88">[0]</text>
+
+            <rect x="104" y="38" width="80" height="60" rx="8" fill="#FCFAF4" stroke="#12212B" stroke-width="1.8"/>
+            <text class="num" x="144" y="62">7</text>
+            <text class="hint" x="144" y="88">[1]</text>
+
+            <rect x="188" y="38" width="80" height="60" rx="8" fill="#FCFAF4" stroke="#12212B" stroke-width="1.8"/>
+            <text class="num" x="228" y="62">8</text>
+            <text class="hint" x="228" y="88">[2]</text>
+
+            <rect x="272" y="38" width="80" height="60" rx="8" fill="#FCFAF4" stroke="#12212B" stroke-width="1.8"/>
+            <text class="num" x="312" y="62">2</text>
+            <text class="hint" x="312" y="88">[3]</text>
+
+            <rect x="356" y="38" width="80" height="60" rx="8" fill="#FCFAF4" stroke="#12212B" stroke-width="1.8"/>
+            <text class="num" x="396" y="62">6</text>
+            <text class="hint" x="396" y="88">[4]</text>
+
+            <rect x="440" y="38" width="80" height="60" rx="8" fill="#FCFAF4" stroke="#12212B" stroke-width="1.8"/>
+            <text class="num" x="480" y="62">5</text>
+            <text class="hint" x="480" y="88">[5]</text>
+
+            <rect x="524" y="38" width="80" height="60" rx="8" fill="#FCFAF4" stroke="#12212B" stroke-width="1.8"/>
+            <text class="num" x="564" y="62">1</text>
+            <text class="hint" x="564" y="88">[6]</text>
+          </g>
+
+          <!-- 公式 -->
+          <g>
+            <rect x="640" y="26" width="300" height="80" rx="12" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.2"/>
+            <text class="capg" x="660" y="54">下标公式（0-based）</text>
+            <text class="capg" x="660" y="80">parent(i) = (i-1)//2</text>
+            <text class="capg" x="660" y="100">left(i) = 2i+1 · right(i) = 2i+2</text>
+          </g>
+
+          <!-- 三个关键量 -->
+          <g>
+            <rect x="956" y="26" width="324" height="80" rx="12" fill="#FAF0DE" stroke="#C0703C" stroke-width="2.2"/>
+            <text class="capa" x="976" y="52">三个关键量</text>
+            <text class="cap"  x="976" y="76">size  堆里有几个</text>
+            <text class="cap"  x="976" y="96">n       容量 / 数组长度</text>
+          </g>
+
+          <!-- 连线 -->
+          <path class="lead" d="M312 100 L312 132 L344 132"/>
+          <text class="hint" x="14" y="132">父 = (3-1)//2 = 1 → a[1] = 7</text>
+
+          <path class="lead" d="M396 100 L396 132 L428 132"/>
+          <text class="hint" x="286" y="152">子 = 2*1+1 = 3</text>
+
+          <!-- 底部三点 -->
+          <path class="lead" d="M20 176 Q640 164 1280 176"/>
+          <text class="capg" x="20" y="206">① 不存指针 → 省一半内存，缓存友好</text>
+          <text class="capg" x="20" y="232">② 下标算关系 → 树的遍历 = 加减乘除</text>
+          <text class="capa" x="470" y="206">③ 完全二叉树 → 数组不空洞，末尾就是「唯一可加的位置」</text>
+          <text class="capa" x="470" y="232">④ last parent = (size-2)//2 —— 自底向上建堆的起点</text>
+        </svg>
+        <div class="fcap">FIG.a · 堆压在数组里：树 = 数组，父子关系 = 下标运算</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.18s;margin-top:13px">
+    <div class="c1-6">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>关键 ① 不用指针</h3>
+        <p class="small">因为是<b>完全二叉树</b>，形状是锁死的，所以父子位置<b>算得出来</b>。<br>
+          好处：不用左右指针，每个节点<b>只存值</b>，整体数组连续 → 缓存友好、常数小。</p>
+      </div>
+    </div>
+    <div class="c7-12">
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>关键 ② 那个 <span class="mono" style="font-size:16px">//2</span></h3>
+        <p class="small">0-based 下 <b class="a">(i-1)//2</b>，1-based 下 <b class="a">i//2</b>。<br>
+          差一个括号，整个 sift-up 会指向错的父节点 —— 这是<b>最常见的实现 bug</b>。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">parent = (i-1)//2</span>
+    <span class="tag">left = 2i+1</span>
+    <span class="tag">right = 2i+2</span>
+    <span class="tag a">完全二叉树</span>
+    <span class="tag">无指针</span>
+    <span class="tag r">(i-1)//2 ← 少个括号就错</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 03 —</span></div>
+</section>
+
+
+<!-- ══════════════ 04 两条规则 ══════════════ -->
+<section class="slide rv" id="s4">
+  <div class="s-head">
+    <div class="s-num">04</div>
+    <div>
+      <h2>两条规则：<span class="g">形状</span> 与 <span class="a">数值</span>，<b>必须分清</b></h2>
+      <p class="sub">初学者最容易把「形状规则」和「数值规则」混成一条。分开记，代码就清楚了。</p>
+    </div>
+  </div>
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="tbar">
+        <div class="t-cell green">
+          <div class="t-k">规则 ① · 形状</div>
+          <div class="t-v">完全二叉树<span class="sm">除了最后一层，其余每层都满；最后一层从左往右连续填充，不留空洞。</span></div>
+        </div>
+        <div class="t-cell amber">
+          <div class="t-k">规则 ② · 数值</div>
+          <div class="t-v">父 ≥ 孩子<span class="sm">每个节点都 ≥（或 ≤）它的孩子。大顶堆取 ≥，小顶堆取 ≤。</span></div>
+        </div>
+        <div class="t-cell">
+          <div class="t-k">两条独立</div>
+          <div class="t-v">互不推导<span class="sm">形状合法 ≠ 数值合法。数值合法 ≠ 形状合法。两条要<b>同时</b>成立才叫堆。</span></div>
+        </div>
+      </div>
+
+      <div class="figure" style="margin-top:13px">
+        <svg class="dg" viewBox="0 0 660 220">
+          <!-- 合法 -->
+          <text class="capg" x="18" y="20">✓ 形状 + 数值 都合法</text>
+          <line class="edge" x1="90" y1="60" x2="50" y2="102"/>
+          <line class="edge" x1="90" y1="60" x2="130" y2="102"/>
+          <line class="edge" x1="50" y1="102" x2="26" y2="142"/>
+          <line class="edge" x1="50" y1="102" x2="74" y2="142"/>
+          <line class="edge" x1="130" y1="102" x2="154" y2="142"/>
+          <circle class="node act" cx="90" cy="42" r="21"/>
+          <text class="lb green" x="90" y="42">9</text>
+          <circle class="node" cx="50" cy="102" r="21"/>
+          <text class="lb" x="50" y="102">7</text>
+          <circle class="node" cx="130" cy="102" r="21"/>
+          <text class="lb" x="130" y="102">8</text>
+          <circle class="node" cx="26" cy="142" r="21"/>
+          <text class="lb" x="26" y="142">2</text>
+          <circle class="node" cx="74" cy="142" r="21"/>
+          <text class="lb" x="74" y="142">6</text>
+          <circle class="node" cx="154" cy="142" r="21"/>
+          <text class="lb" x="154" y="142">5</text>
+          <text class="capg" x="18" y="192">形状满 · 父 ≥ 孩</text>
+
+          <!-- 形状坏 -->
+          <text class="capr" x="240" y="20">✗ 数值对，形状坏</text>
+          <line class="edge" x1="310" y1="60" x2="270" y2="102"/>
+          <line class="edge" x1="310" y1="60" x2="350" y2="102"/>
+          <line class="edge" x1="350" y1="102" x2="374" y2="142"/>
+          <circle class="node" cx="310" cy="42" r="21"/>
+          <text class="lb" x="310" y="42">9</text>
+          <circle class="node" cx="270" cy="102" r="21"/>
+          <text class="lb" x="270" y="102">7</text>
+          <circle class="node" cx="350" cy="102" r="21"/>
+          <text class="lb" x="350" y="102">8</text>
+          <circle class="node gone" cx="374" cy="142" r="21"/>
+          <text class="lb" x="374" y="142">5</text>
+          <text class="capr" x="240" y="192">[2] 位置空了 —— 不是堆</text>
+
+          <!-- 数值坏 -->
+          <text class="capr" x="450" y="20">✗ 形状对，数值坏</text>
+          <line class="edge" x1="530" y1="60" x2="490" y2="102"/>
+          <line class="edge" x1="530" y1="60" x2="570" y2="102"/>
+          <circle class="node act" cx="530" cy="42" r="21"/>
+          <text class="lb green" x="530" y="42">5</text>
+          <circle class="node" cx="490" cy="102" r="21"/>
+          <text class="lb" x="490" y="102">9</text>
+          <circle class="node" cx="570" cy="102" r="21"/>
+          <text class="lb" x="570" y="102">8</text>
+          <text class="capr" x="450" y="192">5 &lt; 9 且 5 &lt; 8 —— 不是堆</text>
+        </svg>
+        <div class="fcap">FIG.a · 两个维度，各自可以单独坏掉</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>大顶堆 vs 小顶堆</h3>
+        <p class="small"><b>大顶堆</b>：<span class="mono">parent ≥ child</span> → 堆顶 = <b class="g">最大</b>。<br>
+          <b>小顶堆</b>：<span class="mono">parent ≤ child</span> → 堆顶 = <b class="g">最小</b>。<br>
+          两者代码<b>完全对称</b>，只差一个比较符号。</p>
+      </div>
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>为什么形状要锁死</h3>
+        <p class="small">形状锁死 → <b class="g">树高 = ⌊log₂ n⌋ + 1</b>，且数组<b>无空洞</b>。<br>
+          这保证了：任何一次上浮 / 下沉，最多走 <b class="g">O(log n)</b> 层。<br>
+          <b>形状是「效率保证」的来源。</b></p>
+      </div>
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>为什么数值只要「父子」</h3>
+        <p class="small">因为<b>只要最值</b>。根节点天然就是最值。<br>
+          <b class="r">不需要</b>兄弟有序 → 不需要旋转、不需要回溯。<br>
+          这就是堆比平衡树<b>简单一个数量级</b>的原因。</p>
+      </div>
+      <div class="tagrow">
+        <span class="tag g">父 ≥ 孩子</span>
+        <span class="tag a">完全二叉树</span>
+        <span class="tag">两条独立</span>
+        <span class="tag r">形状锁死 → 树高可控</span>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 04 —</span></div>
+</section>
+
+
+<!-- ══════════════ 05 复杂度 ══════════════ -->
+<section class="slide rv" id="s5">
+  <div class="s-head">
+    <div class="s-num">05</div>
+    <div>
+      <h2>复杂度 <span class="g">O(log n)</span> 是怎么来的</h2>
+      <p class="sub">不是背的，是<b>数层高</b>数出来的。记住这一个数字，后面所有优化都围绕它展开。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 240">
+          <!-- 层 -->
+          <line class="edge" x1="330" y1="44" x2="170" y2="104"/>
+          <line class="edge" x1="330" y1="44" x2="490" y2="104"/>
+          <line class="edge" x1="170" y1="104" x2="90" y2="164"/>
+          <line class="edge" x1="170" y1="104" x2="250" y2="164"/>
+          <line class="edge" x1="490" y1="104" x2="410" y2="164"/>
+          <line class="edge" x1="490" y1="104" x2="570" y2="164"/>
+
+          <circle class="node act" cx="330" cy="24" r="22"/>
+          <text class="lb green" x="330" y="24">9</text>
+          <circle class="node" cx="170" cy="104" r="22"/>
+          <text class="lb" x="170" y="104">7</text>
+          <circle class="node" cx="490" cy="104" r="22"/>
+          <text class="lb" x="490" y="104">8</text>
+          <circle class="node" cx="90" cy="164" r="22"/>
+          <text class="lb" x="90" y="164">2</text>
+          <circle class="node" cx="250" cy="164" r="22"/>
+          <text class="lb" x="250" y="164">6</text>
+          <circle class="node" cx="410" cy="164" r="22"/>
+          <text class="lb" x="410" y="164">5</text>
+          <circle class="node" cx="570" cy="164" r="22"/>
+          <text class="lb" x="570" y="164">1</text>
+
+          <!-- 层高标注 -->
+          <path class="lead" d="M20 24 L146 24"/>
+          <text class="hint" x="20" y="18">层数 0 · 1 个</text>
+          <path class="lead" d="M20 104 L146 104"/>
+          <text class="hint" x="20" y="98">层数 1 · 最多 2 个</text>
+          <path class="lead" d="M20 164 L66 164"/>
+          <text class="hint" x="20" y="158">层数 2 · 最多 4 个</text>
+
+          <text class="capg" x="330" y="212" text-anchor="middle">上浮 / 下沉 = 沿一条路径走，最多 ⌊log₂ n⌋ 层</text>
+          <text class="capg" x="330" y="232" text-anchor="middle">→ 单次操作 O(log n)</text>
+        </svg>
+        <div class="fcap">FIG.a · 树高 log n，路径长 log n</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div class="stat g"><div class="n">O(1)</div><div class="l">取堆顶 peek</div></div>
+        <div class="stat g"><div class="n">O(log n)</div><div class="l">push 上浮</div></div>
+        <div class="stat g"><div class="n">O(log n)</div><div class="l">pop 下沉</div></div>
+        <div class="stat a"><div class="n">O(n)</div><div class="l">heapify 建堆</div></div>
+      </div>
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>为什么建堆是 O(n) 而不是 O(n log n)</h3>
+        <p class="small">自底向上下沉，<b class="g">底层节点多但下沉次数少</b>，顶层节点少但下沉次数多。<br>
+          求和 <span class="mono">∑ (n/2^(h+1)) · h = O(n)</span>。<br>
+          <b class="g">这就是「一次性建堆 + 反复 pop」比「n 次 push」快的原因。</b></p>
+      </div>
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>heapq 默认是小顶堆</h3>
+        <p class="small"><b class="r">没有内置大顶堆。</b>取负（<span class="mono">-x</span>）模拟。<br>
+          代价：元组比较会反、<span class="mono">abs</span> 场景会错 —— 第 11 页详解。</p>
+      </div>
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>优先队列接口</h3>
+        <p class="small"><span class="mono">push / pop / peek</span> 三个动作。<br>
+          C++ 是 <span class="mono">priority_queue</span>，Java 是 <span class="mono">PriorityQueue</span>，Python 是 <span class="mono">heapq</span>。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">peek O(1)</span>
+    <span class="tag g">push/pop O(log n)</span>
+    <span class="tag a">heapify O(n)</span>
+    <span class="tag">树高 = log n</span>
+    <span class="tag r">heapq 是小顶堆</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 05 —</span></div>
+</section>
+
+
+<!-- ══════════════ 06 sift-up ══════════════ -->
+<section class="slide rv" id="s6">
+  <div class="s-head">
+    <div class="s-num">06</div>
+    <div>
+      <h2>插入（<span class="g">sift-up</span>）：放在末尾，向上冒</h2>
+      <p class="sub">插入只有一个动作：<b>丢到末尾</b>，然后<b>不停和父比、和父换</b>，直到不能再换。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 340">
+          <!-- step1 -->
+          <text class="cap" x="18" y="20">STEP 1 · 末尾插入</text>
+          <line class="edge" x1="130" y1="58" x2="80" y2="94"/>
+          <line class="edge" x1="130" y1="58" x2="180" y2="94"/>
+          <line class="edge" x1="80" y1="94" x2="50" y2="130"/>
+          <line class="edge" x1="80" y1="94" x2="110" y2="130"/>
+          <line class="edge" x1="180" y1="94" x2="210" y2="130"/>
+          <line class="edge" x1="210" y1="130" x2="240" y2="166" stroke-dasharray="4 3"/>
+          <circle class="node act" cx="130" cy="40" r="19"/>
+          <text class="lb green" x="130" y="40">9</text>
+          <circle class="node" cx="80" cy="94" r="19"/>
+          <text class="lb" x="80" y="94">7</text>
+          <circle class="node" cx="180" cy="94" r="19"/>
+          <text class="lb" x="180" y="94">8</text>
+          <circle class="node" cx="50" cy="130" r="19"/>
+          <text class="lb" x="50" y="130">2</text>
+          <circle class="node" cx="110" cy="130" r="19"/>
+          <text class="lb" x="110" y="130">6</text>
+          <circle class="node" cx="210" cy="130" r="19"/>
+          <text class="lb" x="210" y="130">5</text>
+          <circle class="node act" cx="240" cy="166" r="19"/>
+          <text class="lb green" x="240" y="166">10</text>
+          <text class="hint" x="240" y="198">新元素</text>
+
+          <!-- step2 -->
+          <text class="capa" x="360" y="20">STEP 2 · 与父比</text>
+          <line class="edge" x1="460" y1="58" x2="410" y2="94"/>
+          <line class="edge" x1="460" y1="58" x2="510" y2="94"/>
+          <line class="edge" x1="410" y1="94" x2="380" y2="130"/>
+          <line class="edge" x1="410" y1="94" x2="440" y2="130"/>
+          <line class="edge" x1="510" y1="94" x2="540" y2="130"/>
+          <circle class="node act" cx="460" cy="40" r="19"/>
+          <text class="lb green" x="460" y="40">9</text>
+          <circle class="node" cx="410" cy="94" r="19"/>
+          <text class="lb" x="410" y="94">7</text>
+          <circle class="node act" cx="510" cy="94" r="19"/>
+          <text class="lb green" x="510" y="94">8</text>
+          <circle class="node" cx="380" cy="130" r="19"/>
+          <text class="lb" x="380" y="130">2</text>
+          <circle class="node" cx="440" cy="130" r="19"/>
+          <text class="lb" x="440" y="130">6</text>
+          <circle class="node act" cx="540" cy="130" r="19"/>
+          <text class="lb green" x="540" y="130">10</text>
+          <path class="ed am" d="M522 112 L546 122"/>
+          <path class="ed am" d="M534 108 L550 122 L534 112"/>
+          <text class="capa" x="484" y="168">10 &gt; 8，交换</text>
+
+          <!-- step3 -->
+          <text class="capg" x="18" y="230">STEP 3 · 继续向上</text>
+          <line class="edge" x1="130" y1="268" x2="80" y2="304"/>
+          <line class="edge" x1="130" y1="268" x2="180" y2="304"/>
+          <line class="edge" x1="80" y1="304" x2="50" y2="340"/>
+          <line class="edge" x1="80" y1="304" x2="110" y2="340"/>
+          <line class="edge" x1="180" y1="304" x2="210" y2="340"/>
+          <circle class="node act" cx="130" cy="250" r="19"/>
+          <text class="lb green" x="130" y="250">9</text>
+          <circle class="node" cx="80" cy="304" r="19"/>
+          <text class="lb" x="80" y="304">7</text>
+          <circle class="node act" cx="180" cy="304" r="19"/>
+          <text class="lb green" x="180" y="304">10</text>
+          <circle class="node" cx="50" cy="340" r="19"/>
+          <text class="lb" x="50" y="340">2</text>
+          <circle class="node" cx="110" cy="340" r="19"/>
+          <text class="lb" x="110" y="340">6</text>
+          <circle class="node" cx="210" cy="340" r="19"/>
+          <text class="lb" x="210" y="340">8</text>
+
+          <!-- step4 -->
+          <text class="capg" x="360" y="230">STEP 4 · 到达根，停</text>
+          <line class="edge" x1="460" y1="268" x2="410" y2="304"/>
+          <line class="edge" x1="460" y1="268" x2="510" y2="304"/>
+          <line class="edge" x1="410" y1="304" x2="380" y2="340"/>
+          <line class="edge" x1="410" y1="304" x2="440" y2="340"/>
+          <line class="edge" x1="510" y1="304" x2="540" y2="340"/>
+          <circle class="node act" cx="460" cy="250" r="19"/>
+          <text class="lb green" x="460" y="250">10</text>
+          <circle class="node" cx="410" cy="304" r="19"/>
+          <text class="lb" x="410" y="304">7</text>
+          <circle class="node" cx="510" cy="304" r="19"/>
+          <text class="lb" x="510" y="304">8</text>
+          <circle class="node" cx="380" cy="340" r="19"/>
+          <text class="lb" x="380" y="340">2</text>
+          <circle class="node" cx="440" cy="340" r="19"/>
+          <text class="lb" x="440" y="340">6</text>
+          <circle class="node" cx="540" cy="340" r="19"/>
+          <text class="lb" x="540" y="340">8</text>
+          <text class="capg" x="360" y="200">10 &gt; 9，再换</text>
+        </svg>
+        <div class="fcap">FIG.a · 一次插入最多走树高 h = ⌊log₂ n⌋ 步</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="codelabel">PYTHON · sift-up</div>
+      <div class="code"><pre><span class="kw">def</span> <span class="fn">_sift_up</span>(a, i):
+    <span class="st">"""把 a[i] 往上浮，直到父 &lt;= 它"""</span>
+    <span class="kw">while</span> i &gt; <span class="op">0</span>:
+        p = (i - <span class="op">1</span>) // <span class="op">2</span>          <span class="cm"># 父下标</span>
+        <span class="kw">if</span> a[p] &gt;= a[i]:
+            <span class="kw">break</span>                 <span class="cm"># 已合法，停</span>
+        a[p], a[i] = a[i], a[p]   <span class="cm"># 和父换</span>
+        i = p                    <span class="cm"># 继续向上</span></pre></div>
+
+      <div class="codelabel">PYTHON · heapq 的等价写法</div>
+      <div class="code"><pre><span class="kw">import</span> heapq
+heap = []
+<span class="kw">for</span> x <span class="kw">in</span> nums:
+    heapq.<span class="fn">heappush</span>(heap, x)   <span class="cm"># = 内部 sift-up</span></pre></div>
+
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>手写时的三个坑</h3>
+        <ul class="pit">
+          <li><b class="r">父下标公式</b>：0-based 是 <span class="mono">(i-1)//2</span>，1-based 是 <span class="mono">i//2</span></li>
+          <li><b class="r">循环条件</b>：<span class="mono">i &gt; 0</span>，不是 <span class="mono">i &gt;= 0</span></li>
+          <li><b class="r">比较方向</b>：小顶堆是 <span class="mono">if a[p] &lt;= a[i]: break</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">末尾插入</span>
+    <span class="tag">上浮 log n 步</span>
+    <span class="tag a">父下标 (i-1)//2</span>
+    <span class="tag r">比较方向别写反</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 06 —</span></div>
+</section>
+
+
+<!-- ══════════════ 07 弹出堆顶 + 动画 A ══════════════ -->
+<section class="slide rv" id="s7">
+  <div class="s-head">
+    <div class="s-num">07</div>
+    <div>
+      <h2>弹出堆顶（<span class="g">sift-down</span>）：<b>末尾补根，向下沉</b></h2>
+      <p class="sub">弹出<b>不是</b>删掉根就完事。删掉根会留下空洞 —— 必须用<b>末尾元素补上</b>，再让它下沉。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" id="svgA" viewBox="0 0 660 260"></svg>
+        <div class="fcap">FIG.a · <span class="mono" style="letter-spacing:0">[10,7,8,2,6,5]</span> 弹出 10 的三步</div>
+        <div class="tagrow" style="margin-top:11px">
+          <span class="tag">STEP 1 取走 10</span>
+          <span class="tag a">STEP 2 末尾 5 补根</span>
+          <span class="tag g">STEP 3 沉到合法</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="codelabel">PYTHON · sift-down</div>
+      <div class="code"><pre><span class="kw">def</span> <span class="fn">_sift_down</span>(a, i, n):
+    <span class="st">"""把 a[i] 往下沉，直到孩子 &lt;= 它"""</span>
+    <span class="kw">while</span> <span class="kw">True</span>:
+        l, r = <span class="op">2</span>*i+<span class="op">1</span>, <span class="op">2</span>*i+<span class="op">2</span>
+        big = i
+        <span class="kw">if</span> l &lt; n <span class="kw">and</span> a[l] &gt; a[big]: big = l
+        <span class="kw">if</span> r &lt; n <span class="kw">and</span> a[r] &gt; a[big]: big = r
+        <span class="kw">if</span> big == i:
+            <span class="kw">break</span>               <span class="cm"># 已合法</span>
+        a[i], a[big] = a[big], a[i]
+        i = big                <span class="cm"># 继续向下</span>
+
+<span class="kw">def</span> <span class="fn">pop_max</span>(a):
+    n = <span class="fn">len</span>(a)
+    a[<span class="op">0</span>], a[n-<span class="op">1</span>] = a[n-<span class="op">1</span>], a[<span class="op">0</span>]
+    top = a.<span class="fn">pop</span>()              <span class="cm"># 取走最大</span>
+    <span class="fn">_sift_down</span>(a, <span class="op">0</span>, <span class="fn">len</span>(a))
+    <span class="kw">return</span> top</pre></div>
+
+      <div class="codenote green">
+        <b>WHY</b>
+        为什么「必须」用末尾补根？因为<b>形状规则</b>要求完全二叉树。直接删根会让数组<b>少一个位置</b>，形状就不合法了。末尾补上是<b>唯一</b>不破坏形状的做法。
+      </div>
+
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>为什么是「和较大的孩子」换</h3>
+        <p class="small">堆性质只要求 <span class="mono">parent ≥ child</span>。<br>
+          如果和<b class="r">较小的</b>孩子换，换完后父 <b class="r">仍小于另一个孩子</b> —— 还是不合法。<br>
+          <b class="a">必须换「最大的那个孩子」</b>，一步到位。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">末尾补根</span>
+    <span class="tag">下沉 log n 步</span>
+    <span class="tag a">和「较大的孩子」换</span>
+    <span class="tag r">别和较小的换</span>
+    <span class="tag">比较方向决定对错</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 07 —</span></div>
+</section>
+
+
+<!-- ══════════════ 08 heapify + 动画 B ══════════════ -->
+<section class="slide rv" id="s8">
+  <div class="s-head">
+    <div class="s-num">08</div>
+    <div>
+      <h2>建堆 <span class="g">heapify</span>：自底向上，<b>O(n)</b></h2>
+      <p class="sub">从<b>最后一个非叶节点</b>开始，倒着对每个节点做 sift-down。<b>不用一个一个 push。</b></p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" id="svgB" viewBox="0 0 660 300"></svg>
+        <div class="fcap">FIG.a · <span class="mono" style="letter-spacing:0">[4,1,3,2,16,9,10,14,8,7]</span> 的 heapify 过程</div>
+        <div class="tagrow" style="margin-top:11px">
+          <span class="tag">起点 = last parent</span>
+          <span class="tag a">下沉到底就停</span>
+          <span class="tag g">根天然合法</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="codelabel">PYTHON · heapify</div>
+      <div class="code"><pre><span class="kw">def</span> <span class="fn">build_max_heap</span>(a):
+    n = <span class="fn">len</span>(a)
+    <span class="cm"># 最后一个非叶节点 = (n-2)//2</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>((n-<span class="op">2</span>)//<span class="op">2</span>, -<span class="op">1</span>, -<span class="op">1</span>):
+        <span class="fn">_sift_down</span>(a, i, n)
+    <span class="kw">return</span> a</pre></div>
+
+      <div class="codelabel">PYTHON · heapq</div>
+      <div class="code"><pre>heapq.<span class="fn">heapify</span>(a)          <span class="cm"># 一行，O(n)</span>
+<span class="cm"># 反例（慢 3 倍以上）：</span>
+h = []
+<span class="kw">for</span> x <span class="kw">in</span> a:
+    heapq.<span class="fn">heappush</span>(h, x)  <span class="cm"># O(n log n)</span></pre></div>
+
+      <div class="codenote green">
+        <b>WHY O(n)</b>
+        底层节点<b>多但下沉短</b>，顶层节点<b>少但下沉长</b>。<br>
+        <span class="mono">∑ (n / 2^(h+1)) · h = O(n)</span><br>
+        从 h=0 到 h=log n 求和，等比数列收敛到 <b class="g">2n</b> 以内。
+      </div>
+
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>起点记法</h3>
+        <p class="small"><b class="r">last parent</b> = 最后一个<b>有孩子</b>的下标。<br>
+          0-based：<span class="mono">(n-2)//2</span><br>
+          反过来写：<span class="mono">n//2 - 1</span>（等价）</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">heapify = O(n)</span>
+    <span class="tag a">n 次 push = O(n log n)</span>
+    <span class="tag">起点 = last parent</span>
+    <span class="tag r">(n-2)//2 别写成 n//2</span>
+    <span class="tag">倒着来</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 08 —</span></div>
+</section>
+
+
+<!-- ══════════════ 09 库速查 ══════════════ -->
+<section class="slide rv" id="s9">
+  <div class="s-head">
+    <div class="s-num">09</div>
+    <div>
+      <h2><span class="g">Python heapq</span> · <span class="a">C++ priority_queue</span> · <span class="r">Java PriorityQueue</span></h2>
+      <p class="sub">背接口是<b>最低成本的提分</b>。三张表里最常考的就是右边那行 <span class="mono">heapify</span>。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-4">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>Python</h3>
+        <div class="code" style="font-size:12px"><pre><span class="kw">import</span> heapq
+
+h = []
+heapq.<span class="fn">heappush</span>(h, x)   <span class="cm"># 插入</span>
+heapq.<span class="fn">heappop</span>(h)      <span class="cm"># 弹出最小</span>
+heapq.<span class="fn">heapreplace</span>(h,x)<span class="cm"># pop+push</span>
+heapq.<span class="fn">heappushpop</span>(h,x)<span class="cm"># push+pop</span>
+heapq.<span class="fn">heapify</span>(a)      <span class="cm"># O(n) 建堆</span>
+h[<span class="op">0</span>]                 <span class="cm"># peek</span>
+heapq.<span class="fn">nlargest</span>(k, a)  <span class="cm"># 前 k 大</span>
+heapq.<span class="fn">nsmallest</span>(k, a) <span class="cm"># 前 k 小</span></pre></div>
+        <p class="small" style="margin-top:11px"><b class="r">小顶堆！</b>大顶堆要<b>取负</b>或用元组 <span class="mono">(-x,)</span>。</p>
+      </div>
+    </div>
+
+    <div class="c5-8">
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>C++</h3>
+        <div class="code" style="font-size:12px"><pre><span class="kw">#include</span> &lt;queue&gt;
+priority_queue&lt;<span class="cls">int</span>&gt; pq;      <span class="cm">// 大顶堆</span>
+
+<span class="cm">// 小顶堆</span>
+priority_queue&lt;<span class="cls">int</span>, vector&lt;<span class="cls">int</span>&gt;,
+               greater&lt;<span class="cls">int</span>&gt;&gt; pq;
+
+pq.<span class="fn">push</span>(x);   pq.<span class="fn">pop</span>();
+pq.<span class="fn">top</span>();     <span class="cm">// peek</span>
+pq.<span class="fn">empty</span>();   pq.<span class="fn">size</span>();</pre></div>
+        <p class="small" style="margin-top:11px"><b class="g">默认大顶堆</b>（Python 相反）。结构体要重载 <span class="mono">operator&lt;</span>。</p>
+      </div>
+    </div>
+
+    <div class="c9-12">
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>Java</h3>
+        <div class="code" style="font-size:12px"><pre><span class="cm">// 小顶堆（默认）</span>
+PriorityQueue&lt;<span class="cls">Integer</span>&gt; pq =
+  <span class="kw">new</span> PriorityQueue&lt;&gt;();
+
+<span class="cm">// 大顶堆</span>
+<span class="kw">new</span> PriorityQueue&lt;&gt;(
+  (a,b) -&gt; b - a);
+
+pq.<span class="fn">offer</span>(x);   pq.<span class="fn">poll</span>();
+pq.<span class="fn">peek</span>();     pq.<span class="fn">isEmpty</span>();</pre></div>
+        <p class="small" style="margin-top:11px">默认<b class="g">小顶堆</b>。比较器 <span class="mono">(a,b) -&gt; b-a</span> 反转即得大顶堆。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.18s;margin-top:13px">
+    <div class="c1-6">
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>面试常用组合</h3>
+        <ul>
+          <li><b>TopK</b>：<span class="mono">heapify</span> + <span class="mono">heappushpop</span></li>
+          <li><b>合并 K 路</b>：<span class="mono">(val, i, j)</span> 三元组入堆</li>
+          <li><b>在线维护</b>：<span class="mono">heappush</span> + 惰性 <span class="mono">heappop</span></li>
+          <li><b>贪心调度</b>：<span class="mono">(end_time, room)</span> 元组</li>
+        </ul>
+      </div>
+    </div>
+    <div class="c7-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>三大性能陷阱</h3>
+        <ul>
+          <li><b class="r">n 次 push 而不是 heapify</b> —— 慢 3 倍以上</li>
+          <li><b class="r">重复入堆不清理</b> —— 空间爆掉</li>
+          <li><b class="r">要 decrease-key 却用 heapq</b> —— heapq 没有此接口，要用懒惰删除</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">heappush / heappop</span>
+    <span class="tag">heapify</span>
+    <span class="tag">heappushpop</span>
+    <span class="tag a">nlargest / nsmallest</span>
+    <span class="tag r">Python = 小顶堆</span>
+    <span class="tag">C++ = 大顶堆</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 09 —</span></div>
+</section>
+
+
+<!-- ══════════════ 10 题单 KIT ══════════════ -->
+<section class="slide rv" id="s10">
+  <div class="s-head">
+    <div class="s-num">10</div>
+    <div>
+      <h2><span class="pill kit">KIT</span>本章题单：<b>A / B / C 三层，共 23 题</b></h2>
+      <p class="sub">A 层 <b>必须秒杀</b>；B 层 <b>必须有思路</b>；C 层 <b>选做</b>。每题都标了「该题演的那件事」。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-4">
+      <div class="card green">
+        <h3><span class="pill main">A · 必做 8 题</span></h3>
+        <ol class="kl">
+          <li><b>LC 215</b> 数组中第K个最大元素 <span class="mono a">quickselect</span> <a class="lk" href="https://leetcode.cn/problems/kth-largest-element-in-an-array/" target="_blank">LC215</a></li>
+          <li><b>LC 347</b> 前K个高频元素 <span class="mono a">桶排序</span> <a class="lk" href="https://leetcode.cn/problems/top-k-frequent-elements/" target="_blank">LC347</a></li>
+          <li><b>LC 1046</b> 最后一块石头的重量 <span class="mono g">基础堆</span> <a class="lk" href="https://leetcode.cn/problems/last-stone-weight/" target="_blank">LC1046</a></li>
+          <li><b>LC 703</b> 数据流中的第K大元素 <span class="mono g">基础堆</span> <a class="lk" href="https://leetcode.cn/problems/kth-largest-element-in-a-stream/" target="_blank">LC703</a></li>
+          <li><b>LC 23</b> 合并K个升序链表 <span class="mono a">多路归并</span> <a class="lk" href="https://leetcode.cn/problems/merge-k-sorted-lists/" target="_blank">LC23</a></li>
+          <li><b>LC 253</b> 会议室 II <span class="mono a">双堆模型</span> <a class="lk" href="https://leetcode.cn/problems/meeting-rooms-ii/" target="_blank">LC253</a></li>
+          <li><b>LC 451</b> 根据字符出现频率排序 <span class="mono a">桶排序</span> <a class="lk" href="https://leetcode.cn/problems/sort-characters-by-frequency/" target="_blank">LC451</a></li>
+          <li><b>LC 1631</b> 最小体力消耗路径 <span class="mono a">最小生成树</span> <a class="lk" href="https://leetcode.cn/problems/path-with-minimum-effort/" target="_blank">LC1631</a></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="c5-8">
+      <div class="card amber">
+        <h3><span class="pill case">B · 加练 8 题</span></h3>
+        <ol class="kl">
+          <li><b>LC 295</b> 数据流的中位数 <span class="mono g">对顶堆</span> <a class="lk" href="https://leetcode.cn/problems/find-median-from-data-stream/" target="_blank">LC295</a></li>
+          <li><b>LC 378</b> 有序矩阵中第K小 <span class="mono a">二分+堆</span> <a class="lk" href="https://leetcode.cn/problems/kth-smallest-element-in-a-sorted-matrix/" target="_blank">LC378</a></li>
+          <li><b>LC 239</b> 滑动窗口最大值 <span class="mono a">单调队列</span> <a class="lk" href="https://leetcode.cn/problems/sliding-window-maximum/" target="_blank">LC239</a></li>
+          <li><b>LC 502</b> IPO <span class="mono a">贪心 + 双堆</span> <a class="lk" href="https://leetcode.cn/problems/ipo/" target="_blank">LC502</a></li>
+          <li><b>LC 373</b> 查找和最小的K对数字 <span class="mono a">多路归并</span> <a class="lk" href="https://leetcode.cn/problems/find-k-pairs-with-smallest-sums/" target="_blank">LC373</a></li>
+          <li><b>LC 264</b> 丑数 II <span class="mono a">多指针 + 堆</span> <a class="lk" href="https://leetcode.cn/problems/ugly-number-ii/" target="_blank">LC264</a></li>
+          <li><b>LC 1337</b> 战场中最弱的K行 <span class="mono g">基础堆</span> <a class="lk" href="https://leetcode.cn/problems/the-k-weakest-rows-in-a-matrix/" target="_blank">LC1337</a></li>
+          <li><b>LC 1054</b> 距离相等的条形码 <span class="mono a">桶排序</span> <a class="lk" href="https://leetcode.cn/problems/distant-barcodes/" target="_blank">LC1054</a></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="c9-12">
+      <div class="card red">
+        <h3><span class="pill aux">C · 选做 7 题</span></h3>
+        <ol class="kl">
+          <li><b>LC 313</b> 超级丑数 <span class="mono a">多指针 + 堆</span> <a class="lk" href="https://leetcode.cn/problems/super-ugly-number/" target="_blank">LC313</a></li>
+          <li><b>LC 218</b> 天际线问题 <span class="mono a">扫描线+堆</span> <a class="lk" href="https://leetcode.cn/problems/the-skyline-problem/" target="_blank">LC218</a></li>
+          <li><b>LC 2233</b> K次增后的最大乘积 <span class="mono g">基础堆</span> <a class="lk" href="https://leetcode.cn/problems/maximum-product-after-k-increments/" target="_blank">LC2233</a></li>
+          <li><b>LC 2163</b> 删除元素后的最小差 <span class="mono a">对顶堆</span> <a class="lk" href="https://leetcode.cn/problems/minimum-difference-in-sums-after-removal-of-elements/" target="_blank">LC2163</a></li>
+          <li><b>LC 1383</b> 最大的团队表现值 <span class="mono a">贪心 + 堆</span> <a class="lk" href="https://leetcode.cn/problems/maximum-performance-of-a-team/" target="_blank">LC1383</a></li>
+          <li><b>LC 632</b> 最小区间覆盖K个列表 <span class="mono a">多路归并</span> <a class="lk" href="https://leetcode.cn/problems/smallest-range-covering-elements-from-k-lists/" target="_blank">LC632</a></li>
+          <li><b>LC 1231</b> 分享巧克力 <span class="mono a">二分答案</span> <a class="lk" href="https://leetcode.cn/problems/divide-chocolate/" target="_blank">LC1231</a></li>
+        </ol>
+        <p class="small" style="margin-top:11px"><b class="r">A 层刷不完就不要碰 C 层。</b></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="hr"></div>
+  <div class="grid rv" style="--d:.2s">
+    <div class="c1-6">
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>分层标准</h3>
+        <p class="small"><b class="g">A 层</b>：只用「堆 + 基本接口」，不涉及技巧，<b>限时 15 分钟</b>。<br>
+          <b class="a">B 层</b>：需要识别模型（多路归并 / 双堆 / 懒惰删除），<b>限时 30 分钟</b>。<br>
+          <b class="r">C 层</b>：需要组合两种以上技巧，<b>限时 45 分钟</b>或面试真题。</p>
+      </div>
+    </div>
+    <div class="c7-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>刷题顺序</h3>
+        <p class="small">D1 先做 A1、A3、A4。<br>
+          D2 做 A5、A6、B1、B3。<br>
+          D3 做 A7、A8、B4。<br>
+          D4 做 A2、B2，最后扫一遍错题。</p>
+      </div>
+    </div>
+  </div>
+  <div class="tagrow">
+    <span class="tag g">A 8 题 · 15 min</span>
+    <span class="tag a">B 8 题 · 30 min</span>
+    <span class="tag r">C 7 题 · 45 min</span>
+    <span class="tag">共 23 题</span>
+    <span class="tag">题单页放在中间供查阅</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 10 —</span></div>
+</section>
+
+
+<!-- ══════════════ 11 D1 小结 ══════════════ -->
+<section class="slide rv" id="s11">
+  <div class="s-head">
+    <div class="s-num">11</div>
+    <div>
+      <h2>D1 小结：<span class="g">五个必背</span> + <span class="r">三个必坑</span></h2>
+      <p class="sub">今天就记这些。背不完今天，<b>明天就没有地基</b>。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-6">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>五个必背</h3>
+        <ul class="pit">
+          <li>父 <span class="mono">(i-1)//2</span>，左 <span class="mono">2i+1</span>，右 <span class="mono">2i+2</span>（0-based）</li>
+          <li>形状 = 完全二叉树；数值 = 父 ≥ 孩子。<b class="g">两条独立</b></li>
+          <li>插入末尾 + sift-up；弹出末尾补根 + sift-down</li>
+          <li><b class="g">heapify 是 O(n)</b>，n 次 push 是 O(n log n)</li>
+          <li>取堆顶 <span class="mono">O(1)</span>，push / pop <span class="mono">O(log n)</span></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>今日口头禅</h3>
+        <p class="small"><b class="g">「只要最值，就用堆。」</b><br>
+          见到「前 K」「第 K」「同时进行」「每次取最小两个」，先想堆。</p>
+      </div>
+    </div>
+
+    <div class="c7-12">
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>三个必坑</h3>
+        <ul class="pit">
+          <li><b class="r">heapq 是小顶堆</b>，要大顶堆得取负或用元组反转</li>
+          <li><b class="r">sift-down 比错了孩子</b> —— 必须和较大的孩子比</li>
+          <li><b class="r">sift-down 少比一个孩子</b> —— 两孩子都要比</li>
+        </ul>
+      </div>
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>heapq 元组比较陷阱</h3>
+        <div class="code" style="font-size:11.6px"><pre><span class="cm"># 想要大顶堆 + 时间戳</span>
+heapq.<span class="fn">heappush</span>(h, (-key, ts))  <span class="cm"># ✓</span>
+heapq.<span class="fn">heappush</span>(h, (key, ts))   <span class="cm"># ✗ 变小顶堆</span>
+
+<span class="cm"># 有 key 相等时，ts 也要取负</span>
+heapq.<span class="fn">heappush</span>(h, (-key, -ts)) <span class="cm"># ✓</span></pre></div>
+      </div>
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>D2 预告</h3>
+        <p class="small"><b class="g">TopK</b> 与 <b class="g">多路合并</b>。<br>
+          请提前扫一遍 LC 215 / LC 347 / LC 23。<br>
+          今天的 sift-down 会<b>反复用到</b>。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">下标公式</span>
+    <span class="tag">形状 + 数值</span>
+    <span class="tag">上浮下沉</span>
+    <span class="tag a">heapify O(n)</span>
+    <span class="tag r">小顶堆陷阱</span>
+    <span class="tag r">比较方向</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 11 —</span></div>
+</section>
+
+
+<!-- ══════════════ 12 小测 D1 ══════════════ -->
+<section class="slide rv" id="s12">
+  <div class="s-head">
+    <div class="s-num">12</div>
+    <div>
+      <h2><span class="pill prac">D1 小测</span>四道题，<b>30 分钟</b></h2>
+      <p class="sub">闭卷。<b>答不上来的页码已经标在右边</b> —— 回去看。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="pl">
+        <div class="q">Q1</div>
+        <div class="bd">
+          <h3 class="qy">数组 <span class="mono">[4,1,3,2,16,9,10,14,8,7]</span>，<br>建堆后 <b class="g">a[0]</b> 是多少？</h3>
+          <div class="op">
+            <span><em>A</em> 16</span>
+            <span><em>B</em> 14</span>
+            <span><em>C</em> 10</span>
+            <span><em>D</em> 7</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pl">
+        <div class="q">Q2</div>
+        <div class="bd">
+          <h3 class="qy">大顶堆的根是 <span class="mono">10</span>，两个孩子是 <span class="mono">3</span> 和 <span class="mono">8</span>。<br>sift-down 时应该和<b class="g">哪个</b>孩子交换？</h3>
+          <div class="op">
+            <span><em>A</em> 3</span>
+            <span><em>B</em> 8</span>
+            <span><em>C</em> 都不换</span>
+            <span><em>D</em> 随便一个</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pl">
+        <div class="q">Q3</div>
+        <div class="bd">
+          <h3 class="qy"><span class="mono">n</span> 个元素一次性建堆，<br>最优复杂度是<b class="g">多少</b>？</h3>
+          <div class="op">
+            <span><em>A</em> O(n)</span>
+            <span><em>B</em> O(n log n)</span>
+            <span><em>C</em> O(log n)</span>
+            <span><em>D</em> O(n²)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pl">
+        <div class="q">Q4</div>
+        <div class="bd">
+          <h3 class="qy">Python <span class="mono">heapq.heappush(h, x)</span><br>弹出的是<b class="g">最大</b>还是<b class="g">最小</b>？</h3>
+          <div class="op">
+            <span><em>A</em> 最大</span>
+            <span><em>B</em> 最小</span>
+            <span><em>C</em> 看实现</span>
+            <span><em>D</em> 随机</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>答案 · 一句话解释</h3>
+        <ul>
+          <li><b class="g">Q1 = A（16）</b> —— 大顶堆根就是最大值。回看 <b class="mono">P02</b></li>
+          <li><b class="g">Q2 = B（8）</b> —— 必须和<b>较大的孩子</b>换，否则换完仍不合法。回看 <b class="mono">P07</b></li>
+          <li><b class="g">Q3 = A（O(n)）</b> —— 自底向上 heapify，等比求和收敛到 2n。回看 <b class="mono">P08</b></li>
+          <li><b class="g">Q4 = B（最小）</b> —— heapq 是<b>小顶堆</b>，大顶堆要取负。回看 <b class="mono">P05 / P09</b></li>
+        </ul>
+      </div>
+      <div class="codenote red">
+        <b>SCORE</b>
+        4/4 → 直接进 D2。<br>
+        3/4 → 补看标注页码，15 分钟后进 D2。<br>
+        ≤ 2/4 → <b class="r">今天必须重看 P02 / P03 / P06 / P07 / P08</b>，不要硬上 D2。
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">Q1 → P02</span>
+    <span class="tag a">Q2 → P07</span>
+    <span class="tag a">Q3 → P08</span>
+    <span class="tag r">Q4 → P05 / P09</span>
+    <span class="tag">30 分钟闭卷</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 12 —</span></div>
+</section>
+
+
+<!-- ══════════════ 13 TopK ══════════════ -->
+<section class="slide rv" id="s13">
+  <div class="s-head">
+    <div class="s-num">13</div>
+    <div>
+      <h2>应用 ① <span class="g">TopK</span>：小顶堆存「最大的 k 个」</h2>
+      <p class="sub">反直觉之处：<b>求最大的 k 个，用的是小顶堆</b>。因为堆顶要当「淘汰门槛」。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 350">
+          <text class="cap" x="18" y="22">求「前 3 大」：维护一个大小 3 的<tspan font-family="'Noto Serif SC',serif" font-size="14" fill="#1B4B3A">小顶堆</tspan></text>
+
+          <!-- 数据流 -->
+          <text class="cap" x="18" y="72">数据流</text>
+          <rect x="92" y="54" width="46" height="32" rx="5" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+          <text class="num" x="115" y="70" fill="#1B4B3A">5</text>
+          <rect x="142" y="54" width="46" height="32" rx="5" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+          <text class="num" x="165" y="70" fill="#1B4B3A">1</text>
+          <rect x="192" y="54" width="46" height="32" rx="5" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+          <text class="num" x="215" y="70" fill="#1B4B3A">9</text>
+          <rect x="242" y="54" width="46" height="32" rx="5" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+          <text class="num" x="265" y="70" fill="#1B4B3A">3</text>
+          <rect x="292" y="54" width="46" height="32" rx="5" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+          <text class="num" x="315" y="70" fill="#1B4B3A">7</text>
+
+          <rect x="352" y="54" width="46" height="32" rx="5" fill="#FFF" stroke="#C9BEA4" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <text class="num" x="375" y="70" fill="#7A6F5E">2</text>
+          <rect x="402" y="54" width="46" height="32" rx="5" fill="#FFF" stroke="#C9BEA4" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <text class="num" x="425" y="70" fill="#7A6F5E">8</text>
+          <rect x="452" y="54" width="46" height="32" rx="5" fill="#FFF" stroke="#C9BEA4" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <text class="num" x="475" y="70" fill="#7A6F5E">4</text>
+
+          <text class="capg" x="215" y="106" text-anchor="middle">已处理 5 1 9 3 7</text>
+          <text class="cap"  x="415" y="106" text-anchor="middle">未处理</text>
+
+          <!-- 小顶堆 -->
+          <rect x="18" y="120" width="330" height="100" rx="12" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.2"/>
+          <text class="capg" x="38" y="146">小顶堆（k = 3）</text>
+          <rect x="38" y="156" width="62" height="30" rx="6" fill="#FFF" stroke="#1B4B3A" stroke-width="2.2"/>
+          <text class="lb green" x="69" y="171">5</text>
+          <rect x="108" y="156" width="62" height="30" rx="6" fill="#FFF" stroke="#1B4B3A" stroke-width="1.8"/>
+          <text class="lb green" x="139" y="171">7</text>
+          <rect x="178" y="156" width="62" height="30" rx="6" fill="#FFF" stroke="#1B4B3A" stroke-width="1.8"/>
+          <text class="lb green" x="209" y="171">9</text>
+          <path class="lead" d="M69 188 L69 194" stroke="#B94A2C" stroke-width="1.6"/>
+          <text class="capr" x="69" y="208" text-anchor="middle">堆顶 = 门槛</text>
+
+          <!-- 右侧：下一个元素 -->
+          <path class="ed green" d="M350 170 L370 170" stroke-width="2.2"/>
+          <path class="ed green" d="M362 162 L372 170 L362 178" stroke-width="2.2"/>
+          <rect x="372" y="120" width="270" height="100" rx="12" fill="#FAF0DE" stroke="#C0703C" stroke-width="2.2"/>
+          <text class="capa" x="392" y="146">下一个：6</text>
+          <text class="capg" x="392" y="172">6 &gt; 5（堆顶）→ 合格</text>
+          <text class="capg" x="392" y="198">pop 5，push 6 → [6, 7, 9]</text>
+
+          <!-- 底部 -->
+          <path class="lead" d="M18 254 Q320 248 642 254"/>
+          <text class="capg" x="18" y="282">为什么用「小顶堆」存「大元素」？</text>
+          <text class="cap"  x="18" y="308">堆顶 = 前 k 大里最小的那个 = 唯一需要淘汰的「门槛」</text>
+          <text class="cap"  x="18" y="334">只要 O(k) 空间；大顶堆要 O(n)，且「最大」这个堆顶用不上</text>
+        </svg>
+        <div class="fcap">FIG.a · 已处理 5 个数，堆里只剩 3 个</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="codelabel">PYTHON · TopK（最小堆）</div>
+      <div class="code"><pre><span class="kw">def</span> <span class="fn">top_k</span>(nums, k):
+    <span class="st">"""返回最大的 k 个元素，O(n log k)"""</span>
+    heap = []
+    <span class="kw">for</span> x <span class="kw">in</span> nums:
+        <span class="kw">if</span> <span class="fn">len</span>(heap) &lt; k:
+            heapq.<span class="fn">heappush</span>(heap, x)
+        <span class="kw">elif</span> x &gt; heap[<span class="op">0</span>]:
+            heapq.<span class="fn">heapreplace</span>(heap, x)  <span class="cm"># pop+push</span>
+    <span class="kw">return</span> heap</pre></div>
+
+      <div class="codelabel">PYTHON · 流式版本（在线）</div>
+      <div class="code"><pre><span class="kw">class</span> <span class="cls">KthLargest</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, k, nums):
+        self.k = k; self.h = []
+        <span class="kw">for</span> x <span class="kw">in</span> nums: self.<span class="fn">add</span>(x)
+
+    <span class="kw">def</span> <span class="fn">add</span>(self, val):
+        <span class="kw">if</span> <span class="fn">len</span>(self.h) &lt; self.k:
+            heapq.<span class="fn">heappush</span>(self.h, val)
+        <span class="kw">elif</span> val &gt; self.h[<span class="op">0</span>]:
+            heapq.<span class="fn">heapreplace</span>(self.h, val)
+        <span class="kw">return</span> self.h[<span class="op">0</span>]</pre></div>
+
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>一句话秘诀</h3>
+        <p class="small"><b class="a">「小顶堆的堆顶」= 前 k 大里<b>最小的那个</b> = 门槛。<br>
+          新元素 <span class="mono">&gt; 门槛</span> 才有资格换掉它。</b></p>
+      </div>
+
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>三个坑</h3>
+        <ul class="pit">
+          <li>搞成<b class="r">大顶堆</b> → 空间退化到 O(n)</li>
+          <li>用 <span class="mono">heapreplace</span> 前<b class="r">忘了判空</b> → 报错</li>
+          <li>返回 <b class="r">堆顶</b>还是 <b>整堆</b>？看题目要求</li>
+        </ul>
+      </div>
+
+      <div class="tbar" style="grid-template-columns:1fr 1fr 1fr">
+        <div class="t-cell red">
+          <div class="t-k">PROBLEM</div>
+          <div class="t-v">数据太大装不下<span class="sm">n 很大、或数据在线到达</span></div>
+        </div>
+        <div class="t-cell green">
+          <div class="t-k">INSIGHT</div>
+          <div class="t-v">只需记住「第 k 大」这个门槛<span class="sm">其余都是噪音</span></div>
+        </div>
+        <div class="t-cell amber">
+          <div class="t-k">METHOD</div>
+          <div class="t-v">小顶堆<b class="g">只留 k 个</b>，比堆顶大才换入<span class="sm">O(n log k) 时间 · O(k) 空间</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">TopK = 小顶堆</span>
+    <span class="tag">堆顶 = 门槛</span>
+    <span class="tag a">O(n log k)</span>
+    <span class="tag">heapreplace</span>
+    <span class="tag r">别用大顶堆</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 13 —</span></div>
+</section>
+
+
+<!-- ══════════════ 14 K 路归并 ══════════════ -->
+<section class="slide rv" id="s14">
+  <div class="s-head">
+    <div class="s-num">14</div>
+    <div>
+      <h2>应用 ② <span class="g">多路归并</span>：合并 K 个有序序列</h2>
+      <p class="sub">把「k 个序列各自看头」→ 换成「<b>一个小顶堆装 k 个头</b>」。<br>时间从 <span class="mono">O(nk)</span> 降到 <span class="mono">O(n log k)</span>。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 320">
+          <!-- 三个链表 -->
+          <text class="cap" x="18" y="22">三个有序序列</text>
+          <g>
+            <rect x="18" y="36" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="40" y="51" fill="#1B4B3A">1</text>
+            <rect x="66" y="36" width="44" height="30" rx="6" fill="#FCFAF4" stroke="#B7AD94" stroke-width="1.5"/>
+            <text class="num" x="88" y="51" fill="#5E5A50">4</text>
+            <rect x="114" y="36" width="44" height="30" rx="6" fill="#FCFAF4" stroke="#B7AD94" stroke-width="1.5"/>
+            <text class="num" x="136" y="51" fill="#5E5A50">7</text>
+          </g>
+          <g>
+            <rect x="18" y="76" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="40" y="91" fill="#1B4B3A">2</text>
+            <rect x="66" y="76" width="44" height="30" rx="6" fill="#FCFAF4" stroke="#B7AD94" stroke-width="1.5"/>
+            <text class="num" x="88" y="91" fill="#5E5A50">5</text>
+            <rect x="114" y="76" width="44" height="30" rx="6" fill="#FCFAF4" stroke="#B7AD94" stroke-width="1.5"/>
+            <text class="num" x="136" y="91" fill="#5E5A50">9</text>
+          </g>
+          <g>
+            <rect x="18" y="116" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="40" y="131" fill="#1B4B3A">3</text>
+            <rect x="66" y="116" width="44" height="30" rx="6" fill="#FCFAF4" stroke="#B7AD94" stroke-width="1.5"/>
+            <text class="num" x="88" y="131" fill="#5E5A50">6</text>
+            <rect x="114" y="116" width="44" height="30" rx="6" fill="#FCFAF4" stroke="#B7AD94" stroke-width="1.5"/>
+            <text class="num" x="136" y="131" fill="#5E5A50">8</text>
+          </g>
+          <text class="capg" x="26" y="168">各自的「头」</text>
+
+          <!-- 堆 -->
+          <path class="ed" d="M170 51 L212 82"/>
+          <path class="ed" d="M170 91 L212 82"/>
+          <path class="ed" d="M170 131 L212 82"/>
+          <rect x="214" y="52" width="150" height="60" rx="10" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.2"/>
+          <text class="capg" x="232" y="74">小顶堆（k=3）</text>
+          <text class="capg" x="232" y="98">[1, 2, 3]</text>
+
+          <path class="ed" d="M366 82 L408 82"/>
+          <path class="ed" d="M398 74 L410 82 L398 90"/>
+          <rect x="412" y="52" width="150" height="60" rx="10" fill="#FAF0DE" stroke="#C0703C" stroke-width="2.2"/>
+          <text class="capa" x="430" y="74">弹出 1</text>
+          <text class="capa" x="430" y="98">推进序列 ①</text>
+
+          <!-- 输出 -->
+          <text class="capg" x="18" y="212">输出</text>
+          <g>
+            <rect x="76" y="196" width="38" height="28" rx="5" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="95" y="210" fill="#1B4B3A">1</text>
+            <rect x="118" y="196" width="38" height="28" rx="5" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="137" y="210" fill="#1B4B3A">2</text>
+            <rect x="160" y="196" width="38" height="28" rx="5" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="179" y="210" fill="#1B4B3A">3</text>
+            <rect x="202" y="196" width="38" height="28" rx="5" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="221" y="210" fill="#1B4B3A">4</text>
+            <rect x="244" y="196" width="38" height="28" rx="5" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="263" y="210" fill="#1B4B3A">5</text>
+            <rect x="286" y="196" width="38" height="28" rx="5" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="305" y="210" fill="#1B4B3A">6</text>
+            <rect x="328" y="196" width="38" height="28" rx="5" fill="#FCFAF4" stroke="#B7AD94" stroke-width="1.4" stroke-dasharray="3 3"/>
+            <text class="num" x="347" y="210" fill="#B7AD94">…</text>
+          </g>
+
+          <path class="lead" d="M18 252 Q320 244 642 252"/>
+          <text class="capg" x="18" y="280">关键洞察：序列有序 → 只需比较「各自的头」</text>
+          <text class="capg" x="18" y="304">→ 维护 k 个头的小顶堆，每次弹出最小 → push 它的下一个</text>
+        </svg>
+        <div class="fcap">FIG.a · 堆里始终只有 k 个元素</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="codelabel">PYTHON · merge k sorted</div>
+      <div class="code"><pre><span class="kw">def</span> <span class="fn">merge_k</span>(lists):
+    <span class="st">"""合并 k 个有序链表 / 数组"""</span>
+    heap = []
+    <span class="kw">for</span> i, lst <span class="kw">in</span> <span class="fn">enumerate</span>(lists):
+        <span class="kw">if</span> lst:
+            heapq.<span class="fn">heappush</span>(heap, (lst[<span class="op">0</span>], i, <span class="op">0</span>))
+
+    res = []
+    <span class="kw">while</span> heap:
+        val, i, j = heapq.<span class="fn">heappop</span>(heap)
+        res.<span class="fn">append</span>(val)
+        <span class="kw">if</span> j + <span class="op">1</span> &lt; <span class="fn">len</span>(lists[i]):
+            nxt = lists[i][j+<span class="op">1</span>]
+            heapq.<span class="fn">heappush</span>(heap, (nxt, i, j+<span class="op">1</span>))
+    <span class="kw">return</span> res</pre></div>
+
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>三元组 <span class="mono" style="font-size:15px">(val, i, j)</span> 的意义</h3>
+        <p class="small"><b class="g">val</b> 用来比大小；<br>
+          <b class="g">i</b> 记住它来自哪个序列；<br>
+          <b class="g">j</b> 记住是第几个元素，用于推进。<br>
+          <b>少一个就走不下去。</b></p>
+      </div>
+
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>变形题</h3>
+        <ul class="pit">
+          <li><b>LC 23</b> 合并 K 个<b>升序链表</b> —— 把 <span class="mono">lst[j]</span> 换成 <span class="mono">node.val</span>，<span class="mono">j+1</span> 换成 <span class="mono">node.next</span></li>
+          <li><b>LC 373</b> K 个最小对 —— 每个序列只看「和第一个元素的配对」</li>
+          <li><b>LC 632</b> 最小区间 —— 多维护一个 <span class="mono">cur_max</span></li>
+        </ul>
+      </div>
+
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>常见坑</h3>
+        <ul class="pit">
+          <li>入堆前<b class="r">没判空序列</b> → IndexError</li>
+          <li>元组只有 <span class="mono">(val, i)</span> → <b class="r">无法推进</b></li>
+          <li>堆里塞<b class="r">整个序列</b> → 空间爆炸</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">三元组 (val,i,j)</span>
+    <span class="tag">O(n log k)</span>
+    <span class="tag a">每次弹一个</span>
+    <span class="tag r">先判空</span>
+    <span class="tag">序列有序是前提</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 14 —</span></div>
+</section>
+
+
+<!-- ══════════════ 15 贪心 A ══════════════ -->
+<section class="slide rv" id="s15">
+  <div class="s-head">
+    <div class="s-num">15</div>
+    <div>
+      <h2>应用 ③ <span class="g">贪心 + 堆</span>：会议室 II / 分配饼干</h2>
+      <p class="sub">贪心负责「<b>怎么选</b>」，堆负责「<b>每次挑出最值得的那个</b>」。<b>分工明确。</b></p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="tbar">
+        <div class="t-cell green">
+          <div class="t-k">会议 · 会议室 II</div>
+          <div class="t-v">按<b class="g">开始</b>排序，维护<b class="g">结束时间的小顶堆</b><span class="sm">新会议开始时堆顶已结束 → 复用该房间；否则新开。</span></div>
+        </div>
+        <div class="t-cell amber">
+          <div class="t-k">饼干 · 分配饼干</div>
+          <div class="t-v">两个数组<b class="a">都排序</b>，贪心满足<span class="sm">最小的饼干满足最小胃口的孩子；不够就换更大的饼干。</span></div>
+        </div>
+        <div class="t-cell">
+          <div class="t-k">共同点</div>
+          <div class="t-v">每一步都选<b>局部最优</b><span class="sm">堆只用来「快速找出当前最值得的那个」。</span></div>
+        </div>
+      </div>
+
+      <div class="codelabel">PYTHON · 会议室 II</div>
+      <div class="code"><pre><span class="kw">def</span> <span class="fn">min_meeting_rooms</span>(meetings):
+    meetings.<span class="fn">sort</span>(key=<span class="kw">lambda</span> x: x[<span class="op">0</span>])  <span class="cm"># 按开始</span>
+    ends = []                         <span class="cm"># 小顶堆</span>
+    <span class="kw">for</span> s, e <span class="kw">in</span> meetings:
+        <span class="kw">if</span> ends <span class="kw">and</span> ends[<span class="op">0</span>] &lt;= s:
+            heapq.<span class="fn">heappop</span>(ends)       <span class="cm"># 复用</span>
+        heapq.<span class="fn">heappush</span>(ends, e)
+    <span class="kw">return</span> <span class="fn">len</span>(ends)</pre></div>
+    <div class="codenote">
+      <b>WHY</b>
+      堆里装的是「<b>当前所有正在进行的会议的结束时间</b>」。堆顶是<b>最早结束的那间</b>。<br>
+      如果它都来不及，别的更来不及。这就是<b class="a">贪心正确性</b>的来源。
+    </div>
+    <div class="codelabel">PYTHON · 分配饼干</div>
+    <div class="code"><pre><span class="kw">def</span> <span class="fn">find_content_children</span>(g, s):
+    g.<span class="fn">sort</span>(); s.<span class="fn">sort</span>()
+    i = j = <span class="op">0</span>
+    <span class="kw">while</span> i &lt; <span class="fn">len</span>(g) <span class="kw">and</span> j &lt; <span class="fn">len</span>(s):
+        <span class="kw">if</span> s[j] &gt;= g[i]:
+            i += <span class="op">1</span>                 <span class="cm"># 满足</span>
+        j += <span class="op">1</span>                     <span class="cm"># 无论是否满足都换饼干</span>
+    <span class="kw">return</span> i</pre></div>
+  </div>
+
+  <div class="c8-12">
+    <div class="card green">
+      <h3><span class="pill main">MAIN</span>怎么识别「贪心 + 堆」</h3>
+      <ul class="pit">
+        <li>题面有 <b class="g">「同时进行」「最少资源」「最小代价」</b></li>
+        <li>每一步只需 <b class="g">「当前最值」</b> 就能决策</li>
+        <li>决策后 <b class="g">状态只变一点</b>（一个元素进出）</li>
+      </ul>
+    </div>
+
+    <div class="card amber">
+      <h3><span class="pill case">CASE</span>为什么要堆而不是排序</h3>
+      <p class="small"><b class="a">排序</b>是「一次性排好」；<br>
+        <b class="a">堆</b>是「边走边维护当前最优」。<br>
+        会议室 II 里，<b>新会议进来就可能改变「最早结束」</b> —— 静态排序不够用。</p>
+    </div>
+
+    <div class="card red">
+      <h3><span class="pill aux">AUX</span>三个坑</h3>
+      <ul class="pit">
+        <li>按<b class="r">结束</b>而不是<b class="r">开始</b>排序 → 结果错</li>
+        <li>比较条件写成 <span class="mono">&lt;</span> 而不是 <span class="mono">&lt;=</span> → <b class="r">边界错</b>（同时结束可以复用）</li>
+        <li>堆里存<b class="r">整个会议</b>而不是结束时间 → 比较写歪</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3><span class="pill aux">AUX</span>同模型的题</h3>
+      <p class="small"><b>LC 253</b> 会议室 II ｜ <b>LC 435</b> 无重叠区间 ｜ <b>LC 452</b> 气球 ｜ <b>LC 45</b> 跳跃游戏 II</p>
+    </div>
+  </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">堆 = 找最值</span>
+    <span class="tag a">贪心 = 决策</span>
+    <span class="tag">按开始排序</span>
+    <span class="tag r">边界 &lt;=</span>
+    <span class="tag">会议模型</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 15 —</span></div>
+</section>
+
+
+<!-- ══════════════ 16 Dijkstra ══════════════ -->
+<section class="slide rv" id="s16">
+  <div class="s-head">
+    <div class="s-num">16</div>
+    <div>
+      <h2>应用 ④ <span class="g">Dijkstra</span>：从 O(n²) 到 O(m log n)</h2>
+      <p class="sub">朴素 Dijkstra 每轮<b>扫一遍找最小</b>；用堆之后<b>最小现成的</b>，直接取。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 300">
+          <!-- 图 -->
+          <line class="edge" x1="90" y1="70" x2="230" y2="70"/>
+          <line class="edge" x1="90" y1="70" x2="160" y2="170"/>
+          <line class="edge" x1="230" y1="70" x2="160" y2="170"/>
+          <line class="edge" x1="230" y1="70" x2="380" y2="70"/>
+          <line class="edge" x1="160" y1="170" x2="380" y2="170"/>
+          <line class="edge" x1="380" y1="70" x2="380" y2="170"/>
+          <line class="edge" x1="380" y1="70" x2="520" y2="170"/>
+          <line class="edge" x1="380" y1="170" x2="520" y2="170"/>
+
+          <circle class="node act" cx="90" cy="70" r="22"/>
+          <text class="lb green" x="90" y="70">S</text>
+          <circle class="node" cx="230" cy="70" r="22"/>
+          <text class="lb" x="230" y="70">A</text>
+          <circle class="node" cx="160" cy="170" r="22"/>
+          <text class="lb" x="160" y="170">B</text>
+          <circle class="node" cx="380" cy="70" r="22"/>
+          <text class="lb" x="380" y="70">C</text>
+          <circle class="node" cx="380" cy="170" r="22"/>
+          <text class="lb" x="380" y="170">D</text>
+          <circle class="node act" cx="520" cy="170" r="22"/>
+          <text class="lb green" x="520" y="170">T</text>
+
+          <text class="hint" x="160" y="60">4</text>
+          <text class="hint" x="104" y="130">2</text>
+          <text class="hint" x="200" y="130">1</text>
+          <text class="hint" x="305" y="60">5</text>
+          <text class="hint" x="270" y="182">3</text>
+          <text class="hint" x="392" y="128">2</text>
+          <text class="hint" x="450" y="110">6</text>
+          <text class="hint" x="450" y="182">4</text>
+
+          <!-- 堆 -->
+          <rect x="20" y="220" width="300" height="66" rx="11" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.2"/>
+          <text class="capg" x="38" y="244">小顶堆 dist · 当前所有候选</text>
+          <text class="capg" x="38" y="268">[(0,S), (2,B), (4,A), (6,D), ...]</text>
+
+          <!-- 代价 -->
+          <rect x="340" y="220" width="300" height="66" rx="11" fill="#FAF0DE" stroke="#C0703C" stroke-width="2.2"/>
+          <text class="capa" x="358" y="244">朴素 O(n²) · 堆优化 O(m log n)</text>
+          <text class="cap"  x="358" y="268">n=1e3, m=1e4 → 1e6 vs 4e4</text>
+        </svg>
+        <div class="fcap">FIG.a · 堆里装「候选点 + 当前最短距离」</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="codelabel">PYTHON · Dijkstra</div>
+      <div class="code"><pre><span class="kw">def</span> <span class="fn">dijkstra</span>(graph, src):
+    dist = {src: <span class="op">0</span>}
+    pq = [(<span class="op">0</span>, src)]
+    <span class="kw">while</span> pq:
+        d, u = heapq.<span class="fn">heappop</span>(pq)
+        <span class="kw">if</span> d &gt; dist.<span class="fn">get</span>(u, <span class="op">1e18</span>):
+            <span class="kw">continue</span>            <span class="cm"># 惰性删除</span>
+        <span class="kw">for</span> v, w <span class="kw">in</span> graph[u]:
+            nd = d + w
+            <span class="kw">if</span> nd &lt; dist.<span class="fn">get</span>(v, <span class="op">1e18</span>):
+                dist[v] = nd
+                heapq.<span class="fn">heappush</span>(pq, (nd, v))
+    <span class="kw">return</span> dist</pre></div>
+
+      <div class="codenote green">
+        <b>WHY</b>
+        堆顶的 <span class="mono">d</span> 就是<b>当前能确定的最短距离</b>。<br>
+        <b class="g">贪心正确</b>：因为边权非负，后面的候选只会更长。<br>
+        「<span class="mono">if d &gt; dist.get(u)</span>」是<b>惰性删除</b>，替代 decrease-key。
+      </div>
+
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>三个坑</h3>
+        <ul class="pit">
+          <li>忘写 <b class="r">惰性删除的 continue</b> → 重复扩展，慢但不错</li>
+          <li>边权<b class="r">有负数</b> → 不能用 Dijkstra</li>
+          <li>push 了 <b class="r">(u, nd)</b> 而不是 <b>(nd, u)</b> → 按点比了</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>同模型的题</h3>
+        <p class="small"><b>LC 743</b> 网络延迟时间 ｜ <b>LC 787</b> K 站中转 ｜ <b>LC 1514</b> 概率最大路径 ｜ <b>LC 1631</b> 最小体力消耗 ｜ <b>LC 1293</b> 网格最短路</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">堆优化 Dijkstra</span>
+    <span class="tag a">惰性删除</span>
+    <span class="tag">O(m log n)</span>
+    <span class="tag r">不能有负权</span>
+    <span class="tag">tuple 比较</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 16 —</span></div>
+</section>
+
+
+<!-- ══════════════ 17 贪心 B ══════════════ -->
+<section class="slide rv" id="s17">
+  <div class="s-head">
+    <div class="s-num">17</div>
+    <div>
+      <h2>应用 ⑤ <span class="g">贪心进阶</span>：跳跃游戏 II / IPO</h2>
+      <p class="sub">这类题的共同形状：<b>「在能力范围内，挑一个最值」</b>。堆把这个「挑」从 O(n) 变 O(log n)。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="tbar">
+        <div class="t-cell green">
+          <div class="t-k">跳跃游戏 II</div>
+          <div class="t-v">在<b class="g">当前可达</b>范围内，取<b class="g">能跳最远的</b><span class="sm">每跳一步，边界更新一次。经典区间贪心。</span></div>
+        </div>
+        <div class="t-cell amber">
+          <div class="t-k">IPO</div>
+          <div class="t-v">资本够时，取<b class="a">利润最大的</b>项目<span class="sm">两个堆：一个按利润、一个按资本。反复切换。</span></div>
+        </div>
+        <div class="t-cell">
+          <div class="t-k">本质</div>
+          <div class="t-v">「可选集」里挑最值<span class="sm">可选集会变化 → 静态排序不行 → 用堆。</span></div>
+        </div>
+      </div>
+
+      <div class="codelabel">PYTHON · IPO（双堆）</div>
+      <div class="code"><pre><span class="kw">def</span> <span class="fn">find_maximized_capital</span>(k, W, profits, capital):
+    projects = <span class="fn">sorted</span>(<span class="fn">zip</span>(capital, profits))
+    i = <span class="op">0</span>; n = <span class="fn">len</span>(projects)
+    able = []                          <span class="cm"># 大顶堆（取负）</span>
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(k):
+        <span class="kw">while</span> i &lt; n <span class="kw">and</span> projects[i][<span class="op">0</span>] &lt;= W:
+            heapq.<span class="fn">heappush</span>(able, -projects[i][<span class="op">1</span>])
+            i += <span class="op">1</span>
+        <span class="kw">if</span> <span class="kw">not</span> able:
+            <span class="kw">break</span>
+        W += -heapq.<span class="fn">heappop</span>(able)
+    <span class="kw">return</span> W</pre></div>
+    <div class="codenote">
+      <b>WHY 双堆</b>
+      「<b class="a">按资本排</b>」的数组负责<b>往 able 里加</b>；<br>
+      「<b class="a">按利润</b>」的大顶堆负责<b>从中挑最大</b>。<br>
+      两者<b class="a">各司其职</b>，总复杂度 <span class="mono">O(n log n)</span>。
+    </div>
+
+    <div class="codelabel">PYTHON · 跳跃游戏 II</div>
+    <div class="code"><pre><span class="kw">def</span> <span class="fn">jump</span>(nums):
+    res = cur_end = far = <span class="op">0</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(nums) - <span class="op">1</span>):
+        far = <span class="fn">max</span>(far, i + nums[i])
+        <span class="kw">if</span> i == cur_end:
+            res += <span class="op">1</span>; cur_end = far
+    <span class="kw">return</span> res</pre></div>
+  </div>
+
+  <div class="c8-12">
+    <div class="card green">
+      <h3><span class="pill main">MAIN</span>识别口诀</h3>
+      <p class="small"><b class="g">「范围在变，要挑最值」→ 堆。</b><br>
+        <b class="g">「范围固定，要挑最值」→ 排序或扫描。</b></p>
+      <p class="small" style="margin-top:11px">IPO 的「<b>能做的项目集</b>」随资本增长 —— 范围在变 → 堆。<br>
+        分配饼干的「<b>孩子的胃口集</b>」固定 —— 排序即可。</p>
+    </div>
+
+    <div class="card amber">
+      <h3><span class="pill case">CASE</span>其他同形状题</h3>
+      <ul class="pit">
+        <li><b>LC 1383</b> 最大团队表现 —— 按速度排，堆淘汰最慢</li>
+        <li><b>LC 502</b> IPO —— 双堆</li>
+        <li><b>LC 313</b> 超级丑数 —— k 路归并</li>
+        <li><b>LC 2233</b> K 次增后最大乘积 —— 小顶堆贪心</li>
+      </ul>
+    </div>
+
+    <div class="card red">
+      <h3><span class="pill aux">AUX</span>三个坑</h3>
+      <ul class="pit">
+        <li>IPO 里<b class="r">忘了「资本不够就 break」</b> → 死循环</li>
+        <li>大顶堆 <b class="r">取负忘取回来</b> → 资本越加越小</li>
+        <li>跳跃游戏 II 里 <b class="r">循环范围写成 len(nums)</b> → 多算一步</li>
+      </ul>
+    </div>
+  </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">范围在变</span>
+    <span class="tag a">挑最值</span>
+    <span class="tag">双堆模型</span>
+    <span class="tag r">取负别忘回来</span>
+    <span class="tag">O(n log n)</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 17 —</span></div>
+</section>
+
+
+<!-- ══════════════ 18 哈夫曼 ══════════════ -->
+<section class="slide rv" id="s18">
+  <div class="s-head">
+    <div class="s-num">18</div>
+    <div>
+      <h2>应用 ⑥ <span class="g">哈夫曼 / 合并果子</span>：最小代价合并</h2>
+      <p class="sub">每次合并<b>最小的两堆</b>，代价 = 两堆之和。<b>小顶堆 + 贪心</b>，一行公式就通。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 300">
+          <!-- 初始 -->
+          <text class="cap" x="18" y="22">初始：7 堆</text>
+          <g>
+            <rect x="18" y="36" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="40" y="51" fill="#1B4B3A">1</text>
+            <rect x="68" y="36" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="90" y="51" fill="#1B4B3A">2</text>
+            <rect x="118" y="36" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="140" y="51" fill="#1B4B3A">3</text>
+            <rect x="168" y="36" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="190" y="51" fill="#1B4B3A">4</text>
+            <rect x="218" y="36" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="240" y="51" fill="#1B4B3A">5</text>
+            <rect x="268" y="36" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="290" y="51" fill="#1B4B3A">6</text>
+            <rect x="318" y="36" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="340" y="51" fill="#1B4B3A">7</text>
+          </g>
+
+          <!-- 第一次合并 -->
+          <path class="ed am" d="M40 68 L40 92 L90 92 L90 68"/>
+          <text class="capa" x="112" y="92">1 + 2 = 3（代价 3）</text>
+
+          <g>
+            <rect x="18" y="112" width="44" height="30" rx="6" fill="#FCFAF4" stroke="#B7AD94" stroke-width="1.5"/>
+            <text class="num" x="40" y="127" fill="#5E5A50">3</text>
+            <rect x="68" y="112" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="90" y="127" fill="#1B4B3A">3</text>
+            <rect x="118" y="112" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="140" y="127" fill="#1B4B3A">4</text>
+            <rect x="168" y="112" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="190" y="127" fill="#1B4B3A">5</text>
+            <rect x="218" y="112" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="240" y="127" fill="#1B4B3A">6</text>
+            <rect x="268" y="112" width="44" height="30" rx="6" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+            <text class="num" x="290" y="127" fill="#1B4B3A">7</text>
+          </g>
+
+          <!-- 后续 -->
+          <path class="lead" d="M18 162 Q320 154 642 162"/>
+          <text class="capg" x="18" y="192">继续重复：每次弹两个最小，合并，push 回去</text>
+          <text class="capg" x="18" y="218">直到堆里只剩 1 个</text>
+
+          <rect x="18" y="236" width="300" height="50" rx="11" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.2"/>
+          <text class="capg" x="38" y="258">总代价 = Σ 每次合并的两堆之和</text>
+          <text class="capg" x="38" y="278">1→2(3) · 3+3(6) · 4+4(8) · 5+6(11) ...</text>
+
+          <rect x="340" y="236" width="302" height="50" rx="11" fill="#FAF0DE" stroke="#C0703C" stroke-width="2.2"/>
+          <text class="capa" x="360" y="258">核心：每次取最小的两个</text>
+          <text class="capa" x="360" y="278">大堆先合并 → 代价被放大 · 贪心不对</text>
+        </svg>
+        <div class="fcap">FIG.a · 小顶堆，每次弹两个最小</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="codelabel">PYTHON · 合并果子 / 哈夫曼</div>
+      <div class="code"><pre><span class="kw">def</span> <span class="fn">min_merge_cost</span>(weights):
+    <span class="st">"""合并果子：求最小总代价"""</span>
+    h = weights[:]
+    heapq.<span class="fn">heapify</span>(h)             <span class="cm"># O(n)</span>
+    cost = <span class="op">0</span>
+    <span class="kw">while</span> <span class="fn">len</span>(h) &gt; <span class="op">1</span>:
+        a = heapq.<span class="fn">heappop</span>(h)
+        b = heapq.<span class="fn">heappop</span>(h)
+        s = a + b
+        cost += s
+        heapq.<span class="fn">heappush</span>(h, s)     <span class="cm"># 推回去</span>
+    <span class="kw">return</span> cost</pre></div>
+
+      <div class="codelabel">PYTHON · 哈夫曼编码长度</div>
+      <div class="code"><pre><span class="kw">def</span> <span class="fn">huffman_length</span>(freq):
+    h = freq[:]
+    heapq.<span class="fn">heapify</span>(h)
+    total = <span class="op">0</span>
+    <span class="kw">while</span> <span class="fn">len</span>(h) &gt; <span class="op">1</span>:
+        a = heapq.<span class="fn">heappop</span>(h)
+        b = heapq.<span class="fn">heappop</span>(h)
+        total += a + b           <span class="cm"># 加权路径长</span>
+        heapq.<span class="fn">heappush</span>(h, a+b)
+    <span class="kw">return</span> total</pre></div>
+
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>为什么贪心对</h3>
+        <p class="small">每次合并，两堆都会被<b>后续所有合并</b>再计一次。<br>
+          所以<b class="g">小的要尽早合并</b>，让它的「乘数」小。<br>
+          这就是<b>贪心正确性</b>。</p>
+      </div>
+
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>坑</h3>
+        <ul class="pit">
+          <li>忘记<b class="r">把和 push 回堆</b> → 只合并一次</li>
+          <li>用<b class="r">大顶堆</b> → 贪心方向反了</li>
+          <li>只有<b class="r">一个元素</b>时没提前返回 → 多算</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">小顶堆</span>
+    <span class="tag a">每次弹两个</span>
+    <span class="tag">push 回去</span>
+    <span class="tag r">大顶堆反向</span>
+    <span class="tag">哈夫曼</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 18 —</span></div>
+</section>
+
+
+<!-- ══════════════ 19 对顶堆 ══════════════ -->
+<section class="slide rv" id="s19">
+  <div class="s-head">
+    <div class="s-num">19</div>
+    <div>
+      <h2>应用 ⑦ <span class="g">对顶堆</span>：动态维护中位数</h2>
+      <p class="sub">两个堆<b>互相顶住</b>：左大顶、右小顶。中位数 = <b>对顶的那两个数</b>。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 300">
+          <!-- 左堆 -->
+          <rect x="20" y="30" width="270" height="150" rx="12" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.2"/>
+          <text class="capg" x="40" y="58">左半 · 大顶堆</text>
+          <text class="capg" x="40" y="82">存较小的一半</text>
+          <rect x="40" y="100" width="70" height="34" rx="7" fill="#FFF" stroke="#1B4B3A" stroke-width="2.2"/>
+          <text class="lb green" x="75" y="117">5</text>
+          <rect x="118" y="100" width="70" height="34" rx="7" fill="#FFF" stroke="#1B4B3A" stroke-width="1.6"/>
+          <text class="lb green" x="153" y="117">3</text>
+          <rect x="196" y="100" width="70" height="34" rx="7" fill="#FFF" stroke="#1B4B3A" stroke-width="1.6"/>
+          <text class="lb green" x="231" y="117">1</text>
+          <text class="capg" x="40" y="162">堆顶 = 左侧最大</text>
+
+          <!-- 右堆 -->
+          <rect x="370" y="30" width="270" height="150" rx="12" fill="#FAF0DE" stroke="#C0703C" stroke-width="2.2"/>
+          <text class="capa" x="390" y="58">右半 · 小顶堆</text>
+          <text class="capa" x="390" y="82">存较大的一半</text>
+          <rect x="390" y="100" width="70" height="34" rx="7" fill="#FFF" stroke="#C0703C" stroke-width="2.2"/>
+          <text class="lb" x="425" y="117">8</text>
+          <rect x="468" y="100" width="70" height="34" rx="7" fill="#FFF" stroke="#C0703C" stroke-width="1.6"/>
+          <text class="lb" x="503" y="117">10</text>
+          <rect x="546" y="100" width="70" height="34" rx="7" fill="#FFF" stroke="#C0703C" stroke-width="1.6"/>
+          <text class="lb" x="581" y="117">12</text>
+          <text class="capa" x="390" y="162">堆顶 = 右侧最小</text>
+
+          <!-- 中位数 -->
+          <path class="ed green" d="M292 132 L328 132"/>
+          <path class="ed green" d="M320 124 L332 132 L320 140"/>
+          <rect x="238" y="196" width="184" height="56" rx="11" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.4"/>
+          <text class="capg" x="256" y="220">中位数 = (5 + 8) / 2</text>
+          <text class="capg" x="256" y="242">= 6.5</text>
+
+          <!-- 规则 -->
+          <text class="capg" x="20" y="278">平衡规则：左的大小 = 右的大小，或左多 1</text>
+          <text class="capa" x="370" y="278">左堆顶 ≤ 右堆顶（否则要换）</text>
+        </svg>
+        <div class="fcap">FIG.a · 两堆对顶，中位数在对顶之间</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="codelabel">PYTHON · MedianFinder</div>
+      <div class="code"><pre><span class="kw">class</span> <span class="cls">MedianFinder</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self.lo = []  <span class="cm"># 大顶堆（取负）</span>
+        self.hi = []  <span class="cm"># 小顶堆</span>
+
+    <span class="kw">def</span> <span class="fn">addNum</span>(self, num):
+        heapq.<span class="fn">heappush</span>(self.lo, -num)
+        heapq.<span class="fn">heappush</span>(self.hi, -heapq.<span class="fn">heappop</span>(self.lo))
+        <span class="kw">if</span> <span class="fn">len</span>(self.hi) &gt; <span class="fn">len</span>(self.lo):
+            heapq.<span class="fn">heappush</span>(self.lo, -heapq.<span class="fn">heappop</span>(self.hi))
+
+    <span class="kw">def</span> <span class="fn">findMedian</span>(self):
+        <span class="kw">if</span> <span class="fn">len</span>(self.lo) &gt; <span class="fn">len</span>(self.hi):
+            <span class="kw">return</span> -self.lo[<span class="op">0</span>]
+        <span class="kw">return</span> (-self.lo[<span class="op">0</span>] + self.hi[<span class="op">0</span>]) / <span class="op">2</span></pre></div>
+
+      <div class="codenote green">
+        <b>INVARIANT</b>
+        <b>①</b> <span class="mono">len(lo) &gt;= len(hi)</span> 且 <span class="mono">len(lo) - len(hi) &lt;= 1</span><br>
+        <b>②</b> <span class="mono">lo[0] &lt;= hi[0]</span><br>
+        两条同时成立 → 中位数就<b>只看堆顶</b>，<span class="mono">O(1)</span> 查询。
+      </div>
+
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>什么时候用对顶堆</h3>
+        <ul class="pit">
+          <li><b>LC 295</b> 数据流中位数 —— 标准题</li>
+          <li><b>LC 480</b> 滑动窗口中位数 —— 加<b>懒惰删除</b></li>
+          <li><b>LC 2163</b> 删除后最小差 —— 左右各维护一半</li>
+          <li><b>LC 4</b> 两个有序数组的中位数 —— 二分更优</li>
+        </ul>
+      </div>
+
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>三个坑</h3>
+        <ul class="pit">
+          <li>忘了<b class="r">交换过量元素</b> → 堆不平衡，中位数错</li>
+          <li>取负<b class="r">忘了取回来</b> → 中位数符号错</li>
+          <li>偶数时<b class="r">没做平均</b> → 答案差一倍</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">左大顶右小顶</span>
+    <span class="tag a">平衡不变量</span>
+    <span class="tag">查询 O(1)</span>
+    <span class="tag r">取负</span>
+    <span class="tag">对顶 = 中位数</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 19 —</span></div>
+</section>
+
+
+<!-- ══════════════ 20 三棵树 ══════════════ -->
+<section class="slide rv" id="s20">
+  <div class="s-head">
+    <div class="s-num">20</div>
+    <div>
+      <h2>应用 ⑧ <span class="g">二叉树 / k 叉树</span>：遍历、序列化、BST</h2>
+      <p class="sub">堆的<b>下标公式</b>和<b>下沉逻辑</b>，在二叉树题里<b>直接复用</b>。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 320">
+          <!-- BST -->
+          <text class="cap" x="18" y="22">① BST · 插入 / 删除 / 前驱后继</text>
+          <line class="edge" x1="130" y1="60" x2="80" y2="102"/>
+          <line class="edge" x1="130" y1="60" x2="180" y2="102"/>
+          <line class="edge" x1="80" y1="102" x2="50" y2="142"/>
+          <line class="edge" x1="80" y1="102" x2="110" y2="142"/>
+          <line class="edge" x1="180" y1="102" x2="210" y2="142"/>
+          <circle class="node" cx="130" cy="42" r="19"/>
+          <text class="lb" x="130" y="42">8</text>
+          <circle class="node" cx="80" cy="102" r="19"/>
+          <text class="lb" x="80" y="102">3</text>
+          <circle class="node" cx="180" cy="102" r="19"/>
+          <text class="lb" x="180" y="102">12</text>
+          <circle class="node" cx="50" cy="142" r="19"/>
+          <text class="lb" x="50" y="142">1</text>
+          <circle class="node" cx="110" cy="142" r="19"/>
+          <text class="lb" x="110" y="142">5</text>
+          <circle class="node" cx="210" cy="142" r="19"/>
+          <text class="lb" x="210" y="142">15</text>
+          <text class="capg" x="18" y="192">左 &lt; 根 &lt; 右 · 每层都成立</text>
+
+          <!-- 优先级遍历 -->
+          <text class="capa" x="340" y="22">② 优先级遍历 / 最短路</text>
+          <rect x="340" y="36" width="300" height="76" rx="11" fill="#FAF0DE" stroke="#C0703C" stroke-width="2.2"/>
+          <text class="capa" x="358" y="62">堆 = 「下一步走哪里」</text>
+          <text class="cap"  x="358" y="86">BFS 变成「优先级 BFS」</text>
+          <text class="cap"  x="358" y="104">LC 111 · LC 127 · LC 111</text>
+
+          <!-- 序列化 -->
+          <text class="capg" x="340" y="152">③ 序列化 / 反序列化</text>
+          <rect x="340" y="166" width="300" height="76" rx="11" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.2"/>
+          <text class="capg" x="358" y="192">完全二叉树 → 数组直存</text>
+          <text class="cap"  x="358" y="216">不完全 → 层序 + null 占位</text>
+          <text class="cap"  x="358" y="234">LC 297 · LC 449</text>
+
+          <path class="lead" d="M18 270 Q320 262 642 270"/>
+          <text class="capg" x="18" y="298">树的高度决定复杂度 → 能保证 O(log n) 的树 → 平衡树 / 堆</text>
+        </svg>
+        <div class="fcap">FIG.a · 堆的三招，在树题里反复出现</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>「用堆找 BST 第 k 小」</h3>
+        <p class="small">中序遍历得到有序，但<b class="g">存不下</b>。<br>
+          用<b class="g">小顶堆</b>存「当前所有候选节点」，弹出 k 次。<br>
+          或用<b>迭代中序</b> + 计数器，<span class="mono">O(k + h)</span>。</p>
+      </div>
+
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>「第 k 小」的三种解法</h3>
+        <ul class="pit">
+          <li><b class="a">排序 / 堆</b> —— O(n log n) 或 O(n log k)</li>
+          <li><b class="a">quickselect</b> —— 平均 O(n)，最坏 O(n²)</li>
+          <li><b class="a">平衡树 / 线段树</b> —— O(n + k log n)</li>
+        </ul>
+        <p class="small" style="margin-top:8px">选哪个看<b>是否在线</b>、<b>是否多次查询</b>。</p>
+      </div>
+
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>「k 叉树」怎么存</h3>
+        <p class="small">父 <span class="mono">(i-1)//k</span>，孩子 <span class="mono">k*i+1 ... k*i+k</span>。<br>
+          哈夫曼编码、<b>B+ 树</b>、<b>LSM-Tree</b> 的内部节点都是 k 叉。</p>
+      </div>
+
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>坑</h3>
+        <ul class="pit">
+          <li>BST 删除<b class="r">忘处理两个孩子</b>的情况</li>
+          <li>序列化<b class="r">忘存 null 占位</b> → 反序列化错</li>
+          <li>堆的「完全二叉树」<b class="r">和 BST 混淆</b></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">下标公式复用</span>
+    <span class="tag a">优先级遍历</span>
+    <span class="tag">序列化</span>
+    <span class="tag r">完全 ≠ BST</span>
+    <span class="tag">k 叉扩展</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 20 —</span></div>
+</section>
+
+
+<!-- ══════════════ 21 堆排序 ══════════════ -->
+<section class="slide rv" id="s21">
+  <div class="s-head">
+    <div class="s-num">21</div>
+    <div>
+      <h2><span class="g">堆排序</span>：不稳定 O(n log n)，原地</h2>
+      <p class="sub">两步：<b>建大顶堆</b> → <b>反复 pop 到末尾</b>。因为是原地，所以<b>不需要额外数组</b>。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 260">
+          <text class="cap" x="18" y="22">① 建大顶堆</text>
+          <text class="capg" x="18" y="50">[16, 14, 10, 8, 7, 9, 3, 2, 4, 1]</text>
+
+          <text class="capa" x="18" y="90">② 反复 pop 堆顶 → 放到末尾</text>
+          <rect x="18" y="106" width="300" height="46" rx="10" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2"/>
+          <text class="capg" x="36" y="128">pop 16 → 放 [9]</text>
+          <text class="capg" x="36" y="146">pop 14 → 放 [8]</text>
+          <rect x="340" y="106" width="302" height="46" rx="10" fill="#FAF0DE" stroke="#C0703C" stroke-width="2"/>
+          <text class="capa" x="358" y="128">末尾区间 = 已排序</text>
+          <text class="capa" x="358" y="146">剩余区间 = 还是堆</text>
+
+          <text class="capg" x="18" y="192">结果：[1, 2, 3, 4, 7, 8, 9, 10, 14, 16]</text>
+          <text class="cap"  x="18" y="218">原地 · 不需要额外数组 · 但不稳定</text>
+          <text class="capr" x="18" y="244">不稳定 = 相等元素的相对顺序可能变</text>
+        </svg>
+        <div class="fcap">FIG.a · 末尾区间逐渐变长，堆区间逐渐变短</div>
+      </div>
+
+      <div class="codelabel">PYTHON · 堆排序</div>
+      <div class="code"><pre><span class="kw">def</span> <span class="fn">heap_sort</span>(a):
+    n = <span class="fn">len</span>(a)
+    <span class="cm"># 1) 建大顶堆 O(n)</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>((n-<span class="op">2</span>)//<span class="op">2</span>, -<span class="op">1</span>, -<span class="op">1</span>):
+        <span class="fn">_sift_down</span>(a, i, n)
+    <span class="cm"># 2) 反复 pop 到末尾 O(n log n)</span>
+    <span class="kw">for</span> end <span class="kw">in</span> <span class="fn">range</span>(n-<span class="op">1</span>, <span class="op">0</span>, -<span class="op">1</span>):
+        a[<span class="op">0</span>], a[end] = a[end], a[<span class="op">0</span>]
+        <span class="fn">_sift_down</span>(a, <span class="op">0</span>, end)
+    <span class="kw">return</span> a</pre></div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>为什么是「不稳定」</h3>
+        <p class="small">因为<b class="g">交换会跨位置</b>。<br>
+          堆只保证父 ≥ 孩，<b>兄弟之间没有顺序</b> —— 相等元素的位置可能被打乱。<br>
+          <b class="g">要稳定 → 用归并；要省空间 → 用堆排序或快排。</b></p>
+      </div>
+
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>三种排序对比</h3>
+        <div class="tagrow" style="margin-top:0;gap:9px">
+          <div class="chip" style="flex:1 1 150px">
+            <span class="k">快排</span>
+            平均 <b>O(n log n)</b><br>
+            最坏 O(n²)<br>
+            <b class="g">不稳定</b> · 原地
+          </div>
+          <div class="chip g" style="flex:1 1 150px">
+            <span class="k">堆排序</span>
+            <b>O(n log n)</b> 恒定<br>
+            常数略大<br>
+            <b class="r">不稳定</b> · 原地
+          </div>
+          <div class="chip a" style="flex:1 1 150px">
+            <span class="k">归并</span>
+            <b>O(n log n)</b> 恒定<br>
+            <b class="g">稳定</b><br>
+            O(n) 额外空间
+          </div>
+        </div>
+      </div>
+
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>什么时候用堆排序</h3>
+        <ul class="pit">
+          <li>要求 <b class="a">最坏 O(n log n)</b> 且<b class="a">原地</b></li>
+          <li><b>top-k</b> 题里只要排前 k 个</li>
+          <li><b>外部排序</b> / <b>流式数据</b></li>
+        </ul>
+      </div>
+
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>坑</h3>
+        <ul class="pit">
+          <li>建堆用成 <b class="r">小顶堆</b> → 排出来降序</li>
+          <li>外层循环写成 <b class="r">range(n-1)</b> → 少排一个</li>
+          <li><b class="r">_sift_down 的 n 参数</b>写成 <span class="mono">len(a)</span> → 排好的区被破坏</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">O(n log n) 恒定</span>
+    <span class="tag a">原地</span>
+    <span class="tag r">不稳定</span>
+    <span class="tag">两步</span>
+    <span class="tag">n 参数别写错</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 21 —</span></div>
+</section>
+
+
+<!-- ══════════════ 22 索引堆 ══════════════ -->
+<section class="slide rv" id="s22">
+  <div class="s-head">
+    <div class="s-num">22</div>
+    <div>
+      <h2>应用 ⑨ <span class="g">索引堆 / Lazy deletion / decrease-key</span></h2>
+      <p class="sub">当题目要求「<b>更新优先级</b>」时，普通堆<b>做不到</b>。索引堆能做到，代价是两张表。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 320">
+          <!-- 值数组 -->
+          <text class="cap" x="18" y="22">① 值数组 data（固定下标）</text>
+          <rect x="18" y="38" width="70" height="36" rx="7" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+          <text class="num" x="53" y="56" fill="#1B4B3A">a</text>
+          <rect x="92" y="38" width="70" height="36" rx="7" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+          <text class="num" x="127" y="56" fill="#1B4B3A">b</text>
+          <rect x="166" y="38" width="70" height="36" rx="7" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+          <text class="num" x="201" y="56" fill="#1B4B3A">c</text>
+          <rect x="240" y="38" width="70" height="36" rx="7" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="1.8"/>
+          <text class="num" x="275" y="56" fill="#1B4B3A">d</text>
+
+          <!-- 堆数组 -->
+          <text class="capg" x="18" y="112">② 堆数组 heap（存「下标」而不是值）</text>
+          <rect x="18" y="128" width="70" height="36" rx="7" fill="#FAF0DE" stroke="#C0703C" stroke-width="2"/>
+          <text class="num" x="53" y="146" fill="#C0703C">1</text>
+          <rect x="92" y="128" width="70" height="36" rx="7" fill="#FAF0DE" stroke="#C0703C" stroke-width="1.8"/>
+          <text class="num" x="127" y="146" fill="#C0703C">3</text>
+          <rect x="166" y="128" width="70" height="36" rx="7" fill="#FAF0DE" stroke="#C0703C" stroke-width="1.8"/>
+          <text class="num" x="201" y="146" fill="#C0703C">0</text>
+          <rect x="240" y="128" width="70" height="36" rx="7" fill="#FAF0DE" stroke="#C0703C" stroke-width="1.8"/>
+          <text class="num" x="275" y="146" fill="#C0703C">2</text>
+
+          <!-- pos 反查表 -->
+          <text class="capr" x="18" y="202">③ 反查表 pos[value] = 在 heap 里的位置</text>
+          <rect x="18" y="218" width="70" height="36" rx="7" fill="#F8E8E2" stroke="#B94A2C" stroke-width="2"/>
+          <text class="num" x="53" y="236" fill="#B94A2C">2</text>
+          <rect x="92" y="218" width="70" height="36" rx="7" fill="#F8E8E2" stroke="#B94A2C" stroke-width="1.8"/>
+          <text class="num" x="127" y="236" fill="#B94A2C">0</text>
+          <rect x="166" y="218" width="70" height="36" rx="7" fill="#F8E8E2" stroke="#B94A2C" stroke-width="1.8"/>
+          <text class="num" x="201" y="236" fill="#B94A2C">3</text>
+          <rect x="240" y="218" width="70" height="36" rx="7" fill="#F8E8E2" stroke="#B94A2C" stroke-width="1.8"/>
+          <text class="num" x="275" y="236" fill="#B94A2C">1</text>
+
+          <!-- 右侧说明 -->
+          <rect x="360" y="38" width="282" height="122" rx="12" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.2"/>
+          <text class="capg" x="378" y="64">update(key, new_val)</text>
+          <text class="cap"  x="378" y="88">1) pos[key] → 它在 heap 的位置</text>
+          <text class="cap"  x="378" y="110">2) 改 data[key] = new_val</text>
+          <text class="cap"  x="378" y="132">3) 该位置 sift-up + sift-down</text>
+          <text class="capg" x="378" y="154">→ O(log n) 完成 decrease-key</text>
+
+          <rect x="360" y="176" width="282" height="80" rx="12" fill="#FAF0DE" stroke="#C0703C" stroke-width="2.2"/>
+          <text class="capa" x="378" y="202">Lazy deletion（heapq 派）</text>
+          <text class="cap"  x="378" y="226">不真删，只 push 新值，</text>
+          <text class="cap"  x="378" y="248">弹出时判「过期就跳过」</text>
+
+          <text class="capr" x="18" y="292">结论：需要 decrease-key → 上索引堆或懒惰删除</text>
+        </svg>
+        <div class="fcap">FIG.a · 两张表换来 O(log n) 更新</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>什么时候必须用</h3>
+        <ul class="pit">
+          <li><b class="g">Prim 最小生成树</b> —— 要不断更新「到生成树的距离」</li>
+          <li><b class="g">Dijkstra</b> 的严格版本 —— 标准写法就是 decrease-key</li>
+          <li><b class="g">任何「优先级会变」的调度</b></li>
+        </ul>
+      </div>
+
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>实际写代码怎么办</h3>
+        <p class="small"><b class="a">Python / heapq 没有 decrease-key。</b><br>
+          两种做法：<br>
+          ① <b>懒惰删除</b> —— push 新值，pop 时判过期跳过（推荐）<br>
+          ② <b>自己写索引堆</b> —— 两张表 + 三个 sift 函数</p>
+      </div>
+
+      <div class="codelabel">PYTHON · 惰性删除模板</div>
+      <div class="code"><pre>dist = {src: <span class="op">0</span>}
+pq = [(<span class="op">0</span>, src)]
+<span class="kw">while</span> pq:
+    d, u = heapq.<span class="fn">heappop</span>(pq)
+    <span class="kw">if</span> d &gt; dist.<span class="fn">get</span>(u, <span class="op">1e18</span>):
+        <span class="kw">continue</span>       <span class="cm"># 过期</span>
+    <span class="cm"># ... 正常松弛</span></pre></div>
+
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>坑</h3>
+        <ul class="pit">
+          <li>忘了<b class="r">过期判断</b> → 结果错（不只是慢）</li>
+          <li>反查表 <b class="r">没同步更新</b> → 更新到错位置</li>
+          <li>堆里存值 <b class="r">而不是下标</b> → 无法定位</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">索引堆</span>
+    <span class="tag a">懒惰删除</span>
+    <span class="tag">decrease-key</span>
+    <span class="tag r">过期判断</span>
+    <span class="tag">O(log n) 更新</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 22 —</span></div>
+</section>
+
+
+<!-- ══════════════ 23 进阶结构 ══════════════ -->
+<section class="slide rv" id="s23">
+  <div class="s-head">
+    <div class="s-num">23</div>
+    <div>
+      <h2>进阶：<span class="g">左偏树</span> · <span class="a">二叉堆→d 叉堆</span> · <span class="r">斐波那契堆</span></h2>
+      <p class="sub">这页<b>不必背</b>。知道<b>「有什么」和「为什么没人用」</b>就够了。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 320">
+          <!-- 左偏树 -->
+          <text class="capg" x="18" y="22">① 左偏树 / 可并堆 · merge = O(log n)</text>
+          <line class="edge" x1="130" y1="60" x2="80" y2="102"/>
+          <line class="edge" x1="130" y1="60" x2="180" y2="102"/>
+          <line class="edge" x1="80" y1="102" x2="50" y2="142"/>
+          <line class="edge" x1="80" y1="102" x2="110" y2="142"/>
+          <circle class="node act" cx="130" cy="42" r="19"/>
+          <text class="lb green" x="130" y="42">2</text>
+          <circle class="node" cx="80" cy="102" r="19"/>
+          <text class="lb" x="80" y="102">5</text>
+          <circle class="node" cx="180" cy="102" r="19"/>
+          <text class="lb" x="180" y="102">7</text>
+          <circle class="node" cx="50" cy="142" r="19"/>
+          <text class="lb" x="50" y="142">9</text>
+          <circle class="node" cx="110" cy="142" r="19"/>
+          <text class="lb" x="110" y="142">11</text>
+          <text class="capg" x="18" y="192">左路径最短 · merge 只沿左路径</text>
+
+          <!-- d 叉堆 -->
+          <text class="capa" x="340" y="22">② d 叉堆 · push 快，pop 慢</text>
+          <rect x="340" y="36" width="302" height="96" rx="11" fill="#FAF0DE" stroke="#C0703C" stroke-width="2.2"/>
+          <text class="capa" x="358" y="62">树高 = log_d n</text>
+          <text class="cap"  x="358" y="88">push = O(log_d n)   更短</text>
+          <text class="cap"  x="358" y="110">pop  = O(d · log_d n)  更长</text>
+          <text class="cap"  x="358" y="130">Dijkstra 常用 4 叉 / 8 叉</text>
+
+          <!-- 斐波那契堆 -->
+          <text class="capr" x="340" y="182">③ 斐波那契堆 · 理论最优</text>
+          <rect x="340" y="196" width="302" height="96" rx="11" fill="#F8E8E2" stroke="#B94A2C" stroke-width="2.2"/>
+          <text class="capr" x="358" y="222">push / merge = O(1) 摊还</text>
+          <text class="cap"  x="358" y="248">pop / decrease-key = O(1) 摊还</text>
+          <text class="cap"  x="358" y="270">但常数巨大 · 工程上几乎没人用</text>
+          <text class="cap"  x="358" y="290">面试基本只考「听说过」</text>
+
+          <text class="cap" x="18" y="232">堆家族：二叉堆 → d 叉堆 → 左偏树 / 配对堆 / 斐波那契堆</text>
+          <text class="capg" x="18" y="260">实用主义：99% 的题，二叉堆 + 懒惰删除就够了</text>
+        </svg>
+        <div class="fcap">FIG.a · 三种改进方向，对应三种需求</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>什么时候真用得上</h3>
+        <ul class="pit">
+          <li><b class="g">需要频繁合并两个堆</b> → 左偏树 / 配对堆</li>
+          <li><b class="g">push 极多、pop 极少</b> → d 叉堆（Dijkstra）</li>
+          <li><b class="g">需要 decrease-key 极多</b> → 斐波那契堆（理论上）</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>竞赛 / 面试里的实际选择</h3>
+        <p class="small"><b>Java</b>：<span class="mono">PriorityQueue</span> + <span class="mono">TreeMap</span> 组合<br>
+          <b>C++</b>：<span class="mono">priority_queue</span> + <span class="mono">__gnu_pbds::priority_queue</span>（支持 decrease-key）<br>
+          <b>Python</b>：<span class="mono">heapq</span> + 懒惰删除<br>
+          <b>Go</b>：<span class="mono">container/heap</span></p>
+      </div>
+
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>面试怎么答</h3>
+        <p class="small"><b class="a">Q：</b>「有没有比二叉堆更好的？」<br>
+          <b class="a">A：</b>「有，比如<b>斐波那契堆</b>能把 decrease-key 摊还到 O(1)，但常数大，工程里基本不用。实际我会用<b>懒惰删除</b>或<b>索引堆</b>。」</p>
+        <p class="small" style="margin-top:8px">这样答<b>知道边界</b>又<b>不装</b>。</p>
+      </div>
+
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>别在这页浪费时间</h3>
+        <p class="small"><b class="r">不要</b>去背斐波那契堆的势能证明。<br>
+          <b class="r">不要</b>手写左偏树（除非比赛）。<br>
+          <b class="g">要</b>把 21、22 页的代码敲熟。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">左偏树</span>
+    <span class="tag a">d 叉堆</span>
+    <span class="tag r">斐波那契堆</span>
+    <span class="tag">实用 = 二叉堆</span>
+    <span class="tag">面试要答「知道」</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 23 —</span></div>
+</section>
+
+
+<!-- ══════════════ 24 D4 判断树 ══════════════ -->
+<section class="slide rv" id="s24">
+  <div class="s-head">
+    <div class="s-num">24</div>
+    <div>
+      <h2><span class="pill kit">KIT</span>决策树：<b>要不要用堆</b> · <b>哪种堆</b></h2>
+      <p class="sub">做题时<b>先把这棵树走一遍</b>。走完基本就知道该写什么了。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="full">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 1300 320">
+          <!-- 根 -->
+          <rect x="500" y="18" width="300" height="60" rx="12" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.6"/>
+          <text class="capg" x="520" y="44">① 要「最值」吗？</text>
+          <text class="cap"  x="520" y="68">反复问谁最大 / 最小</text>
+
+          <!-- 三分支 -->
+          <path class="ed" d="M500 48 L340 48 L340 118"/>
+          <path class="ed" d="M650 78 L650 118"/>
+          <path class="ed" d="M800 48 L960 48 L960 118"/>
+
+          <rect x="180" y="118" width="320" height="60" rx="11" fill="#FCFAF4" stroke="#12212B" stroke-width="1.8"/>
+          <text class="cap" x="200" y="144">不需要最值</text>
+          <text class="cap" x="200" y="168">→ 排序 / 双指针 / 前缀和</text>
+
+          <rect x="500" y="118" width="300" height="60" rx="11" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.4"/>
+          <text class="capg" x="520" y="144">只要最值</text>
+          <text class="capg" x="520" y="168">→ 堆 / 优先队列</text>
+
+          <rect x="800" y="118" width="320" height="60" rx="11" fill="#FAF0DE" stroke="#C0703C" stroke-width="2.2"/>
+          <text class="capa" x="820" y="144">要完整有序 / 要 rank</text>
+          <text class="capa" x="820" y="168">→ 平衡树 / 排序 / 快选</text>
+
+          <!-- 二级 -->
+          <path class="ed" d="M500 178 L340 178 L340 248"/>
+          <path class="ed" d="M800 178 L960 178 L960 248"/>
+
+          <rect x="180" y="248" width="320" height="60" rx="11" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.2"/>
+          <text class="capg" x="200" y="274">元素在线到达 / 只要前 k</text>
+          <text class="capg" x="200" y="298">→ 用堆，O(log n) per op</text>
+
+          <rect x="800" y="248" width="320" height="60" rx="11" fill="#F8E8E2" stroke="#B94A2C" stroke-width="2.2"/>
+          <text class="capr" x="820" y="274">静态数组 + 单次问</text>
+          <text class="capr" x="820" y="298">→ 快速选择 O(n) 更快</text>
+
+          <!-- 标注 -->
+          <text class="hint" x="18" y="22">DECISION TREE</text>
+          <text class="hint" x="1120" y="22">HEAP or NOT</text>
+
+          <!-- 底注 -->
+          <path class="lead" d="M18 316 Q650 308 1280 316"/>
+        </svg>
+        <div class="fcap">FIG.a · 先问「要不要最值」，再问「在线 / 离线」</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.18s;margin-top:13px">
+    <div class="c1-6">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>「用堆」的三个信号</h3>
+        <ul class="pit">
+          <li><b class="g">「前 K」「第 K 大 / 小」</b> → 小顶堆 / 大顶堆</li>
+          <li><b class="g">「同时进行」「最小代价」「每次取最小两个」</b> → 堆 + 贪心</li>
+          <li><b class="g">「合并 K 个有序」「不断更新优先级」</b> → 多路归并 / 索引堆</li>
+        </ul>
+      </div>
+    </div>
+    <div class="c7-12">
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>「不用堆」的三个信号</h3>
+        <ul class="pit">
+          <li><b class="r">只要完整有序</b> → 排序就好，别绕弯</li>
+          <li><b class="r">静态数组 + 单次问第 k 大</b> → 快速选择更快</li>
+          <li><b class="r">要 rank / 要任意区间查询</b> → 线段树 / 树状数组 / 平衡树</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">要最值 → 堆</span>
+    <span class="tag">在线 → 堆</span>
+    <span class="tag r">全有序 → 排序</span>
+    <span class="tag r">rank → 树</span>
+    <span class="tag">静态单问 → 快选</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 24 —</span></div>
+</section>
+
+
+<!-- ══════════════ 25 三层坑 ══════════════ -->
+<section class="slide rv" id="s25">
+  <div class="s-head">
+    <div class="s-num">25</div>
+    <div>
+      <h2>三层坑：<b>概念 / 实现 / 效率</b></h2>
+      <p class="sub"><span class="pill main">MAIN</span>全文<b class="g">唯一的坑汇总页</b>。第 11 页讲的是<b>heapq 库特有</b>的坑，这一页讲<b>所有堆代码共有</b>的坑。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-4 rv" style="--d:.05s">
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span><span class="ix" style="font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--dim)">LAYER 1 · 概念</span><br>选错了结构</h3>
+        <ul class="pit">
+          <li><b class="r">用堆求第 k 大</b>（静态数组）</li>
+          <li><b class="r">用堆求完整有序序列</b></li>
+          <li><b class="r">没证明贪心就硬套堆</b></li>
+          <li><b class="r">要 rank 却用了堆</b></li>
+        </ul>
+        <p class="small" style="margin-top:11px">判断标准见 <b class="mono">P24</b> 决策树。</p>
+      </div>
+    </div>
+
+    <div class="c5-8 rv" style="--d:.14s">
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span><span class="ix" style="font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--dim)">LAYER 2 · 实现</span><br>写错了代码</h3>
+        <ul class="pit">
+          <li>sift-down <b class="r">挑错孩子比</b>（小顶堆该挑更小的）</li>
+          <li>下标公式 <b class="r">2i+1 / 2i+2 记错</b></li>
+          <li>大顶堆 <b class="r">少改一处比较符号</b></li>
+          <li>空堆 <b class="r">pop() 未判空</b></li>
+          <li>堆排序 <b class="r">建堆用成小顶堆</b></li>
+        </ul>
+        <p class="small" style="margin-top:11px">对照 <b class="mono">P06 / P07 / P08</b> 重敲一遍。</p>
+      </div>
+    </div>
+
+    <div class="c9-12 rv" style="--d:.23s">
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span><span class="ix" style="font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--dim)">LAYER 3 · 效率</span><br>用错了复杂度</h3>
+        <ul class="pit">
+          <li>忘 <b class="r">heapify</b>，写成 n 次 push</li>
+          <li><b class="r">重复入堆</b>，堆爆炸</li>
+          <li>TopK 用<b class="r">大顶堆存所有元素</b></li>
+          <li>要 <b class="r">decrease-key</b> 却用 heapq</li>
+        </ul>
+        <p class="small" style="margin-top:11px">见 <b class="mono">P09 / P13 / P22</b>。</p>
+      </div>
+    </div>
+
+    <div class="c1-6 rv" style="--d:.3s">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>五个好习惯</h3>
+        <ul class="pit">
+          <li><b class="g">写之前先说</b>：大顶堆 / 小顶堆？存什么？</li>
+          <li><b class="g">建堆前</b>先问：是一次性建堆，还是逐个 push？</li>
+          <li><b class="g">用元组比较时</b>，先写下键的顺序再写代码</li>
+          <li><b class="g">pop 前</b>必判空</li>
+          <li><b class="g">测试</b>用 0、1、2、n=1 的极端样例</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="c7-12 rv" style="--d:.36s">
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>DEBUG 时的检查清单</h3>
+        <ol class="pit">
+          <li>是<b>小顶堆</b>还是<b>大顶堆</b>？比较方向对吗？</li>
+          <li>堆里存的是<b>值</b>还是<b>元组</b>？tie 处理了吗？</li>
+          <li>有没有<b>重复入堆</b>？跳过条件对吗？</li>
+          <li>输出前<b>还堆着的元素</b>要不要一起算？</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag r">概念层</span>
+    <span class="tag a">实现层</span>
+    <span class="tag r">效率层</span>
+    <span class="tag g">五个习惯</span>
+    <span class="tag">DEBUG 清单</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 25 —</span></div>
+</section>
+
+
+<!-- ══════════════ 26 题型地图 ══════════════ -->
+<section class="slide rv" id="s26">
+  <div class="s-head">
+    <div class="s-num">26</div>
+    <div>
+      <h2><span class="pill kit">KIT</span>题型地图：<b>题面关键词 → 该写什么</b></h2>
+      <p class="sub">背关键词比背题管用。<b>见到左边的字，右边就是答案。</b></p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="figure">
+        <svg class="dg" viewBox="0 0 660 320">
+          <text class="cap" x="18" y="22">题面关键词</text>
+          <text class="capg" x="380" y="22">该用的结构</text>
+
+          <!-- 行1 -->
+          <rect x="18" y="36" width="330" height="38" rx="9" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2"/>
+          <text class="capg" x="38" y="61">前 K 个 · 第 K 大 / 小</text>
+          <path class="ed" d="M352 55 L376 55"/>
+          <path class="ed" d="M368 49 L378 55 L368 61"/>
+          <text class="capg" x="392" y="61">小顶堆（k 个）/ 快速选择</text>
+
+          <!-- 行2 -->
+          <rect x="18" y="84" width="330" height="38" rx="9" fill="#FAF0DE" stroke="#C0703C" stroke-width="2"/>
+          <text class="capa" x="38" y="109">同时进行 · 最少资源 · 房间 / 服务器</text>
+          <path class="ed am" d="M352 103 L376 103"/>
+          <path class="ed am" d="M368 97 L378 103 L368 109"/>
+          <text class="capa" x="392" y="109">堆（按结束时间）</text>
+
+          <!-- 行3 -->
+          <rect x="18" y="132" width="330" height="38" rx="9" fill="#F8E8E2" stroke="#B94A2C" stroke-width="2"/>
+          <text class="capr" x="38" y="157">合并 K 个有序 · 多路归并</text>
+          <path class="ed rd" d="M352 151 L376 151"/>
+          <path class="ed rd" d="M368 145 L378 151 L368 157"/>
+          <text class="capr" x="392" y="157">堆存 (val, i, j)</text>
+
+          <!-- 行4 -->
+          <rect x="18" y="180" width="330" height="38" rx="9" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2"/>
+          <text class="capg" x="38" y="205">每次取最小 / 最大的两个 · 合并代价</text>
+          <path class="ed" d="M352 199 L376 199"/>
+          <path class="ed" d="M368 193 L378 199 L368 205"/>
+          <text class="capg" x="392" y="205">小顶堆 + 贪心</text>
+
+          <!-- 行5 -->
+          <rect x="18" y="228" width="330" height="38" rx="9" fill="#FAF0DE" stroke="#C0703C" stroke-width="2"/>
+          <text class="capa" x="38" y="253">动态中位数 · 滑动窗口中位数</text>
+          <path class="ed am" d="M352 247 L376 247"/>
+          <path class="ed am" d="M368 241 L378 247 L368 253"/>
+          <text class="capa" x="392" y="253">对顶堆（左大右小）</text>
+
+          <!-- 行6 -->
+          <rect x="18" y="276" width="330" height="38" rx="9" fill="#F8E8E2" stroke="#B94A2C" stroke-width="2"/>
+          <text class="capr" x="38" y="301">最短路 · 网络延迟 · 最小代价到达</text>
+          <path class="ed rd" d="M352 295 L376 295"/>
+          <path class="ed rd" d="M368 289 L378 295 L368 301"/>
+          <text class="capr" x="392" y="301">Dijkstra + 堆</text>
+        </svg>
+        <div class="fcap">FIG.a · 六类关键词，六个标准动作</div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>秒杀脚本（TopK）</h3>
+        <div class="code" style="font-size:11.6px"><pre><span class="kw">import</span> heapq
+<span class="kw">def</span> <span class="fn">top_k</span>(nums, k):
+    h = []
+    <span class="kw">for</span> x <span class="kw">in</span> nums:
+        <span class="kw">if</span> <span class="fn">len</span>(h) &lt; k:
+            heapq.<span class="fn">heappush</span>(h, x)
+        <span class="kw">elif</span> x &gt; h[<span class="op">0</span>]:
+            heapq.<span class="fn">heapreplace</span>(h, x)
+    <span class="kw">return</span> h</pre></div>
+      </div>
+
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>秒杀脚本（合并 K 路）</h3>
+        <div class="code" style="font-size:11.6px"><pre><span class="kw">def</span> <span class="fn">merge_k</span>(lists):
+    h = [(l[<span class="op">0</span>], i, <span class="op">0</span>) <span class="kw">for</span> i, l <span class="kw">in</span> <span class="fn">enumerate</span>(lists) <span class="kw">if</span> l]
+    heapq.<span class="fn">heapify</span>(h)
+    res = []
+    <span class="kw">while</span> h:
+        v, i, j = heapq.<span class="fn">heappop</span>(h)
+        res.<span class="fn">append</span>(v)
+        <span class="kw">if</span> j+<span class="op">1</span> &lt; <span class="fn">len</span>(lists[i]):
+            heapq.<span class="fn">heappush</span>(h, (lists[i][j+<span class="op">1</span>], i, j+<span class="op">1</span>))
+    <span class="kw">return</span> res</pre></div>
+      </div>
+
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>秒杀脚本（对顶堆）</h3>
+        <div class="code" style="font-size:11.6px"><pre>lo, hi = [], []
+<span class="kw">def</span> <span class="fn">add</span>(x):
+    heapq.<span class="fn">heappush</span>(lo, -x)
+    heapq.<span class="fn">heappush</span>(hi, -heapq.<span class="fn">heappop</span>(lo))
+    <span class="kw">if</span> <span class="fn">len</span>(hi) &gt; <span class="fn">len</span>(lo):
+        heapq.<span class="fn">heappush</span>(lo, -heapq.<span class="fn">heappop</span>(hi))</pre></div>
+      </div>
+
+      <div class="card red">
+        <h3><span class="pill aux">AUX</span>三条红线</h3>
+        <ul class="pit">
+          <li><b class="r">没读懂题就套堆</b> → 大概率不是最优</li>
+          <li><b class="r">忘了 heapify</b> → TLE</li>
+          <li><b class="r">元组比较键写错</b> → 静默错答案</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">关键词 → 结构</span>
+    <span class="tag">三份脚本</span>
+    <span class="tag a">TopK</span>
+    <span class="tag">K 路归并</span>
+    <span class="tag r">三条红线</span>
+    <span class="tag">对顶堆</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 26 —</span></div>
+</section>
+
+
+<!-- ══════════════ 27 小测 D2 ══════════════ -->
+<section class="slide rv" id="s27">
+  <div class="s-head">
+    <div class="s-num">27</div>
+    <div>
+      <h2><span class="pill prac">D2 小测</span>四道题，<b>35 分钟</b></h2>
+      <p class="sub">这次<b>要写代码骨架</b>，不只是选答案。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="pl">
+        <div class="q">Q1</div>
+        <div class="bd">
+          <h3 class="qy">数据流不断到来，要<b class="g">随时回答「当前第 k 大」</b>。<br>用什么结构？时间复杂度？</h3>
+          <div class="op">
+            <span><em>要求</em> 写出 add() 的关键 3 行</span>
+            <span><em>复杂度</em> add: ?　query: ?</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pl">
+        <div class="q">Q2</div>
+        <div class="bd">
+          <h3 class="qy"><b class="g">合并 5 个有序数组</b>，每个 1000 个元素。<br>最少比较次数是多少量级？</h3>
+          <div class="op">
+            <span><em>A</em> O(nk) = 5000</span>
+            <span><em>B</em> O(n log k) ≈ 23000</span>
+            <span><em>C</em> O(n log n)</span>
+            <span><em>D</em> O(n + k)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pl">
+        <div class="q">Q3</div>
+        <div class="bd">
+          <h3 class="qy">用堆求<b class="g">第 3 小</b>的元素。<br>应该用<b class="g">大顶堆</b>还是<b class="g">小顶堆</b>？为什么？</h3>
+          <div class="op">
+            <span><em>要求</em> 一句话解释堆顶的角色</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pl">
+        <div class="q">Q4</div>
+        <div class="bd">
+          <h3 class="qy">实现<b class="g">动态中位数</b>。<br>写出 <span class="mono">add(x)</span> 的<b class="g">平衡逻辑</b>（3 行）。</h3>
+          <div class="op">
+            <span><em>提示</em> 左堆大顶、右堆小顶</span>
+            <span><em>不变量</em> len(lo) - len(hi) ∈ {0, 1}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>答案</h3>
+        <ul>
+          <li><b class="g">Q1</b>：小顶堆存前 k 大。<span class="mono">add: O(log k)</span>　<span class="mono">query: O(1)</span>（返回堆顶）<br>
+            <span class="mono small" style="color:var(--dim)">if len(h)&lt;k: heappush(h,x)　elif x&gt;h[0]: heapreplace(h,x)</span></li>
+          <li><b class="g">Q2 = B</b>：O(n log k) = 5000 × log₂5 ≈ 5000 × 2.32 ≈ <b>11600</b>。注意 n 是<b>总元素数</b>（5000），不是单个长度。</li>
+          <li><b class="g">Q3</b>：求<b>第 3 小</b> → 用<b class="g">大顶堆</b>，大小 3。堆顶 = 前 3 小里<b>最大的那个</b> = 门槛。新元素 &lt; 门槛才换入。</li>
+          <li><b class="g">Q4</b>：<span class="mono">heappush(lo, -x); heappush(hi, -heappop(lo)); if len(hi)&gt;len(lo): heappush(lo, -heappop(hi))</span></li>
+        </ul>
+      </div>
+      <div class="codenote green">
+        <b>SCORE</b>
+        4/4 → 进 D3。<br>
+        3/4 → 看 P13 / P14 / P19。<br>
+        ≤ 2/4 → 回 D2 重做 A 层的 5 题（LC215 / LC347 / LC1046 / LC703 / LC253）。
+      </div>
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>这四题演了什么</h3>
+        <p class="small"><b>Q1</b> = TopK 流式　｜　<b>Q2</b> = 多路归并<br>
+          <b>Q3</b> = 反向 TopK　｜　<b>Q4</b> = 对顶堆<br>
+          <b class="g">这四个模型 = D2 全部内容。</b></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">Q1 流式 TopK</span>
+    <span class="tag a">Q2 多路归并</span>
+    <span class="tag a">Q3 反向 TopK</span>
+    <span class="tag r">Q4 对顶堆</span>
+    <span class="tag">35 分钟</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 27 —</span></div>
+</section>
+
+
+<!-- ══════════════ 28 小测 D3 ══════════════ -->
+<section class="slide rv" id="s28">
+  <div class="s-head">
+    <div class="s-num">28</div>
+    <div>
+      <h2><span class="pill prac">D3 小测</span>四道题，<b>40 分钟</b></h2>
+      <p class="sub">重点是<b>模型识别</b> —— 看到题面，<b>30 秒内</b>说出该用什么。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="pl">
+        <div class="q">Q1</div>
+        <div class="bd">
+          <h3 class="qy">给定 n 个会议 <span class="mono">(start, end)</span>，<br>求<b class="g">最少需要几个会议室</b>。</h3>
+          <div class="op">
+            <span><em>要求</em> 说清堆里存什么、比较什么</span>
+            <span><em>复杂度</em> ?</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pl">
+        <div class="q">Q2</div>
+        <div class="bd">
+          <h3 class="qy">带权图 <b class="g">单源最短路</b>，<br>边权<b>非负</b>，<span class="mono">n = 1e4, m = 1e5</span>。<br>能用堆优化 Dijkstra 吗？复杂度？</h3>
+          <div class="op">
+            <span><em>A</em> 不能，用 Floyd</span>
+            <span><em>B</em> 能，O(m log n) ≈ 1.7e6</span>
+            <span><em>C</em> 能，O(n²) = 1e8</span>
+            <span><em>D</em> 不能，边太多</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pl">
+        <div class="q">Q3</div>
+        <div class="bd">
+          <h3 class="qy">给定 n 个正整数，每次合并<b class="g">最小的两个</b>，<br>代价 = 两数之和。<b class="g">最小总代价</b>？</h3>
+          <div class="op">
+            <span><em>要求</em> 一句话说明为什么贪心对</span>
+            <span><em>复杂度</em> ?</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pl">
+        <div class="q">Q4</div>
+        <div class="bd">
+          <h3 class="qy">什么情况下<b class="r">不该</b>用堆？<br>举两个例子。</h3>
+          <div class="op">
+            <span><em>提示</em> 见 P24 决策树</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>答案</h3>
+        <ul>
+          <li><b class="g">Q1</b>：堆存<b>当前所有进行中的会议的结束时间</b>（小顶堆）。<br>
+            按开始时间排序遍历；堆顶 <span class="mono">&lt;= start</span> → pop（复用房间）；然后 push 当前 end。<br>
+            复杂度 <span class="mono">O(n log n)</span>。</li>
+          <li><b class="g">Q2 = B</b>：边权非负 → Dijkstra + 堆。复杂度 <span class="mono">O(m log n) ≈ 1e5 × 13 ≈ 1.3e6</span>。<br>
+            朴素 Dijkstra 是 <span class="mono">O(n²) = 1e8</span>，慢了两个数量级。</li>
+          <li><b class="g">Q3</b>：哈夫曼 / 合并果子。<b>小的要尽早合并</b>，因为每个元素被计入的次数 = 它在合并树上的深度。<br>
+            复杂度 <span class="mono">O(n log n)</span>。</li>
+          <li><b class="g">Q4</b>：① 要<b>完整有序</b>或<b>rank</b> → 排序 / 平衡树 / 线段树。<br>
+            ② <b>静态数组 + 单次问</b>第 k 大 → 快速选择 <span class="mono">O(n)</span> 更快。</li>
+        </ul>
+      </div>
+      <div class="codenote green">
+        <b>SCORE</b>
+        4/4 → 进 D4。<br>
+        3/4 → 看 P15 / P16 / P18 / P24。<br>
+        ≤ 2/4 → 回 D3 重做 B 层的 4 题（LC295 / LC378 / LC239 / LC502）。
+      </div>
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>答题技巧</h3>
+        <p class="small">面试时<b class="a">先说「用什么 + 为什么」</b>，再写代码。<br>
+          Q1、Q3 这类题，<b>先讲贪心正确性</b>比先写代码分高。<br>
+          Q2 这类题，<b>先算复杂度量级</b>，再说能不能用。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">Q1 会议室</span>
+    <span class="tag a">Q2 Dijkstra</span>
+    <span class="tag a">Q3 哈夫曼</span>
+    <span class="tag r">Q4 反向判断</span>
+    <span class="tag">40 分钟</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 28 —</span></div>
+</section>
+
+
+<!-- ══════════════ 29 小测 D4 ══════════════ -->
+<section class="slide rv" id="s29">
+  <div class="s-head">
+    <div class="s-num">29</div>
+    <div>
+      <h2><span class="pill prac">D4 小测</span>三道代码题，<b>90 分钟</b></h2>
+      <p class="sub">这是<b>最终验收</b>。三题都做完，本章才算过。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="pl">
+        <div class="q">Q1</div>
+        <div class="bd">
+          <h3 class="qy">手写<b class="g">大顶堆类</b>：<br>支持 <span class="mono">push / pop / peek</span>，不许用 <span class="mono">heapq</span>。</h3>
+          <div class="op">
+            <span><em>要求</em> 写出 _sift_up 和 _sift_down</span>
+            <span><em>测试</em> [4,1,3,2,16,9,10,14,8,7]</span>
+            <span><em>时限</em> 25 分钟</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pl">
+        <div class="q">Q2</div>
+        <div class="bd">
+          <h3 class="qy">实现 <b class="g">KthLargest(k, nums)</b> 的 <span class="mono">add(val)</span>，<br>要求<b class="g">在线</b>、每次 <span class="mono">O(log k)</span>。</h3>
+          <div class="op">
+            <span><em>要求</em> 写完整类 + 说明为什么是小顶堆</span>
+            <span><em>边界</em> 初始 nums 元素不足 k 个</span>
+            <span><em>时限</em> 25 分钟</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pl">
+        <div class="q">Q3</div>
+        <div class="bd">
+          <h3 class="qy">实现<b class="g">合并 K 个有序链表</b>。<br>要求 <span class="mono">O(N log k)</span>，<span class="mono">N</span> 是总节点数。</h3>
+          <div class="op">
+            <span><em>要求</em> 说清元组 (val, i, j) 各字段作用</span>
+            <span><em>边界</em> k=0 / 有空链表</span>
+            <span><em>时限</em> 35 分钟</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>评分标准</h3>
+        <ul>
+          <li><b class="g">Q1</b> 25 分：三个 sift 函数 <b>15 分</b>，接口 <b>5 分</b>，边界 <b>5 分</b></li>
+          <li><b class="g">Q2</b> 25 分：类 <b>15 分</b>，<b>解释为什么小顶堆 5 分</b>，边界 5 分</li>
+          <li><b class="g">Q3</b> 35 分：正确性 <b>20 分</b>，复杂度达标 <b>10 分</b>，边界 5 分</li>
+        </ul>
+      </div>
+
+      <div class="codenote red">
+        <b>PASS LINE</b>
+        <b class="g">≥ 60 分</b>：本章通过，可进第 5 章。<br>
+        <b class="a">40 – 59 分</b>：补做 A 层 8 题中的错题，<b>隔 2 天再测一次</b>。<br>
+        <b class="r">&lt; 40 分</b>：<b>重走 D1</b>，特别是 P06 / P07 / P08。
+      </div>
+
+      <div class="card">
+        <h3><span class="pill aux">AUX</span>参考实现要点</h3>
+        <p class="small"><b>Q1</b> —— 0-based 下标，父 <span class="mono">(i-1)//2</span>。<br>
+          <b>Q2</b> —— 初始化时调用 <span class="mono">add</span> 逐个填入；<span class="mono">add</span> 末尾返回 <span class="mono">self.h[0]</span>。<br>
+          <b>Q3</b> —— <span class="mono">heapq.heappush</span> 时元组要含<b>序列号</b>和<b>下标</b>，否则无法推进。</p>
+      </div>
+
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>如果卡住</h3>
+        <p class="small"><b class="a">先写框架</b>：把 push / pop / 判空写出来，再填逻辑。<br>
+          <b class="a">再举例子</b>：用 3 个元素走一遍。<br>
+          <b class="a">最后写边界</b>：空堆、k=1、只有一个元素。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">Q1 手写堆</span>
+    <span class="tag a">Q2 流式第K大</span>
+    <span class="tag a">Q3 合并K链表</span>
+    <span class="tag r">60 分及格</span>
+    <span class="tag">90 分钟</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 29 —</span></div>
+</section>
+
+
+<!-- ══════════════ 30 四天总复习 ══════════════ -->
+<section class="slide rv" id="s30">
+  <div class="s-head">
+    <div class="s-num">30</div>
+    <div>
+      <h2><span class="pill kit">KIT</span>四天总复习：<b>一页带走</b></h2>
+      <p class="sub">这一页<b>打印出来贴墙上</b>。考试前扫一眼，就够了。</p>
+    </div>
+  </div>
+
+  <div class="grid rv" style="--d:.1s">
+    <div class="c1-7">
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <div class="card">
+          <h3 style="font-size:18px">D1 · 结构</h3>
+          <ul class="pit" style="font-size:13px">
+            <li>下标：父 <span class="mono">(i-1)//2</span> · 左 <span class="mono">2i+1</span></li>
+            <li>形状 = 完全二叉树</li>
+            <li>数值 = 父 ≥ 孩子</li>
+            <li>插入末尾 + sift-up</li>
+            <li>弹出末尾补根 + sift-down</li>
+            <li>heapify <b class="g">O(n)</b></li>
+          </ul>
+          <div class="tagrow"><span class="tag g">P02-P11</span></div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size:18px">D2 · 五大应用</h3>
+          <ul class="pit" style="font-size:13px">
+            <li><b>TopK</b> 小顶堆存 k 个</li>
+            <li><b>多路归并</b> (val, i, j)</li>
+            <li><b>贪心</b> 会议 / 饼干 / IPO</li>
+            <li><b>Dijkstra</b> 堆优化</li>
+            <li><b>对顶堆</b> 动态中位数</li>
+            <li><b>哈夫曼</b> 每次弹两个</li>
+          </ul>
+          <div class="tagrow"><span class="tag g">P13-P19</span></div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size:18px">D3 · 进阶</h3>
+          <ul class="pit" style="font-size:13px">
+            <li><b>索引堆</b> decrease-key</li>
+            <li><b>懒惰删除</b> heapq 派</li>
+            <li><b>堆排序</b> O(n log n) 原地</li>
+            <li><b>左偏树</b> 可并堆</li>
+            <li><b>d 叉堆</b> push 快</li>
+            <li><b>斐波那契堆</b> 听说过</li>
+          </ul>
+          <div class="tagrow"><span class="tag g">P20-P23</span></div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size:18px">D4 · 决策 &amp; 避坑</h3>
+          <ul class="pit" style="font-size:13px">
+            <li><b>决策树</b> P24</li>
+            <li><b>三层坑</b> P25</li>
+            <li><b>题型地图</b> P26</li>
+            <li>三层题单 A 8 / B 8 / C 7</li>
+            <li>三套小测 P27-P29</li>
+          </ul>
+          <div class="tagrow"><span class="tag g">P24-P30</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="c8-12">
+      <div class="card green">
+        <h3><span class="pill main">MAIN</span>终极口诀</h3>
+        <p class="small"><b class="g">「只要最值，用堆；<br>
+          要最小 K 个，用大顶；<br>
+          要最大 K 个，用小顶；<br>
+          要动态中位数，两堆对顶；<br>
+          要多路归并，堆里放 (值, 序号, 下标)；<br>
+          要最短路，堆优化 Dijkstra；<br>
+          要更新优先级，索引堆或懒惰删除。」</b></p>
+      </div>
+
+      <div class="figure" style="margin-top:13px">
+        <svg class="dg" viewBox="0 0 660 220">
+          <text class="hint" x="14" y="18">FINAL CHEAT SHEET</text>
+
+          <rect x="14" y="32" width="300" height="46" rx="10" fill="#EAF1EC" stroke="#1B4B3A" stroke-width="2.2"/>
+          <text class="capg" x="32" y="52">peek O(1) · push/pop O(log n)</text>
+          <text class="capg" x="32" y="70">heapify O(n) · 合并 K 路 O(n log k)</text>
+
+          <rect x="330" y="32" width="312" height="46" rx="10" fill="#FAF0DE" stroke="#C0703C" stroke-width="2.2"/>
+          <text class="capa" x="348" y="52">父 = (i-1)//2 · 左 = 2i+1</text>
+          <text class="capa" x="348" y="70">右 = 2i+2 · last parent = (n-2)//2</text>
+
+          <path class="lead" d="M14 102 Q320 94 642 102"/>
+
+          <rect x="14" y="116" width="628" height="86" rx="12" fill="#FCFAF4" stroke="#B7AD94" stroke-width="1.8"/>
+          <text class="cap" x="34" y="142">最常错：</text>
+          <text class="capr" x="34" y="166">① heapify 写成 n 次 push</text>
+          <text class="capr" x="34" y="188">② 大顶堆少改一个比较符号</text>
+          <text class="capr" x="360" y="166">③ 元组比较键写错</text>
+          <text class="capr" x="360" y="188">④ 空堆 pop 未判空</text>
+        </svg>
+        <div class="fcap">FIG.a · 最后一页的最后一页</div>
+      </div>
+
+      <div class="card amber">
+        <h3><span class="pill case">CASE</span>下一步</h3>
+        <ul class="pit">
+          <li><b class="a">本章通过</b> → 进第 5 章（哈希 / 并查集 / 图）</li>
+          <li><b class="a">未通过</b> → 回 P13 / P15 / P18 / P19 重做 A 层题</li>
+          <li><b class="a">想更稳</b> → 把 B 层 8 题再刷一遍，计时</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tagrow">
+    <span class="tag g">30 页 · 4 天</span>
+    <span class="tag">23 题</span>
+    <span class="tag a">3 套小测</span>
+    <span class="tag r">一页带走</span>
+    <span class="tag">口诀</span>
+    <span class="tag">下一步</span>
+  </div>
+  <div class="foot"><span>HEAP ／ PRIORITY QUEUE</span><span>— 30 —</span></div>
+</section>
+
+
+</main>
+
+<script>
+/* ============================================================
+   动画 A · 页 07 —— 弹出堆顶 [10,7,8,2,6,5]
+   ============================================================ */
+(function(){
+  const svg = document.getElementById('svgA');
+  if(!svg) return;
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const T = [
+    {id:'title',  x:18,  y:20,  cls:'cap',   txt:'[10,7,8,2,6,5] · 弹出堆顶 10'},
+    {id:'arr',    x:18,  y:56,  cls:'cap',   txt:'数组'},
+    {id:'a0',     x:130, y:44,  cls:'num',   txt:'10'},
+    {id:'a1',     x:200, y:44,  cls:'num',   txt:'7'},
+    {id:'a2',     x:270, y:44,  cls:'num',   txt:'8'},
+    {id:'a3',     x:340, y:44,  cls:'num',   txt:'2'},
+    {id:'a4',     x:410, y:44,  cls:'num',   txt:'6'},
+    {id:'a5',     x:480, y:44,  cls:'num',   txt:'5'},
+
+    {id:'s1lab',  x:18,  y:122, cls:'capa',  txt:'STEP 1 · 取走堆顶 10'},
+    {id:'s2lab',  x:240, y:122, cls:'capg',  txt:'STEP 2 · 末尾 5 补根'},
+    {id:'s3lab',  x:462, y:122, cls:'capg',  txt:'STEP 3 · 下沉 5'},
+    {id:'step3b', x:462, y:142, cls:'cap',   txt:'5 vs 8 → 换'},
+    {id:'step3c', x:462, y:162, cls:'cap',   txt:'5 vs 6 → 换'},
+    {id:'ok',     x:18,  y:236, cls:'capg',  txt:'合法：父 ≥ 孩子，且是完全二叉树'},
+    {id:'ok2',    x:18,  y:256, cls:'cap',   txt:'结果 [8,7,5,2,6]，弹出 10'}
+  ];
+  const R = [
+    {id:'r0', x:100, y:22, w:60, h:42},
+    {id:'r1', x:170, y:22, w:60, h:42},
+    {id:'r2', x:240, y:22, w:60, h:42},
+    {id:'r3', x:310, y:22, w:60, h:42},
+    {id:'r4', x:380, y:22, w:60, h:42},
+    {id:'r5', x:450, y:22, w:60, h:42}
+  ];
+  const E = [
+    {id:'e1', d:'M255 74 L255 92 L130 92 L130 108', cls:'ed am', w:1.9},
+    {id:'e1h', d:'M122 102 L130 112 L138 102', cls:'ed am', w:1.9},
+    {id:'e2', d:'M480 74 L480 92 L130 92 L130 108', cls:'ed am', w:1.9},
+    {id:'e2h', d:'M122 102 L130 112 L138 102', cls:'ed am', w:1.9}
+  ];
+
+  const gR = document.createElementNS(NS,'g');
+  const gT = document.createElementNS(NS,'g');
+  const gE = document.createElementNS(NS,'g');
+  svg.appendChild(gE); svg.appendChild(gR); svg.appendChild(gT);
+
+  const rnodes = {};
+  R.forEach(r=>{
+    const rect = document.createElementNS(NS,'rect');
+    rect.setAttribute('x',r.x); rect.setAttribute('y',r.y);
+    rect.setAttribute('width',r.w); rect.setAttribute('height',r.h);
+    rect.setAttribute('rx','9');
+    rect.setAttribute('fill','#FCFAF4');
+    rect.setAttribute('stroke','#12212B');
+    rect.setAttribute('stroke-width','1.9');
+    gR.appendChild(rect); rnodes[r.id]=rect;
+  });
+  const tnodes = {};
+  T.forEach(t=>{
+    const el = document.createElementNS(NS,'text');
+    el.setAttribute('x',t.x); el.setAttribute('y',t.y);
+    el.setAttribute('class',t.cls);
+    el.textContent = t.txt;
+    el.style.opacity = 0;
+    el.style.transition = 'opacity .34s ease';
+    gT.appendChild(el); tnodes[t.id]=el;
+  });
+  const enodes = {};
+  E.forEach(e=>{
+    const p = document.createElementNS(NS,'path');
+    p.setAttribute('d',e.d);
+    p.setAttribute('class',e.cls);
+    p.setAttribute('stroke-width',e.w);
+    p.setAttribute('fill','none');
+    p.style.opacity = 0;
+    p.style.transition = 'opacity .34s ease';
+    gE.appendChild(p); enodes[e.id]=p;
+  });
+
+  function show(id){ const n = tnodes[id]||enodes[id]||rnodes[id]; if(n) n.style.opacity = 1; }
+  function hide(id){ const n = tnodes[id]||enodes[id]||rnodes[id]; if(n) n.style.opacity = 0; }
+  function setFill(id,f,st){ const n = rnodes[id]; if(!n) return; n.setAttribute('fill',f); n.setAttribute('stroke',st||'#12212B'); }
+
+  const KF = [
+    [0,   ()=>{ show('title'); show('arr'); R.forEach(r=>show(r.id));
+                ['a0','a1','a2','a3','a4','a5'].forEach(show); }],
+    [1400,()=>{ show('s1lab'); show('e1'); show('e1h'); setFill('r0','#EDE7D8','#B7AD94'); hide('a0'); }],
+    [2700,()=>{ show('s2lab'); show('e2'); show('e2h'); hide('a5');
+                setFill('r0','#EAF1EC','#1B4B3A'); tnodes.a0.textContent='5'; show('a0'); }],
+    [3900,()=>{ show('s3lab'); show('step3b'); show('step3c'); }],
+    [5300,()=>{ show('ok'); show('ok2'); }]
+  ];
+
+  let idx = 0, timer = null;
+  function reset(){
+    idx = 0;
+    Object.keys(tnodes).forEach(id=>hide(id));
+    Object.keys(enodes).forEach(id=>hide(id));
+    R.forEach(r=>setFill(r.id,'#FCFAF4','#12212B'));
+    tnodes.a0.textContent='10'; tnodes.a5.textContent='5';
+  }
+  function tick(){
+    if(idx >= KF.length) return;
+    KF[idx][1]();
+    idx++;
+    timer = setTimeout(tick, 1200);
+  }
+  function start(){
+    if(timer) clearTimeout(timer);
+    reset();
+    setTimeout(tick, 300);
+  }
+
+  const io = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ start(); }
+      else { if(timer) clearTimeout(timer); }
+    });
+  },{threshold:.35});
+  io.observe(svg);
+})();
+
+
+/* ============================================================
+   动画 B · 页 08 —— heapify [4,1,3,2,16,9,10,14,8,7]
+   ============================================================ */
+(function(){
+  const svg = document.getElementById('svgB');
+  if(!svg) return;
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const T = [
+    {id:'title',  x:18,  y:20,  cls:'cap',  txt:'自底向上 heapify'},
+    {id:'st1',    x:18,  y:46,  cls:'cap',  txt:'start = last parent = (n-2)//2 = 4'},
+    {id:'st2',    x:18,  y:68,  cls:'cap',  txt:'↓ 依次下沉 i = 4, 3, 2, 1, 0'},
+    {id:'st3',    x:18,  y:96,  cls:'capg', txt:'O(n) —— 底层多但下沉短'},
+    {id:'st4',    x:18,  y:118, cls:'capg', txt:'∑ (n/2^(h+1))·h = O(n)'},
+    {id:'note1',  x:470, y:46,  cls:'cap',  txt:'每个节点只下沉'},
+    {id:'note2',  x:470, y:68,  cls:'capg', txt:'「最多到底」就停'},
+    {id:'note3',  x:470, y:96,  cls:'capr', txt:'反例：n 次 push = O(n log n)'}
+  ];
+
+  // 初始树：节点索引 0..9
+  const POS = [
+    [330,150],[190,212],[470,212],[110,264],[270,264],
+    [390,264],[550,264],[70,316],[150,316],[230,316]
+  ];
+  const VALS = [4,1,3,2,16,9,10,14,8,7];
+  const EDG = [[0,1],[0,2],[1,3],[1,4],[2,5],[2,6],[3,7],[3,8],[4,9]];
+
+  const gE = document.createElementNS(NS,'g');
+  const gR = document.createElementNS(NS,'g');
+  const gT = document.createElementNS(NS,'g');
+  svg.appendChild(gE); svg.appendChild(gR); svg.appendChild(gT);
+
+  T.forEach(t=>{
+    const el = document.createElementNS(NS,'text');
+    el.setAttribute('x',t.x); el.setAttribute('y',t.y);
+    el.setAttribute('class',t.cls);
+    el.textContent = t.txt;
+    el.style.opacity = 0; el.style.transition='opacity .32s ease';
+    gT.appendChild(el);
+  });
+
+  const edges = EDG.map(([a,b])=>{
+    const p = document.createElementNS(NS,'line');
+    p.setAttribute('x1',POS[a][0]); p.setAttribute('y1',POS[a][1]);
+    p.setAttribute('x2',POS[b][0]); p.setAttribute('y2',POS[b][1]);
+    p.setAttribute('class','edge');
+    gE.appendChild(p); return p;
+  });
+
+  const circles = POS.map(([x,y],i)=>{
+    const c = document.createElementNS(NS,'circle');
+    c.setAttribute('cx',x); c.setAttribute('cy',y); c.setAttribute('r','20');
+    c.setAttribute('class','node');
+    gR.appendChild(c);
+    const t = document.createElementNS(NS,'text');
+    t.setAttribute('x',x); t.setAttribute('y',y);
+    t.setAttribute('class','lb');
+    t.textContent = VALS[i];
+    gR.appendChild(t);
+    return {c,t};
+  });
+
+  const treeTexts = Array.from(gT.querySelectorAll('text'));
+
+  function highlight(i,on){
+    if(!circles[i]) return;
+    circles[i].c.setAttribute('class', on?'node act':'node');
+    circles[i].t.setAttribute('class', on?'lb green':'lb');
+  }
+  function setVal(i,v){ circles[i].t.textContent = v; }
+
+  // heapify 动画帧：(i, 交换前值, 交换后值)
+  const KF = [
+    [0,   ()=>{
+      treeTexts.forEach(n=>n.style.opacity=1);
+    }],
+    [1100,()=>{ highlight(4,true); }],
+    [2100,()=>{ highlight(4,false); highlight(3,true); }],
+    [3100,()=>{ highlight(3,false); highlight(2,true); }],
+    [4100,()=>{
+      highlight(2,false); highlight(1,true);
+      setVal(1,16); setVal(4,1);
+    }],
+    [5100,()=>{
+      highlight(1,false); highlight(0,true);
+      setVal(0,16); setVal(1,4);
+    }],
+    [6100,()=>{
+      highlight(0,true);
+    }]
+  ];
+
+  let idx = 0, timer = null;
+  function reset(){
+    idx = 0;
+    treeTexts.forEach(n=>n.style.opacity=0);
+    VALS.forEach((v,i)=>setVal(i,v));
+    circles.forEach((_,i)=>highlight(i,false));
+  }
+  function tick(){
+    if(idx >= KF.length) return;
+    KF[idx][1](); idx++;
+    timer = setTimeout(tick, 1100);
+  }
+  function start(){
+    if(timer) clearTimeout(timer);
+    reset();
+    setTimeout(tick, 280);
+  }
+
+  const io = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ start(); }
+      else { if(timer) clearTimeout(timer); }
+    });
+  },{threshold:.35});
+  io.observe(svg);
+})();
+
+
+/* ============================================================
+   通用揭示动画
+   ============================================================ */
+(function(){
+  const els = document.querySelectorAll('.rv');
+  const io = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  },{threshold:.08, rootMargin:'0px 0px -40px 0px'});
+  els.forEach(el=>{
+    if(el.classList.contains('in')) return;
+    io.observe(el);
+  });
+})();
+
+/* 键盘翻页 */
+(function(){
+  const secs = Array.from(document.querySelectorAll('section.slide'));
+  let i = 0;
+  document.addEventListener('keydown', e=>{
+    if(e.key === 'PageDown' || e.key === 'ArrowRight'){
+      i = Math.min(i+1, secs.length-1);
+      secs[i].scrollIntoView({behavior:'smooth', block:'start'});
+      e.preventDefault();
+    } else if(e.key === 'PageUp' || e.key === 'ArrowLeft'){
+      i = Math.max(i-1, 0);
+      secs[i].scrollIntoView({behavior:'smooth', block:'start'});
+      e.preventDefault();
+    }
+  });
+})();
+</script>
+</body>
+</html>

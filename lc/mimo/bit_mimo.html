@@ -1,0 +1,1571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>树状数组 Binary Indexed Tree · 4 分钟讲义</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* 纸张 */
+  --canvas:#FBF6ED;
+  --s1:#FFFFFF;
+  --s2:#F4EDE0;
+  --hair:#E7DCC8;
+  --hair2:#D6C6A9;
+
+  /* 墨 */
+  --ink:#241A11;
+  --ink2:#4B3A29;
+  --muted:#8E7B62;
+
+  /* 四个暖色语义 */
+  --volt:#D9541F;   /* 朱砂 · 结构 / 修改 */
+  --moss:#2F7D5D;   /* 苔绿 · 查询 / 完成 */
+  --gold:#B8860B;   /* 琥珀 · 注意 / 较慢 */
+  --hot:#A32132;    /* 绛红 · 坑 / 禁止 */
+
+  --disp:'Space Grotesk',Archivo,system-ui,sans-serif;
+  --han:'Noto Sans SC',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+  --shadow:0 1px 2px rgba(140,105,60,.05), 0 12px 30px rgba(140,105,60,.06);
+}
+html{scroll-behavior:smooth}
+body{
+  background:linear-gradient(180deg,#FCF8F1 0%,#F7F0E3 100%);
+  background-attachment:fixed;
+  color:var(--ink);font-family:var(--han);font-size:23px;line-height:1.85;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  scroll-snap-type:y proximity;
+}
+::selection{background:rgba(217,84,31,.18)}
+b{font-weight:500;color:var(--ink)}
+.g{color:var(--volt)}
+.m{color:var(--moss)}
+.a{color:var(--gold)}
+.p{color:var(--hot)}
+.mono{font-family:var(--mono)}
+
+/* ============ chrome ============ */
+.progress{position:fixed;top:0;left:0;height:5px;width:0;background:var(--volt);z-index:80;transition:width .25s ease}
+.topbar{position:fixed;top:0;left:0;right:0;height:48px;z-index:70;background:rgba(251,246,237,.92);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--hair);display:flex;align-items:center;
+  justify-content:space-between;padding:0 30px;font-family:var(--mono);font-size:14px;
+  letter-spacing:.12em;color:var(--muted)}
+.topbar .r{display:flex;gap:22px;align-items:center}
+.topbar .count{color:var(--ink)}
+.topbar .clock.done{color:var(--volt);font-weight:500}
+
+.rail{position:fixed;right:22px;top:50%;transform:translateY(-50%);z-index:60;
+  display:flex;flex-direction:column;gap:12px;align-items:flex-end}
+.rail button{background:none;border:0;cursor:pointer;font-family:var(--mono);font-size:12px;
+  letter-spacing:.10em;color:var(--muted);opacity:.42;display:flex;align-items:center;gap:9px;
+  padding:0;transition:opacity .25s,color .25s}
+.rail button i{display:block;width:15px;height:1.5px;background:currentColor;transition:width .25s}
+.rail button.on{opacity:1;color:var(--volt)}
+.rail button.on i{width:30px}
+.rail button:hover{opacity:.85}
+
+.navctl{position:fixed;left:30px;bottom:24px;z-index:60;display:flex;gap:10px;align-items:center}
+.navctl button{height:44px;padding:0 20px;background:var(--s1);border:1px solid var(--hair2);
+  border-radius:4px;color:var(--ink2);font-family:var(--mono);font-size:13px;letter-spacing:.12em;
+  cursor:pointer;transition:.16s;box-shadow:0 1px 2px rgba(140,105,60,.06)}
+.navctl button:hover{color:var(--volt);border-color:var(--volt);background:#fff}
+.navctl button:active{transform:translateY(1px)}
+.navctl .key{color:var(--muted);opacity:.7;display:flex;align-items:center;font-family:var(--mono);font-size:13px}
+
+/* ============ slides ============ */
+.slide{min-height:100vh;display:flex;align-items:center;padding:88px 0 84px;
+  scroll-snap-align:start;position:relative}
+.wrap{width:100%;max-width:1320px;margin:0 auto;padding:0 52px}
+
+.s-head{display:flex;gap:26px;align-items:flex-start;margin-bottom:32px}
+.s-num{font-family:var(--mono);font-size:15px;letter-spacing:.16em;color:var(--volt);
+  padding-top:17px;flex:0 0 auto;font-weight:500}
+.s-head h2{font-family:var(--disp);font-size:52px;font-weight:600;line-height:1.12;letter-spacing:-.018em}
+.s-head .sub{margin-top:13px;color:var(--muted);font-size:22px;line-height:1.7;max-width:920px}
+.s-head .sub b{color:var(--ink)}
+
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:26px}
+.c1-6{grid-column:1/7}.c7-12{grid-column:7/13}
+.c1-5{grid-column:1/6}.c6-12{grid-column:6/13}
+.c1-7{grid-column:1/8}.c8-12{grid-column:8/13}
+.c1-4{grid-column:1/5}.c5-8{grid-column:5/9}.c9-12{grid-column:9/13}
+.full{grid-column:1/13}
+
+/* ============ cards ============ */
+.card{background:var(--s1);border:1px solid var(--hair);border-radius:12px;padding:32px;
+  box-shadow:var(--shadow)}
+.card.volt{border-color:rgba(217,84,31,.34);background:linear-gradient(180deg,#FFF9F4,#FFFFFF)}
+.card.moss{border-color:rgba(47,125,93,.32);background:linear-gradient(180deg,#F5FBF7,#FFFFFF)}
+.card.hot{border-color:rgba(163,33,50,.28);background:linear-gradient(180deg,#FFF6F5,#FFFFFF)}
+.ct{font-family:var(--disp);font-size:29px;font-weight:600;letter-spacing:-.012em;line-height:1.28}
+.ct .ix{display:block;font-family:var(--mono);font-size:14px;letter-spacing:.14em;
+  color:var(--muted);font-weight:400;margin-bottom:10px}
+.card p{margin-top:14px;font-size:21px;color:var(--ink2);line-height:1.75}
+.card p b{color:var(--ink)}
+
+.kv{display:flex;gap:16px;align-items:baseline;padding:15px 0;border-top:1px solid var(--hair)}
+.kv:first-of-type{border-top:0}
+.kv .k{font-family:var(--mono);font-size:15px;letter-spacing:.11em;color:var(--muted);flex:0 0 138px}
+.kv .v{font-size:21px;line-height:1.6;color:var(--ink2)}
+.kv .v .mono{font-size:19px}
+
+.stat{display:flex;flex-direction:column;gap:5px}
+.stat .n{font-family:var(--disp);font-size:64px;font-weight:600;line-height:1;letter-spacing:-.025em}
+.stat .l{font-family:var(--mono);font-size:14px;letter-spacing:.14em;color:var(--muted)}
+
+.tagrow{display:flex;flex-wrap:wrap;gap:11px;margin-top:20px}
+.tag{font-family:var(--mono);font-size:14px;letter-spacing:.10em;color:var(--muted);
+  border:1px solid var(--hair2);border-radius:4px;padding:8px 15px;background:var(--s1)}
+.tag.on{color:var(--volt);border-color:rgba(217,84,31,.42);background:#FFF6F1}
+.tag.moss{color:var(--moss);border-color:rgba(47,125,93,.38);background:#F4FAF6}
+
+.chip{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;
+  letter-spacing:.10em;border-radius:4px;padding:7px 13px}
+.chip.warn{color:var(--gold);border:1px solid rgba(184,134,11,.35);background:#FDF7E6}
+.chip.bad{color:var(--hot);border:1px solid rgba(163,33,50,.32);background:#FDF2F1}
+.chip.good{color:var(--moss);border:1px solid rgba(47,125,93,.32);background:#F2F9F4}
+
+/* ============ diagrams ============ */
+.dg{width:100%;height:auto;display:block;overflow:visible}
+.dg .cell{fill:#FFFFFF;stroke:var(--hair2);stroke-width:1.6}
+.dg .cell.volt{stroke:var(--volt);stroke-width:2.6;filter:drop-shadow(0 3px 6px rgba(217,84,31,.22))}
+.dg .cell.moss{stroke:var(--moss);stroke-width:2.6;filter:drop-shadow(0 3px 6px rgba(47,125,93,.22))}
+.dg .cell.gold{stroke:var(--gold);stroke-width:2.4;filter:drop-shadow(0 3px 6px rgba(184,134,11,.20))}
+.dg .lb{font-family:var(--mono);font-size:21px;fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.dg .lb.volt{fill:var(--volt)}
+.dg .lb.moss{fill:var(--moss)}
+.dg .lb.gold{fill:var(--gold)}
+.dg .ed{stroke:var(--hair2);stroke-width:1.6;fill:none}
+.dg .ed.tr{stroke:#BFA87F;stroke-width:2}
+.dg .ed.volt{stroke:var(--volt);stroke-width:2.8}
+.dg .ed.moss{stroke:var(--moss);stroke-width:2.8}
+.dg .ed.hot{stroke:var(--hot);stroke-width:2.8}
+.dg .lead{stroke:var(--hair2);stroke-width:1.2;fill:none}
+.dg .cap{font-family:var(--mono);font-size:15px;fill:var(--muted);letter-spacing:.08em}
+.dg .capv{font-family:var(--mono);font-size:15px;fill:var(--volt);letter-spacing:.08em}
+.dg .capm{font-family:var(--mono);font-size:15px;fill:var(--moss);letter-spacing:.08em}
+.dg .capa{font-family:var(--mono);font-size:15px;fill:var(--gold);letter-spacing:.08em}
+.dg .caph{font-family:var(--mono);font-size:15px;fill:var(--hot);letter-spacing:.08em}
+.dg .cn{font-family:var(--han);font-size:18px;fill:var(--ink2)}
+.dg .onbar{font-family:var(--mono);font-size:13px;fill:#FFFCF7;letter-spacing:.05em}
+
+.figure{background:var(--s1);border:1px solid var(--hair);border-radius:12px;padding:32px 34px;box-shadow:var(--shadow)}
+.figure .fcap{margin-top:18px;font-family:var(--mono);font-size:14px;letter-spacing:.10em;color:var(--muted)}
+.ribbon{font-family:var(--mono);font-size:18px;letter-spacing:.03em;color:var(--ink);
+  border:1px solid var(--hair2);border-radius:5px;padding:13px 18px;display:inline-block;background:var(--s2)}
+.ribbon .ar{color:var(--muted);padding:0 7px}
+.ribbon .cur{color:var(--moss);font-weight:500}
+.ribbon .curu{color:var(--volt);font-weight:500}
+.ribbon .zero{color:var(--hot)}
+
+/* ============ code ============ */
+.code{background:#F7F1E3;border:1px solid var(--hair);border-radius:8px;padding:24px 26px;overflow:auto}
+.code pre{font-family:var(--mono);font-size:16px;line-height:1.72;color:#2A2016;white-space:pre}
+.code .kw{color:#B0431F}
+.code .cm{color:#A2907A}
+.code .nu{color:#2F7D5D}
+.code .fn{color:#8C5A00}
+.codelabel{font-family:var(--mono);font-size:14px;letter-spacing:.14em;color:var(--muted);margin-bottom:12px}
+.codenote{margin-top:16px;padding-top:14px;border-top:1px solid var(--hair);
+  display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.codenote .n-k{font-family:var(--mono);font-size:13px;letter-spacing:.13em;color:var(--volt);flex:0 0 auto}
+.codenote .n-v{font-size:18px;color:var(--ink2);line-height:1.6}
+
+/* ============ lists / tables ============ */
+ol.steps{list-style:none;counter-reset:s}
+ol.steps li{counter-increment:s;position:relative;padding:13px 0 13px 54px;border-top:1px solid var(--hair);
+  font-size:20px;line-height:1.65;color:var(--ink2)}
+ol.steps li:before{content:counter(s,decimal-leading-zero);position:absolute;left:0;top:16px;
+  font-family:var(--mono);font-size:15px;letter-spacing:.10em;color:var(--volt);font-weight:500}
+ul.pit{list-style:none}
+ul.pit li{padding:13px 0 13px 32px;border-top:1px solid var(--hair);font-size:20px;line-height:1.65;
+  position:relative;color:var(--ink2)}
+ul.pit li:before{content:"✕";position:absolute;left:0;top:15px;color:var(--hot);font-family:var(--mono);font-size:16px}
+
+table.cmp{width:100%;border-collapse:collapse;font-size:19px}
+table.cmp th{font-family:var(--mono);font-size:14px;letter-spacing:.11em;color:var(--muted);
+  text-align:left;padding:11px 11px;border-bottom:1px solid var(--hair2);font-weight:400}
+table.cmp td{padding:12px 11px;border-bottom:1px solid var(--hair);color:var(--ink2);line-height:1.55}
+table.cmp td:first-child{color:var(--ink)}
+table.cmp tr:last-child td{border-bottom:0}
+table.cmp tr.hi td{background:#FFF7F2}
+
+/* ============ complexity bars ============ */
+.crow{padding:17px 0;border-top:1px solid var(--hair);display:grid;
+  grid-template-columns:190px 1fr 215px;gap:22px;align-items:center}
+.crow:first-child{border-top:0}
+.crow:last-child{border-bottom:1px solid var(--hair)}
+.crow .nm{font-size:21px}
+.crow .nm small{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.11em;
+  color:var(--muted);margin-top:4px}
+.track{height:18px;background:var(--s2);border:1px solid var(--hair);border-radius:3px;overflow:hidden}
+.track i{display:block;height:100%;width:0;border-radius:2px;background:var(--volt);
+  transition:width .9s cubic-bezier(.22,1,.36,1)}
+.track i.slow{background:var(--gold)}
+.track i.mute{background:#C9B99C}
+.crow .cp{font-family:var(--mono);font-size:15px;color:var(--muted);text-align:right;line-height:1.5}
+.crow .cp b{display:block;color:var(--ink);font-size:17px;font-weight:400}
+
+/* ============ apps ============ */
+.apps{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
+.app{background:var(--s1);border:1px solid var(--hair);border-radius:12px;padding:26px;
+  box-shadow:var(--shadow);transition:border-color .18s,transform .18s}
+.app:hover{border-color:rgba(217,84,31,.38);transform:translateY(-3px)}
+.app .thumb{height:58px;width:100%;margin-bottom:16px}
+.app h3{font-family:var(--disp);font-size:23px;font-weight:600;letter-spacing:-.01em}
+.app p{margin-top:9px;font-size:18px;color:var(--ink2);line-height:1.62}
+.app .tg{margin-top:14px;display:inline-block;font-family:var(--mono);font-size:13px;
+  letter-spacing:.11em;color:var(--volt);border:1px solid rgba(217,84,31,.32);
+  border-radius:4px;padding:4px 10px;background:#FFF7F3}
+
+.bigbtn{height:52px;padding:0 26px;font-family:var(--han);font-size:19px;border-radius:5px;cursor:pointer;
+  transition:.16s}
+.btn-volt{background:#FFF4EF;border:1px solid var(--volt);color:var(--volt)}
+.btn-moss{background:#F2F9F4;border:1px solid var(--moss);color:var(--moss)}
+.btn-mute{background:var(--s2);border:1px solid var(--hair2);color:var(--ink2)}
+.bigbtn:active{transform:translateY(1px)}
+.bigbtn:disabled{opacity:.45;cursor:default}
+
+.legend{display:flex;gap:20px;flex-wrap:wrap;align-items:center;margin-top:18px}
+.legend span{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:14px;
+  letter-spacing:.09em;color:var(--muted)}
+.legend i{width:15px;height:15px;border-radius:4px;display:block}
+
+/* ============ reveal ============ */
+.rv{opacity:0;transform:translateY(18px);
+  transition:opacity .55s ease,transform .55s cubic-bezier(.22,1,.36,1);
+  transition-delay:var(--d,0s)}
+.slide.on .rv{opacity:1;transform:none}
+
+/* ============ responsive ============ */
+@media (max-width:1280px){ .rail{display:none} }
+@media (max-width:1040px){ .wrap{padding:0 34px} }
+@media (max-width:980px){
+  .grid{grid-template-columns:1fr}
+  .c1-6,.c7-12,.c1-5,.c6-12,.c1-7,.c8-12,.c1-4,.c5-8,.c9-12,.full{grid-column:1/2}
+  .slide{padding:92px 0 92px}
+  .apps{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:680px){
+  body{scroll-snap-type:none}
+  .s-head h2{font-size:36px}
+  .s-head .sub{font-size:19px}
+  body{font-size:19px}
+  .apps{grid-template-columns:1fr}
+  .crow{grid-template-columns:1fr;gap:10px}
+  .crow .cp{text-align:left}
+  .navctl{left:18px;bottom:18px}
+  .stat .n{font-size:48px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms!important;animation-duration:.01ms!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="prog"></div>
+
+<div class="topbar">
+  <div>BIT · 树状数组 · BINARY INDEXED TREE · 15 SLIDES</div>
+  <div class="r">
+    <span class="clock" id="clock">00:00 / 04:00</span>
+    <span class="count" id="count">01 / 15</span>
+  </div>
+</div>
+
+<nav class="rail" id="rail"></nav>
+
+<div class="navctl">
+  <button id="prevBtn">← PREV</button>
+  <button id="nextBtn">NEXT →</button>
+  <span class="key">↑↓ / SPACE 翻页</span>
+</div>
+
+<main id="deck">
+
+<!-- ============ 01 封面 ============ -->
+<section class="slide" data-t="封面">
+  <div class="wrap">
+    <div class="grid">
+      <div class="c1-6">
+        <div class="mono rv" style="--d:.05s;font-size:15px;letter-spacing:.16em;color:var(--volt)">
+          BINARY INDEXED TREE / FENWICK TREE · 4 MIN
+        </div>
+        <h1 class="rv" style="--d:.12s;font-family:var(--disp);font-size:88px;font-weight:700;
+          line-height:1.02;letter-spacing:-.032em;margin-top:24px">树状数组</h1>
+        <div class="rv" style="--d:.18s;font-family:var(--disp);font-size:26px;color:var(--muted);
+          letter-spacing:.02em;margin-top:12px">Binary Indexed Tree · BIT · Fenwick Tree</div>
+        <p class="rv" style="--d:.24s;margin-top:28px;font-size:25px;line-height:1.8;max-width:470px">
+          用<b>一个数组</b>，同时支持<br><b class="g">单点修改</b>与<b class="g">区间求和</b>，<br>
+          两个都只要 <b class="g">O(log n)</b>。
+        </p>
+        <div class="grid rv" style="--d:.32s;margin-top:38px;grid-template-columns:repeat(3,1fr);gap:20px">
+          <div class="stat"><div class="n g">2</div><div class="l">OPERATIONS</div></div>
+          <div class="stat"><div class="n">O(logn)</div><div class="l">PER OP</div></div>
+          <div class="stat"><div class="n">n</div><div class="l">SPACE</div></div>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.26s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 520 356">
+            <text class="cap" x="40" y="22">a[1..8]</text>
+            <g>
+              <rect class="cell" x="40" y="32" width="44" height="44" rx="8"/><text class="lb" x="62" y="54">3</text>
+              <rect class="cell" x="98" y="32" width="44" height="44" rx="8"/><text class="lb" x="120" y="54">1</text>
+              <rect class="cell" x="156" y="32" width="44" height="44" rx="8"/><text class="lb" x="178" y="54">4</text>
+              <rect class="cell" x="214" y="32" width="44" height="44" rx="8"/><text class="lb" x="236" y="54">1</text>
+              <rect class="cell" x="272" y="32" width="44" height="44" rx="8"/><text class="lb" x="294" y="54">5</text>
+              <rect class="cell" x="330" y="32" width="44" height="44" rx="8"/><text class="lb" x="352" y="54">9</text>
+              <rect class="cell" x="388" y="32" width="44" height="44" rx="8"/><text class="lb" x="410" y="54">2</text>
+              <rect class="cell" x="446" y="32" width="44" height="44" rx="8"/><text class="lb" x="468" y="54">6</text>
+            </g>
+
+            <rect x="40" y="110" width="450" height="28" rx="13" fill="#D9541F" fill-opacity=".95"/>
+            <text class="onbar" x="52" y="129">c[8] · 8 个</text>
+
+            <rect x="40" y="170" width="218" height="28" rx="13" fill="#D9541F" fill-opacity=".78"/>
+            <text class="onbar" x="52" y="189">c[4] · 4 个</text>
+
+            <rect x="40" y="230" width="102" height="28" rx="13" fill="#D9541F" fill-opacity=".60"/>
+            <text class="onbar" x="50" y="249">c[2]</text>
+            <rect x="272" y="230" width="102" height="28" rx="13" fill="#D9541F" fill-opacity=".60"/>
+            <text class="onbar" x="282" y="249">c[6]</text>
+
+            <rect x="40" y="290" width="44" height="28" rx="13" fill="#D9541F" fill-opacity=".42"/>
+            <rect x="156" y="290" width="44" height="28" rx="13" fill="#D9541F" fill-opacity=".42"/>
+            <rect x="272" y="290" width="44" height="28" rx="13" fill="#D9541F" fill-opacity=".42"/>
+            <rect x="388" y="290" width="44" height="28" rx="13" fill="#D9541F" fill-opacity=".42"/>
+            <text class="capv" x="52" y="346">c[i] 覆盖 lowbit(i) 个元素 · 八段无缝铺满</text>
+          </svg>
+          <div class="fcap">FIG.01 · n 个节点，n 段覆盖，段与段之间不重不漏</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 02 为什么需要它 ============ -->
+<section class="slide" data-t="为什么需要它">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">02</div>
+      <div>
+        <h2>为什么需要它</h2>
+        <p class="sub">数组上反复问「<b>l 到 r 的和是多少</b>」，同时还要<b>改某个位置</b>。朴素做法各占一头，没有一个两全。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 720 306">
+            <text class="capa" x="176" y="28" text-anchor="middle">暴力累加 · 逐格访问</text>
+            <g>
+              <rect class="cell gold" x="16" y="90" width="36" height="52" rx="8"/><text class="lb gold" x="34" y="116">3</text>
+              <rect class="cell gold" x="56" y="90" width="36" height="52" rx="8"/><text class="lb gold" x="74" y="116">1</text>
+              <rect class="cell gold" x="96" y="90" width="36" height="52" rx="8"/><text class="lb gold" x="114" y="116">4</text>
+              <rect class="cell gold" x="136" y="90" width="36" height="52" rx="8"/><text class="lb gold" x="154" y="116">1</text>
+              <rect class="cell gold" x="176" y="90" width="36" height="52" rx="8"/><text class="lb gold" x="194" y="116">5</text>
+              <rect class="cell gold" x="216" y="90" width="36" height="52" rx="8"/><text class="lb gold" x="234" y="116">9</text>
+              <rect class="cell gold" x="256" y="90" width="36" height="52" rx="8"/><text class="lb gold" x="274" y="116">2</text>
+              <rect class="cell" x="296" y="90" width="36" height="52" rx="8"/><text class="lb" x="314" y="116">6</text>
+            </g>
+            <text class="cap" x="34" y="170">1</text><text class="cap" x="74" y="170">2</text>
+            <text class="cap" x="114" y="170">3</text><text class="cap" x="154" y="170">4</text>
+            <text class="cap" x="194" y="170">5</text><text class="cap" x="234" y="170">6</text>
+            <text class="cap" x="274" y="170">7</text><text class="cap" x="314" y="170">8</text>
+            <path class="ed" d="M16 198 L292 198" stroke="#B8860B" stroke-width="2.4"/>
+            <text class="capa" x="176" y="230" text-anchor="middle">query(7) = 7 次访问</text>
+            <text class="cn" x="176" y="268" text-anchor="middle">n 次询问 → O(n²)，常数还小不下来</text>
+
+            <text class="capm" x="552" y="28" text-anchor="middle">树状数组 · 跳步累加</text>
+            <g>
+              <rect class="cell" x="384" y="90" width="36" height="52" rx="8"/><text class="lb" x="402" y="116">3</text>
+              <rect class="cell" x="424" y="90" width="36" height="52" rx="8"/><text class="lb" x="442" y="116">1</text>
+              <rect class="cell" x="464" y="90" width="36" height="52" rx="8"/><text class="lb" x="482" y="116">4</text>
+              <rect class="cell moss" x="504" y="90" width="36" height="52" rx="8"/><text class="lb moss" x="522" y="116">1</text>
+              <rect class="cell" x="544" y="90" width="36" height="52" rx="8"/><text class="lb" x="562" y="116">5</text>
+              <rect class="cell moss" x="584" y="90" width="36" height="52" rx="8"/><text class="lb moss" x="602" y="116">9</text>
+              <rect class="cell moss" x="624" y="90" width="36" height="52" rx="8"/><text class="lb moss" x="642" y="116">2</text>
+              <rect class="cell" x="664" y="90" width="36" height="52" rx="8"/><text class="lb" x="682" y="116">6</text>
+            </g>
+            <text class="cap" x="402" y="170">1</text><text class="cap" x="442" y="170">2</text>
+            <text class="cap" x="482" y="170">3</text><text class="capm" x="522" y="170">4</text>
+            <text class="cap" x="562" y="170">5</text><text class="capm" x="602" y="170">6</text>
+            <text class="capm" x="642" y="170">7</text><text class="cap" x="682" y="170">8</text>
+            <path class="ed moss" d="M642 198 L602 198 M602 198 L522 198 M522 198 L384 198" stroke-dasharray="6 4"/>
+            <text class="capm" x="552" y="230" text-anchor="middle">query(7) = 3 次访问</text>
+            <text class="cn" x="552" y="268" text-anchor="middle">n 次询问 → O(n log n)，实测快 20 倍以上</text>
+          </svg>
+          <div class="fcap">FIG.02 · 同一个 query(7)，访问次数从 7 掉到 3</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">THE TRADE-OFF</span>四种做法的取舍</div>
+          <table class="cmp" style="margin-top:10px">
+            <tr><th></th><th>单点改</th><th>区间求和</th></tr>
+            <tr><td>暴力累加</td><td class="m">O(1)</td><td class="a">O(n)</td></tr>
+            <tr><td>前缀和数组</td><td class="a">O(n)</td><td class="m">O(1)</td></tr>
+            <tr><td>分块</td><td class="m">O(1)</td><td class="a">O(√n)</td></tr>
+            <tr class="hi"><td>树状数组</td><td class="g">O(log n)</td><td class="g">O(log n)</td></tr>
+          </table>
+        </div>
+        <div class="card volt" style="margin-top:22px">
+          <div class="ct"><span class="ix">KEY IDEA</span>把前缀和分层缓存</div>
+          <p>前缀和数组「改一下要重算一大片」。树状数组把前缀和<b>切成 log n 层</b>，
+          改和查都<b class="g">只跨几层</b>，不碰整片。</p>
+          <div class="chip warn" style="margin-top:16px">◆ 用空间换时间：多一层缓存，就少一半扫描</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 定义与术语 ============ -->
+<section class="slide" data-t="定义与术语">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">03</div>
+      <div>
+        <h2>定义与术语</h2>
+        <p class="sub">两个数组：<span class="mono">a[]</span> 存值，<span class="mono">c[]</span> 存<b>一小段前缀</b>的和。整个结构只有一条定义。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 520 252">
+            <text class="cap" x="16" y="26">原数组 a[]</text>
+            <rect class="cell" x="16" y="36" width="52" height="42" rx="8"/><text class="lb" x="42" y="57">3</text>
+            <rect class="cell" x="76" y="36" width="52" height="42" rx="8"/><text class="lb" x="102" y="57">1</text>
+            <rect class="cell" x="136" y="36" width="52" height="42" rx="8"/><text class="lb" x="162" y="57">4</text>
+            <rect class="cell" x="196" y="36" width="52" height="42" rx="8"/><text class="lb" x="222" y="57">1</text>
+            <rect class="cell volt" x="256" y="36" width="52" height="42" rx="8"/><text class="lb volt" x="282" y="57">5</text>
+            <rect class="cell volt" x="316" y="36" width="52" height="42" rx="8"/><text class="lb volt" x="342" y="57">9</text>
+            <rect class="cell" x="376" y="36" width="52" height="42" rx="8"/><text class="lb" x="402" y="57">2</text>
+            <rect class="cell" x="436" y="36" width="52" height="42" rx="8"/><text class="lb" x="462" y="57">6</text>
+
+            <text class="cap" x="16" y="128">树数组 c[]</text>
+            <rect class="cell" x="16" y="138" width="52" height="42" rx="8"/><text class="lb" x="42" y="159">3</text>
+            <rect class="cell" x="76" y="138" width="52" height="42" rx="8"/><text class="lb" x="102" y="159">4</text>
+            <rect class="cell" x="136" y="138" width="52" height="42" rx="8"/><text class="lb" x="162" y="159">4</text>
+            <rect class="cell" x="196" y="138" width="52" height="42" rx="8"/><text class="lb" x="222" y="159">9</text>
+            <rect class="cell" x="256" y="138" width="52" height="42" rx="8"/><text class="lb" x="282" y="159">5</text>
+            <rect class="cell volt" x="316" y="138" width="52" height="42" rx="8"/><text class="lb volt" x="342" y="159">14</text>
+            <rect class="cell" x="376" y="138" width="52" height="42" rx="8"/><text class="lb" x="402" y="159">2</text>
+            <rect class="cell" x="436" y="138" width="52" height="42" rx="8"/><text class="lb" x="462" y="159">31</text>
+
+            <path class="lead" d="M256 84 L256 106 L368 106 L368 132"/>
+            <text class="capv" x="16" y="214">c[6] = a[5] + a[6] = 5 + 9 = 14</text>
+            <text class="cap" x="16" y="240">c[8] = a[1]+a[2]+…+a[8] = 31　·　c[3] = a[3] = 4</text>
+          </svg>
+          <div class="fcap">FIG.03 · c[6] 只管 a[5..6] 这一小段，不管全部</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">VOCABULARY</span>五个术语</div>
+          <div class="kv"><div class="k">原数组</div><div class="v"><span class="mono">a[1..n]</span> · 真实数值</div></div>
+          <div class="kv"><div class="k">树数组</div><div class="v"><span class="mono">c[1..n]</span> · 分段前缀和</div></div>
+          <div class="kv"><div class="k">lowbit</div><div class="v"><span class="mono">i &amp; -i</span> · i 的管辖长度</div></div>
+          <div class="kv"><div class="k">单点修改</div><div class="v">给 <span class="mono">a[i]</span> 加一个值</div></div>
+          <div class="kv"><div class="k">区间求和</div><div class="v"><span class="mono">a[l..r]</span> 的总和</div></div>
+        </div>
+        <div class="card volt" style="margin-top:22px">
+          <div class="ct"><span class="ix">DEFINITION</span>唯一的一条定义</div>
+          <div class="mono" style="font-size:21px;line-height:1.9;margin-top:12px;color:var(--volt)">
+            c[i] = Σ a[i − lowbit(i) + 1 .. i]
+          </div>
+          <p>右端点恒为 <b>i</b>，长度恒为 <b>lowbit(i)</b>。其它一切结论都是它的推论。</p>
+          <div class="chip warn" style="margin-top:14px">◆ 下标从 1 开始 · 约定 c[0] = 0 作哨兵</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 04 lowbit ============ -->
+<section class="slide" data-t="lowbit：i & -i">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">04</div>
+      <div>
+        <h2>lowbit：一句话 <span class="mono g">i &amp; -i</span></h2>
+        <p class="sub">取 <b>i 二进制下最低位的 1</b>，它就是 <span class="mono">c[i]</span> 管辖的元素个数。整个结构全靠这一个位运算。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 520 256">
+            <rect x="326" y="26" width="42" height="168" rx="8" fill="#D9541F" fill-opacity=".11"/>
+
+            <text class="cap" x="16" y="58">i = 12</text>
+            <rect class="cell" x="130" y="34" width="34" height="38" rx="6"/><text class="lb" x="147" y="53">0</text>
+            <rect class="cell" x="170" y="34" width="34" height="38" rx="6"/><text class="lb" x="187" y="53">0</text>
+            <rect class="cell" x="210" y="34" width="34" height="38" rx="6"/><text class="lb" x="227" y="53">0</text>
+            <rect class="cell" x="250" y="34" width="34" height="38" rx="6"/><text class="lb" x="267" y="53">0</text>
+            <rect class="cell" x="290" y="34" width="34" height="38" rx="6"/><text class="lb" x="307" y="53">1</text>
+            <rect class="cell volt" x="330" y="34" width="34" height="38" rx="6"/><text class="lb volt" x="347" y="53">1</text>
+            <rect class="cell" x="370" y="34" width="34" height="38" rx="6"/><text class="lb" x="387" y="53">0</text>
+            <rect class="cell" x="410" y="34" width="34" height="38" rx="6"/><text class="lb" x="427" y="53">0</text>
+
+            <text class="cap" x="16" y="114">−i 补码</text>
+            <rect class="cell" x="130" y="90" width="34" height="38" rx="6"/><text class="lb" x="147" y="109">1</text>
+            <rect class="cell" x="170" y="90" width="34" height="38" rx="6"/><text class="lb" x="187" y="109">1</text>
+            <rect class="cell" x="210" y="90" width="34" height="38" rx="6"/><text class="lb" x="227" y="109">1</text>
+            <rect class="cell" x="250" y="90" width="34" height="38" rx="6"/><text class="lb" x="267" y="109">1</text>
+            <rect class="cell" x="290" y="90" width="34" height="38" rx="6"/><text class="lb" x="307" y="109">0</text>
+            <rect class="cell volt" x="330" y="90" width="34" height="38" rx="6"/><text class="lb volt" x="347" y="109">1</text>
+            <rect class="cell" x="370" y="90" width="34" height="38" rx="6"/><text class="lb" x="387" y="109">0</text>
+            <rect class="cell" x="410" y="90" width="34" height="38" rx="6"/><text class="lb" x="427" y="109">0</text>
+
+            <text class="cap" x="16" y="170">i &amp; −i</text>
+            <rect class="cell" x="130" y="146" width="34" height="38" rx="6"/><text class="lb" x="147" y="165">0</text>
+            <rect class="cell" x="170" y="146" width="34" height="38" rx="6"/><text class="lb" x="187" y="165">0</text>
+            <rect class="cell" x="210" y="146" width="34" height="38" rx="6"/><text class="lb" x="227" y="165">0</text>
+            <rect class="cell" x="250" y="146" width="34" height="38" rx="6"/><text class="lb" x="267" y="165">0</text>
+            <rect class="cell" x="290" y="146" width="34" height="38" rx="6"/><text class="lb" x="307" y="165">0</text>
+            <rect class="cell volt" x="330" y="146" width="34" height="38" rx="6"/><text class="lb volt" x="347" y="165">1</text>
+            <rect class="cell" x="370" y="146" width="34" height="38" rx="6"/><text class="lb" x="387" y="165">0</text>
+            <rect class="cell" x="410" y="146" width="34" height="38" rx="6"/><text class="lb" x="427" y="165">0</text>
+
+            <text class="capv" x="16" y="222">lowbit(12) = 4　→　c[12] 管 4 个元素</text>
+            <text class="cap" x="16" y="248">12 = 0000 1100　·　最低位的 1 在第 2 位（值 4）</text>
+          </svg>
+          <div class="fcap">FIG.04 · 补码取反加一，恰好只留下最低位那个 1</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">WHY IT WORKS</span>为什么补码能行</div>
+          <p><span class="mono">−i = ~i + 1</span>。低位的 0 遇到进位<b>全变 0</b>，
+          最低位那个 1 变 0 后<b class="g">被进位重新点亮</b>，更高位全部翻转回去。与 <span class="mono">i</span> 一与，只剩这一位。</p>
+          <div class="kv"><div class="k">取值</div><div class="v">只能是 <b>1, 2, 4, 8, …</b></div></div>
+          <div class="kv"><div class="k">含义</div><div class="v"><span class="mono">c[i]</span> 管辖 <b>lowbit(i)</b> 个连续元素</div></div>
+          <div class="kv"><div class="k">跳步</div><div class="v">查 <span class="mono">i −= lowbit</span> · 改 <span class="mono">i += lowbit</span></div></div>
+          <div class="kv"><div class="k">特例</div><div class="v"><span class="mono">lowbit(0) = 0</span>，正好作查询循环终点</div></div>
+        </div>
+
+        <div class="figure" style="margin-top:22px">
+          <svg class="dg" viewBox="0 0 470 132">
+            <text class="cap" x="6" y="26">i</text>
+            <text class="cap" x="6" y="76">lb</text>
+            <line class="lead" x1="0" y1="38" x2="470" y2="38"/>
+            <line class="lead" x1="0" y1="88" x2="470" y2="88"/>
+            <g class="cap" style="font-size:14px">
+              <text x="76" y="26">1</text><text x="108" y="26">2</text><text x="140" y="26">3</text>
+              <text x="172" y="26">4</text><text x="204" y="26">5</text><text x="236" y="26">6</text>
+              <text x="268" y="26">7</text><text x="300" y="26">8</text><text x="332" y="26">9</text>
+              <text x="360" y="26">10</text><text x="394" y="26">11</text><text x="426" y="26">12</text>
+            </g>
+            <g class="capv" style="font-size:14px">
+              <text x="76" y="76">1</text><text x="108" y="76">2</text><text x="140" y="76">1</text>
+              <text x="172" y="76">4</text><text x="204" y="76">1</text><text x="236" y="76">2</text>
+              <text x="268" y="76">1</text><text x="300" y="76">8</text><text x="332" y="76">1</text>
+              <text x="360" y="76">2</text><text x="394" y="76">1</text><text x="426" y="76">4</text>
+            </g>
+            <text class="cap" x="6" y="118">1 2 1 4 1 2 1 8 1 2 1 4 …　周期重复，是 2 的幂的循环</text>
+          </svg>
+          <div class="fcap">TAB.04 · 前十二个 lowbit 的取值</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 05 树的样子 ============ -->
+<section class="slide" data-t="树的样子：c[i] 管什么">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">05</div>
+      <div>
+        <h2>树的样子：c[i] 管什么</h2>
+        <p class="sub">每个 <span class="mono">c[i]</span> 负责一段<b>向左延伸 lowbit(i) 格</b>的区间。n 个这样的段，<b class="g">无缝铺满</b>整个数组。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 520 356">
+            <g>
+              <rect class="cell" x="40" y="32" width="44" height="44" rx="8"/><text class="lb" x="62" y="54">3</text>
+              <rect class="cell" x="98" y="32" width="44" height="44" rx="8"/><text class="lb" x="120" y="54">1</text>
+              <rect class="cell" x="156" y="32" width="44" height="44" rx="8"/><text class="lb" x="178" y="54">4</text>
+              <rect class="cell" x="214" y="32" width="44" height="44" rx="8"/><text class="lb" x="236" y="54">1</text>
+              <rect class="cell" x="272" y="32" width="44" height="44" rx="8"/><text class="lb" x="294" y="54">5</text>
+              <rect class="cell" x="330" y="32" width="44" height="44" rx="8"/><text class="lb" x="352" y="54">9</text>
+              <rect class="cell" x="388" y="32" width="44" height="44" rx="8"/><text class="lb" x="410" y="54">2</text>
+              <rect class="cell" x="446" y="32" width="44" height="44" rx="8"/><text class="lb" x="468" y="54">6</text>
+            </g>
+            <text class="cap" x="62" y="22">1</text><text class="cap" x="120" y="22">2</text>
+            <text class="cap" x="178" y="22">3</text><text class="cap" x="236" y="22">4</text>
+            <text class="cap" x="294" y="22">5</text><text class="cap" x="352" y="22">6</text>
+            <text class="cap" x="410" y="22">7</text><text class="cap" x="468" y="22">8</text>
+
+            <rect x="40" y="110" width="450" height="28" rx="13" fill="#D9541F" fill-opacity=".95"/>
+            <text class="onbar" x="52" y="129">c[8] · 8 个 · 1..8</text>
+
+            <rect x="40" y="170" width="218" height="28" rx="13" fill="#D9541F" fill-opacity=".78"/>
+            <text class="onbar" x="52" y="189">c[4] · 4 个 · 1..4</text>
+
+            <rect x="40" y="230" width="102" height="28" rx="13" fill="#D9541F" fill-opacity=".60"/>
+            <text class="onbar" x="50" y="249">c[2]</text>
+            <rect x="272" y="230" width="102" height="28" rx="13" fill="#D9541F" fill-opacity=".60"/>
+            <text class="onbar" x="282" y="249">c[6]</text>
+
+            <rect x="40" y="290" width="44" height="28" rx="13" fill="#D9541F" fill-opacity=".42"/>
+            <text class="onbar" x="44" y="309">c1</text>
+            <rect x="156" y="290" width="44" height="28" rx="13" fill="#D9541F" fill-opacity=".42"/>
+            <text class="onbar" x="160" y="309">c3</text>
+            <rect x="272" y="290" width="44" height="28" rx="13" fill="#D9541F" fill-opacity=".42"/>
+            <text class="onbar" x="276" y="309">c5</text>
+            <rect x="388" y="290" width="44" height="28" rx="13" fill="#D9541F" fill-opacity=".42"/>
+            <text class="onbar" x="392" y="309">c7</text>
+
+            <text class="capv" x="40" y="346">层级越低，段越窄 · 越高越宽 · 恰好不重不漏</text>
+          </svg>
+          <div class="fcap">FIG.05 · 段长 = lowbit(i)，段右端点 = i</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">COVERAGE</span>三条规律</div>
+          <div class="kv"><div class="k">段长</div><div class="v"><span class="mono">c[i]</span> 管 <b class="g">lowbit(i)</b> 个元素</div></div>
+          <div class="kv"><div class="k">右端</div><div class="v">段的右端点就是 <b>i</b> 本身</div></div>
+          <div class="kv"><div class="k">左端</div><div class="v"><span class="mono">i − lowbit(i) + 1</span></div></div>
+          <div class="kv"><div class="k">互补</div><div class="v">任意前缀 <b>[1..k]</b> 都能被若干段<b>拼满</b></div></div>
+        </div>
+        <div class="figure" style="margin-top:22px">
+          <div class="mono" style="font-size:14px;letter-spacing:.13em;color:var(--muted);margin-bottom:10px">
+            TREE VIEW · 父节点 = i + lowbit(i)
+          </div>
+          <svg class="dg" viewBox="0 0 360 254">
+            <g class="lead" stroke="#C7B18B" stroke-width="1.8">
+              <path d="M180 50 L100 100 M180 50 L260 100
+                       M100 120 L56 168 M100 120 L144 168
+                       M260 120 L216 168 M260 120 L304 168
+                       M56 188 L24 224"/>
+            </g>
+            <circle class="cell volt" cx="180" cy="30" r="21" fill="#FFF"/>
+            <text class="lb volt" x="180" y="31">8</text>
+            <circle class="cell" cx="100" cy="110" r="21" fill="#FFF"/><text class="lb" x="100" y="111">4</text>
+            <circle class="cell" cx="260" cy="110" r="21" fill="#FFF"/><text class="lb" x="260" y="111">6</text>
+            <circle class="cell" cx="56" cy="178" r="21" fill="#FFF"/><text class="lb" x="56" y="179">2</text>
+            <circle class="cell" cx="144" cy="178" r="21" fill="#FFF"/><text class="lb" x="144" y="179">3</text>
+            <circle class="cell" cx="216" cy="178" r="21" fill="#FFF"/><text class="lb" x="216" y="179">5</text>
+            <circle class="cell" cx="304" cy="178" r="21" fill="#FFF"/><text class="lb" x="304" y="179">7</text>
+            <circle class="cell" cx="24" cy="234" r="21" fill="#FFF"/><text class="lb" x="24" y="235">1</text>
+          </svg>
+          <div class="fcap">FIG.05b · 越往上段越宽，根 8 覆盖整个数组</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 06 查询 ============ -->
+<section class="slide" data-t="查询 query：向左跳">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">06</div>
+      <div>
+        <h2>查询 query：向左跳</h2>
+        <p class="sub">要算 <span class="mono">a[1..i]</span>，就把覆盖这段的几个 <span class="mono">c</span> 加起来。<b>跳步方向向左。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <div class="ribbon" style="margin-bottom:18px">
+            <span class="cur">7</span><span class="ar">—(−1)→</span><span class="cur">6</span><span class="ar">—(−2)→</span><span class="cur">4</span><span class="ar">—(−4)→</span><span class="zero">0</span>
+            <span class="ar">共 3 步</span>
+          </div>
+          <svg class="dg" viewBox="0 0 560 296">
+            <text class="cap" x="50" y="26">1</text><text class="cap" x="108" y="26">2</text>
+            <text class="cap" x="166" y="26">3</text><text class="capm" x="224" y="26">4</text>
+            <text class="cap" x="282" y="26">5</text><text class="capm" x="340" y="26">6</text>
+            <text class="capm" x="398" y="26">7</text><text class="cap" x="456" y="26">8</text>
+
+            <rect class="cell" x="24" y="40" width="52" height="56" rx="9"/><text class="lb" x="50" y="68">3</text>
+            <rect class="cell" x="82" y="40" width="52" height="56" rx="9"/><text class="lb" x="108" y="68">1</text>
+            <rect class="cell" x="140" y="40" width="52" height="56" rx="9"/><text class="lb" x="166" y="68">4</text>
+            <rect class="cell moss" x="198" y="40" width="52" height="56" rx="9"/><text class="lb moss" x="224" y="68">1</text>
+            <rect class="cell" x="256" y="40" width="52" height="56" rx="9"/><text class="lb" x="282" y="68">5</text>
+            <rect class="cell moss" x="314" y="40" width="52" height="56" rx="9"/><text class="lb moss" x="340" y="68">9</text>
+            <rect class="cell moss" x="372" y="40" width="52" height="56" rx="9"/><text class="lb moss" x="398" y="68">2</text>
+            <rect class="cell" x="430" y="40" width="52" height="56" rx="9"/><text class="lb" x="456" y="68">6</text>
+
+            <rect x="372" y="112" width="52" height="24" rx="11" fill="#2F7D5D" fill-opacity=".95"/>
+            <text class="onbar" x="382" y="129">c7=2</text>
+            <rect x="256" y="148" width="168" height="24" rx="11" fill="#2F7D5D" fill-opacity=".74"/>
+            <text class="onbar" x="268" y="165">c[6] = 14　·　覆盖 5..6</text>
+            <rect x="24" y="184" width="226" height="24" rx="11" fill="#2F7D5D" fill-opacity=".52"/>
+            <text class="onbar" x="36" y="201">c[4] = 9　·　覆盖 1..4</text>
+
+            <text class="capm" x="24" y="238">query(7) = c[7] + c[6] + c[4] = 2 + 14 + 9 = 25</text>
+            <text class="cap" x="24" y="272">for(; i&gt;0; i -= i &amp; -i) s += c[i];</text>
+          </svg>
+          <div class="fcap">FIG.06 · 三段无缝拼成 a[1..7]，一段不多一段不少</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">WHY LEFT</span>为什么向左</div>
+          <p>已取到的区间一直在 <b>i 的右边</b>，剩下的空缺只能往左补。</p>
+          <div class="kv"><div class="k">第一步</div><div class="v"><span class="mono">c[i]</span> 补上最后一段</div></div>
+          <div class="kv"><div class="k">下一步</div><div class="v">跳到 <span class="mono">i − lowbit(i)</span>，再补一段</div></div>
+          <div class="kv"><div class="k">结束</div><div class="v"><span class="mono">i = 0</span> 时 1..原 i 已覆盖全</div></div>
+        </div>
+        <div class="card moss" style="margin-top:22px">
+          <div class="ct"><span class="ix">EXACTLY k STEPS</span>跳几次？</div>
+          <p>跳的次数 = <b class="m">i 的二进制中 1 的个数</b>（popcount）。
+             每个 1 恰好贡献一段，所以<b>不多不少</b>，最多 <b class="m">⌊log₂ n⌋ + 1</b> 次。</p>
+          <p><span class="mono">query(7)=3 步</span>　<span class="mono">query(8)=1 步</span>　
+             <span class="mono">query(15)=4 步</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 07 修改 ============ -->
+<section class="slide" data-t="修改 update：向右跳">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">07</div>
+      <div>
+        <h2>修改 update：向右跳</h2>
+        <p class="sub">改 <span class="mono">a[i]</span>，就要把<b>所有覆盖了 i 的 c</b> 一起改。这些 c 的下标<b class="g">向右递增</b>。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <div class="ribbon" style="margin-bottom:18px">
+            <span class="curu">3</span><span class="ar">—(+1)→</span><span class="curu">4</span><span class="ar">—(+4)→</span><span class="curu">8</span><span class="ar">—(+8)→</span><span class="zero">16 停</span>
+            <span class="ar">共 3 步</span>
+          </div>
+          <svg class="dg" viewBox="0 0 560 296">
+            <text class="cap" x="50" y="26">1</text><text class="cap" x="108" y="26">2</text>
+            <text class="capv" x="166" y="26">3</text><text class="capv" x="224" y="26">4</text>
+            <text class="cap" x="282" y="26">5</text><text class="cap" x="340" y="26">6</text>
+            <text class="cap" x="398" y="26">7</text><text class="capv" x="456" y="26">8</text>
+
+            <rect class="cell" x="24" y="40" width="52" height="56" rx="9"/><text class="lb" x="50" y="68">3</text>
+            <rect class="cell" x="82" y="40" width="52" height="56" rx="9"/><text class="lb" x="108" y="68">1</text>
+            <rect class="cell volt" x="140" y="40" width="52" height="56" rx="9"/><text class="lb volt" x="166" y="68">4</text>
+            <rect class="cell volt" x="198" y="40" width="52" height="56" rx="9"/><text class="lb volt" x="224" y="68">1</text>
+            <rect class="cell" x="256" y="40" width="52" height="56" rx="9"/><text class="lb" x="282" y="68">5</text>
+            <rect class="cell" x="314" y="40" width="52" height="56" rx="9"/><text class="lb" x="340" y="68">9</text>
+            <rect class="cell" x="372" y="40" width="52" height="56" rx="9"/><text class="lb" x="398" y="68">2</text>
+            <rect class="cell volt" x="430" y="40" width="52" height="56" rx="9"/><text class="lb volt" x="456" y="68">6</text>
+
+            <rect x="140" y="112" width="52" height="24" rx="11" fill="#D9541F" fill-opacity=".95"/>
+            <text class="onbar" x="150" y="129">c[3]</text>
+            <rect x="24" y="148" width="226" height="24" rx="11" fill="#D9541F" fill-opacity=".74"/>
+            <text class="onbar" x="36" y="165">c[4]　·　覆盖 1..4</text>
+            <rect x="24" y="184" width="458" height="24" rx="11" fill="#D9541F" fill-opacity=".52"/>
+            <text class="onbar" x="36" y="201">c[8]　·　覆盖 1..8</text>
+
+            <text class="capv" x="24" y="238">update(3, +2) → 改 c[3], c[4], c[8] 三个</text>
+            <text class="cap" x="24" y="272">for(; i&lt;=n; i += i &amp; -i) c[i] += v;</text>
+          </svg>
+          <div class="fcap">FIG.07 · 恰好这三个 c 覆盖了 a[3]，一个不多一个不少</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">WHY RIGHT</span>为什么向右</div>
+          <p>只有下标 <b>大于 i</b> 的 <span class="mono">c</span> 才可能覆盖到 i；继续往右，段越来越宽，
+          直到 <b>越界</b>就说明没有更多的 c 了。</p>
+          <div class="kv"><div class="k">序列</div><div class="v"><span class="mono">i, i+lowbit(i), …</span></div></div>
+          <div class="kv"><div class="k">终止</div><div class="v"><span class="mono">i &gt; n</span> 时越界即停</div></div>
+          <div class="kv"><div class="k">代价</div><div class="v">同样 <b class="g">O(log n)</b> 步</div></div>
+        </div>
+        <div class="card volt" style="margin-top:22px">
+          <div class="ct"><span class="ix">SYMMETRY</span>一张对称表</div>
+          <table class="cmp" style="margin-top:10px">
+            <tr><th></th><th>方向</th><th>步长</th><th>用途</th></tr>
+            <tr><td>query</td><td class="m">向左</td><td><span class="mono">i −= lowbit</span></td><td>取和</td></tr>
+            <tr><td>update</td><td class="g">向右</td><td><span class="mono">i += lowbit</span></td><td>改值</td></tr>
+          </table>
+          <div class="chip warn" style="margin-top:16px">◆ 通常根本不存 a[]，只存 c[]；a 只是概念上的</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 08 区间查询与建树 ============ -->
+<section class="slide" data-t="区间查询 与 建树">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">08</div>
+      <div>
+        <h2>区间查询 与 建树</h2>
+        <p class="sub">区间和只是<b>两个前缀和相减</b>；建树有 <b class="g">O(n)</b> 的写法。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 560 286">
+            <text class="cap" x="50" y="26">1</text><text class="cap" x="108" y="26">2</text>
+            <text class="cap" x="166" y="26">3</text><text class="capm" x="224" y="26">4</text>
+            <text class="capm" x="282" y="26">5</text><text class="capm" x="340" y="26">6</text>
+            <text class="capm" x="398" y="26">7</text><text class="cap" x="456" y="26">8</text>
+
+            <rect class="cell" x="24" y="40" width="52" height="52" rx="9"/><text class="lb" x="50" y="66">3</text>
+            <rect class="cell" x="82" y="40" width="52" height="52" rx="9"/><text class="lb" x="108" y="66">1</text>
+            <rect class="cell" x="140" y="40" width="52" height="52" rx="9"/><text class="lb" x="166" y="66">4</text>
+            <rect class="cell moss" x="198" y="40" width="52" height="52" rx="9"/><text class="lb moss" x="224" y="66">1</text>
+            <rect class="cell moss" x="256" y="40" width="52" height="52" rx="9"/><text class="lb moss" x="282" y="66">5</text>
+            <rect class="cell moss" x="314" y="40" width="52" height="52" rx="9"/><text class="lb moss" x="340" y="66">9</text>
+            <rect class="cell moss" x="372" y="40" width="52" height="52" rx="9"/><text class="lb moss" x="398" y="66">2</text>
+            <rect class="cell" x="430" y="40" width="52" height="52" rx="9"/><text class="lb" x="456" y="66">6</text>
+
+            <path class="ed moss" d="M24 124 L424 124 M24 119 L24 129 M424 119 L424 129"/>
+            <text class="capm" x="24" y="150">query(r) = query(7) = 25</text>
+
+            <path class="ed" d="M24 178 L194 178 M24 173 L24 183 M194 173 L194 183" stroke="#B8860B" stroke-width="2.4"/>
+            <text class="capa" x="24" y="204">query(l−1) = query(3) = 8</text>
+
+            <path class="ed volt" d="M198 226 L424 226 M198 221 L198 231 M424 221 L424 231"/>
+            <text class="capv" x="24" y="260">ask(l, r) = query(r) − query(l−1) = 17　·　恰好 a[4..7]</text>
+          </svg>
+          <div class="fcap">FIG.08 · 两段前缀相减，剩下的就是 [4..7]</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">BUILD · NAIVE</span>朴素建树</div>
+          <p>对每个 i 做一次 <span class="mono">update(i, a[i])</span>，共 <b class="a">O(n log n)</b>。
+          数据规模 10⁶ 时约 2×10⁷ 次操作，能过但不优雅。</p>
+        </div>
+        <div class="card volt" style="margin-top:22px">
+          <div class="ct"><span class="ix">BUILD · LINEAR</span>O(n) 建树</div>
+          <div class="code" style="margin-top:12px"><pre><span class="kw">for</span>(<span class="kw">int</span> i=1;i&lt;=n;i++){
+  c[i] += a[i];
+  <span class="kw">int</span> j = i + (i &amp; -i);     <span class="cm">// 父节点</span>
+  <span class="kw">if</span>(j &lt;= n) c[j] += c[i];
+}</pre></div>
+          <p>每个 i 只把自己的和<b class="g">往上推一层</b>，总代价恰好 n 次。</p>
+          <div class="chip good" style="margin-top:14px">◆ l = 1 时 sum(0) = 0，循环天然结束，无需特判</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 09 SIGNATURE DEMO ============ -->
+<section class="slide" data-t="演示：一次查询与一次修改">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">09</div>
+      <div>
+        <h2>演示：一次查询，一次修改</h2>
+        <p class="sub">下面这个数组是真的：<span class="mono">c[]</span> 的值全部按定义算好。点一下，看它怎么跳。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <div class="mono" style="font-size:14px;letter-spacing:.14em;color:var(--muted);margin-bottom:16px">
+            SIGNATURE DEMO · 点击下方按钮播放
+          </div>
+          <svg class="dg" id="demoSvg" viewBox="0 0 560 300">
+            <text class="cap" x="50" y="26">1</text><text class="cap" x="108" y="26">2</text>
+            <text class="cap" x="166" y="26">3</text><text class="cap" x="224" y="26">4</text>
+            <text class="cap" x="282" y="26">5</text><text class="cap" x="340" y="26">6</text>
+            <text class="cap" x="398" y="26">7</text><text class="cap" x="456" y="26">8</text>
+
+            <rect class="cell" id="dc1" x="24" y="40" width="52" height="56" rx="9"/><text class="lb" id="dt1" x="50" y="68">3</text>
+            <rect class="cell" id="dc2" x="82" y="40" width="52" height="56" rx="9"/><text class="lb" id="dt2" x="108" y="68">1</text>
+            <rect class="cell" id="dc3" x="140" y="40" width="52" height="56" rx="9"/><text class="lb" id="dt3" x="166" y="68">4</text>
+            <rect class="cell" id="dc4" x="198" y="40" width="52" height="56" rx="9"/><text class="lb" id="dt4" x="224" y="68">1</text>
+            <rect class="cell" id="dc5" x="256" y="40" width="52" height="56" rx="9"/><text class="lb" id="dt5" x="282" y="68">5</text>
+            <rect class="cell" id="dc6" x="314" y="40" width="52" height="56" rx="9"/><text class="lb" id="dt6" x="340" y="68">9</text>
+            <rect class="cell" id="dc7" x="372" y="40" width="52" height="56" rx="9"/><text class="lb" id="dt7" x="398" y="68">2</text>
+            <rect class="cell" id="dc8" x="430" y="40" width="52" height="56" rx="9"/><text class="lb" id="dt8" x="456" y="68">6</text>
+
+            <text class="cap" x="2" y="126">c[]</text>
+            <text class="cap" id="dv1" x="50" y="126">3</text>
+            <text class="cap" id="dv2" x="108" y="126">4</text>
+            <text class="cap" id="dv3" x="166" y="126">4</text>
+            <text class="cap" id="dv4" x="224" y="126">9</text>
+            <text class="cap" id="dv5" x="282" y="126">5</text>
+            <text class="cap" id="dv6" x="340" y="126">14</text>
+            <text class="cap" id="dv7" x="398" y="126">2</text>
+            <text class="cap" id="dv8" x="456" y="126">31</text>
+
+            <rect id="dbar" x="24" y="152" width="0" height="26" rx="12" fill="#2F7D5D" fill-opacity=".82"/>
+            <text class="onbar" id="dbartext" x="36" y="170"></text>
+
+            <text class="cap" id="dstep" x="24" y="216">准备就绪 · 点击下方按钮</text>
+            <text class="capv" id="dresult" x="24" y="256">—</text>
+          </svg>
+          <div class="legend">
+            <span><i style="background:#2F7D5D"></i>查询 · 向左取和</span>
+            <span><i style="background:#D9541F"></i>修改 · 向右改值</span>
+            <span><i style="background:#E7DCC8"></i>未触及</span>
+          </div>
+          <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:18px">
+            <button class="bigbtn btn-moss" id="playQuery">▶ 查询 query(7)</button>
+            <button class="bigbtn btn-volt" id="playUpdate">▶ 修改 update(3, +2)</button>
+            <button class="bigbtn btn-mute" id="demoReset">还原</button>
+          </div>
+          <div class="fcap">FIG.09 · 绿 = 向左取和，红 = 向右改值</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">TRACE</span>两条轨迹</div>
+          <div class="kv"><div class="k">query(7)</div><div class="v"><span class="mono">7 → 6 → 4</span>　取 c[7]+c[6]+c[4]</div></div>
+          <div class="kv"><div class="k">update(3)</div><div class="v"><span class="mono">3 → 4 → 8</span>　改 c[3], c[4], c[8]</div></div>
+          <div class="kv"><div class="k">互证</div><div class="v">改完再查 <span class="mono">25 → 27</span>，正好 <b>+2</b></div></div>
+        </div>
+        <div class="card moss" style="margin-top:22px">
+          <div class="ct"><span class="ix">WHAT TO NOTICE</span>注意看三处</div>
+          <p><b>一、</b>查询<b>不逐格</b>，但每一格<b>都被某一段覆盖</b>到，结果一样。</p>
+          <p><b>二、</b>修改只<b class="g">改 3 个 c</b>，之后所有涉及 a[3] 的查询自动正确。</p>
+          <p><b>三、</b>两条轨迹的步数都在 <b class="g">log n</b> 量级，不随 n 线性增长。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 10 复杂度 ============ -->
+<section class="slide" data-t="复杂度">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">10</div>
+      <div>
+        <h2>复杂度</h2>
+        <p class="sub">两次跳步的步数都在 <b>⌊log₂ n⌋ + 1</b> 以内。<b class="g">空间只有一个数组。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="crow"><div class="nm">暴力累加<small>BRUTE</small></div>
+          <div class="track"><i class="slow" data-w="100"></i></div>
+          <div class="cp"><b>查询 O(n)</b>改 O(1)</div></div>
+        <div class="crow"><div class="nm">前缀和数组<small>PREFIX</small></div>
+          <div class="track"><i class="slow" data-w="78"></i></div>
+          <div class="cp"><b>查询 O(1)</b>改 O(n)</div></div>
+        <div class="crow"><div class="nm">树状数组<small>BIT / FENWICK</small></div>
+          <div class="track"><i data-w="14"></i></div>
+          <div class="cp"><b>O(log n) 两个</b>常数小 · 代码短</div></div>
+        <div class="crow"><div class="nm">线段树<small>SEGMENT TREE</small></div>
+          <div class="track"><i class="mute" data-w="26"></i></div>
+          <div class="cp"><b>O(log n) 两个</b>常数大 · 功能更强</div></div>
+
+        <div class="figure" style="margin-top:24px">
+          <svg class="dg" viewBox="0 0 620 200">
+            <text class="cap" x="6" y="24">规模 n</text>
+            <text class="capv" x="212" y="24">最大跳步</text>
+            <text class="cap" x="410" y="24">二进制位数</text>
+            <line class="lead" x1="0" y1="38" x2="620" y2="38"/>
+            <text class="cap" x="6" y="66">100</text>
+            <text class="capv" x="212" y="66">7</text>
+            <text class="cap" x="410" y="66">7</text>
+            <line class="lead" x1="0" y1="82" x2="620" y2="82"/>
+            <text class="cap" x="6" y="110">100 000</text>
+            <text class="capv" x="212" y="110">17</text>
+            <text class="cap" x="410" y="110">17</text>
+            <line class="lead" x1="0" y1="126" x2="620" y2="126"/>
+            <text class="cap" x="6" y="154">1 000 000</text>
+            <text class="capv" x="212" y="154">20</text>
+            <text class="cap" x="410" y="154">20</text>
+            <line class="lead" x1="0" y1="170" x2="620" y2="170"/>
+            <text class="cap" x="6" y="192">2³¹ − 1</text>
+            <text class="capv" x="212" y="192">31</text>
+            <text class="cap" x="410" y="192">31</text>
+          </svg>
+          <div class="fcap">TAB.10 · 10⁶ 规模下，一次操作最多跳 20 步</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">FORMULA</span>五条公式</div>
+          <div class="kv"><div class="k">单点改</div><div class="v"><span class="mono g">O(log n)</span></div></div>
+          <div class="kv"><div class="k">前缀和</div><div class="v"><span class="mono g">O(log n)</span></div></div>
+          <div class="kv"><div class="k">区间和</div><div class="v"><span class="mono g">O(log n)</span>（两次前缀）</div></div>
+          <div class="kv"><div class="k">建树</div><div class="v"><span class="mono g">O(n)</span>，朴素 <span class="mono">O(n log n)</span></div></div>
+          <div class="kv"><div class="k">空间</div><div class="v"><span class="mono g">O(n)</span>，就一个数组</div></div>
+        </div>
+        <div class="card" style="margin-top:22px">
+          <div class="ct"><span class="ix">VS SEGMENT TREE</span>什么时候该换线段树</div>
+          <p>要<b>区间加 + 区间最值</b>、<b>区间赋值</b>、<b>区间历史版本</b>这类操作时，树状数组撑不住，上<b class="a">线段树</b>。</p>
+          <p>只求<b class="g">和 / 计数 / 逆序对</b>，树状数组几乎总是更优解：代码一半，常数一半。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 11 模板代码 ============ -->
+<section class="slide" data-t="模板代码">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">11</div>
+      <div>
+        <h2>模板代码</h2>
+        <p class="sub">两行循环，背下来即可。<b>下标从 1 开始</b>，这是全篇唯一必须记住的约定。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="codelabel">C++ · 单点改 + 区间和</div>
+        <div class="code"><pre><span class="kw">const int</span> N = <span class="nu">1e6</span> + <span class="nu">5</span>;
+<span class="kw">int</span> n, c[N];                    <span class="cm">// 只需 c，不必存 a</span>
+
+<span class="kw">void</span> <span class="fn">add</span>(<span class="kw">int</span> i, <span class="kw">int</span> v){          <span class="cm">// 单点加</span>
+  <span class="kw">for</span>(; i &lt;= n; i += i &amp; -i) c[i] += v;
+}
+
+<span class="kw">int</span> <span class="fn">sum</span>(<span class="kw">int</span> i){                   <span class="cm">// 前缀和 1..i</span>
+  <span class="kw">int</span> s = <span class="nu">0</span>;
+  <span class="kw">for</span>(; i &gt; <span class="nu">0</span>; i -= i &amp; -i) s += c[i];
+  <span class="kw">return</span> s;
+}
+
+<span class="kw">int</span> <span class="fn">ask</span>(<span class="kw">int</span> l, <span class="kw">int</span> r){            <span class="cm">// 区间和</span>
+  <span class="kw">return</span> <span class="fn">sum</span>(r) - <span class="fn">sum</span>(l - <span class="nu">1</span>);
+}</pre></div>
+        <div class="codenote">
+          <div class="n-k">O(n) BUILD</div>
+          <div class="n-v"><span class="mono">c[i] += a[i]; int j = i+(i&amp;-i); if(j&lt;=n) c[j] += c[i];</span></div>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="codelabel">PYTHON · 同一套逻辑</div>
+        <div class="code"><pre>c = [<span class="nu">0</span>] * (n + <span class="nu">1</span>)
+
+<span class="kw">def</span> <span class="fn">add</span>(i, v):            <span class="cm"># 单点加</span>
+    <span class="kw">while</span> i &lt;= n:
+        c[i] += v
+        i += i &amp; -i
+
+<span class="kw">def</span> <span class="fn">ask</span>(i):              <span class="cm"># 前缀和 1..i</span>
+    s = <span class="nu">0</span>
+    <span class="kw">while</span> i &gt; <span class="nu">0</span>:
+        s += c[i]
+        i -= i &amp; -i
+    <span class="kw">return</span> s
+
+<span class="kw">def</span> <span class="fn">rng</span>(l, r):            <span class="cm"># 区间和</span>
+    <span class="kw">return</span> <span class="fn">ask</span>(r) - <span class="fn">ask</span>(l - <span class="nu">1</span>)</pre></div>
+        <div class="codenote">
+          <div class="n-k">0-INDEXED</div>
+          <div class="n-v">下标从 0 起时要换成 <span class="mono">(i+1) &amp; -(i+1)</span>，容易写错，<b>建议统一 1-indexed</b></div>
+        </div>
+        <div class="codenote">
+          <div class="n-k">SIZE</div>
+          <div class="n-v">数组至少开 <span class="mono">n + 2</span>；要写 <span class="mono">c[r+1]</span> 的场合开 <span class="mono">n + 5</span> 更稳</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 12 扩展一 ============ -->
+<section class="slide" data-t="扩展：区间加 + 区间和">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">12</div>
+      <div>
+        <h2>扩展：区间加 + 区间和</h2>
+        <p class="sub">把「区间加」交给<b>差分数组</b>，再用<b class="g">两个树状数组</b>把前缀和公式凑出来。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 560 310">
+            <text class="cap" x="24" y="24">区间加之后的 a[]（在 [3,7] 上 +x）</text>
+            <path class="ed moss" d="M40 140 L160 140 L160 80 L400 80 L400 140 L520 140" stroke-width="3.2"/>
+            <text class="cap" x="30" y="166">0</text><text class="cap" x="152" y="166">3</text>
+            <text class="cap" x="386" y="166">7</text><text class="cap" x="506" y="166">8</text>
+
+            <text class="cap" x="24" y="212">差分数组 d[] · 只有两个尖峰</text>
+            <path class="lead" d="M40 252 L520 252"/>
+            <rect x="146" y="196" width="28" height="56" rx="7" fill="#D9541F" fill-opacity=".92"/>
+            <rect x="386" y="252" width="28" height="44" rx="7" fill="#A32132" fill-opacity=".85"/>
+            <text class="capv" x="182" y="214">+x 在 l</text>
+            <text class="caph" x="422" y="288">−x 在 r+1</text>
+          </svg>
+          <div class="fcap">FIG.12 · 区间加 = 差分数组上两个单点改</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">TRICK</span>差分之后</div>
+          <p>设 <span class="mono">d[i] = a[i] − a[i−1]</span>，则区间加 <span class="mono">[l,r] += x</span>
+          变成<b class="g">两个单点改</b>：<span class="mono">d[l] += x</span>，<span class="mono">d[r+1] −= x</span>。</p>
+          <div class="chip good" style="margin-top:14px">◆ 「区间加 + 单点查询」只需要 <b>1 个</b> BIT</div>
+        </div>
+        <div class="card volt" style="margin-top:22px">
+          <div class="ct"><span class="ix">TWO TREES</span>为什么是两个 BIT</div>
+          <div class="mono" style="font-size:19px;line-height:1.95;margin-top:10px;color:var(--volt)">
+            Σ<sub>i≤k</sub> a[i] = k·Σ<sub>i≤k</sub> d[i] − Σ<sub>i≤k</sub> d[i]·(i−1)
+          </div>
+          <p>两个 Σ 各开一个 BIT：<b>t1 存 d[i]</b>，<b>t2 存 d[i]·(i−1)</b>。</p>
+        </div>
+        <div class="code" style="margin-top:22px"><pre><span class="kw">void</span> <span class="fn">add</span>(<span class="kw">int</span> i,<span class="kw">int</span> v){
+  <span class="kw">for</span>(;i&lt;=n;i+=i&amp;-i){ t1[i]+=v; t2[i]+=v*(i-<span class="nu">1</span>); }
+}
+<span class="kw">void</span> <span class="fn">range_add</span>(<span class="kw">int</span> l,<span class="kw">int</span> r,<span class="kw">int</span> v){
+  <span class="fn">add</span>(l,v); <span class="fn">add</span>(r+<span class="nu">1</span>,-v);
+}
+<span class="kw">int</span> <span class="fn">sum</span>(<span class="kw">int</span> k){
+  <span class="kw">int</span> s=<span class="nu">0</span>; <span class="kw">for</span>(;k&gt;<span class="nu">0</span>;k-=k&amp;-k) s+=t1[k]*k-t2[k];
+  <span class="kw">return</span> s;
+}</pre></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 13 扩展二 二维 ============ -->
+<section class="slide" data-t="扩展：二维树状数组">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">13</div>
+      <div>
+        <h2>扩展：二维树状数组</h2>
+        <p class="sub">一维的每条循环<b>套一层</b>，就得到「单点加 + 矩形求和」。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 460 330">
+            <rect x="220" y="30" width="60" height="120" rx="6" fill="#D9541F" fill-opacity=".22"/>
+            <g class="lead">
+              <path d="M100 30 L340 30 M100 60 L340 60 M100 90 L340 90 M100 120 L340 120
+                M100 150 L340 150 M100 180 L340 180 M100 210 L340 210 M100 240 L340 240 M100 270 L340 270
+                M100 30 L100 270 M130 30 L130 270 M160 30 L160 270 M190 30 L190 270 M220 30 L220 270
+                M250 30 L250 270 M280 30 L280 270 M310 30 L310 270 M340 30 L340 270"/>
+            </g>
+            <rect x="220" y="30" width="60" height="120" rx="6" fill="none" stroke="#D9541F" stroke-width="2.6"/>
+
+            <text class="cap" x="96" y="22">1</text><text class="cap" x="126" y="22">2</text>
+            <text class="cap" x="156" y="22">3</text><text class="cap" x="186" y="22">4</text>
+            <text class="capv" x="216" y="22">5</text><text class="capv" x="246" y="22">6</text>
+            <text class="cap" x="276" y="22">7</text><text class="cap" x="306" y="22">8</text>
+
+            <text class="cap" x="82" y="55">1</text><text class="cap" x="82" y="85">2</text>
+            <text class="cap" x="82" y="115">3</text><text class="cap" x="82" y="145">4</text>
+            <text class="cap" x="82" y="175">5</text><text class="cap" x="82" y="205">6</text>
+            <text class="cap" x="82" y="235">7</text><text class="cap" x="82" y="265">8</text>
+
+            <text class="capv" x="100" y="300">c[4][6] 管的矩形 · 行 1..4 × 列 5..6</text>
+            <text class="cap" x="100" y="322">lowbit(4) = 4 行　·　lowbit(6) = 2 列</text>
+          </svg>
+          <div class="fcap">FIG.13 · c[i][j] 管一个 lowbit(i) × lowbit(j) 的小矩形</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">TWO LOOPS</span>双层循环</div>
+          <div class="code" style="margin-top:12px"><pre><span class="kw">void</span> <span class="fn">add</span>(<span class="kw">int</span> x,<span class="kw">int</span> y,<span class="kw">int</span> v){
+  <span class="kw">for</span>(<span class="kw">int</span> i=x;i&lt;=n;i+=i&amp;-i)
+    <span class="kw">for</span>(<span class="kw">int</span> j=y;j&lt;=m;j+=j&amp;-j)
+      c[i][j] += v;
+}
+<span class="kw">int</span> <span class="fn">sum</span>(<span class="kw">int</span> x,<span class="kw">int</span> y){
+  <span class="kw">int</span> s=<span class="nu">0</span>;
+  <span class="kw">for</span>(<span class="kw">int</span> i=x;i&gt;<span class="nu">0</span>;i-=i&amp;-i)
+    <span class="kw">for</span>(<span class="kw">int</span> j=y;j&gt;<span class="nu">0</span>;j-=j&amp;-j)
+      s += c[i][j];
+  <span class="kw">return</span> s;
+}</pre></div>
+        </div>
+        <div class="card volt" style="margin-top:22px">
+          <div class="ct"><span class="ix">RECTANGLE</span>矩形求和 = 容斥</div>
+          <div class="mono" style="font-size:18px;line-height:1.9;margin-top:10px;color:var(--volt)">
+            sum(x2,y2) − sum(x1−1,y2)<br>− sum(x2,y1−1) + sum(x1−1,y1−1)
+          </div>
+          <p>代价 <b class="g">O(log n · log m)</b>，空间 <b>O(n·m)</b>。</p>
+          <div class="chip warn" style="margin-top:14px">◆ 二维「区间加 + 矩形求和」需要 <b>4 个</b>二维 BIT</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 14 应用图谱 ============ -->
+<section class="slide" data-t="应用图谱">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">14</div>
+      <div>
+        <h2>应用图谱</h2>
+        <p class="sub">八个最常见落点。<b>题面出现「排名 / 计数 / 逆序」先想它。</b></p>
+      </div>
+    </div>
+
+    <div class="apps">
+      <div class="app rv" style="--d:.05s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#D9541F" stroke-width="1.6" fill="none"><path d="M8 34 L22 12 L34 22 L46 8 L56 16"/></g><g stroke="#C7B18B" stroke-width="1.3" fill="none" stroke-dasharray="3 3"><path d="M8 34 L56 34"/></g><g fill="#FFF" stroke="#D9541F" stroke-width="1.6"><circle cx="8" cy="34" r="3.2"/><circle cx="22" cy="12" r="3.2"/><circle cx="34" cy="22" r="3.2"/><circle cx="46" cy="8" r="3.2"/><circle cx="56" cy="16" r="3.2"/></g></svg>
+        <h3>逆序对 / 小和</h3><p>从右往左查「比它大的已有几个」。</p><div class="tg">O(n log n)</div>
+      </div>
+
+      <div class="app rv" style="--d:.1s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#E7DCC8" stroke-width="1.4" fill="none"><rect x="8" y="8" width="48" height="28" rx="4"/></g><g stroke="#2F7D5D" stroke-width="1.8" fill="none"><path d="M14 32 L14 16 M22 32 L22 12 M30 32 L30 20 M38 32 L38 10 M46 32 L46 18 M52 32 L52 14"/></g><g stroke="#D9541F" stroke-width="1.7" fill="none"><path d="M8 24 L56 24"/></g></svg>
+        <h3>动态排名</h3><p>区间第 k 小：值域 BIT + 二分。</p><div class="tg">O(log² n)</div>
+      </div>
+
+      <div class="app rv" style="--d:.15s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#E7DCC8" stroke-width="1.3" fill="none"><rect x="8" y="6" width="48" height="32" rx="3"/><path d="M8 14 L56 14 M8 22 L56 22 M8 30 L56 30 M20 6 L20 38 M32 6 L32 38 M44 6 L44 38"/></g><rect x="20" y="14" width="24" height="16" fill="#D9541F" fill-opacity=".22"/><g fill="#FFF" stroke="#D9541F" stroke-width="1.6"><circle cx="26" cy="18" r="2.6"/><circle cx="36" cy="24" r="2.6"/><circle cx="30" cy="28" r="2.6"/></g></svg>
+        <h3>二维数点</h3><p>矩形内有多少个点，离线扫描线。</p><div class="tg">O(n log² n)</div>
+      </div>
+
+      <div class="app rv" style="--d:.2s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#2F7D5D" stroke-width="1.8" fill="none"><path d="M8 34 L20 26 L32 22 L44 12 L56 8"/></g><g stroke="#E7DCC8" stroke-width="1.3" fill="none" stroke-dasharray="2 3"><path d="M8 34 L20 26 L32 22 L44 12"/><path d="M8 34 L32 22 L56 8"/></g><g fill="#FFF" stroke="#2F7D5D" stroke-width="1.6"><circle cx="8" cy="34" r="3"/><circle cx="20" cy="26" r="3"/><circle cx="32" cy="22" r="3"/><circle cx="44" cy="12" r="3"/><circle cx="56" cy="8" r="3"/></g></svg>
+        <h3>LIS 计数</h3><p>最长上升子序列的长度与方案数。</p><div class="tg">O(n log n)</div>
+      </div>
+
+      <div class="app rv" style="--d:.25s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#E7DCC8" stroke-width="1.3" fill="none"><path d="M8 22 L20 12 L32 22 L20 32 Z"/><path d="M32 22 L44 12 L56 22 L44 32 Z"/></g><g fill="#FFF" stroke="#D9541F" stroke-width="1.6"><circle cx="20" cy="12" r="3"/><circle cx="20" cy="32" r="3"/><circle cx="44" cy="12" r="3"/><circle cx="44" cy="32" r="3"/></g></svg>
+        <h3>离散化 + 计数</h3><p>值域大时先排序离散，再开 BIT。</p><div class="tg">O(n log n)</div>
+      </div>
+
+      <div class="app rv" style="--d:.3s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#2F7D5D" stroke-width="1.8" fill="none"><path d="M8 30 L20 30 L20 18 L32 18 L32 24 L44 24 L44 12 L56 12"/></g><g stroke="#B8860B" stroke-width="1.4" fill="none" stroke-dasharray="3 3"><path d="M8 22 L56 22"/></g><g fill="#FFF" stroke="#2F7D5D" stroke-width="1.6"><circle cx="20" cy="30" r="2.8"/><circle cx="32" cy="18" r="2.8"/><circle cx="44" cy="24" r="2.8"/></g></svg>
+        <h3>区间加 · 区间和</h3><p>差分 + 双 BIT，见第 12 页。</p><div class="tg">2 TREES</div>
+      </div>
+
+      <div class="app rv" style="--d:.35s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#E7DCC8" stroke-width="1.4" fill="none"><path d="M32 8 L16 22 M32 8 L48 22 M16 22 L8 36 M16 22 L24 36 M48 22 L40 36 M48 22 L56 36"/></g><g stroke="#D9541F" stroke-width="2" fill="none"><path d="M32 8 L16 22 L24 36"/></g><g fill="#FFF" stroke="#D9541F" stroke-width="1.6"><circle cx="32" cy="8" r="3.4"/><circle cx="16" cy="22" r="3"/><circle cx="24" cy="36" r="3"/></g><g fill="#FFF" stroke="#E7DCC8" stroke-width="1.5"><circle cx="48" cy="22" r="3"/><circle cx="40" cy="36" r="3"/><circle cx="56" cy="36" r="3"/></g></svg>
+        <h3>树链剖分</h3><p>每条重链挂一个 BIT，合并查询。</p><div class="tg">HLD</div>
+      </div>
+
+      <div class="app rv" style="--d:.4s">
+        <svg class="thumb" viewBox="0 0 64 44"><g stroke="#E7DCC8" stroke-width="1.3" fill="none"><path d="M8 36 L8 12 L24 12 M24 12 L24 28 M24 28 L40 28 M40 28 L40 8 L56 8"/></g><g stroke="#D9541F" stroke-width="2" fill="none"><path d="M8 36 L8 22 L24 22"/></g><g fill="#FFF" stroke="#D9541F" stroke-width="1.6"><circle cx="8" cy="22" r="3"/><circle cx="24" cy="22" r="3"/></g><g fill="#FFF" stroke="#A32132" stroke-width="1.6"><circle cx="56" cy="8" r="3"/></g></svg>
+        <h3>离线扫描线</h3><p>按一维排序，另一维用 BIT 维护。</p><div class="tg">SWEEP LINE</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 15 套路与坑 · 总结 ============ -->
+<section class="slide" data-t="套路 · 坑 · 速查">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">15</div>
+      <div>
+        <h2>套路 · 坑 · 速查</h2>
+        <p class="sub">离开这一页之前，把下面这几行带走就够了。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="full rv" style="--d:.06s">
+        <div class="card volt" style="padding:42px">
+          <div class="mono" style="font-size:14px;letter-spacing:.16em;color:var(--muted)">ONE SENTENCE</div>
+          <div style="font-family:var(--disp);font-size:46px;font-weight:600;letter-spacing:-.022em;
+            line-height:1.32;margin-top:16px">
+            树状数组 = 用 <span class="g">lowbit</span> 分层缓存前缀和，<br>
+            让「改」和「查」都只跳 <span class="g">O(log n)</span> 步。
+          </div>
+        </div>
+      </div>
+
+      <div class="c1-6 rv" style="--d:.14s">
+        <div class="card">
+          <div class="ct"><span class="ix">SOLVING ROUTINE</span>五步套路</div>
+          <ol class="steps" style="margin-top:12px">
+            <li>题面出现<b>「排名 / 计数 / 逆序对 / 区间和」</b>，先想 BIT。</li>
+            <li>确定<b>值域</b>，需要就<b>离散化</b>，下标统一从 <b class="g">1</b> 起。</li>
+            <li>每条<b>修改</b> = 一次 <span class="mono g">add</span>。</li>
+            <li>每个<b>询问</b> = 一到两次 <span class="mono g">sum</span>。</li>
+            <li>要<b>区间加</b>换<b>差分</b>；要<b>区间加+区间和</b>开两个 BIT。</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.2s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">PITFALLS</span>五个最常见的坑</div>
+          <ul class="pit" style="margin-top:12px">
+            <li>下标从 <b class="p">0</b> 开始，<span class="mono">i &amp; -i</span> 就全错位。</li>
+            <li>数组开小了：<span class="mono">n+2</span> 只是及格，<b>再开一点</b>。</li>
+            <li>查询写成 <span class="mono p">i &gt;= 0</span>，死循环在 i = 0。</li>
+            <li>区间和忘了 <span class="mono">sum(l−1)</span> 的 <b>l−1</b>，边界差一位。</li>
+            <li>两个 BIT 时，<span class="mono p">t2</span> 忘了乘 <span class="mono">(i−1)</span>。</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="full rv" style="--d:.28s">
+        <div class="card" style="margin-top:22px">
+          <div class="mono" style="font-size:14px;letter-spacing:.16em;color:var(--muted)">CHEAT SHEET</div>
+          <div class="grid" style="margin-top:18px;grid-template-columns:repeat(4,1fr);gap:22px">
+            <div>
+              <div class="mono" style="font-size:14px;letter-spacing:.13em;color:var(--muted)">LOWBIT</div>
+              <div class="mono g" style="font-size:20px;margin-top:6px">i &amp; -i</div>
+            </div>
+            <div>
+              <div class="mono" style="font-size:14px;letter-spacing:.13em;color:var(--muted)">ADD</div>
+              <div class="mono g" style="font-size:20px;margin-top:6px">i += lowbit(i)</div>
+            </div>
+            <div>
+              <div class="mono" style="font-size:14px;letter-spacing:.13em;color:var(--muted)">SUM</div>
+              <div class="mono g" style="font-size:20px;margin-top:6px">i −= lowbit(i)</div>
+            </div>
+            <div>
+              <div class="mono" style="font-size:14px;letter-spacing:.13em;color:var(--muted)">RANGE</div>
+              <div class="mono g" style="font-size:20px;margin-top:6px">sum(r) − sum(l−1)</div>
+            </div>
+          </div>
+        </div>
+        <div class="tagrow" style="margin-top:24px">
+          <span class="tag on">单点改</span><span class="tag moss">区间求和</span>
+          <span class="tag on">区间加</span><span class="tag on">二维</span>
+          <span class="tag moss">逆序对</span><span class="tag moss">动态排名</span>
+          <span class="tag">O(log n) · O(n) 空间</span>
+        </div>
+        <div class="mono" style="margin-top:32px;font-size:14px;letter-spacing:.16em;color:var(--muted)">
+          BINARY INDEXED TREE · FENWICK TREE · END OF DECK
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function(){
+"use strict";
+
+var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+var total = slides.length;
+var current = 0;
+
+/* ---------- 右侧 rail ---------- */
+var rail = document.getElementById('rail');
+slides.forEach(function(s, i){
+  var b = document.createElement('button');
+  b.innerHTML = '<span>' + (i+1 < 10 ? '0' : '') + (i+1) + '</span><i></i>';
+  b.title = s.dataset.t || '';
+  b.addEventListener('click', function(){ go(i); });
+  rail.appendChild(b);
+});
+var railBtns = Array.prototype.slice.call(rail.children);
+
+/* ---------- 翻页 ---------- */
+function go(i){
+  if(i < 0) i = 0;
+  if(i > total - 1) i = total - 1;
+  slides[i].scrollIntoView({ behavior:'smooth', block:'start' });
+}
+document.getElementById('prevBtn').addEventListener('click', function(){ go(current - 1); });
+document.getElementById('nextBtn').addEventListener('click', function(){ go(current + 1); });
+
+document.addEventListener('keydown', function(e){
+  var tag = (e.target.tagName || '').toLowerCase();
+  if(tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if(e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' '){
+    e.preventDefault(); go(current + 1);
+  }else if(e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp'){
+    e.preventDefault(); go(current - 1);
+  }else if(e.key === 'Home'){ e.preventDefault(); go(0); }
+  else if(e.key === 'End'){ e.preventDefault(); go(total - 1); }
+});
+
+/* ---------- 进度 / 计数 ---------- */
+var prog = document.getElementById('prog');
+var countEl = document.getElementById('count');
+function pad2(n){ return (n < 10 ? '0' : '') + n; }
+
+var io = new IntersectionObserver(function(ents){
+  ents.forEach(function(e){
+    if(e.isIntersecting && e.intersectionRatio > 0.35){
+      var i = slides.indexOf(e.target);
+      if(i < 0) return;
+      current = i;
+      e.target.classList.add('on');
+      countEl.textContent = pad2(i + 1) + ' / ' + pad2(total);
+      prog.style.width = ((i + 1) / total * 100) + '%';
+      railBtns.forEach(function(b, k){ b.classList.toggle('on', k === i); });
+    }
+  });
+}, { threshold: [0, 0.35, 0.7] });
+slides.forEach(function(s){ io.observe(s); });
+slides[0].classList.add('on');
+
+/* ---------- 计时器 ---------- */
+var t0 = Date.now(), clock = document.getElementById('clock');
+setInterval(function(){
+  var s = Math.floor((Date.now() - t0) / 1000);
+  var over = s > 240;
+  var v = over ? 240 : s;
+  clock.textContent = pad2(Math.floor(v / 60)) + ':' + pad2(v % 60) + ' / 04:00';
+  if(over) clock.classList.add('done');
+}, 1000);
+
+/* ---------- 复杂度条 ---------- */
+var io2 = new IntersectionObserver(function(ents){
+  ents.forEach(function(e){
+    if(e.isIntersecting){
+      var bars = e.target.querySelectorAll('.track i');
+      Array.prototype.forEach.call(bars, function(b, k){
+        setTimeout(function(){ b.style.width = b.dataset.w + '%'; }, 120 + k * 140);
+      });
+      io2.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.25 });
+if(slides[10]) io2.observe(slides[10]);
+
+/* ============================================================
+   09 号图：查询 / 修改 交互演示
+   ============================================================ */
+(function bitDemo(){
+  var svg = document.getElementById('demoSvg');
+  if(!svg) return;
+
+  var A0 = [3, 1, 4, 1, 5, 9, 2, 6];        // a[1..8]
+  var C0 = [3, 4, 4, 9, 5, 14, 2, 31];      // c[1..8]
+
+  function colX(i){ return 24 + (i - 1) * 58; }
+
+  var cells = [], texts = [], cvals = [];
+  for(var i = 1; i <= 8; i++){
+    cells.push(document.getElementById('dc' + i));
+    texts.push(document.getElementById('dt' + i));
+    cvals.push(document.getElementById('dv' + i));
+  }
+  var bar = document.getElementById('dbar');
+  var barText = document.getElementById('dbartext');
+  var stepEl = document.getElementById('dstep');
+  var resEl = document.getElementById('dresult');
+
+  // query(7)：7 → 6 → 4
+  var QUERY = [
+    { i:7, lo:7, hi:7, v:2  },
+    { i:6, lo:5, hi:6, v:14 },
+    { i:4, lo:1, hi:4, v:9  }
+  ];
+  // update(3,+2)：3 → 4 → 8
+  var UPDATE = [
+    { i:3, lo:3, hi:3, from:4,  to:6  },
+    { i:4, lo:1, hi:4, from:9,  to:11 },
+    { i:8, lo:1, hi:8, from:31, to:33 }
+  ];
+
+  var timers = [], mode = 0;
+
+  function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+
+  function reset(){
+    clearTimers();
+    mode = 0;
+    for(var k = 0; k < 8; k++){
+      cells[k].setAttribute('class', 'cell');
+      texts[k].setAttribute('class', 'lb');
+      texts[k].textContent = A0[k];
+      cvals[k].setAttribute('class', 'cap');
+      cvals[k].textContent = C0[k];
+    }
+    bar.setAttribute('width', 0);
+    barText.textContent = '';
+    stepEl.textContent = '准备就绪 · 点击下方按钮';
+    resEl.textContent = '—';
+  }
+
+  function showBar(lo, hi, label, color){
+    var x = colX(lo), w = colX(hi) + 52 - x;
+    bar.setAttribute('x', x);
+    bar.setAttribute('width', w);
+    bar.setAttribute('fill', color);
+    bar.setAttribute('fill-opacity', '0.82');
+    barText.setAttribute('x', x + 12);
+    barText.textContent = label;
+  }
+
+  function playQuery(){
+    if(mode === 1) return;
+    reset();
+    mode = 1;
+    var acc = 0;
+    QUERY.forEach(function(s, k){
+      timers.push(setTimeout(function(){
+        cells[s.i - 1].setAttribute('class', 'cell moss');
+        texts[s.i - 1].setAttribute('class', 'lb moss');
+        showBar(s.lo, s.hi, 'c[' + s.i + '] = ' + s.v + '　覆盖 ' + s.lo + '..' + s.hi, '#2F7D5D');
+        acc += s.v;
+        stepEl.textContent = 'STEP ' + (k + 1) + ' · 取 c[' + s.i + '] = ' + s.v + '　累计 ' + acc;
+        resEl.textContent = (k + 1 < QUERY.length)
+          ? 'i → ' + QUERY[k + 1].i + '　（i −= lowbit）'
+          : 'query(7) = ' + acc + '　·　共 3 步';
+      }, 220 + k * 850));
+    });
+  }
+
+  function playUpdate(){
+    if(mode === 2) return;
+    reset();
+    mode = 2;
+    UPDATE.forEach(function(s, k){
+      timers.push(setTimeout(function(){
+        cells[s.i - 1].setAttribute('class', 'cell volt');
+        texts[s.i - 1].setAttribute('class', 'lb volt');
+        showBar(s.lo, s.hi, 'c[' + s.i + ']　' + s.from + ' → ' + s.to, '#D9541F');
+        cvals[s.i - 1].setAttribute('class', 'capv');
+        cvals[s.i - 1].textContent = s.to;
+        stepEl.textContent = 'STEP ' + (k + 1) + ' · c[' + s.i + '] += 2　' + s.from + ' → ' + s.to;
+        resEl.textContent = (k + 1 < UPDATE.length)
+          ? 'i → ' + UPDATE[k + 1].i + '　（i += lowbit）'
+          : 'update(3, +2) 完成 · 再查 query(7) = 27';
+      }, 220 + k * 850));
+    });
+  }
+
+  document.getElementById('playQuery').addEventListener('click', playQuery);
+  document.getElementById('playUpdate').addEventListener('click', playUpdate);
+  document.getElementById('demoReset').addEventListener('click', reset);
+
+  reset();
+})();
+
+})();
+</script>
+</body>
+</html>
