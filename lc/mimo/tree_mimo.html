@@ -1,0 +1,1931 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一条链，两个岔 · 二叉树 · 30 分钟</title>
+
+<style>
+:root{
+  --canvas:#F2EFE8; --elev:#FBF9F5;
+  --ink:#15171B; --muted:#7A776E;
+  --volt:#FF4D1F; --blue:#1B4AE0; --green:#0B7A55; --red:#C22A1F;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+  --sans:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;border-radius:0}
+html,body{height:100%;background:#26282C;overflow:hidden;
+  font-family:var(--sans);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;
+  transform:translate(-50%,-50%) scale(var(--s,1));background:var(--canvas);
+  overflow:hidden}
+
+.slide{position:absolute;left:0;right:0;top:0;bottom:46px;display:none;
+  flex-direction:column;padding:28px 64px 18px 124px;color:var(--ink);overflow:hidden}
+.slide.on{display:flex}
+
+.eb{font:500 10px/1.2 var(--mono);letter-spacing:.22em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:6px}
+.h{font:700 34px/1.15 var(--sans);letter-spacing:-.012em}
+.h.big{font:900 44px/1.12 var(--sans);letter-spacing:-.022em;margin-left:-2px}
+.sb{font:400 15px/1.5 var(--sans);margin-top:5px}
+.hd{margin-bottom:10px}
+.bd{flex:1;display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch}
+.two-75{display:grid;grid-template-columns:7fr 5fr;gap:20px;align-items:start}
+.two-57{display:grid;grid-template-columns:5fr 7fr;gap:20px;align-items:start}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:stretch}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+
+.plate{background:var(--elev);border:2px solid var(--ink);padding:12px 14px}
+.card-k{font:500 10px/1.2 var(--mono);letter-spacing:.16em;color:var(--muted);margin-bottom:5px}
+.p{font:400 13px/1.55 var(--sans)}
+.p b{font-weight:700}
+.mono{font-family:var(--mono)}
+.tag{display:inline-block;font:500 10px/1 var(--mono);letter-spacing:.12em;
+  border:2px solid var(--ink);padding:5px 8px}
+.tag.blue{color:var(--blue);border-color:var(--blue)}
+.tag.green{color:var(--green);border-color:var(--green)}
+.tag.volt{color:var(--volt);border-color:var(--volt)}
+
+.codeplate{background:var(--elev);border:2px solid var(--ink);
+  border-right:4px solid var(--rule,var(--blue));padding:0;
+  display:flex;flex-direction:column;min-height:0}
+.state{min-height:34px;display:flex;align-items:center;gap:8px;padding:6px 11px;
+  border-bottom:2px solid var(--ink);flex-wrap:wrap;flex:0 0 auto}
+.state .sl{font:500 10px/1 var(--mono);letter-spacing:.14em;color:var(--muted)}
+.state .sv{font:500 13px/1 var(--mono);color:var(--ink)}
+pre{font:400 12px/1.5 var(--mono);padding:10px 13px;
+  white-space:pre;color:var(--ink);
+  flex:1 1 auto;min-height:0;overflow:auto}
+pre .kw{color:var(--blue);font-weight:700}
+pre .cm{color:var(--muted)}
+pre .st{color:var(--green)}
+pre .nu{color:var(--volt)}
+
+.instr{border:2px solid var(--ink);padding:6px 12px;display:flex;gap:9px;
+  align-items:baseline;align-self:flex-start;margin-top:10px;max-width:940px}
+.instr span{font:500 10px/1.3 var(--mono);letter-spacing:.12em;color:var(--muted);white-space:nowrap}
+.instr p{font:400 13px/1.35 var(--sans)}
+.foot{margin-top:6px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.foot a{font:500 10px/1 var(--mono);letter-spacing:.06em;color:var(--ink);
+  border:2px solid var(--ink);padding:4px 7px;text-decoration:none}
+.foot a:hover{background:var(--ink);color:var(--canvas)}
+.foot .note{font:400 11px/1.4 var(--mono);color:var(--muted)}
+
+.rail{position:absolute;left:56px;top:28px;bottom:64px;width:56px;display:flex;
+  flex-direction:column;align-items:center;font-family:var(--mono);color:var(--muted);
+  pointer-events:none}
+.rail .ch{font:700 11px/1 var(--mono);letter-spacing:.14em;writing-mode:vertical-rl;
+  margin-bottom:10px;color:var(--ink)}
+.rail .q{font:500 10px/1 var(--mono);letter-spacing:.18em;writing-mode:vertical-rl;
+  max-height:150px;overflow:hidden}
+.rail .line{flex:1;width:2px;background:currentColor;opacity:.32;position:relative;margin:10px 0}
+.rail .tick{position:absolute;left:-3px;width:8px;height:2px;background:currentColor}
+.rail .sq{position:absolute;left:-3px;width:8px;height:8px;background:var(--volt);
+  transition:top 400ms cubic-bezier(.2,.8,.2,1);transform:translateY(-50%)}
+.rail .sec{font:700 11px/1 var(--mono);letter-spacing:.18em;writing-mode:vertical-rl;margin-top:10px}
+
+.ctrl{position:absolute;left:0;right:0;bottom:0;height:46px;background:var(--canvas);
+  border-top:2px solid var(--ink);display:flex;align-items:center;gap:10px;
+  padding:0 20px 0 24px}
+.pline{position:absolute;left:0;top:0;height:3px;width:100%;background:rgba(21,23,27,.12)}
+.pline i{display:block;height:100%;width:0;background:var(--volt);
+  transition:width 320ms cubic-bezier(.2,.8,.2,1)}
+.navbtn{font:500 11px/1 var(--mono);letter-spacing:.10em;color:var(--ink);
+  background:transparent;border:2px solid var(--ink);padding:6px 11px;cursor:pointer}
+.navbtn:hover{background:var(--volt);border-color:var(--volt);color:#fff}
+.counter{font:700 13px/1 var(--mono);letter-spacing:.12em;color:var(--ink);
+  background:transparent;border:2px solid var(--ink);padding:5px 11px;cursor:pointer}
+.counter:hover{background:var(--ink);color:var(--canvas)}
+.ctrl-ch{font:500 11px/1 var(--mono);letter-spacing:.14em;color:var(--muted)}
+.hint{margin-left:auto;font:400 11px/1 var(--mono);color:var(--muted);letter-spacing:.04em}
+.edge{position:absolute;top:0;bottom:46px;width:92px;border:none;background:transparent;
+  color:var(--ink);opacity:.12;font:400 40px/1 var(--sans);cursor:pointer;pointer-events:none}
+.edge.l{left:0}.edge.r{right:0}
+#stage:hover .edge{opacity:.22}
+
+.index{position:absolute;inset:0 0 46px 0;background:rgba(21,23,27,.96);
+  color:#F2EFE8;display:none;flex-direction:column;padding:30px 46px;z-index:30}
+.index.on{display:flex}
+.index h3{font:700 22px var(--sans);margin-bottom:4px}
+.index .sub{font:400 11px var(--mono);color:#8E887B;letter-spacing:.12em;margin-bottom:16px}
+.igrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;flex:1;align-content:start}
+.icell{border:2px solid #3A3E45;padding:9px 10px;cursor:pointer;background:transparent;
+  text-align:left;color:#F2EFE8;font-family:var(--sans)}
+.icell:hover{border-color:var(--volt)}
+.icell:focus-visible{outline:2px solid var(--volt);outline-offset:2px}
+.icell.cur{border-color:var(--volt);background:rgba(255,77,31,.16)}
+.icell .n{font:700 10px var(--mono);letter-spacing:.14em;color:#8E887B}
+.icell .t{font:500 12px/1.3 var(--sans);margin-top:4px}
+.icell .c{font:400 9px var(--mono);letter-spacing:.12em;color:var(--volt);margin-top:5px}
+
+.tree,.tube{display:block;width:100%;height:auto;overflow:visible}
+.tube .wall{stroke:var(--ink);stroke-width:3;fill:none;stroke-linejoin:round}
+.tube .seal{stroke:var(--ink);stroke-width:6;stroke-linecap:round}
+.tube .mouth-in{stroke:var(--blue);stroke-width:3;stroke-linecap:round}
+.tube .mouth-out{stroke:var(--green);stroke-width:3;stroke-linecap:round}
+.tube .arw-in{stroke:var(--blue);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tube .arw-out{stroke:var(--green);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tube .lbl{font:500 12px var(--mono);fill:var(--muted)}
+.tube .lbl-ink{font:500 12px var(--mono);fill:var(--ink)}
+
+.tnode circle{fill:var(--elev);stroke:var(--ink);stroke-width:2;
+  transition:fill 380ms ease,stroke 380ms ease}
+.tnode text{font:500 15px var(--mono);fill:var(--ink);text-anchor:middle;
+  dominant-baseline:middle;transition:fill 380ms ease}
+.tnode.active circle{fill:var(--volt);stroke:var(--volt)}
+.tnode.active text{fill:#fff}
+.tnode.visited circle{stroke:var(--green)}
+.tnode.visited text{fill:var(--green)}
+.tnode.visited.active circle{fill:var(--volt);stroke:var(--volt)}
+.tnode.visited.active text{fill:#fff}
+.tedge{stroke:var(--ink);stroke-width:2;fill:none}
+
+.chip{transition:transform 400ms cubic-bezier(.2,.8,.2,1),opacity 220ms linear}
+.chip rect{fill:var(--elev);stroke:var(--ink);stroke-width:2}
+.chip text{font:500 14px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:middle}
+.chip.in rect{stroke:var(--blue)}
+.chip.out rect{stroke:var(--green)}
+.chip.hot rect{fill:var(--volt);stroke:var(--volt)}
+.chip.hot text{fill:#fff}
+
+.reveal{opacity:0;transform:translateY(8px)}
+.slide.on .reveal{animation:rv 360ms cubic-bezier(.16,1,.3,1) forwards}
+@keyframes rv{to{opacity:1;transform:translateY(0)}}
+
+.morph{position:relative;height:260px}
+.morph .lnk,.morph .tre{position:absolute;left:0;right:0}
+.morph .lnk{opacity:0;transform:translateY(20px)}
+.morph .tre{opacity:0;transform:translateY(40px)}
+.slide.on .morph .lnk{opacity:1;transform:translateY(0);transition:all 700ms cubic-bezier(.16,1,.3,1) .1s}
+.slide.on .morph .tre{opacity:1;transform:translateY(90px);transition:all 700ms cubic-bezier(.16,1,.3,1) .5s}
+.morph .cap{font:700 11px var(--mono);letter-spacing:.14em}
+
+.opt{position:relative;border:2px solid var(--ink);padding:9px 12px;display:flex;
+  align-items:center;gap:12px;background:var(--elev)}
+.opt .oi{font:700 12px var(--mono);color:var(--muted)}
+.opt .os{font:500 16px var(--mono);letter-spacing:.06em}
+.opt.ans{border-color:var(--red);border-width:3px}
+.opt.ans .oi{color:var(--red)}
+.opt .why{margin-left:auto;font:500 11px var(--mono);color:var(--red);opacity:0}
+.slide.on .opt.ans .why{animation:rv 300ms ease-out .6s forwards}
+
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px}
+th,td{border-bottom:2px solid var(--ink);padding:5px 7px;text-align:left;vertical-align:top}
+th{font:700 10px var(--mono);letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+td.zh{font-family:var(--sans);font-size:12px;line-height:1.4}
+td a{color:var(--ink);text-decoration:none;border-bottom:1px dashed var(--muted);font-family:var(--sans)}
+td a:hover{color:var(--volt);border-bottom-color:var(--volt)}
+
+.steps{display:flex;gap:0;align-items:stretch}
+.step{flex:1;border:2px solid var(--ink);border-left-width:0;padding:10px 11px}
+.step:first-child{border-left-width:2px}
+.step .n{font:700 10px var(--mono);letter-spacing:.16em;color:var(--volt)}
+.step .t{font:700 13px/1.3 var(--sans);margin:5px 0 4px}
+.step .d{font:400 11px/1.4 var(--sans);color:var(--muted)}
+.trace{background:#F7EDE9;border:2px solid var(--red);border-right:4px solid var(--red)}
+.trace pre{color:var(--ink);flex:0 0 auto}
+.trace pre .er{color:var(--red);font-weight:700}
+.stackline{display:flex;flex-direction:column;gap:5px}
+.stackline div{border:2px solid var(--ink);padding:5px 9px;font:500 12px var(--mono);background:var(--elev)}
+.stackline div.top{border-color:var(--volt);color:var(--volt)}
+.qr{width:104px;height:104px;border:2px solid var(--ink);display:grid;
+  grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);flex:0 0 auto}
+.qr i{background:var(--ink);margin:1px}
+.seqline{display:flex;gap:6px;align-items:center;font-family:var(--mono);font-size:13px;flex-wrap:wrap}
+.seqline .slot{display:inline-block;min-width:22px;height:26px;border:2px solid var(--muted);
+  text-align:center;line-height:22px;color:var(--muted);padding:0 4px}
+.seqline .slot.on{border-color:var(--volt);color:var(--volt);font-weight:700}
+
+/* ---------- fx controls ---------- */
+.fxctrl{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.fxbtn{font:500 10px/1 var(--mono);letter-spacing:.08em;color:var(--ink);
+  background:transparent;border:2px solid var(--ink);padding:5px 9px;cursor:pointer;
+  transition:background 120ms ease,color 120ms ease}
+.fxbtn:hover{background:var(--ink);color:var(--canvas)}
+.fxbtn[data-state="playing"]{background:var(--volt);border-color:var(--volt);color:#fff}
+
+.help{position:absolute;left:0;right:0;top:0;bottom:46px;background:rgba(21,23,27,.95);
+  color:var(--canvas);display:none;padding:56px 80px;z-index:40}
+.help.on{display:block}
+.help h3{font:700 24px var(--sans);margin-bottom:16px}
+.help table{font-size:13px}
+.help td{border-bottom-color:#3A3E45}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  .reveal{opacity:1 !important;transform:none !important}
+  .morph .lnk{opacity:1 !important;transform:none !important}
+  .morph .tre{opacity:1 !important;transform:translateY(90px) !important}
+}
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- ================= 01 ================= -->
+<section class="slide" data-ch="序" data-sec="开场" data-q="一条链，两个岔" data-title="一条链，两个岔">
+  <div class="eb">BINARY TREE · 01 / 30</div>
+  <div class="two-75" style="flex:1">
+    <div class="col" style="justify-content:center">
+      <h2 class="h big">一条链，<br>两个岔</h2>
+      <div class="sb">二叉树只回答两个问题：<b>先处理谁？用谁的答案算我？</b></div>
+      <div class="instr reveal" style="margin-top:12px"><span>这一步 →</span><p>用一张图记住二叉树和链表的全部差别。</p></div>
+    </div>
+    <div class="morph">
+      <div class="lnk">
+        <div class="cap" style="color:var(--blue)">LINKED LIST · 一维</div>
+        <svg class="tube" viewBox="0 0 430 80">
+          <g class="chip in" transform="translate(30,14)"><rect width="60" height="52" rx="8"/><text x="30" y="27">A</text></g>
+          <path class="arw-in" d="M92,40 H122"/>
+          <g class="chip in" transform="translate(124,14)"><rect width="60" height="52" rx="8"/><text x="30" y="27">B</text></g>
+          <path class="arw-in" d="M186,40 H216"/>
+          <g class="chip in" transform="translate(218,14)"><rect width="60" height="52" rx="8"/><text x="30" y="27">C</text></g>
+        </svg>
+      </div>
+      <div class="tre">
+        <div class="cap" style="color:var(--green)">BINARY TREE · 二维</div>
+        <svg class="tree" viewBox="0 0 430 180">
+          <line class="tedge" x1="215" y1="28" x2="125" y2="98"/>
+          <line class="tedge" x1="215" y1="28" x2="305" y2="98"/>
+          <line class="tedge" x1="125" y1="98" x2="65" y2="158"/>
+          <line class="tedge" x1="125" y1="98" x2="185" y2="158"/>
+          <g class="tnode"><circle cx="215" cy="28" r="20"/><text x="215" y="28">A</text></g>
+          <g class="tnode"><circle cx="125" cy="98" r="20"/><text x="125" y="98">B</text></g>
+          <g class="tnode"><circle cx="305" cy="98" r="20"/><text x="305" y="98">C</text></g>
+          <g class="tnode"><circle cx="65" cy="158" r="20"/><text x="65" y="158">D</text></g>
+          <g class="tnode"><circle cx="185" cy="158" r="20"/><text x="185" y="158">E</text></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="note">30 分钟 · 从「遍历」到「分治」 · Python 3 · 洛谷 &amp; LeetCode 真题</span></div>
+</section>
+
+<!-- ================= 02 ================= -->
+<section class="slide" data-ch="序" data-sec="开场" data-q="这棵树的遍历顺序是什么？" data-title="30 秒挑战">
+  <div class="eb">30 SECOND CHALLENGE · 02 / 30</div>
+  <div class="hd"><h2 class="h">30 秒挑战</h2>
+    <div class="sb">下面这棵树的<b>中序遍历</b>输出是什么？（左 → 根 → 右）</div></div>
+  <div class="two bd">
+    <div class="plate">
+      <div class="card-k">TREE · 同一棵树，四种问法</div>
+      <svg class="tree" viewBox="0 0 460 200">
+        <line class="tedge" x1="230" y1="32" x2="130" y2="110"/>
+        <line class="tedge" x1="230" y1="32" x2="330" y2="110"/>
+        <line class="tedge" x1="130" y1="110" x2="70" y2="176"/>
+        <line class="tedge" x1="130" y1="110" x2="190" y2="176"/>
+        <g class="tnode"><circle cx="230" cy="32" r="22"/><text x="230" y="32">A</text></g>
+        <g class="tnode"><circle cx="130" cy="110" r="22"/><text x="130" y="110">B</text></g>
+        <g class="tnode"><circle cx="330" cy="110" r="22"/><text x="330" y="110">C</text></g>
+        <g class="tnode"><circle cx="70" cy="176" r="22"/><text x="70" y="176">D</text></g>
+        <g class="tnode"><circle cx="190" cy="176" r="22"/><text x="190" y="176">E</text></g>
+      </svg>
+    </div>
+    <div class="col">
+      <div class="opt"><span class="oi">A</span><span class="os">A B D E C</span></div>
+      <div class="opt"><span class="oi">B</span><span class="os">D E B C A</span></div>
+      <div class="opt ans"><span class="oi">C</span><span class="os">D B E A C</span><span class="why">← 中序</span></div>
+      <div class="opt"><span class="oi">D</span><span class="os">A B C D E</span></div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>用一道题先记住「中序 = 左 根 右」。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/binary-tree-inorder-traversal/" target="_blank">LC 94 中序遍历 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1305" target="_blank">洛谷 P1305 新二叉树 ↗</a>
+    <span class="note">A 是前序，B 是后序，D 是层序</span>
+  </div>
+</section>
+
+<!-- ================= 03 ================= -->
+<section class="slide" data-ch="序" data-sec="开场" data-q="今天只走一条线" data-title="主线与节奏">
+  <div class="eb">ROADMAP · 03 / 30</div>
+  <div class="hd"><h2 class="h">一条主线，五段路</h2>
+    <div class="sb">整堂课只说一句话：<b>先处理谁，用谁的答案算我。</b></div></div>
+  <div class="bd">
+    <div class="steps">
+      <div class="step"><div class="n">01 · 04–09</div><div class="t">遍历：先处理谁</div><div class="d">前中后序、层序、递归→迭代、Morris。</div></div>
+      <div class="step"><div class="n">02 · 10–13</div><div class="t">结构：怎么存、怎么建</div><div class="d">链式/数组、BST、AVL、完全二叉树、堆。</div></div>
+      <div class="step"><div class="n">03 · 14–15</div><div class="t">性质：不变的规律</div><div class="d">节点数关系、高度、五种树一张表。</div></div>
+      <div class="step"><div class="n">04 · 16–22</div><div class="t">思想：用谁的答案算我</div><div class="d">递归三要素、分治、路径、LCA、BST。</div></div>
+      <div class="step"><div class="n">05 · 23–30</div><div class="t">落地：避坑与刷题</div><div class="d">三陷阱、真题、五步流程、复习卡。</div></div>
+    </div>
+    <div class="three">
+      <div class="plate"><div class="card-k">每一节都这样讲</div><div class="p"><b>问题 → 转变 → 运作 → 代码</b><br>四拍之内讲完一个概念，不停顿、不绕圈。</div></div>
+      <div class="plate"><div class="card-k">贯穿全课的一个问题</div><div class="p"><b>先处理谁，用谁的答案？</b><br>遍历方式不同 → 结构不同 → 代码不同。</div></div>
+      <div class="plate"><div class="card-k">你会带走什么</div><div class="p">一套递归模板、一份真题清单、一张五步解题流程卡。</div></div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>让你随时知道自己走到主线的哪一段。</p></div>
+</section>
+
+<!-- ================= 04 ================= -->
+<section class="slide" data-ch="第 1 章" data-sec="遍历" data-q="二叉树到底是什么？" data-title="从链表到二叉树">
+  <div class="eb">ANATOMY · 04 / 30</div>
+  <div class="hd"><h2 class="h">从链表到二叉树</h2>
+    <div class="sb">链表每个节点一个 next，二叉树每个节点最多两个孩子 —— <b>left 和 right</b>。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">ANATOMY · 一棵普通的二叉树</div>
+      <svg class="tree" viewBox="0 0 520 260">
+        <line class="tedge" x1="260" y1="40" x2="140" y2="130"/>
+        <line class="tedge" x1="260" y1="40" x2="380" y2="130"/>
+        <line class="tedge" x1="140" y1="130" x2="70" y2="220"/>
+        <line class="tedge" x1="140" y1="130" x2="210" y2="220"/>
+        <line class="tedge" x1="380" y1="130" x2="380" y2="220"/>
+        <g class="tnode active"><circle cx="260" cy="40" r="24"/><text x="260" y="40">A</text></g>
+        <g class="tnode"><circle cx="140" cy="130" r="24"/><text x="140" y="130">B</text></g>
+        <g class="tnode"><circle cx="380" cy="130" r="24"/><text x="380" y="130">C</text></g>
+        <g class="tnode"><circle cx="70" cy="220" r="24"/><text x="70" y="220">D</text></g>
+        <g class="tnode"><circle cx="210" cy="220" r="24"/><text x="210" y="220">E</text></g>
+        <g class="tnode"><circle cx="380" cy="220" r="24"/><text x="380" y="220">F</text></g>
+        <text class="lbl-ink" x="290" y="34">根 root（深度 0）</text>
+        <text class="lbl" x="30" y="252">叶 leaf：D E F（没有孩子）</text>
+      </svg>
+    </div>
+    <div class="col">
+      <table>
+        <tr><th>术语</th><th>含义</th></tr>
+        <tr><td class="zh"><b>根</b></td><td class="zh">唯一没有父节点的节点</td></tr>
+        <tr><td class="zh"><b>叶</b></td><td class="zh">没有孩子的节点</td></tr>
+        <tr><td class="zh"><b>深度</b></td><td class="zh">根到该节点的边数</td></tr>
+        <tr><td class="zh"><b>高度</b></td><td class="zh">该节点到最深叶的边数</td></tr>
+        <tr><td class="zh"><b>度</b></td><td class="zh">孩子个数（0 / 1 / 2）</td></tr>
+      </table>
+      <div class="plate">
+        <div class="card-k">LIFE · 生活里的二叉树</div>
+        <div class="p">文件夹目录 · HTML DOM · 决策树 · 家族谱 · 表达式语法树</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>先记住术语，后面每一句都能翻译成人话。</p></div>
+</section>
+
+<!-- ================= 05 ================= -->
+<section class="slide" data-ch="第 1 章" data-sec="遍历" data-q="三种 DFS 差在哪？" data-title="三种 DFS 遍历">
+  <div class="eb">DFS · 05 / 30</div>
+  <div class="hd"><h2 class="h">三种 DFS 遍历</h2>
+    <div class="sb">区别只有一个：<b>根节点</b>在「左」和「右」之间放哪儿。</div></div>
+  <div class="bd">
+    <div class="three">
+      <div class="plate">
+        <div class="card-k" style="color:var(--blue)">前序 PREORDER · 根 左 右</div>
+        <div class="seqline" style="margin-top:8px;font-size:12px">
+          <span class="slot on">A</span><span class="slot">B</span>
+          <span class="slot">D</span><span class="slot">E</span>
+          <span class="slot">C</span><span class="slot">F</span>
+        </div>
+      </div>
+      <div class="plate">
+        <div class="card-k" style="color:var(--green)">中序 INORDER · 左 根 右</div>
+        <div class="seqline" style="margin-top:8px;font-size:12px">
+          <span class="slot">D</span><span class="slot">B</span>
+          <span class="slot">E</span><span class="slot on">A</span>
+          <span class="slot">C</span><span class="slot">F</span>
+        </div>
+      </div>
+      <div class="plate">
+        <div class="card-k" style="color:var(--volt)">后序 POSTORDER · 左 右 根</div>
+        <div class="seqline" style="margin-top:8px;font-size:12px">
+          <span class="slot">D</span><span class="slot">E</span>
+          <span class="slot">B</span><span class="slot">F</span>
+          <span class="slot">C</span><span class="slot on">A</span>
+        </div>
+      </div>
+    </div>
+    <div class="two" style="flex:1;min-height:0">
+      <div class="codeplate" style="--rule:var(--blue);height:100%">
+        <div class="state"><span class="sl">RECURSION →</span><span class="sv">三行区别</span></div>
+<pre><span class="kw">def</span> preorder(n):
+    <span class="kw">if</span> <span class="kw">not</span> n: <span class="kw">return</span>
+    visit(n)                    <span class="cm"># ① 先访问根</span>
+    preorder(n.left); preorder(n.right)
+
+<span class="kw">def</span> inorder(n):
+    <span class="kw">if</span> <span class="kw">not</span> n: <span class="kw">return</span>
+    inorder(n.left)
+    visit(n)                    <span class="cm"># ② 左完访问根</span>
+    inorder(n.right)
+
+<span class="kw">def</span> postorder(n):
+    <span class="kw">if</span> <span class="kw">not</span> n: <span class="kw">return</span>
+    postorder(n.left); postorder(n.right)
+    visit(n)                    <span class="cm"># ③ 最后访问根</span></pre>
+      </div>
+      <div class="col">
+        <div class="plate">
+          <div class="card-k">KEY · 一句话</div>
+          <div class="p"><b>三行代码相同，只是 visit 的位置不同。</b><br><br>
+          所以遍历问题，几乎都是「<b>把 visit 放对位置</b>」。</div>
+        </div>
+        <div class="plate">
+          <div class="card-k">USE · 各自用在哪</div>
+          <div class="p">
+            <b style="color:var(--blue)">前序</b>：序列化、复制树、前缀表达式<br>
+            <b style="color:var(--green)">中序</b>：BST 排序、第 k 小<br>
+            <b style="color:var(--volt)">后序</b>：高度、直径、最大路径和、表达式求值
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>先给你三行代码，后面所有题都是它的变形。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/binary-tree-preorder-traversal/" target="_blank">LC 144 前序 ↗</a>
+    <a href="https://leetcode.cn/problems/binary-tree-inorder-traversal/" target="_blank">LC 94 中序 ↗</a>
+    <a href="https://leetcode.cn/problems/binary-tree-postorder-traversal/" target="_blank">LC 145 后序 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1305" target="_blank">洛谷 P1305 新二叉树 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1030" target="_blank">洛谷 P1030 求先序 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 06 ================= -->
+<section class="slide" data-ch="第 1 章" data-sec="遍历" data-q="跑一遍就懂了" data-title="三种遍历动画">
+  <div class="eb">ANIMATION · 06 / 30</div>
+  <div class="hd"><h2 class="h">三棵树，跑一遍</h2>
+    <div class="sb">同样一棵树，三种遍历 —— 输出序列完全不同。每个动画可单独控制。</div></div>
+  <div class="bd">
+    <div class="three">
+      <div class="plate">
+        <div class="card-k" style="color:var(--blue)">PREORDER · 根 左 右</div>
+        <div data-fx="pre"></div>
+        <div class="seqline" data-live="preseq" style="margin-top:6px;font-size:12px"></div>
+        <div class="fxctrl">
+          <button class="fxbtn" data-fx-target="pre" data-fx-act="pause">⏸ 暂停</button>
+          <button class="fxbtn" data-fx-target="pre" data-fx-act="replay">↻ 重放</button>
+        </div>
+      </div>
+      <div class="plate">
+        <div class="card-k" style="color:var(--green)">INORDER · 左 根 右</div>
+        <div data-fx="in"></div>
+        <div class="seqline" data-live="inseq" style="margin-top:6px;font-size:12px"></div>
+        <div class="fxctrl">
+          <button class="fxbtn" data-fx-target="in" data-fx-act="pause">⏸ 暂停</button>
+          <button class="fxbtn" data-fx-target="in" data-fx-act="replay">↻ 重放</button>
+        </div>
+      </div>
+      <div class="plate">
+        <div class="card-k" style="color:var(--volt)">POSTORDER · 左 右 根</div>
+        <div data-fx="post"></div>
+        <div class="seqline" data-live="postseq" style="margin-top:6px;font-size:12px"></div>
+        <div class="fxctrl">
+          <button class="fxbtn" data-fx-target="post" data-fx-act="pause">⏸ 暂停</button>
+          <button class="fxbtn" data-fx-target="post" data-fx-act="replay">↻ 重放</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/binary-tree-preorder-traversal/" target="_blank">LC 144 前序 ↗</a>
+    <a href="https://leetcode.cn/problems/binary-tree-inorder-traversal/" target="_blank">LC 94 中序 ↗</a>
+    <a href="https://leetcode.cn/problems/binary-tree-postorder-traversal/" target="_blank">LC 145 后序 ↗</a>
+    <span class="note">按 R 重放全部；按钮可单独控制每个动画</span>
+  </div>
+</section>
+
+<!-- ================= 07 ================= -->
+<section class="slide" data-ch="第 1 章" data-sec="遍历" data-q="一层一层怎么走？" data-title="层序遍历 BFS">
+  <div class="eb">BFS · 07 / 30</div>
+  <div class="hd"><h2 class="h">层序遍历：一层一层扩</h2>
+    <div class="sb">DFS 用<b style="color:var(--blue)">栈</b>，BFS 用<b style="color:var(--green)">队列</b> —— 只差一个数据结构。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">LEVEL ORDER · 一层一层输出</div>
+      <div data-fx="level"></div>
+      <div class="fxctrl">
+        <button class="fxbtn" data-fx-target="level" data-fx-act="pause">⏸ 暂停</button>
+        <button class="fxbtn" data-fx-target="level" data-fx-act="replay">↻ 重放</button>
+      </div>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--green)">
+        <div class="state"><span class="sl">QUEUE →</span><span class="sv" data-live="lvq">[]</span></div>
+<pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> level_order(root):
+    <span class="kw">if</span> <span class="kw">not</span> root: <span class="kw">return</span> []
+    q = deque([root])
+    ans = []
+    <span class="kw">while</span> q:
+        level = []
+        <span class="kw">for</span> _ <span class="kw">in</span> range(len(q)):
+            n = q.popleft()
+            level.append(n.val)
+            <span class="kw">if</span> n.left:  q.append(n.left)
+            <span class="kw">if</span> n.right: q.append(n.right)
+        ans.append(level)
+    <span class="kw">return</span> ans</pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p">「<b>按层</b>」是 BFS 的本质：队列保证同层先进先出，所以天然一层一层走。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>把「按层」翻译成「队列 + 分层循环」。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/binary-tree-level-order-traversal/" target="_blank">LC 102 层序遍历 ↗</a>
+    <a href="https://leetcode.cn/problems/binary-tree-right-side-view/" target="_blank">LC 199 右视图 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P4913" target="_blank">洛谷 P4913 二叉树深度 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 08 ================= -->
+<section class="slide" data-ch="第 1 章" data-sec="遍历" data-q="递归能改成迭代吗？" data-title="递归 → 显式栈">
+  <div class="eb">ITERATIVE · 08 / 30</div>
+  <div class="hd"><h2 class="h">递归 → 显式栈</h2>
+    <div class="sb">递归是解释器替你压栈；写成显式栈，你就能自己决定「<b>先压谁</b>」。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">TRACE · 中序迭代：一路向左，走到底再回</div>
+      <svg class="tree" viewBox="0 0 560 240">
+        <line class="tedge" x1="280" y1="32" x2="160" y2="120"/>
+        <line class="tedge" x1="280" y1="32" x2="400" y2="120"/>
+        <line class="tedge" x1="160" y1="120" x2="90" y2="208"/>
+        <line class="tedge" x1="160" y1="120" x2="230" y2="208"/>
+        <g class="tnode visited"><circle cx="90" cy="208" r="22"/><text x="90" y="208">D</text></g>
+        <g class="tnode active"><circle cx="160" cy="120" r="22"/><text x="160" y="120">B</text></g>
+        <g class="tnode visited"><circle cx="230" cy="208" r="22"/><text x="230" y="208">E</text></g>
+        <g class="tnode"><circle cx="280" cy="32" r="22"/><text x="280" y="32">A</text></g>
+        <g class="tnode"><circle cx="400" cy="120" r="22"/><text x="400" y="120">C</text></g>
+        <path class="arw-in" d="M310,44 L200,100 M204,92 L192,100 L200,108"/>
+        <text class="lbl-ink" x="330" y="62">一路向左压栈</text>
+        <text class="lbl-ink" x="46" y="236">走到底 → 弹栈访问</text>
+      </svg>
+      <div class="stackline" style="margin-top:8px">
+        <div class="top">stack: [A, B]  ← 栈顶是 B，可以访问了</div>
+        <div>已访问：D</div>
+      </div>
+    </div>
+    <div class="codeplate" style="--rule:var(--blue)">
+      <div class="state"><span class="sl">ITER →</span><span class="sv">while cur or st</span></div>
+<pre><span class="kw">def</span> inorder_iter(root):
+    st, cur = [], root
+    <span class="kw">while</span> cur <span class="kw">or</span> st:
+        <span class="kw">while</span> cur:            <span class="cm"># 一路向左</span>
+            st.append(cur)
+            cur = cur.left
+        cur = st.pop()       <span class="cm"># 弹出栈顶</span>
+        visit(cur)           <span class="cm"># 访问它</span>
+        cur = cur.right      <span class="cm"># 转向右</span>
+
+<span class="cm"># 前序：先 visit 再压左</span>
+<span class="cm"># 后序：反转前序 or 双栈</span></pre>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>告诉你「栈里存的是还没访问完的节点」。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/binary-tree-inorder-traversal/" target="_blank">LC 94 中序迭代 ↗</a>
+    <span class="note">把 visit 挪到 push 前 = 前序；反过来 = 后序</span>
+  </div>
+</section>
+
+<!-- ================= 09 ================= -->
+<section class="slide" data-ch="第 1 章" data-sec="遍历" data-q="O(1) 空间能遍历吗？" data-title="Morris 遍历">
+  <div class="eb">MORRIS · 09 / 30</div>
+  <div class="hd"><h2 class="h">Morris 遍历：O(1) 空间</h2>
+    <div class="sb">不用栈，也不用递归 —— 把叶子的空指针临时指向「中序后继」。</div></div>
+  <div class="two-57 bd">
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">IDEA · 线索化</div>
+        <div class="p">D 的右指针平时是 <span class="mono">None</span>，Morris 把它<b>临时指向 B</b>（中序后继）。<br>
+        走完左子树后，顺着这条「假指针」回到 B，就省掉了整个栈。<br><br>
+        <b style="color:var(--volt)">代价</b>：改动了树结构，访问完必须<b>改回来</b>。</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">COMPLEXITY</div>
+        <div class="p">时间 <span class="mono">O(n)</span>，空间 <span class="mono">O(1)</span>。<br>
+        <span style="color:var(--muted)">（每条边最多走 2 次，总操作仍 ≤ 2n）</span></div>
+      </div>
+    </div>
+    <div class="codeplate" style="--rule:var(--green)">
+      <div class="state"><span class="sl">SPACE →</span><span class="sv">O(1)</span><span class="sl">TIME →</span><span class="sv">O(n)</span></div>
+<pre><span class="kw">def</span> inorder_morris(root):
+    cur = root
+    <span class="kw">while</span> cur:
+        <span class="kw">if</span> <span class="kw">not</span> cur.left:
+            visit(cur); cur = cur.right
+        <span class="kw">else</span>:
+            pre = cur.left          <span class="cm"># 找左子树最右</span>
+            <span class="kw">while</span> pre.right <span class="kw">and</span> pre.right != cur:
+                pre = pre.right
+            <span class="kw">if</span> <span class="kw">not</span> pre.right:
+                pre.right = cur     <span class="cm"># 建线索</span>
+                cur = cur.left
+            <span class="kw">else</span>:
+                pre.right = <span class="kw">None</span>    <span class="cm"># 拆线索</span>
+                visit(cur)
+                cur = cur.right</pre>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>知道有这条路就行，实战更常用栈/递归。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/binary-tree-inorder-traversal/" target="_blank">LC 94 中序 ↗</a>
+    <span class="note">面试提到 Morris 通常加分，但不必强行用</span>
+  </div>
+</section>
+
+<!-- ================= 10 ================= -->
+<section class="slide" data-ch="第 2 章" data-sec="结构" data-q="树怎么存？" data-title="链式 vs 数组存储">
+  <div class="eb">STORAGE · 10 / 30</div>
+  <div class="hd"><h2 class="h">树怎么存？</h2>
+    <div class="sb">两种存法：<b>链式</b>（指针）和 <b>数组</b>（完全二叉树专用）。</div></div>
+  <div class="two bd">
+    <div class="codeplate" style="--rule:var(--blue)">
+      <div class="state"><span class="sl">CHAINED →</span><span class="sv">每个节点 3 个字段</span></div>
+<pre><span class="kw">class</span> TreeNode:
+    <span class="kw">def</span> __init__(self, val=<span class="nu">0</span>):
+        self.val   = val
+        self.left  = <span class="kw">None</span>     <span class="cm"># 左孩子</span>
+        self.right = <span class="kw">None</span>     <span class="cm"># 右孩子</span>
+
+<span class="cm"># 建立 A → B, C，B → D, E</span>
+A = TreeNode(<span class="st">'A'</span>)
+A.left  = TreeNode(<span class="st">'B'</span>)
+A.right = TreeNode(<span class="st">'C'</span>)
+A.left.left  = TreeNode(<span class="st">'D'</span>)
+A.left.right = TreeNode(<span class="st">'E'</span>)</pre>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">ARRAY · 完全二叉树专用</div>
+        <div class="p" style="font-family:var(--mono);font-size:12px;line-height:1.9">
+          下标 <b>i</b> 的节点：<br>
+          · 左孩子 = <b style="color:var(--blue)">2i + 1</b><br>
+          · 右孩子 = <b style="color:var(--blue)">2i + 2</b><br>
+          · 父节点 = <b style="color:var(--green)">(i - 1) // 2</b>
+        </div>
+      </div>
+      <table>
+        <tr><th>存法</th><th>优点</th><th>缺点</th></tr>
+        <tr><td class="zh">链式</td><td class="zh">通用，省空间</td><td class="zh">指针跳转慢</td></tr>
+        <tr><td class="zh">数组</td><td class="zh">缓存友好，无指针</td><td class="zh">只适合完全二叉树</td></tr>
+      </table>
+      <div class="plate">
+        <div class="card-k">USE · 什么时候用数组？</div>
+        <div class="p"><b>堆</b>是唯一的答案 —— Python <span class="mono">heapq</span> 内部就是一个 list。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>先知道「树不一定要用指针存」。</p></div>
+  <div class="foot">
+    <a href="https://www.luogu.com.cn/problem/P1305" target="_blank">洛谷 P1305 新二叉树 ↗</a>
+    <a href="https://leetcode.cn/problems/construct-binary-tree-from-preorder-and-inorder-traversal/" target="_blank">LC 105 由前中序建树 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1030" target="_blank">洛谷 P1030 求先序排列 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 11 ================= -->
+<section class="slide" data-ch="第 2 章" data-sec="结构" data-q="怎么快速查找？" data-title="二叉搜索树 BST">
+  <div class="eb">BST · 11 / 30</div>
+  <div class="hd"><h2 class="h">二叉搜索树 BST</h2>
+    <div class="sb">规则只有一句：<b>左子树全部 &lt; 根 &lt; 右子树全部</b>。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">SEARCH · 找 6 的过程</div>
+      <svg class="tree" viewBox="0 0 540 260">
+        <line class="tedge" x1="270" y1="36" x2="160" y2="118"/>
+        <line class="tedge" x1="270" y1="36" x2="400" y2="118"/>
+        <line class="tedge" x1="160" y1="118" x2="90" y2="204"/>
+        <line class="tedge" x1="160" y1="118" x2="230" y2="204"/>
+        <line class="tedge" x1="400" y1="118" x2="340" y2="204"/>
+        <line class="tedge" x1="400" y1="118" x2="460" y2="204"/>
+        <g class="tnode visited"><circle cx="270" cy="36" r="22"/><text x="270" y="36">8</text></g>
+        <g class="tnode visited"><circle cx="160" cy="118" r="22"/><text x="160" y="118">3</text></g>
+        <g class="tnode"><circle cx="400" cy="118" r="22"/><text x="400" y="118">10</text></g>
+        <g class="tnode"><circle cx="90" cy="204" r="22"/><text x="90" y="204">1</text></g>
+        <g class="tnode active"><circle cx="230" cy="204" r="22"/><text x="230" y="204">6</text></g>
+        <g class="tnode"><circle cx="340" cy="204" r="22"/><text x="340" y="204">9</text></g>
+        <g class="tnode"><circle cx="460" cy="204" r="22"/><text x="460" y="204">14</text></g>
+        <text class="lbl-ink" x="290" y="30">8 &gt; 6 → 往左</text>
+        <text class="lbl-ink" x="168" y="160">3 &lt; 6 → 往右</text>
+        <text class="lbl-ink" x="240" y="238">命中</text>
+      </svg>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--blue)">
+        <div class="state"><span class="sl">AVG →</span><span class="sv">O(log n)</span><span class="sl">WORST →</span><span class="sv" style="color:var(--red)">O(n)</span></div>
+<pre><span class="kw">def</span> search(root, target):
+    <span class="kw">while</span> root:
+        <span class="kw">if</span> target == root.val:
+            <span class="kw">return</span> root
+        <span class="kw">if</span> target &lt; root.val:
+            root = root.left
+        <span class="kw">else</span>:
+            root = root.right
+    <span class="kw">return</span> <span class="kw">None</span></pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p"><b>中序遍历 BST = 升序数组。</b><br>所有 BST 题目，本质都是利用这条性质。</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">PITFALL</div>
+        <div class="p">BST <b>不平衡</b>时会退化成链表（插入 1,2,3,4,5）→ 查找 O(n)。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>BST 是「有序」的结构，查找才快。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/validate-binary-search-tree/" target="_blank">LC 98 验证 BST ↗</a>
+    <a href="https://leetcode.cn/problems/kth-smallest-element-in-a-bst/" target="_blank">LC 230 BST 第 k 小 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P3369" target="_blank">洛谷 P3369 普通平衡树 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 12 ================= -->
+<section class="slide" data-ch="第 2 章" data-sec="结构" data-q="不平衡怎么办？" data-title="AVL 与旋转">
+  <div class="eb">AVL · 12 / 30</div>
+  <div class="hd"><h2 class="h">AVL：旋转把树摆正</h2>
+    <div class="sb">每个节点的左右子树高度差 ≤ 1，插完不平衡就<b>转一下</b>。</div></div>
+  <div class="two bd">
+    <div class="plate">
+      <div class="card-k">LEFT ROTATION · 右重 → 左旋</div>
+      <svg class="tree" viewBox="0 0 640 220">
+        <line class="tedge" x1="110" y1="40" x2="190" y2="110"/>
+        <line class="tedge" x1="190" y1="110" x2="270" y2="180"/>
+        <g class="tnode"><circle cx="110" cy="40" r="22"/><text x="110" y="40">10</text></g>
+        <g class="tnode active"><circle cx="190" cy="110" r="22"/><text x="190" y="110">20</text></g>
+        <g class="tnode"><circle cx="270" cy="180" r="22"/><text x="270" y="180">30</text></g>
+        <text class="lbl-ink" x="88" y="18">右重</text>
+
+        <path class="arw-in" d="M320,110 H370 M362,102 L370,110 L362,118"/>
+        <text class="lbl-ink" x="316" y="100">左旋</text>
+
+        <line class="tedge" x1="500" y1="40" x2="420" y2="110"/>
+        <line class="tedge" x1="500" y1="40" x2="580" y2="110"/>
+        <g class="tnode active"><circle cx="500" cy="40" r="22"/><text x="500" y="40">20</text></g>
+        <g class="tnode"><circle cx="420" cy="110" r="22"/><text x="420" y="110">10</text></g>
+        <g class="tnode"><circle cx="580" cy="110" r="22"/><text x="580" y="110">30</text></g>
+        <text class="lbl-ink" x="466" y="18">平衡</text>
+      </svg>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">4 种旋转</div>
+        <table>
+          <tr><th>型</th><th>场景</th><th>动作</th></tr>
+          <tr><td>LL</td><td class="zh">左子树的左子树太高</td><td class="zh">右旋一次</td></tr>
+          <tr><td>RR</td><td class="zh">右子树的右子树太高</td><td class="zh">左旋一次</td></tr>
+          <tr><td>LR</td><td class="zh">左子树的右子树太高</td><td class="zh">左旋 + 右旋</td></tr>
+          <tr><td>RL</td><td class="zh">右子树的左子树太高</td><td class="zh">右旋 + 左旋</td></tr>
+        </table>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p"><b>旋转 = 把长的那边挪一点过来。</b><br>
+        不改变中序遍历顺序，只改变形状。</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">REALITY</div>
+        <div class="p">实际工程里更常见 <b>红黑树</b>（C++ map / Java TreeMap），平衡条件更宽松、旋转更少。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>知道「平衡」是为了防止退化成链表。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/balanced-binary-tree/" target="_blank">LC 110 平衡二叉树 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P3369" target="_blank">洛谷 P3369 普通平衡树 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 13 ================= -->
+<section class="slide" data-ch="第 2 章" data-sec="结构" data-q="堆和 BST 差在哪？" data-title="完全二叉树与堆">
+  <div class="eb">HEAP · 13 / 30</div>
+  <div class="hd"><h2 class="h">完全二叉树与堆</h2>
+    <div class="sb">堆 = <b>完全二叉树 + 堆序</b>。它不关心左右，只关心「谁在顶上」。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">MIN-HEAP · 每个父节点 ≤ 孩子（数组：[1,3,2,7,5,4,9]）</div>
+      <svg class="tree" viewBox="0 0 560 200">
+        <line class="tedge" x1="280" y1="30" x2="180" y2="100"/>
+        <line class="tedge" x1="280" y1="30" x2="380" y2="100"/>
+        <line class="tedge" x1="180" y1="100" x2="120" y2="170"/>
+        <line class="tedge" x1="180" y1="100" x2="240" y2="170"/>
+        <line class="tedge" x1="380" y1="100" x2="320" y2="170"/>
+        <line class="tedge" x1="380" y1="100" x2="440" y2="170"/>
+        <g class="tnode active"><circle cx="280" cy="30" r="20"/><text x="280" y="30">1</text></g>
+        <g class="tnode"><circle cx="180" cy="100" r="20"/><text x="180" y="100">3</text></g>
+        <g class="tnode"><circle cx="380" cy="100" r="20"/><text x="380" y="100">2</text></g>
+        <g class="tnode"><circle cx="120" cy="170" r="20"/><text x="120" y="170">7</text></g>
+        <g class="tnode"><circle cx="240" cy="170" r="20"/><text x="240" y="170">5</text></g>
+        <g class="tnode"><circle cx="320" cy="170" r="20"/><text x="320" y="170">4</text></g>
+        <g class="tnode"><circle cx="440" cy="170" r="20"/><text x="440" y="170">9</text></g>
+      </svg>
+    </div>
+    <div class="col">
+      <table>
+        <tr><th></th><th>BST</th><th>堆</th></tr>
+        <tr><td class="zh">顺序</td><td class="zh">左 &lt; 根 &lt; 右</td><td class="zh">父 ≤ 子</td></tr>
+        <tr><td class="zh">顶上</td><td class="zh">不固定</td><td class="zh">一定最小/最大</td></tr>
+        <tr><td class="zh">找最小</td><td class="zh">O(log n)</td><td class="zh">O(1)</td></tr>
+        <tr><td class="zh">有序遍历</td><td class="zh">中序即可</td><td class="zh">不支持</td></tr>
+      </table>
+      <div class="codeplate" style="--rule:var(--blue)">
+<pre><span class="kw">import</span> heapq
+h = []
+heapq.heappush(h, <span class="nu">5</span>)   <span class="cm"># O(log n)</span>
+heapq.heappush(h, <span class="nu">1</span>)
+heapq.heappush(h, <span class="nu">3</span>)
+heapq.heappop(h)       <span class="cm"># → 1</span></pre>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>别把 BST 和堆搞混：一个管顺序，一个管极值。</p></div>
+  <div class="foot">
+    <a href="https://www.luogu.com.cn/problem/P3378" target="_blank">洛谷 P3378 【模板】堆 ↗</a>
+    <a href="https://leetcode.cn/problems/kth-largest-element-in-an-array/" target="_blank">LC 215 第 K 大 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 14 ================= -->
+<section class="slide" data-ch="第 3 章" data-sec="性质" data-q="有哪些必记的公式？" data-title="五个必记性质">
+  <div class="eb">PROPERTIES · 14 / 30</div>
+  <div class="hd"><h2 class="h">五个必记性质</h2>
+    <div class="sb">选择题、竞赛初赛、面试八股，几乎只考这五条。</div></div>
+  <div class="bd">
+    <div class="two">
+      <div class="plate">
+        <div class="card-k">① 每层节点数</div>
+        <div class="p">第 <b>i</b> 层最多 <span class="mono" style="font-size:15px;color:var(--volt)">2^i</span> 个节点（i 从 0 开始）。</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">② 深度为 k 的二叉树最多节点</div>
+        <div class="p"><span class="mono" style="font-size:15px;color:var(--volt)">2^(k+1) − 1</span>（k 从 0 开始）。</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">③ 叶子和二度节点</div>
+        <div class="p"><span class="mono" style="font-size:15px;color:var(--volt)">n₀ = n₂ + 1</span><br>
+        <span style="color:var(--muted)">叶子数 = 两个孩子的节点数 + 1</span></div>
+      </div>
+      <div class="plate">
+        <div class="card-k">④ 完全二叉树的高度</div>
+        <div class="p">n 个节点的完全二叉树高度 = <span class="mono" style="font-size:15px;color:var(--volt)">⌊log₂ n⌋</span>。<br>
+        <span style="color:var(--muted)">所以堆操作是 O(log n)。</span></div>
+      </div>
+    </div>
+    <div class="plate">
+      <div class="card-k">⑤ n 个节点能构成多少种不同的二叉树？</div>
+      <div class="p">答案是<b>卡特兰数</b> <span class="mono" style="font-size:15px;color:var(--volt)">C(2n, n) / (n + 1)</span>。<br>
+      这和「n 个数依次入栈有多少种出栈序列」是<b>同一个数</b> —— 因为出栈序列与二叉树的形态一一对应。</div>
+    </div>
+    <div class="instr" style="margin-top:0">
+      <span>这一步 →</span>
+      <p>把公式和「栈」那一节串起来：二叉树 = 出栈序列的另一种说法。</p>
+    </div>
+  </div>
+  <div class="foot">
+    <a href="https://www.luogu.com.cn/problem/P1044" target="_blank">洛谷 P1044 栈（卡特兰）↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1040" target="_blank">洛谷 P1040 加分二叉树 ↗</a>
+    <a href="https://leetcode.cn/problems/unique-binary-search-trees/" target="_blank">LC 96 不同的 BST ↗</a>
+  </div>
+</section>
+
+<!-- ================= 15 ================= -->
+<section class="slide" data-ch="第 3 章" data-sec="性质" data-q="五种树我该选哪个？" data-title="五种树对照表">
+  <div class="eb">COMPARISON · 15 / 30</div>
+  <div class="hd"><h2 class="h">五种树，一张对照表</h2>
+    <div class="sb">选树只看一句话：<b>我要按顺序找，还是只要极值？</b></div></div>
+  <div class="bd">
+    <table>
+      <tr><th>树</th><th>规则</th><th>典型操作</th><th>复杂度</th><th>一句话</th></tr>
+      <tr><td class="zh"><b>二叉树</b></td><td class="zh">每节点 ≤ 2 孩子</td><td class="zh">遍历、递归</td><td class="zh">O(n)</td><td class="zh">万物的基础</td></tr>
+      <tr><td class="zh"><b>BST</b></td><td class="zh">左 &lt; 根 &lt; 右</td><td class="zh">查找 / 插入</td><td class="zh">O(log n) 期望</td><td class="zh">有序才好找</td></tr>
+      <tr><td class="zh"><b>AVL / 红黑</b></td><td class="zh">BST + 平衡</td><td class="zh">稳定查找</td><td class="zh">O(log n) 最坏</td><td class="zh">不许退化成链</td></tr>
+      <tr><td class="zh"><b>完全二叉树</b></td><td class="zh">只缺最后一层右侧</td><td class="zh">数组存、堆</td><td class="zh">父 i 子 2i+1</td><td class="zh">用数组最省</td></tr>
+      <tr><td class="zh"><b>哈夫曼树</b></td><td class="zh">带权路径最短</td><td class="zh">编码 / 压缩</td><td class="zh">O(n log n) 建树</td><td class="zh">高频词给短码</td></tr>
+    </table>
+    <div class="three">
+      <div class="plate"><div class="card-k">SELECT · 选树三问</div><div class="p">① 要按顺序查找吗？<br>② 要极值吗？<br>③ 要改结构吗？</div></div>
+      <div class="plate"><div class="card-k">MEMORIZE</div><div class="p">有序 → BST；极值 → 堆；无规则 → 普通二叉树。</div></div>
+      <div class="plate"><div class="card-k">SPACE</div><div class="p">以上全部 <span class="mono">O(n)</span>，链式存 n 个节点。</div></div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>给出一个「看到题目就能选树」的判断依据。</p></div>
+</section>
+
+<!-- ================= 16 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="思想" data-q="递归到底在做什么？" data-title="从结构到思想">
+  <div class="eb">FROM STRUCTURE TO IDEA · 16 / 30</div>
+  <div class="bd" style="justify-content:center">
+    <div style="font:500 10px var(--mono);letter-spacing:.22em;color:var(--muted)">★ 分界 · 从这里开始，只看「答案怎么传上来」</div>
+    <h2 class="h big" style="margin:10px 0">递归不是技巧，<br>是把问题交给孩子。</h2>
+    <div class="sb" style="max-width:820px">我不解决整棵树，我只问一句：
+    <b style="color:var(--volt)">「左孩子，你的答案是多少？右孩子，你的答案是多少？」</b>
+    然后我把它们合起来，就是我的答案。</div>
+    <div class="plate reveal" style="margin-top:16px;max-width:820px">
+      <div class="card-k">SHIFT · 思想上的这一跳</div>
+      <div class="p">从「<b>先处理谁</b>」→「<b>用谁的答案算我</b>」。<br>
+      遍历是手段，<b>答案的传递方式</b>才是核心。</div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>把「遍历」升维成「分治」。</p></div>
+  <div class="foot"><span class="note">接下来 6 页：递归三要素 → 分治 → 路径 → LCA → BST → 图</span></div>
+</section>
+
+<!-- ================= 17 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="思想" data-q="写递归前要定什么？" data-title="递归三要素">
+  <div class="eb">RECURSION · 17 / 30</div>
+  <div class="hd"><h2 class="h">递归三要素</h2>
+    <div class="sb">写任何递归前，先回答三个问题：<b>终止？递推？返回值？</b></div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">THREE ELEMENTS · 以 maxDepth 为例</div>
+      <div class="p" style="line-height:2">
+        <b style="color:var(--blue)">① 终止条件</b><br>
+        <span class="mono" style="font-size:12px">if not root: return 0</span><br><br>
+        <b style="color:var(--green)">② 递推关系</b><br>
+        <span class="mono" style="font-size:12px">L = maxDepth(root.left)</span><br>
+        <span class="mono" style="font-size:12px">R = maxDepth(root.right)</span><br><br>
+        <b style="color:var(--volt)">③ 返回值定义</b><br>
+        <span style="font-size:13px">「以 root 为根的树的高度」</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--green)">
+        <div class="state"><span class="sl">DEPTH →</span><span class="sv">3</span></div>
+<pre><span class="kw">def</span> max_depth(root):
+    <span class="kw">if</span> <span class="kw">not</span> root:              <span class="cm"># ① 终止</span>
+        <span class="kw">return</span> <span class="nu">0</span>
+    L = max_depth(root.left)     <span class="cm"># ② 左答案</span>
+    R = max_depth(root.right)    <span class="cm"># ② 右答案</span>
+    <span class="kw">return</span> <span class="nu">1</span> + max(L, R)          <span class="cm"># ③ 我 = 我 + 最大</span></pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p">先<b>定义清楚返回值是什么</b>，代码自然就写出来了。<br>
+        「返回值 = 什么问题的答案」是递归的第一性问题。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>把「递归」拆成三个可执行的动作。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/maximum-depth-of-binary-tree/" target="_blank">LC 104 最大深度 ↗</a>
+    <a href="https://leetcode.cn/problems/minimum-depth-of-binary-tree/" target="_blank">LC 111 最小深度 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P4913" target="_blank">洛谷 P4913 二叉树深度 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 18 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="思想" data-q="怎么把答案合起来？" data-title="分治：合并左右答案">
+  <div class="eb">DIVIDE · 18 / 30</div>
+  <div class="hd"><h2 class="h">分治：把左右答案合起来</h2>
+    <div class="sb">所有树上的分治题，都是这个模板的变形。</div></div>
+  <div class="bd">
+    <div class="codeplate" style="--rule:var(--volt)">
+      <div class="state"><span class="sl">TEMPLATE →</span><span class="sv">postorder + 合并</span></div>
+<pre><span class="kw">def</span> solve(root):
+    <span class="kw">if</span> <span class="kw">not</span> root: <span class="kw">return</span> base
+    L = solve(root.left)          <span class="cm"># 左子树的答案</span>
+    R = solve(root.right)         <span class="cm"># 右子树的答案</span>
+    <span class="kw">return</span> merge(root, L, R)      <span class="cm"># 合并成"我"的答案</span></pre>
+    </div>
+    <div class="two">
+      <div class="plate">
+        <div class="card-k">EXAMPLE 1 · 节点总数</div>
+<pre style="padding:6px 0 0"><span class="kw">def</span> count(n):
+    <span class="kw">if</span> <span class="kw">not</span> n: <span class="kw">return</span> <span class="nu">0</span>
+    <span class="kw">return</span> <span class="nu">1</span> + count(n.left) + count(n.right)
+<span class="cm"># merge = 1 + L + R</span></pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">EXAMPLE 2 · 树的高度</div>
+<pre style="padding:6px 0 0"><span class="kw">def</span> depth(n):
+    <span class="kw">if</span> <span class="kw">not</span> n: <span class="kw">return</span> <span class="nu">0</span>
+    <span class="kw">return</span> <span class="nu">1</span> + max(depth(n.left), depth(n.right))
+<span class="cm"># merge = 1 + max(L, R)</span></pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">EXAMPLE 3 · 翻转二叉树</div>
+<pre style="padding:6px 0 0"><span class="kw">def</span> invert(n):
+    <span class="kw">if</span> <span class="kw">not</span> n: <span class="kw">return</span> <span class="kw">None</span>
+    n.left, n.right = invert(n.right), invert(n.left)
+    <span class="kw">return</span> n
+<span class="cm"># merge = 交换左右</span></pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">EXAMPLE 4 · 判断相同</div>
+<pre style="padding:6px 0 0"><span class="kw">def</span> same(a, b):
+    <span class="kw">if</span> <span class="kw">not</span> a <span class="kw">and</span> <span class="kw">not</span> b: <span class="kw">return</span> <span class="kw">True</span>
+    <span class="kw">if</span> <span class="kw">not</span> a <span class="kw">or</span> <span class="kw">not</span> b: <span class="kw">return</span> <span class="kw">False</span>
+    <span class="kw">return</span> a.val == b.val <span class="kw">and</span> same(a.left,b.left) <span class="kw">and</span> same(a.right,b.right)
+<span class="cm"># merge = 与</span></pre>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>给你一个能套 80% 树题的模板。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/invert-binary-tree/" target="_blank">LC 226 翻转二叉树 ↗</a>
+    <a href="https://leetcode.cn/problems/same-tree/" target="_blank">LC 100 相同的树 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1305" target="_blank">洛谷 P1305 新二叉树 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 19 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="思想" data-q="最长路径怎么算？" data-title="路径问题：maxGain">
+  <div class="eb">PATH · 19 / 30</div>
+  <div class="hd"><h2 class="h">路径问题：maxGain 技巧</h2>
+    <div class="sb">路径可以「拐弯」，但一旦拐弯就<b>不能再上去</b> —— 这就是关键。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">LC 124 · 最大路径和（经典样例）</div>
+      <svg class="tree" viewBox="0 0 540 240">
+        <line class="tedge" x1="270" y1="40" x2="160" y2="110"/>
+        <line class="tedge" x1="270" y1="40" x2="380" y2="110"/>
+        <line class="tedge" x1="380" y1="110" x2="310" y2="190"/>
+        <line class="tedge" x1="380" y1="110" x2="450" y2="190"/>
+        <g class="tnode active"><circle cx="270" cy="40" r="24"/><text x="270" y="40">-10</text></g>
+        <g class="tnode visited"><circle cx="160" cy="110" r="24"/><text x="160" y="110">9</text></g>
+        <g class="tnode visited"><circle cx="380" cy="110" r="24"/><text x="380" y="110">20</text></g>
+        <g class="tnode"><circle cx="310" cy="190" r="24"/><text x="310" y="190">15</text></g>
+        <g class="tnode visited"><circle cx="450" cy="190" r="24"/><text x="450" y="190">7</text></g>
+        <text class="lbl-ink" x="14" y="28">最优路径 15 → 20 → 7 = 42</text>
+        <text class="lbl-ink" x="14" y="48">拐弯的路径更新全局答案</text>
+        <text class="lbl-ink" x="14" y="68">向上只能选一边（不拐弯）</text>
+      </svg>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--volt)">
+        <div class="state"><span class="sl">ANS →</span><span class="sv">42</span></div>
+<pre>best = -inf
+
+<span class="kw">def</span> gain(n):
+    <span class="kw">global</span> best
+    <span class="kw">if</span> <span class="kw">not</span> n: <span class="kw">return</span> <span class="nu">0</span>
+    L = max(gain(n.left),  <span class="nu">0</span>)  <span class="cm"># 负数不要</span>
+    R = max(gain(n.right), <span class="nu">0</span>)
+    best = max(best, n.val + L + R)  <span class="cm"># 拐弯路径</span>
+    <span class="kw">return</span> n.val + max(L, R)         <span class="cm"># 向上只能选一边</span>
+
+gain(root); <span class="kw">return</span> best</pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p">区分两件事：<br>
+        · <b>拐弯的路径</b> → 更新全局答案<br>
+        · <b>不拐弯的链</b> → 返回给父亲<br><br>
+        <b>负贡献直接剪掉</b>（max(..., 0)）。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>讲清「局部链」与「全局路径」的区别。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/binary-tree-maximum-path-sum/" target="_blank">LC 124 最大路径和 ↗</a>
+    <a href="https://leetcode.cn/problems/diameter-of-binary-tree/" target="_blank">LC 543 二叉树的直径 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 20 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="思想" data-q="公共祖先在哪？" data-title="最近公共祖先 LCA">
+  <div class="eb">LCA · 20 / 30</div>
+  <div class="hd"><h2 class="h">最近公共祖先 LCA</h2>
+    <div class="sb">问：p 和 q 的最近公共祖先是谁？<b>用返回值回答</b>。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">TRACE · 找 5 和 4 的 LCA（答案 5）</div>
+      <svg class="tree" viewBox="0 0 540 220">
+        <line class="tedge" x1="270" y1="30" x2="160" y2="100"/>
+        <line class="tedge" x1="270" y1="30" x2="380" y2="100"/>
+        <line class="tedge" x1="160" y1="100" x2="90" y2="180"/>
+        <line class="tedge" x1="160" y1="100" x2="230" y2="180"/>
+        <g class="tnode"><circle cx="270" cy="30" r="22"/><text x="270" y="30">3</text></g>
+        <g class="tnode visited"><circle cx="160" cy="100" r="22"/><text x="160" y="100">5</text></g>
+        <g class="tnode"><circle cx="380" cy="100" r="22"/><text x="380" y="100">1</text></g>
+        <g class="tnode"><circle cx="90" cy="180" r="22"/><text x="90" y="180">6</text></g>
+        <g class="tnode visited"><circle cx="230" cy="180" r="22"/><text x="230" y="180">4</text></g>
+        <text class="lbl-ink" x="180" y="86">← p 找到 5</text>
+        <text class="lbl-ink" x="240" y="196">← q 找到 4</text>
+        <text class="lbl-ink" x="310" y="30">左右都非空 → 我就是 LCA</text>
+      </svg>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--green)">
+        <div class="state"><span class="sl">RETURN →</span><span class="sv">5</span></div>
+<pre><span class="kw">def</span> lca(root, p, q):
+    <span class="kw">if</span> <span class="kw">not</span> root <span class="kw">or</span> root == p <span class="kw">or</span> root == q:
+        <span class="kw">return</span> root
+    L = lca(root.left,  p, q)
+    R = lca(root.right, p, q)
+    <span class="kw">if</span> L <span class="kw">and</span> R: <span class="kw">return</span> root   <span class="cm"># 两边都找到 → 我是 LCA</span>
+    <span class="kw">return</span> L <span class="kw">or</span> R               <span class="cm"># 否则把找到的那个往上传</span></pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p">返回值 = 「<b>这个子树里找到了 p 或 q 的哪一个</b>」。<br>
+        左右各自汇报，谁两边都收到，谁就是 LCA。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>用「返回值」而不是「全局变量」解决 LCA。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-tree/" target="_blank">LC 236 LCA ↗</a>
+    <a href="https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-search-tree/" target="_blank">LC 235 BST 的 LCA ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P3884" target="_blank">洛谷 P3884 二叉树问题 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 21 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="思想" data-q="BST 的有序性怎么用？" data-title="利用 BST 的有序性">
+  <div class="eb">BST POWER · 21 / 30</div>
+  <div class="hd"><h2 class="h">利用 BST 的有序性</h2>
+    <div class="sb">BST 的中序 = 有序。所以「第 k 小」「区间和」「验证」全都能 O(log n) 或 O(n)。</div></div>
+  <div class="two bd">
+    <div class="codeplate" style="--rule:var(--blue)">
+      <div class="state"><span class="sl">USE →</span><span class="sv">中序 + 计数</span></div>
+<pre><span class="cm"># ① 第 k 小：中序遍历第 k 个就是答案</span>
+<span class="kw">def</span> kth(root, k):
+    st, cur = [], root
+    <span class="kw">while</span> cur <span class="kw">or</span> st:
+        <span class="kw">while</span> cur:
+            st.append(cur); cur = cur.left
+        cur = st.pop()
+        k -= <span class="nu">1</span>
+        <span class="kw">if</span> k == <span class="nu">0</span>: <span class="kw">return</span> cur.val
+        cur = cur.right
+
+<span class="cm"># ② 验证 BST：中序序列必须严格递增</span>
+<span class="kw">def</span> is_bst(root):
+    prev = <span class="kw">None</span>
+    <span class="kw">def</span> walk(n):
+        <span class="kw">nonlocal</span> prev
+        <span class="kw">if</span> <span class="kw">not</span> n: <span class="kw">return</span> <span class="kw">True</span>
+        <span class="kw">if</span> <span class="kw">not</span> walk(n.left): <span class="kw">return</span> <span class="kw">False</span>
+        <span class="kw">if</span> prev <span class="kw">is</span> <span class="kw">not</span> <span class="kw">None</span> <span class="kw">and</span> n.val &lt;= prev: <span class="kw">return</span> <span class="kw">False</span>
+        prev = n.val
+        <span class="kw">return</span> walk(n.right)
+    <span class="kw">return</span> walk(root)</pre>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">PATTERN · BST 三类套路</div>
+        <div class="p">
+          <b style="color:var(--blue)">A · 中序遍历</b>：拿到有序序列 → 第 k 小、区间和、验证<br><br>
+          <b style="color:var(--green)">B · 二分查找</b>：比根大走右，比根小走左 → O(log n)<br><br>
+          <b style="color:var(--volt)">C · 递归 + 边界</b>：给子树传上下界 → 验证、剪枝
+        </div>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p"><b>凡是看到 BST，先想「中序 = 有序」。</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>把「有序」用到极致。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/kth-smallest-element-in-a-bst/" target="_blank">LC 230 第 k 小 ↗</a>
+    <a href="https://leetcode.cn/problems/validate-binary-search-tree/" target="_blank">LC 98 验证 BST ↗</a>
+    <a href="https://leetcode.cn/problems/range-sum-of-bst/" target="_blank">LC 938 范围和 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P3369" target="_blank">洛谷 P3369 普通平衡树 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 22 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="思想" data-q="树和图是什么关系？" data-title="从树到图">
+  <div class="eb">TREE → GRAPH · 22 / 30</div>
+  <div class="hd"><h2 class="h">从树到图</h2>
+    <div class="sb">树 = <b>无环连通图</b>。BFS / DFS 是它们的通用语言。</div></div>
+  <div class="two bd">
+    <div class="plate">
+      <div class="card-k">TREE vs GRAPH · 只差一个限制</div>
+      <table>
+        <tr><th></th><th>树</th><th>图</th></tr>
+        <tr><td class="zh">边数</td><td class="zh">n − 1</td><td class="zh">0 ~ n(n−1)/2</td></tr>
+        <tr><td class="zh">环</td><td class="zh">没有</td><td class="zh">可能有</td></tr>
+        <tr><td class="zh">路径</td><td class="zh">两点唯一</td><td class="zh">可能多条</td></tr>
+        <tr><td class="zh">遍历</td><td class="zh">不需要 visited</td><td class="zh">必须 visited</td></tr>
+      </table>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p">树上的 BFS / DFS，是图上算法的<b>特例</b>。<br>
+        在树上因为无环，所以不需要 visited 集合。</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--green)">
+        <div class="state"><span class="sl">UNIFY →</span><span class="sv">一个模板通吃</span></div>
+<pre><span class="kw">def</span> traverse(start, get_next, seen):
+    <span class="cm"># 树：get_next = lambda n: [n.left, n.right]</span>
+    <span class="cm"># 图：get_next = lambda v: adj[v]</span>
+    <span class="cm"># 树：seen 可以省；图：必须有</span>
+    st = [start]; seen.add(start)
+    <span class="kw">while</span> st:
+        n = st.pop()           <span class="cm"># 栈 = DFS</span>
+        <span class="cm"># 换 deque.popleft() = BFS</span>
+        visit(n)
+        <span class="kw">for</span> x <span class="kw">in</span> get_next(n):
+            <span class="kw">if</span> x <span class="kw">and</span> x <span class="kw">not</span> <span class="kw">in</span> seen:
+                seen.add(x); st.append(x)</pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">THINK · 反过来</div>
+        <div class="p">很多图算法，在树上会退化成更简单的形式：<br>
+        · 最短路 → 树路径唯一<br>
+        · 连通块 → 整棵树就是一个块</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>把树放进更大的图的世界里看。</p></div>
+  <div class="foot">
+    <a href="https://www.luogu.com.cn/problem/P3371" target="_blank">洛谷 P3371 单源最短路 ↗</a>
+    <a href="https://leetcode.cn/problems/number-of-islands/" target="_blank">LC 200 岛屿数量 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 23 ================= -->
+<section class="slide" data-ch="第 5 章" data-sec="陷阱" data-q="访问空节点会怎样？" data-title="陷阱一：空指针">
+  <div class="eb">TRAP 01 · 23 / 30</div>
+  <div class="hd"><h2 class="h">陷阱一：访问 None 的孩子</h2>
+    <div class="sb">运行时报错，往往出现在<b>递归的最后一步</b>。</div></div>
+  <div class="two bd">
+    <div class="col">
+      <div class="trace">
+<pre><span class="er">Traceback (most recent call last):</span>
+  File <span class="st">"main.py"</span>, line 4, in max_depth
+    L = max_depth(root.left)
+<span class="er">AttributeError: 'NoneType' object has no attribute 'left'</span></pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">FIX · 一行防御</div>
+<pre style="padding:4px 0 0"><span class="kw">def</span> max_depth(root):
+    <span class="kw">if</span> <span class="kw">not</span> root: <span class="kw">return</span> <span class="nu">0</span>   <span class="cm"># ① 先判空</span>
+    L = max_depth(root.left)
+    R = max_depth(root.right)
+    <span class="kw">return</span> <span class="nu">1</span> + max(L, R)</pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">WHY · 根源</div>
+        <div class="p">树题的错误都发生在<b>边界</b>：<br>
+        · 空树（root 就是 None）<br>
+        · 单节点<br>
+        · 只有左孩子 / 只有右孩子<br>
+        · 极深（退化链表）</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">HABIT · 好习惯</div>
+        <div class="p">递归函数的<b>第一行</b>永远是：<br>
+        <span class="mono" style="font-size:12px;color:var(--volt)">if not root: return ...</span><br>
+        这行不写，其余都白搭。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>养成「递归第一行必判空」的肌肉记忆。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/maximum-depth-of-binary-tree/" target="_blank">LC 104 最大深度 ↗</a>
+    <a href="https://leetcode.cn/problems/symmetric-tree/" target="_blank">LC 101 对称二叉树 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 24 ================= -->
+<section class="slide" data-ch="第 5 章" data-sec="陷阱" data-q="递归会炸吗？" data-title="陷阱二：递归爆栈">
+  <div class="eb">TRAP 02 · 24 / 30</div>
+  <div class="hd"><h2 class="h">陷阱二：递归栈溢出</h2>
+    <div class="sb">斜树（退化成链）时，深度 = n，Python 默认约 1000 层就不行了。</div></div>
+  <div class="two bd">
+    <div class="col">
+      <div class="trace">
+<pre><span class="er">RecursionError: maximum recursion depth exceeded</span>
+  File <span class="st">"main.py"</span>, line 3, in depth
+    <span class="kw">return</span> <span class="nu">1</span> + depth(n.left)</pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">FIX · 两条路</div>
+<pre style="padding:4px 0 0"><span class="kw">import</span> sys
+sys.setrecursionlimit(<span class="nu">100000</span>)  <span class="cm"># 只是把栈做大</span>
+<span class="cm"># 更稳：显式栈</span>
+st = [(root, <span class="nu">1</span>)]
+best = <span class="nu">0</span>
+<span class="kw">while</span> st:
+    n, d = st.pop()
+    <span class="kw">if</span> <span class="kw">not</span> n: <span class="kw">continue</span>
+    best = max(best, d)
+    st.append((n.left,  d + <span class="nu">1</span>))
+    st.append((n.right, d + <span class="nu">1</span>))</pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">COMPARE · 递归 vs 显式栈</div>
+        <table>
+          <tr><th>写法</th><th>栈在哪</th><th>风险</th></tr>
+          <tr><td class="zh">递归</td><td class="zh">系统调用栈</td><td class="zh">深度受限、慢</td></tr>
+          <tr><td class="zh">显式栈</td><td class="zh">堆内存</td><td class="zh">可控、不炸</td></tr>
+        </table>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p"><b>递归 = 用系统栈做 DFS</b>。<br>
+        斜树很深时，改写成显式栈是最稳的写法。</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">THINK · 什么时候要担心</div>
+        <div class="p">节点数 <span class="mono">n</span> 可能达到 <span class="mono">10^5</span> 时，<b>默认别用递归</b>。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>知道「爆栈」不是玄学，是深度超限。</p></div>
+  <div class="foot">
+    <a href="https://www.luogu.com.cn/problem/P4913" target="_blank">洛谷 P4913 二叉树深度 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1364" target="_blank">洛谷 P1364 医院设置 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 25 ================= -->
+<section class="slide" data-ch="第 5 章" data-sec="陷阱" data-q="结构选错了会怎样？" data-title="陷阱三：结构选错">
+  <div class="eb">TRAP 03 · 25 / 30</div>
+  <div class="hd"><h2 class="h">陷阱三：结构选错</h2>
+    <div class="sb">用数组存稀疏树、用 BST 找极值、用排序求 Top-K —— 都能跑，但代价不同。</div></div>
+  <div class="bd">
+    <div class="two">
+      <div class="plate">
+        <div class="card-k">✗ 稀疏树用数组存</div>
+        <div class="p">深度 20 的树，2²⁰ ≈ 100 万个位置，实际只有 21 个节点 → 空间浪费 99%。</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">✓ 稀疏树用链式存</div>
+        <div class="p">每个节点 3 个字段，总空间 <span class="mono">O(n)</span>。</div>
+      </div>
+    </div>
+    <table>
+      <tr><th>需求</th><th>该用</th><th>别用</th><th>原因</th></tr>
+      <tr><td class="zh">按序查找</td><td>BST / 平衡树</td><td class="zh">普通二叉树</td><td class="zh">无序就要 O(n) 扫描</td></tr>
+      <tr><td class="zh">反复取极值</td><td>堆</td><td class="zh">BST</td><td class="zh">堆取极值 O(1)，BST 要 O(log n)</td></tr>
+      <tr><td class="zh">Top-K</td><td>大小 k 的小顶堆</td><td class="zh">全排序</td><td class="zh">排序 O(n log n)，堆 O(n log k)</td></tr>
+      <tr><td class="zh">存储完全二叉树</td><td>数组（2i+1/2i+2）</td><td class="zh">链式</td><td class="zh">数组无指针、缓存友好</td></tr>
+      <tr><td class="zh">深度可能很大的树</td><td>显式栈 / BFS</td><td class="zh">递归</td><td class="zh">避免 RecursionError</td></tr>
+    </table>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>给出一张「需求 → 正确结构」的速查表。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/kth-largest-element-in-an-array/" target="_blank">LC 215 第 K 大 ↗</a>
+    <a href="https://leetcode.cn/problems/top-k-frequent-elements/" target="_blank">LC 347 前 K 高频 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P3378" target="_blank">洛谷 P3378 【模板】堆 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 26 ================= -->
+<section class="slide" data-ch="第 5 章" data-sec="运用" data-q="树能解哪些题？" data-title="运用全景图">
+  <div class="eb">MAP · 26 / 30</div>
+  <div class="hd"><h2 class="h">运用全景图</h2>
+    <div class="sb">三大分支 —— 遍历、BST、分治。所有题都能归到某一支。</div></div>
+  <div class="bd">
+    <div class="plate">
+      <div class="card-k">STRUCTURE → PROBLEM</div>
+      <div data-fx="map"></div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>看到新题先判断：它属于哪一支？</p></div>
+</section>
+
+<!-- ================= 27 ================= -->
+<section class="slide" data-ch="第 5 章" data-sec="运用" data-q="我该从哪道题开始刷？" data-title="真题对照表">
+  <div class="eb">PROBLEM LIST · 27 / 30</div>
+  <div class="hd"><h2 class="h">真题对照：点标题即可跳转</h2>
+    <div class="sb">按「先易后难」排好，前 6 道是今天的必做题。</div></div>
+  <div class="bd">
+    <div class="two" style="gap:24px">
+      <table>
+        <tr><th>题目</th><th>结构</th><th>难度</th></tr>
+        <tr><td class="zh"><a href="https://leetcode.cn/problems/binary-tree-preorder-traversal/" target="_blank">LC 144 二叉树前序遍历</a></td><td class="zh">DFS</td><td>★</td></tr>
+        <tr><td class="zh"><a href="https://leetcode.cn/problems/binary-tree-inorder-traversal/" target="_blank">LC 94 二叉树中序遍历</a></td><td class="zh">DFS</td><td>★</td></tr>
+        <tr><td class="zh"><a href="https://leetcode.cn/problems/binary-tree-postorder-traversal/" target="_blank">LC 145 二叉树后序遍历</a></td><td class="zh">DFS</td><td>★</td></tr>
+        <tr><td class="zh"><a href="https://leetcode.cn/problems/binary-tree-level-order-traversal/" target="_blank">LC 102 层序遍历</a></td><td class="zh">BFS</td><td>★★</td></tr>
+        <tr><td class="zh"><a href="https://leetcode.cn/problems/maximum-depth-of-binary-tree/" target="_blank">LC 104 最大深度</a></td><td class="zh">递归</td><td>★</td></tr>
+        <tr><td class="zh"><a href="https://leetcode.cn/problems/invert-binary-tree/" target="_blank">LC 226 翻转二叉树</a></td><td class="zh">递归</td><td>★</td></tr>
+        <tr><td class="zh"><a href="https://www.luogu.com.cn/problem/P1305" target="_blank">洛谷 P1305 新二叉树</a></td><td class="zh">建树 + 遍历</td><td>★★</td></tr>
+        <tr><td class="zh"><a href="https://www.luogu.com.cn/problem/P1087" target="_blank">洛谷 P1087 FBI 树</a></td><td class="zh">后序遍历</td><td>★★</td></tr>
+      </table>
+      <table>
+        <tr><th>题目</th><th>结构</th><th>难度</th></tr>
+        <tr><td class="zh"><a href="https://leetcode.cn/problems/validate-binary-search-tree/" target="_blank">LC 98 验证 BST</a></td><td class="zh">中序</td><td>★★</td></tr>
+        <tr><td class="zh"><a href="https://leetcode.cn/problems/kth-smallest-element-in-a-bst/" target="_blank">LC 230 BST 第 k 小</a></td><td class="zh">中序</td><td>★★</td></tr>
+        <tr><td class="zh"><a href="https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-tree/" target="_blank">LC 236 二叉树 LCA</a></td><td class="zh">递归</td><td>★★★</td></tr>
+        <tr><td class="zh"><a href="https://leetcode.cn/problems/diameter-of-binary-tree/" target="_blank">LC 543 二叉树的直径</a></td><td class="zh">分治</td><td>★★</td></tr>
+        <tr><td class="zh"><a href="https://leetcode.cn/problems/binary-tree-maximum-path-sum/" target="_blank">LC 124 最大路径和</a></td><td class="zh">分治</td><td>★★★</td></tr>
+        <tr><td class="zh"><a href="https://www.luogu.com.cn/problem/P1030" target="_blank">洛谷 P1030 求先序排列</a></td><td class="zh">建树</td><td>★★</td></tr>
+        <tr><td class="zh"><a href="https://www.luogu.com.cn/problem/P1040" target="_blank">洛谷 P1040 加分二叉树</a></td><td class="zh">区间 DP</td><td>★★★</td></tr>
+        <tr><td class="zh"><a href="https://www.luogu.com.cn/problem/P3884" target="_blank">洛谷 P3884 二叉树问题</a></td><td class="zh">LCA / 遍历</td><td>★★★</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>给出一份可以直接开刷的清单。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/binary-tree-inorder-traversal/" target="_blank">LC 94 ↗</a>
+    <a href="https://leetcode.cn/problems/maximum-depth-of-binary-tree/" target="_blank">LC 104 ↗</a>
+    <a href="https://leetcode.cn/problems/invert-binary-tree/" target="_blank">LC 226 ↗</a>
+    <a href="https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-tree/" target="_blank">LC 236 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1305" target="_blank">P1305 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1030" target="_blank">P1030 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1040" target="_blank">P1040 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 28 ================= -->
+<section class="slide" data-ch="第 5 章" data-sec="运用" data-q="拿到题目先做什么？" data-title="五步解题流程">
+  <div class="eb">METHOD · 28 / 30</div>
+  <div class="hd"><h2 class="h">五步解题流程</h2>
+    <div class="sb">从「读题」到「交卷」，每一步只回答一个问题。</div></div>
+  <div class="bd">
+    <div class="steps">
+      <div class="step"><div class="n">STEP 1</div><div class="t">看节点</div><div class="d">单节点、左、右、整树 —— 我要处理哪一层？</div></div>
+      <div class="step"><div class="n">STEP 2</div><div class="t">选遍历</div><div class="d">前 / 中 / 后 / 层？决定「谁先被处理」。</div></div>
+      <div class="step"><div class="n">STEP 3</div><div class="t">定返回</div><div class="d">返回值代表什么问题的答案？（递归第一性问题）</div></div>
+      <div class="step"><div class="n">STEP 4</div><div class="t">写模板</div><div class="d">判空 → 递归左 → 递归右 → 合并。</div></div>
+      <div class="step"><div class="n">STEP 5</div><div class="t">测边界</div><div class="d">空树、单节点、斜树（退化链）、全同值。</div></div>
+    </div>
+    <div class="two">
+      <div class="codeplate" style="--rule:var(--volt)">
+        <div class="state"><span class="sl">TEMPLATE →</span><span class="sv">分治</span></div>
+<pre><span class="kw">def</span> solve(root):
+    <span class="kw">if</span> <span class="kw">not</span> root: <span class="kw">return</span> base   <span class="cm"># ① 判空</span>
+    L = solve(root.left)              <span class="cm"># ② 左答案</span>
+    R = solve(root.right)             <span class="cm"># ③ 右答案</span>
+    <span class="cm"># ④ 更新全局答案（可选）</span>
+    <span class="cm"># ⑤ 返回给父亲</span>
+    <span class="kw">return</span> merge(root, L, R)</pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">CHECKLIST · 交卷前 30 秒</div>
+        <div class="p">□ 递归第一行判空了吗？<br>
+        □ 返回值定义清楚了吗？<br>
+        □ 要不要更新全局答案？（路径类问题）<br>
+        □ 深度可能超过 1000 吗？<br>
+        □ 边界：空树 / 单节点 / 斜树 / 全同值。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>把今天的内容压缩成一套可重复的解题动作。</p></div>
+  <div class="foot"><span class="note">考试 / 比赛时，把这张清单写在草稿纸顶端。</span></div>
+</section>
+
+<!-- ================= 29 ================= -->
+<section class="slide" data-ch="复习" data-sec="复习" data-q="今天到底讲了什么？" data-title="一页复习卡">
+  <div class="eb">RECAP · 29 / 30</div>
+  <div class="hd"><h2 class="h">一页复习卡</h2>
+    <div class="sb">主线收在这里：<b>先处理谁，用谁的答案算我。</b></div></div>
+  <div class="bd">
+    <div class="two">
+      <div class="plate reveal" style="border-left:4px solid var(--blue);animation-delay:.05s">
+        <div class="card-k">CARD 1 · 遍历</div>
+        <div class="p">前序 <b>根左右</b>；中序 <b>左根右</b>；后序 <b>左右根</b>。<br>
+        <span class="mono" style="font-size:11px">visit 的位置不同，代码只差一行</span><br>
+        层序用 <b>deque</b>；Morris 用 O(1) 空间。</div>
+      </div>
+      <div class="plate reveal" style="border-left:4px solid var(--green);animation-delay:.13s">
+        <div class="card-k">CARD 2 · 结构</div>
+        <div class="p">链式：通用；数组：完全二叉树专用（2i+1 / 2i+2）。<br>
+        <span class="mono" style="font-size:11px">BST 中序 = 有序；AVL 防退化；堆管极值</span></div>
+      </div>
+      <div class="plate reveal" style="border-left:4px solid var(--ink);animation-delay:.21s">
+        <div class="card-k">CARD 3 · 性质</div>
+        <div class="p">层 i 最多 2^i 个；深度 k 最多 2^(k+1)−1 个；<br>
+        <span class="mono" style="font-size:11px">n₀ = n₂ + 1；n 个节点的形态数 = 卡特兰数</span></div>
+      </div>
+      <div class="plate reveal" style="border-left:4px solid var(--volt);animation-delay:.29s">
+        <div class="card-k">CARD 4 · 分治</div>
+        <div class="p">判空 → 求左右答案 → 合并成我 → 返回。<br>
+        <span class="mono" style="font-size:11px">路径类：局部链返回，全局答案单独更新</span><br>
+        区分「拐弯路径」与「向上链」。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>用四张卡把 30 页压成一屏。</p></div>
+  <div class="foot"><span class="note">核心一句话：二叉树的所有算法，都在回答「先处理谁，用谁的答案算我」。</span></div>
+</section>
+
+<!-- ================= 30 ================= -->
+<section class="slide" data-ch="结束" data-sec="结束" data-q="现在去做三道题" data-title="现在做三道题">
+  <div class="eb">THE END · 30 / 30</div>
+  <div class="two-75" style="flex:1">
+    <div class="col" style="justify-content:center">
+      <h2 class="h big">今天做<br>三道题</h2>
+      <div class="sb">做完这三道，今天讲的就<b>全用上了</b>。顺序别换。</div>
+      <div class="col" style="margin-top:12px;gap:8px">
+        <a href="https://leetcode.cn/problems/binary-tree-inorder-traversal/" target="_blank" class="tag blue" style="padding:10px 12px;font-size:11px">01 · LC 94 中序遍历（递归 → 迭代）↗</a>
+        <a href="https://leetcode.cn/problems/maximum-depth-of-binary-tree/" target="_blank" class="tag blue" style="padding:10px 12px;font-size:11px">02 · LC 104 最大深度（分治模板）↗</a>
+        <a href="https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-tree/" target="_blank" class="tag volt" style="padding:10px 12px;font-size:11px">03 · LC 236 最近公共祖先（返回值设计）↗</a>
+      </div>
+      <div class="col" style="margin-top:12px;gap:8px">
+        <a href="https://www.luogu.com.cn/problem/P1305" target="_blank" class="tag green" style="padding:10px 12px;font-size:11px">附加 · 洛谷 P1305 新二叉树 ↗</a>
+        <a href="https://www.luogu.com.cn/problem/P1030" target="_blank" class="tag green" style="padding:10px 12px;font-size:11px">附加 · 洛谷 P1030 求先序排列 ↗</a>
+        <a href="https://www.luogu.com.cn/problem/P1040" target="_blank" class="tag green" style="padding:10px 12px;font-size:11px">挑战 · 洛谷 P1040 加分二叉树 ↗</a>
+      </div>
+    </div>
+    <div class="col" style="justify-content:center">
+      <div class="plate">
+        <div class="card-k">ONE LINE · 一句话带走</div>
+        <div class="p">「二叉树不是链表的变体，是<b>「答案沿着边传上来」</b>的那张图。」</div>
+      </div>
+      <div class="plate" style="display:flex;gap:14px;align-items:center">
+        <div class="qr" data-qr></div>
+        <div>
+          <div class="card-k">SUBMIT</div>
+          <div class="p">把三道题的 AC 截图发群里。<br>
+          <span class="mono" style="font-size:11px;color:var(--muted)">leetcode.cn/problems/binary-tree-inorder-traversal</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="note">按 G 打开目录 · 按 R 重放当前页动画 · 谢谢。</span></div>
+</section>
+
+<!-- ================= rail ================= -->
+<div class="rail">
+  <div class="ch" data-r="ch">序</div>
+  <div class="q" data-r="q">一条链，两个岔</div>
+  <div class="line"><div class="ticks"></div><div class="sq"></div></div>
+  <div class="sec" data-r="sec">开场</div>
+</div>
+
+<!-- ================= controls ================= -->
+<button class="edge l" data-act="prev" aria-label="上一页">‹</button>
+<button class="edge r" data-act="next" aria-label="下一页">›</button>
+
+<div class="ctrl">
+  <div class="pline"><i></i></div>
+  <button class="navbtn" data-act="prev">‹ 上一页</button>
+  <button class="navbtn" data-act="next">下一页 ›</button>
+  <button class="counter" data-act="index">01 / 30</button>
+  <div class="ctrl-ch" data-r="ctrlch">序 · 开场</div>
+  <div class="hint">← → 翻页 · G 目录 · R 重放 · ? 帮助</div>
+</div>
+
+<!-- ================= index ================= -->
+<div class="index">
+  <h3>目录 · 30 页</h3>
+  <div class="sub">ONE LINE — 先处理谁，用谁的答案算我</div>
+  <div class="igrid"></div>
+</div>
+
+<!-- ================= help ================= -->
+<div class="help">
+  <h3>快捷键与操作</h3>
+  <table>
+    <tr><td>→ / Space / PageDown / 点击画面右侧</td><td>下一页</td></tr>
+    <tr><td>← / PageUp / 点击画面左侧</td><td>上一页</td></tr>
+    <tr><td>G 或点击页码</td><td>打开 / 关闭目录，直接跳转</td></tr>
+    <tr><td>Home / End</td><td>第一页 / 最后一页</td></tr>
+    <tr><td>R</td><td>重放当前页所有动画</td></tr>
+    <tr><td>动画按钮 ⏸ / ↻</td><td>暂停 / 重放单个动画</td></tr>
+    <tr><td>?</td><td>显示 / 隐藏本帮助</td></tr>
+    <tr><td>Esc</td><td>关闭帮助 / 目录</td></tr>
+  </table>
+  <p style="margin-top:18px;font:400 13px var(--mono);color:#8E887B">
+    底部控制条常驻：上一页 / 下一页 / 页码 / 当前章节。左右边缘的 ‹ › 会随鼠标出现。</p>
+</div>
+</div>
+
+<script>
+/* ================= fit ================= */
+function fit(){
+  var s = Math.min((innerWidth-24)/1280, (innerHeight-24)/720);
+  document.getElementById('stage').style.setProperty('--s', s);
+}
+addEventListener('resize', fit); fit();
+
+var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+var NS = 'http://www.w3.org/2000/svg';
+
+/* ================= Tree component ================= */
+function Tree(host, opts){
+  this.opts = opts; this.host = host; this.nodeMap = {};
+  this.shell();
+}
+Tree.prototype.shell = function(){
+  var o = this.opts, r = o.r || 22;
+  var s = '<svg class="tree" viewBox="' + o.viewBox + '">';
+  s += '<g class="edges">';
+  o.edges.forEach(function(e){
+    var a = o.nodes[e[0]], b = o.nodes[e[1]];
+    s += '<line class="tedge" x1="'+a.x+'" y1="'+a.y+'" x2="'+b.x+'" y2="'+b.y+'"/>';
+  });
+  s += '</g><g class="nodes">';
+  for(var id in o.nodes){
+    var n = o.nodes[id];
+    s += '<g class="tnode" data-id="'+id+'" transform="translate('+n.x+','+n.y+')">';
+    s += '<circle r="'+r+'"/>';
+    s += '<text y="1">'+(n.label != null ? n.label : id)+'</text>';
+    s += '</g>';
+  }
+  s += '</g></svg>';
+  this.host.innerHTML = s;
+  this.svg = this.host.querySelector('svg');
+  var self = this;
+  Array.prototype.forEach.call(this.svg.querySelectorAll('.tnode'), function(g){
+    self.nodeMap[g.getAttribute('data-id')] = g;
+  });
+};
+Tree.prototype.sync = function(state){
+  var active = state.active, visited = state.visited || [];
+  for(var id in this.nodeMap){
+    var g = this.nodeMap[id], cls = 'tnode';
+    if(visited.indexOf(id) >= 0) cls += ' visited';
+    if(id === active) cls += ' active';
+    g.setAttribute('class', cls);
+  }
+};
+
+var TREE_SMALL = {
+  viewBox: '0 0 420 240', r: 20,
+  nodes: {
+    A: {x:210, y:32,  label:'A'},
+    B: {x:110, y:112, label:'B'},
+    C: {x:310, y:112, label:'C'},
+    D: {x:56,  y:196, label:'D'},
+    E: {x:164, y:196, label:'E'},
+    F: {x:310, y:196, label:'F'}
+  },
+  edges: [['A','B'],['A','C'],['B','D'],['B','E'],['C','F']]
+};
+
+/* ================= frame player with per-host control ================= */
+function startFrames(host){
+  clearInterval(host._timer);
+  host._t = 0;
+  host._paused = false;
+  host._done = false;
+  host._draw(host._frames[0]);
+  host._timer = setInterval(function(){
+    if(host._paused) return;
+    host._t++;
+    if(host._t >= host._frames.length){
+      clearInterval(host._timer);
+      host._done = true;
+      return;
+    }
+    host._draw(host._frames[host._t]);
+  }, host._ms);
+}
+function playFrames(host, frames, draw, ms){
+  host._frames = frames;
+  host._draw = draw;
+  host._ms = ms || 900;
+  if(REDUCE){ draw(frames[frames.length - 1]); return; }
+  startFrames(host);
+}
+function pauseFx(host){
+  if(!host._frames) return;
+  host._paused = !host._paused;
+}
+function replayFx(host){
+  if(!host._frames) return;
+  startFrames(host);
+}
+
+/* ================= FX ================= */
+var FX = {};
+
+function buildTraversalFX(name, seqKey, order){
+  FX[name] = function(s){
+    var host = s.querySelector('[data-fx="'+name+'"]');
+    if(!host) return;
+    var t = new Tree(host, TREE_SMALL);
+    var frames = [{active:null, visited:[]}];
+    var acc = [];
+    order.forEach(function(id){
+      acc = acc.concat([id]);
+      frames.push({active:id, visited:acc.slice()});
+    });
+    frames.push({active:null, visited:acc.slice()});
+    playFrames(host, frames, function(f){
+      t.sync(f);
+      var live = s.querySelector('[data-live="'+seqKey+'"]');
+      if(live){
+        live.innerHTML = f.visited.map(function(id, i){
+          var isLast = (i === f.visited.length - 1);
+          return '<span class="slot'+(isLast && f.active ? ' on' : '')+'">'+id+'</span>';
+        }).join('');
+      }
+    }, 850);
+    // 重置按钮显示
+    var btn = s.querySelector('[data-fx-target="'+name+'"][data-fx-act="pause"]');
+    if(btn) btn.textContent = '⏸ 暂停';
+  };
+}
+buildTraversalFX('pre',  'preseq',  ['A','B','D','E','C','F']);
+buildTraversalFX('in',   'inseq',   ['D','B','E','A','C','F']);
+buildTraversalFX('post', 'postseq', ['D','E','B','F','C','A']);
+
+FX.level = function(s){
+  var host = s.querySelector('[data-fx="level"]');
+  if(!host) return;
+  var t = new Tree(host, TREE_SMALL);
+  var frames = [
+    {active:null, visited:[], q:['A']},
+    {active:'A', visited:['A'], q:['B','C']},
+    {active:'B', visited:['A','B'], q:['C','D','E']},
+    {active:'C', visited:['A','B','C'], q:['D','E','F']},
+    {active:'D', visited:['A','B','C','D'], q:['E','F']},
+    {active:'E', visited:['A','B','C','D','E'], q:['F']},
+    {active:'F', visited:['A','B','C','D','E','F'], q:[]},
+    {active:null, visited:['A','B','C','D','E','F'], q:[]}
+  ];
+  playFrames(host, frames, function(f){
+    t.sync(f);
+    var q = s.querySelector('[data-live="lvq"]');
+    if(q) q.textContent = '[' + f.q.join(', ') + ']';
+  }, 900);
+  var btn = s.querySelector('[data-fx-target="level"][data-fx-act="pause"]');
+  if(btn) btn.textContent = '⏸ 暂停';
+};
+
+FX.map = function(s){
+  var host = s.querySelector('[data-fx="map"]');
+  if(!host) return;
+  var groups = [
+    {t:'遍历 DFS / BFS', d:'先处理谁', c:'#1B4AE0', x:14, items:['LC 144 前序','LC 94 中序','LC 145 后序','LC 102 层序','LC 199 右视图']},
+    {t:'BST 有序结构', d:'利用有序', c:'#0B7A55', x:356, items:['LC 98 验证 BST','LC 230 第 k 小','LC 235 BST 的 LCA','LC 938 范围和']},
+    {t:'分治 / 路径', d:'用谁的答案算我', c:'#FF4D1F', x:698, items:['LC 104 最大深度','LC 226 翻转','LC 543 直径','LC 124 最大路径和','LC 236 LCA']}
+  ];
+  var s2 = '<svg class="tube" viewBox="0 0 1040 320">';
+  groups.forEach(function(g){
+    s2 += '<rect x="'+g.x+'" y="4" width="320" height="52" fill="none" stroke="'+g.c+'" stroke-width="2"/>';
+    s2 += '<text x="'+(g.x+14)+'" y="26" class="lbl-ink" style="font-size:16px">'+g.t+'</text>';
+    s2 += '<text x="'+(g.x+14)+'" y="44" class="lbl">'+g.d+'</text>';
+    g.items.forEach(function(it, i){
+      var y = 78 + i*46;
+      s2 += '<path d="M'+(g.x+30)+','+(y-20)+' V'+y+'" stroke="'+g.c+'" stroke-width="2" opacity="0.5" fill="none"/>';
+      s2 += '<rect x="'+g.x+'" y="'+y+'" width="320" height="34" fill="none" stroke="#15171B" stroke-width="2"/>';
+      s2 += '<text x="'+(g.x+14)+'" y="'+(y+22)+'" class="lbl-ink" style="font-size:12px">'+it+'</text>';
+    });
+  });
+  s2 += '</svg>';
+  host.innerHTML = s2;
+};
+
+/* ================= static figures ================= */
+(function buildQR(){
+  var q = document.querySelector('[data-qr]');
+  if(!q) return;
+  var seed = [1,1,1,0,1,0,1,1,1, 1,0,1,1,0,1,1,0,1, 1,1,1,0,0,1,1,1,1,
+              0,1,0,1,1,0,0,1,0, 1,0,1,1,0,1,1,0,1, 0,1,1,0,1,0,1,1,0,
+              1,1,1,0,1,1,1,0,1, 1,0,1,1,0,1,0,1,1, 1,1,1,0,1,0,1,1,1];
+  var html = '';
+  for(var i = 0; i < 81; i++) html += (seed[i] ? '<i></i>' : '<span></span>');
+  q.innerHTML = html;
+})();
+
+/* ================= navigation ================= */
+var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+var stage = document.getElementById('stage');
+var pbar = document.querySelector('.pline i');
+var counter = document.querySelector('.counter');
+var ctrlCh = document.querySelector('[data-r="ctrlch"]');
+var rail = {
+  ch:  document.querySelector('[data-r="ch"]'),
+  q:   document.querySelector('[data-r="q"]'),
+  sec: document.querySelector('[data-r="sec"]'),
+  sq:  document.querySelector('.rail .sq')
+};
+var ticksBox = document.querySelector('.rail .ticks');
+for(var ti = 0; ti < 30; ti++){
+  var tk = document.createElement('div');
+  tk.className = 'tick';
+  tk.style.top = (ti / 29 * 100) + '%';
+  ticksBox.appendChild(tk);
+}
+
+var igrid = document.querySelector('.igrid');
+slides.forEach(function(s, i){
+  var b = document.createElement('button');
+  b.className = 'icell';
+  b.dataset.i = i;
+  b.setAttribute('aria-label', (i+1) + ' · ' + (s.dataset.title || ''));
+  b.innerHTML = '<div class="n">' + (i + 1 < 10 ? '0' : '') + (i + 1) + '</div>'
+              + '<div class="t">' + (s.dataset.title || '') + '</div>'
+              + '<div class="c">' + (s.dataset.sec || '') + '</div>';
+  b.addEventListener('click', function(ev){
+    ev.stopPropagation();
+    show(i); toggleIndex(false);
+  });
+  igrid.appendChild(b);
+});
+
+var cur = -1;
+
+function stopFx(slide){
+  var fxEls = slide.querySelectorAll('[data-fx]');
+  Array.prototype.forEach.call(fxEls, function(fxD){ clearInterval(fxD._timer); });
+}
+
+function show(n){
+  n = Math.max(0, Math.min(slides.length - 1, n));
+  if(cur >= 0 && slides[cur]){
+    slides[cur].classList.remove('on');
+    stopFx(slides[cur]);
+  }
+  cur = n;
+  var s = slides[cur];
+  s.classList.remove('on');
+  void s.offsetWidth;
+  s.classList.add('on');
+
+  rail.ch.textContent  = s.dataset.ch;
+  rail.q.textContent   = s.dataset.q;
+  rail.sec.textContent = s.dataset.sec;
+  rail.sq.style.top    = (cur / (slides.length - 1) * 100) + '%';
+  counter.textContent  = (cur + 1 < 10 ? '0' : '') + (cur + 1) + ' / ' + slides.length;
+  ctrlCh.textContent   = s.dataset.ch + ' · ' + s.dataset.sec;
+  pbar.style.width     = (cur / (slides.length - 1) * 100) + '%';
+
+  Array.prototype.forEach.call(igrid.children, function(c, i){
+    c.classList.toggle('cur', i === cur);
+  });
+
+  var fxEls = s.querySelectorAll('[data-fx]');
+  Array.prototype.forEach.call(fxEls, function(fxD){
+    var name = fxD.getAttribute('data-fx');
+    if(FX[name]){
+      setTimeout(function(){
+        if(slides[cur] !== s) return;
+        try{ FX[name](s); }catch(e){ console.error(e); }
+      }, 260);
+    }
+  });
+}
+function next(){ show(cur + 1); }
+function prev(){ show(cur - 1); }
+
+var indexPanel = document.querySelector('.index');
+var helpPanel  = document.querySelector('.help');
+function toggleIndex(force){
+  var on = (typeof force === 'boolean') ? force : !indexPanel.classList.contains('on');
+  indexPanel.classList.toggle('on', on);
+  if(on) helpPanel.classList.remove('on');
+}
+function toggleHelp(force){
+  var on = (typeof force === 'boolean') ? force : !helpPanel.classList.contains('on');
+  helpPanel.classList.toggle('on', on);
+  if(on) indexPanel.classList.remove('on');
+}
+
+document.addEventListener('click', function(e){
+  var btn = e.target.closest ? e.target.closest('[data-act]') : null;
+  if(btn){
+    e.stopPropagation();
+    var act = btn.dataset.act;
+    if(act === 'prev') prev();
+    else if(act === 'next') next();
+    else if(act === 'index') toggleIndex();
+    return;
+  }
+  // 动画控制按钮
+  var fxBtn = e.target.closest ? e.target.closest('[data-fx-target]') : null;
+  if(fxBtn){
+    e.stopPropagation();
+    var name = fxBtn.dataset.fxTarget;
+    var action = fxBtn.dataset.fxAct;
+    var host = document.querySelector('[data-fx="'+name+'"]');
+    if(!host) return;
+    if(action === 'pause'){
+      pauseFx(host);
+      fxBtn.textContent = host._paused ? '▶ 继续' : '⏸ 暂停';
+    } else if(action === 'replay'){
+      replayFx(host);
+      var pBtn = document.querySelector('[data-fx-target="'+name+'"][data-fx-act="pause"]');
+      if(pBtn) pBtn.textContent = '⏸ 暂停';
+    }
+  }
+});
+
+addEventListener('keydown', function(e){
+  if(e.key === '?' || (e.key === '/' && e.shiftKey)){ e.preventDefault(); toggleHelp(); return; }
+  if(helpPanel.classList.contains('on')){
+    if(e.key === 'Escape') toggleHelp(false);
+    return;
+  }
+  if(indexPanel.classList.contains('on')){
+    if(e.key === 'Escape' || e.key.toLowerCase() === 'g'){ toggleIndex(false); return; }
+    if(e.key === 'ArrowRight'){ show(cur + 1); return; }
+    if(e.key === 'ArrowLeft'){ show(cur - 1); return; }
+    return;
+  }
+  switch(e.key){
+    case 'ArrowRight': case ' ': case 'PageDown': e.preventDefault(); next(); break;
+    case 'ArrowLeft':  case 'PageUp':            e.preventDefault(); prev(); break;
+    case 'Home': show(0); break;
+    case 'End':  show(slides.length - 1); break;
+    case 'g': case 'G': toggleIndex(); break;
+    case 'r': case 'R': show(cur); break;
+    case 'Escape': toggleIndex(false); toggleHelp(false); break;
+  }
+});
+
+stage.addEventListener('click', function(e){
+  if(e.target.tagName === 'A') return;
+  if(e.target.closest('[data-act]')) return;
+  if(e.target.closest('[data-fx-target]')) return;
+  if(helpPanel.classList.contains('on')){ toggleHelp(false); return; }
+  if(indexPanel.classList.contains('on')){ toggleIndex(false); return; }
+  var r = stage.getBoundingClientRect();
+  if(e.clientX - r.left > r.width / 4) next(); else prev();
+});
+
+show(0);
+</script>
+</body>
+</html>
