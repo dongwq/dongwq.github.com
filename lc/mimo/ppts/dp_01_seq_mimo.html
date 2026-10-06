@@ -1,0 +1,2630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>线性 DP · 从一维递推到状态压缩 — ALGO PRIMER / DP-01</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;700;900&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#FCF4E6;--panel:#FFFCF7;--ink:#2B2018;--ink2:#5C4736;--muted:#9C846A;
+  --line:#E9D8BE;--line2:#F2E6D2;--accent:#E1542B;--amber:#F3B33F;--amber-soft:#FBE8C4;
+  --green:#3E7B4E;--red:#B53B2C;
+  --serif:'Noto Serif SC','Songti SC',serif;
+  --sans:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  --hand:'Zhi Mang Xing','STKaiti','KaiTi',cursive;
+}
+html,body{height:100%;overflow:hidden;background:#EFE2CC;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;display:grid;place-items:center}
+#deck{position:relative;width:1280px;height:720px;overflow:hidden;
+  background:radial-gradient(1500px 900px at 22% -12%,#FFFCF6 0%,#FBF1E0 52%,#F6E5CB 100%)}
+.slide{position:absolute;inset:0;display:none}
+.slide.active{display:block}
+
+/* ---------- frame ---------- */
+.top{position:absolute;left:0;top:0;width:1280px;height:122px}
+.wordmark{position:absolute;left:80px;top:20px;font:500 11px/1.2 var(--mono);letter-spacing:.26em;color:var(--muted)}
+.s-title{position:absolute;left:80px;top:42px;font:700 28px/1.3 var(--serif);color:var(--ink)}
+.qdesc{position:absolute;left:80px;top:84px;width:1010px;font:400 13px/1.5 var(--sans);color:var(--ink2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qlabel{display:inline-block;background:var(--amber-soft);color:#8A5A22;font:500 10px/1.2 var(--mono);
+  letter-spacing:.16em;padding:3px 7px;border-radius:3px;margin-right:10px;vertical-align:1px}
+.top-rule{position:absolute;left:80px;top:118px;width:1120px;height:1px;background:var(--line)}
+.top-accent{position:absolute;left:80px;top:116px;width:76px;height:3px;background:var(--accent)}
+.numline{position:absolute;left:80px;top:132px;font:700 21px/1.4 var(--mono)}
+.numrule{position:absolute;left:80px;top:174px;width:1120px;height:0;border-top:1px solid var(--line2)}
+.mnum{position:absolute;left:26px;top:130px;font:700 22px/1 var(--mono);color:var(--accent)}
+.mlabel{position:absolute;left:32px;top:188px;writing-mode:vertical-rl;font:500 11px/1 var(--mono);letter-spacing:.24em;color:var(--muted)}
+.stage-inner{position:absolute;left:80px;top:192px;width:1120px;height:368px}
+
+/* ---------- bottom band (ruler at the very bottom) ---------- */
+.bottom{position:absolute;left:0;top:556px;width:1280px;height:164px}
+.bot-rule{position:absolute;left:80px;top:22px;width:1120px;height:1px;background:var(--line)}
+.eyebrow{position:absolute;left:80px;top:36px;font:500 11px/1.3 var(--mono);letter-spacing:.16em;color:var(--muted)}
+.help{position:absolute;left:80px;top:58px;font:500 10px/1.3 var(--mono);letter-spacing:.11em;color:rgba(156,132,106,.85)}
+.pager{position:absolute;right:80px;top:32px;text-align:right}
+.pg{font:700 15px/1 var(--serif);color:var(--accent);letter-spacing:.06em}
+.ruler{position:absolute;left:80px;bottom:14px;width:1120px;display:flex;gap:8px}
+.ruler a{flex:1;display:block;cursor:pointer;text-decoration:none}
+.ruler .bar{height:8px;border-radius:4px;background:var(--line2);transition:background .2s}
+.ruler a.on .bar{background:var(--accent)}
+.ruler .lbl{font:500 9px/1.2 var(--mono);color:var(--muted);margin-top:7px;text-align:center;white-space:nowrap}
+
+/* ---------- type ---------- */
+.meta{font:500 11px/1.3 var(--mono);letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+.hero{font:900 92px/1.02 var(--serif);letter-spacing:-.01em}
+.disp{font:700 42px/1.22 var(--serif)}
+.h2{font:700 24px/1.35 var(--serif)}
+.h3{font:700 18px/1.4 var(--mono)}
+.lead{font:400 19px/1.8 var(--sans)}
+.p{font:400 16px/1.82 var(--sans)}
+.sm{font:400 14px/1.75 var(--sans);color:var(--ink2)}
+.mono{font-family:var(--mono)}
+.v{color:var(--accent)}
+.mu{color:var(--muted)}
+.g{color:var(--green)}
+.l{color:var(--red)}
+.big{font:700 30px/1.2 var(--mono)}
+.ser{font-family:var(--serif)}
+
+/* ---------- layout ---------- */
+.g12{display:grid;grid-template-columns:repeat(12,64px);gap:32px;align-items:start;height:100%}
+.c1-4{grid-column:1/span 4}.c1-5{grid-column:1/span 5}.c1-6{grid-column:1/span 6}
+.c1-7{grid-column:1/span 7}.c1-12{grid-column:1/span 12}
+.c5-12{grid-column:5/span 8}.c6-12{grid-column:6/span 7}
+.c7-12{grid-column:7/span 6}.c8-12{grid-column:8/span 5}.c9-12{grid-column:9/span 4}
+.row{display:flex;gap:24px;align-items:flex-start}
+.hrule{height:1px;background:var(--line);margin:16px 0}
+.hrule.dot{background:var(--line2)}
+.keyline{width:52px;height:3px;background:var(--accent);margin:14px 0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px}
+.note\boxed{border-left:3px solid var(--accent);padding:2px 0 2px 14px}
+.warm\boxed{background:var(--amber-soft);border-radius:6px;padding:14px 18px}
+
+/* ---------- annotation ---------- */
+.hand{position:absolute;font:400 21px/1.42 var(--hand);color:var(--accent);transform:rotate(-1.5deg);max-width:300px;z-index:5}
+.hand[data-at]{opacity:1;clip-path:inset(0 100% 0 0);transition:clip-path .38s ease-out}
+.hand[data-at].on{clip-path:inset(0 -20% 0 0)}
+.hand:before{content:'';display:block;width:26px;height:2px;background:var(--accent);margin-bottom:8px}
+
+/* ---------- motion ---------- */
+[data-seq]:not(.dpcell):not(.path):not(td.dp),[data-at]:not(.hand){opacity:0;transition:opacity .32s cubic-bezier(.22,1,.36,1),transform .32s cubic-bezier(.22,1,.36,1)}
+[data-seq].on:not(.dpcell):not(.path):not(td.dp),[data-at].on:not(.hand){opacity:1}
+.rise{transform:translateY(10px)}.rise.on{transform:none}
+.path{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:miter;
+  stroke-dasharray:var(--len);stroke-dashoffset:var(--len);transition:stroke-dashoffset .7s cubic-bezier(.16,1,.3,1)}
+.path.on{stroke-dashoffset:0}
+.arw{fill:none;stroke:var(--ink2);stroke-width:1.5}
+.svgtxt{font:500 12px var(--mono);fill:var(--ink)}
+.svgtxtb{font:700 13px var(--mono);fill:var(--ink)}
+.svgtxtv{font:700 14px var(--mono);fill:var(--accent)}
+.svgm{font:500 10px var(--mono);fill:var(--muted);letter-spacing:.12em}
+
+/* ---------- dp cells ---------- */
+.seq{display:flex;gap:4px;align-items:flex-end}
+.idxrow{margin-bottom:7px}
+.ix{width:42px;text-align:center;font:500 11px/1 var(--mono);color:var(--muted)}
+.dpcell{width:42px;height:42px;border-radius:4px;background:var(--panel);border:1px solid var(--line);
+  display:grid;place-items:center;font:600 16px/1 var(--mono);color:var(--ink);
+  transition:background .22s ease-out,color .22s ease-out,border-color .22s ease-out}
+.dpcell i{font-style:normal;opacity:0;transition:opacity .12s ease-out}
+.dpcell.on{background:var(--amber-soft);border-color:var(--amber)}
+.dpcell.on i{opacity:1}
+.dpcell.on.cur{animation:flash .9s ease-out}
+@keyframes flash{0%,42%{background:var(--accent);color:#FFF7EC;border-color:var(--accent)}
+  100%{background:var(--amber-soft);color:var(--ink);border-color:var(--amber)}}
+.seq-lbl{font:500 11px/1 var(--mono);color:var(--muted);margin-right:14px;width:76px;text-align:right;padding-bottom:13px}
+
+/* ---------- tables ---------- */
+table.t{border-collapse:collapse;width:100%}
+table.t th{font:500 10px/1.2 var(--mono);letter-spacing:.16em;color:var(--muted);text-align:left;
+  padding:8px 10px;border-bottom:1.5px solid var(--accent);text-transform:uppercase}
+table.t td{padding:8px 10px;border-bottom:1px solid var(--line2);font-size:14px;line-height:1.62;vertical-align:top}
+table.t tr:last-child td{border-bottom:none}
+table.t td.k{font-family:var(--mono);font-size:13px;font-weight:600;white-space:nowrap}
+table.m{border-collapse:collapse}
+table.m th{font:500 10px/1.2 var(--mono);letter-spacing:.12em;color:var(--muted);padding:6px 4px;text-transform:uppercase}
+table.m th.rl{text-align:right;padding-right:12px;letter-spacing:.04em;font-size:11px;color:var(--ink);white-space:nowrap}
+table.m td.dp{width:46px;height:34px;text-align:center;font:600 15px/1 var(--mono);color:var(--ink);
+  border-radius:3px;border:1px solid var(--line2);opacity:.13;transition:opacity .12s ease-out,background-color .24s ease-out}
+table.m td.dp.on{opacity:1;background:var(--amber-soft);border-color:var(--amber)}
+table.m td.dp.on.cur{animation:flash .9s ease-out}
+table.m td.hd{font:500 10px var(--mono);color:var(--muted)}
+
+/* ---------- code ---------- */
+.code{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.cbar{height:32px;background:#3B2B1E;color:#FCF4E6;display:flex;align-items:center;gap:10px;padding:0 12px}
+.cf{flex:1;font:500 11px/1 var(--mono);letter-spacing:.12em}
+.mini{background:none;border:1px solid rgba(252,244,230,.34);color:#FCF4E6;font:500 10px/1 var(--mono);
+  padding:5px 8px;border-radius:3px;cursor:pointer;letter-spacing:.08em;transition:background .18s,border-color .18s}
+.mini:hover{background:var(--accent);border-color:var(--accent)}
+ol.cl{position:relative;list-style:none;counter-reset:l;padding:10px 0 12px}
+ol.cl li{counter-increment:l;position:relative;padding:1px 14px 1px 56px;font:400 14px/1.68 var(--mono);white-space:pre}
+ol.cl li:before{content:counter(l,decimal-leading-zero);position:absolute;left:0;top:1px;width:38px;
+  text-align:right;color:var(--muted);font:500 11px/2.2 var(--mono)}
+ol.cl li.hl{background:rgba(225,84,43,.08);box-shadow:inset 3px 0 0 var(--accent)}
+ol.cl li.hl[data-note]:after{content:attr(data-note);display:block;white-space:normal;
+  font:400 12px/1.55 var(--sans);color:var(--accent);margin:3px 0 6px}
+.k{color:#C0472B;font-weight:700}.fn{color:var(--ink);font-weight:700}
+.n{color:#96662A}.s{color:#6B7A3A}.cm{color:#A99274;font-style:italic}
+
+/* ---------- misc ---------- */
+.chip{display:inline-block;border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:3px 9px;
+  font:500 11px/1.2 var(--mono);letter-spacing:.1em;color:var(--ink2)}
+.num\boxed{width:36px;height:36px;border-radius:6px;background:var(--accent);color:#FFF7EC;display:grid;place-items:center;
+  font:700 15px/1 var(--mono);flex:none}
+.numbox.alt{background:var(--panel);color:var(--accent);border:1px solid var(--accent)}
+.q{font:500 17px/1.78 var(--sans)}
+.term{font:500 13px/1.5 var(--mono)}
+.link{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(225,84,43,.32)}
+.link:hover{border-color:var(--accent)}
+.watermark{position:absolute;right:-50px;top:110px;font:900 230px/1 var(--serif);color:var(--accent);
+  opacity:.07;pointer-events:none;user-select:none}
+.ans{display:inline-block;background:var(--accent);color:#FFF7EC;padding:3px 10px;border-radius:4px;
+  font:700 13px/1.3 var(--mono)}
+
+/* ---------- jump panel ---------- */
+#panel{position:fixed;inset:0;background:rgba(43,32,24,.94);display:none;z-index:50;padding:44px 52px;overflow:auto}
+#panel.open{display:block}
+#panel h4{font:500 11px/1 var(--mono);letter-spacing:.24em;color:#E9C79A;margin-bottom:22px}
+#plist{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(233,214,190,.25)}
+#plist button{background:#3B2B1E;border:none;color:#FCF4E6;text-align:left;padding:11px 13px;cursor:pointer;
+  font:400 12.5px/1.5 var(--sans)}
+#plist button span{display:block;font:500 10px/1 var(--mono);letter-spacing:.16em;color:#C7A583;margin-bottom:5px}
+#plist button:hover{background:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="deck">
+
+<!-- ============ 封面 ============ -->
+<section class="slide" data-ch="0" data-stagger="250"
+  data-title="封面 · 线性 DP"
+  data-rec="dp[i] = dp[i-1] <span class='v'>+</span> dp[i-2]"
+  data-eyebrow="ALGO PRIMER / DP-01 · 线性动态规划 · 47 页">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-7">
+        <div class="meta rise" data-at="0">从零开始 · 算法入门系列 · 第 01 讲</div>
+        <h2 class="hero rise" data-at="120" style="margin-top:16px">线性 DP</h2>
+        <h3 class="disp rise" data-at="250" style="margin-top:12px;color:var(--ink2)">从一维递推到状态压缩</h3>
+        <div class="keyline" data-at="380"></div>
+        <p class="lead rise" data-at="440">这一讲只做一件事：把「一个大问题」拆成「一串小问题」，<br>
+          并且把每次算出来的结果<b class="v mono">记下来</b>，不再重算。</p>
+      </div>
+      <div class="c8-12">
+        <div class="meta" data-at="200">DP[0 … 7]</div>
+        <div style="margin-top:22px" data-strip="1,1,2,3,5,8,13,21"></div>
+        <div class="mono" data-at="2300" style="margin-top:24px;font-size:18px;font-weight:700">
+          dp[i] = dp[i-1] <span class="v">+</span> dp[i-2]
+        </div>
+        <div class="sm" data-at="2450" style="margin-top:12px">后一个格子 = 前两个格子相加。<br>整套 DP，就是这句话的反复使用。</div>
+      </div>
+    </div>
+    <div class="watermark">DP</div>
+    <div class="hand" data-at="2700" style="left:110px;top:290px">先记住这一行，别的都是它的变体</div>
+  </div>
+</section>
+
+<!-- ============ 01 两个问题 ============ -->
+<section class="slide" data-ch="1" data-stagger="170"
+  data-title="今天要解决的两个问题"
+  data-rec="ans = f(n, capacity)"
+  data-eyebrow="第一章 · 起点 · 目标：看到两个具体问题">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">问题 A · 爬楼梯</div>
+        <h4 class="q" style="margin-top:12px">一段 <b class="mono">10</b> 级台阶，每步迈 <b class="mono">1</b> 级或 <b class="mono">2</b> 级。<br>
+          问：走到第 10 级，共有<b class="v mono">多少种</b>走法？</h4>
+        <svg viewBox="0 0 520 148" width="520" height="148" style="margin-top:12px">
+          <path d="M20 130 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44"
+                fill="none" stroke="#2B2018" stroke-width="1.5"/>
+          <g class="svgm"><text x="26" y="146">1</text><text x="114" y="146">3</text><text x="202" y="146">5</text>
+            <text x="290" y="146">7</text><text x="378" y="146">9</text><text x="458" y="146">10</text></g>
+          <path class="path" data-draw="1500" d="M20 130 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44 v-11 h44"/>
+          <circle cx="484" cy="20" r="6" fill="#E1542B" data-seq="6"/>
+        </svg>
+        <div class="sm" data-seq="7" style="margin-top:6px">暴力：把所有走法都枚举出来 → 越数越慢，还会重复数。</div>
+      </div>
+      <div class="c7-12">
+        <div class="meta">问题 B · 0/1 背包</div>
+        <h4 class="q" style="margin-top:12px">四件物品，背包最多装 <b class="mono">5</b> 公斤。<br>
+          每件只能拿或不拿，怎样装<b class="v mono">总价值最大</b>？</h4>
+        <table class="t" style="margin-top:12px">
+          <tr><th>物品</th><th>重量 w</th><th>价值 v</th><th>选择</th></tr>
+          <tr><td class="k">A</td><td class="k">2</td><td class="k">3</td><td class="mu">拿 / 不拿</td></tr>
+          <tr><td class="k">B</td><td class="k">3</td><td class="k">4</td><td class="mu">拿 / 不拿</td></tr>
+          <tr><td class="k">C</td><td class="k">4</td><td class="k">5</td><td class="mu">拿 / 不拿</td></tr>
+          <tr><td class="k">D</td><td class="k">5</td><td class="k">6</td><td class="mu">拿 / 不拿</td></tr>
+        </table>
+        <div class="sm" data-seq="8" style="margin-top:10px">四件就是 2⁴ = 16 种组合；物品一多就数不过来。</div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:660px;top:238px">两道题的答案，其实是同一张表</div>
+  </div>
+</section>
+
+<!-- ============ 02 最优子结构 ============ -->
+<section class="slide" data-ch="1" data-stagger="180"
+  data-title="最优解是怎么被拼出来的"
+  data-rec="optimal = <span class='v'>⊕</span> local_optimal"
+  data-eyebrow="第一章 · 起点 · 目标：理解「最优子结构」">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <h4 class="q">你从家到公司，中间要换乘地铁。</h4>
+        <p class="p" style="margin-top:14px">
+          你不会每到一站都重新思考一次「整个旅程怎么走最优」。<br><br>
+          你会先确定：<b>到第 k 站的最优走法</b>，<br>
+          再看：<b>从第 k 站出发，下一段怎么走</b>。
+        </p>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>最优子结构</b>的意思：<br>
+            如果整条路线是最优的，那它上面<b>每一段</b>也一定是那一段的最优。</div>
+        </div>
+      </div>
+      <div class="c6-12">
+        <svg viewBox="0 0 640 258" width="640" height="258">
+          <text class="svgm" x="0" y="22">路线 A · 每站重新决定（错误直觉）</text>
+          <path class="arw" d="M20 60 H600"/>
+          <g fill="#2B2018"><circle cx="20" cy="60" r="6"/><circle cx="165" cy="60" r="6"/><circle cx="310" cy="60" r="6"/>
+            <circle cx="455" cy="60" r="6"/><circle cx="600" cy="60" r="6"/></g>
+          <g class="svgtxt"><text x="8" y="86">家</text><text x="150" y="86">站1</text><text x="295" y="86">站2</text>
+            <text x="440" y="86">站3</text><text x="580" y="86">公司</text></g>
+          <g class="svgm"><text x="72" y="46">重新想</text><text x="217" y="46">重新想</text>
+            <text x="362" y="46">重新想</text><text x="507" y="46">重新想</text></g>
+
+          <text class="svgm" x="0" y="150">路线 B · 每站只记一个「到这里的最优值」（DP 的做法）</text>
+          <path class="arw" stroke="#E1542B" d="M20 190 H600"/>
+          <g fill="#E1542B"><circle cx="20" cy="190" r="6"/><circle cx="165" cy="190" r="6"/><circle cx="310" cy="190" r="6"/>
+            <circle cx="455" cy="190" r="6"/><circle cx="600" cy="190" r="6"/></g>
+          <g class="svgtxtb"><text x="8" y="220">0</text><text x="153" y="220">4</text><text x="298" y="220">7</text>
+            <text x="443" y="220">9</text><text x="588" y="220">13</text></g>
+          <g class="svgm"><text x="4" y="240">dp[0]</text><text x="146" y="240">dp[1]</text><text x="291" y="240">dp[2]</text>
+            <text x="436" y="240">dp[3]</text><text x="581" y="240">dp[4]</text></g>
+          <path class="path" data-draw="1200" d="M20 172 H600"/>
+          <text class="svgtxtv" x="220" y="164">一次算完，全部记下</text>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:96px;top:288px">关键不在「聪明」，在于肯不肯记下中间结果</div>
+  </div>
+</section>
+
+<!-- ============ 03 三个必问 ============ -->
+<section class="slide" data-ch="1" data-stagger="200"
+  data-title="DP 的三个必问问题"
+  data-rec="state → transition → base → answer"
+  data-eyebrow="第一章 · 起点 · 目标：拿到三个必问的问题">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-4">
+        <div class="numbox" data-seq="0">①</div>
+        <h4 class="h2" data-seq="1" style="margin-top:14px">存什么？</h4>
+        <div class="keyline" data-seq="1"></div>
+        <p class="p" data-seq="2"><b>状态（state）</b>＝ 你要记下来的那个量。</p>
+        <p class="sm" data-seq="3" style="margin-top:12px">
+          爬楼梯：<span class="mono">dp[i]</span> = 到第 i 级的走法数<br>
+          背包：<span class="mono">dp[j]</span> = 容量 j 的最大价值<br>
+          股票：<span class="mono">dp[i][k][0/1]</span>
+        </p>
+        <div class="notebox" data-seq="4" style="margin-top:16px"><div class="sm">状态定错，后面全白写。</div></div>
+      </div>
+      <div style="grid-column:5/span 4">
+        <div class="numbox" data-seq="1">②</div>
+        <h4 class="h2" data-seq="2" style="margin-top:14px">怎么转？</h4>
+        <div class="keyline" data-seq="2"></div>
+        <p class="p" data-seq="3"><b>转移（transition）</b>＝ 大的怎么由小的拼出来。</p>
+        <p class="sm" data-seq="4" style="margin-top:12px">
+          <span class="mono">dp[i] = dp[i-1] + dp[i-2]</span><br>
+          <span class="mono">dp[j] = max(dp[j], dp[j-w]+v)</span><br>
+          <span class="mono">dp[i][j] = dp[i-1][j-1] + 1</span>
+        </p>
+        <div class="notebox" data-seq="5" style="margin-top:16px"><div class="sm">要能「拼」出最优解，且无后效性。</div></div>
+      </div>
+      <div class="c9-12">
+        <div class="numbox" data-seq="2">③</div>
+        <h4 class="h2" data-seq="3" style="margin-top:14px">从哪开始？</h4>
+        <div class="keyline" data-seq="3"></div>
+        <p class="p" data-seq="4"><b>初始条件（base）</b>＝ 最小的那几格。</p>
+        <p class="sm" data-seq="5" style="margin-top:12px">
+          <span class="mono">dp[0]=1, dp[1]=1</span><br>
+          <span class="mono">dp[0]=0</span>（背包）<br>
+          <span class="mono">dp[i][0]=i</span>（编辑距离）
+        </p>
+        <div class="notebox" data-seq="6" style="margin-top:16px"><div class="sm">答案一般在 <span class="mono">dp[n]</span>。</div></div>
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:870px;top:286px">三个问题答不上来，就别急着写代码</div>
+  </div>
+</section>
+
+<!-- ============ 04 三者等价 ============ -->
+<section class="slide" data-ch="1" data-stagger="170"
+  data-title="递归、记忆化、递推是同一件事"
+  data-rec="memo[f(n)] = value"
+  data-eyebrow="第一章 · 起点 · 目标：看懂三者的关系">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:118px"></th><th style="width:280px">图像</th><th style="width:250px">代码形态</th>
+        <th style="width:130px">时间</th><th>说人话</th></tr>
+      <tr>
+        <td class="k">暴力递归</td>
+        <td data-seq="0"><svg viewBox="0 0 250 88" width="250" height="88">
+          <g class="svgtxt"><text x="106" y="18">f(5)</text><text x="48" y="54">f(4)</text><text x="176" y="54">f(3)</text>
+          <text x="12" y="86">f(3)</text><text x="82" y="86">f(2)</text><text x="152" y="86">f(2)</text><text x="214" y="86">f(1)</text></g>
+          <g class="arw"><path d="M112 26 L64 46"/><path d="M138 26 L190 46"/>
+          <path d="M58 62 L28 78"/><path d="M78 62 L94 78"/><path d="M186 62 L164 78"/><path d="M206 62 L224 78"/></g>
+        </svg></td>
+        <td data-seq="1"><span class="mono" style="font-size:13px">f(n)=f(n-1)+f(n-2)</span></td>
+        <td data-seq="2"><b class="l mono">O(2ⁿ)</b></td>
+        <td data-seq="3">同一件事算了好多遍。</td>
+      </tr>
+      <tr>
+        <td class="k">记忆化搜索</td>
+        <td data-seq="2"><svg viewBox="0 0 250 88" width="250" height="88">
+          <rect x="60" y="8" width="130" height="72" fill="#FBE8C4" stroke="#F3B33F" rx="4"/>
+          <g class="svgtxtb"><text x="72" y="32">f(5)=8</text><text x="72" y="52">f(4)=5</text><text x="72" y="72">f(3)=3</text></g>
+          <g class="svgm"><text x="196" y="32">←记账本</text></g>
+        </svg></td>
+        <td data-seq="3"><span class="mono" style="font-size:13px">if n in memo: return</span></td>
+        <td data-seq="4"><b class="g mono">O(n)</b></td>
+        <td data-seq="5">算过就记下来，下次直接读。</td>
+      </tr>
+      <tr>
+        <td class="k">递推填表</td>
+        <td data-seq="4"><svg viewBox="0 0 250 88" width="250" height="88">
+          <g fill="#FBE8C4" stroke="#F3B33F">
+            <rect x="12" y="26" width="38" height="38" rx="3"/><rect x="54" y="26" width="38" height="38" rx="3"/>
+            <rect x="96" y="26" width="38" height="38" rx="3"/><rect x="138" y="26" width="38" height="38" rx="3"/>
+            <rect x="180" y="26" width="38" height="38" rx="3"/></g>
+          <g class="svgtxtb"><text x="26" y="51">1</text><text x="68" y="51">1</text><text x="110" y="51">2</text>
+            <text x="152" y="51">3</text><text x="194" y="51">5</text></g>
+          <path class="arw" stroke="#E1542B" d="M31 16 H200"/><path class="arw" stroke="#E1542B" d="M194 12 L203 16 L194 20"/>
+        </svg></td>
+        <td data-seq="5"><span class="mono" style="font-size:13px">for i in range(2, n+1):</span></td>
+        <td data-seq="6"><b class="g mono">O(n)</b></td>
+        <td data-seq="7">照顺序一格一格填。</td>
+      </tr>
+    </table>
+    <div class="row" data-seq="8" style="margin-top:18px">
+      <div class="numbox alt">1</div>
+      <div class="sm" style="flex:1">递归 = <b>自顶向下</b>：想算 f(5)，得先知道 f(4)、f(3)。</div>
+      <div class="numbox alt">2</div>
+      <div class="sm" style="flex:1">递推 = <b>自底向上</b>：先 f(0)、f(1)，一直填到 f(5)。</div>
+      <div class="numbox alt">3</div>
+      <div class="sm" style="flex:1">两条路算的东西<b>完全一样</b>，只是顺序不同。</div>
+    </div>
+    <div class="hand" data-at="2600" style="left:900px;top:268px">加个「记账本」，就从指数变成了线性</div>
+  </div>
+</section>
+
+<!-- ============ 05 记忆化的作用 ============ -->
+<section class="slide" data-ch="1" data-stagger="170"
+  data-title="记忆化：它到底改变了什么"
+  data-rec="calls: O(2ⁿ) → O(n)"
+  data-eyebrow="第一章 · 起点 · 目标：把记忆化的作用讲透">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:520px">
+        <div class="meta">暴力递归的重复调用（以 f(6) 为例）</div>
+        <svg viewBox="0 0 500 200" width="500" height="200" style="margin-top:8px">
+          <defs><marker id="ah5" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#9C846A"/></marker></defs>
+          <g class="svgtxt"><text x="222" y="20">f(6)</text>
+            <text x="130" y="72">f(5)</text><text x="316" y="72">f(4)</text>
+            <text x="72" y="124">f(4)</text><text x="192" y="124">f(3)</text>
+            <text x="272" y="124">f(3)</text><text x="376" y="124">f(2)</text></g>
+          <g class="arw" marker-end="url(#ah5)"><path d="M228 30 L152 62"/><path d="M254 30 L332 62"/>
+            <path d="M136 82 L88 114"/><path d="M160 82 L202 114"/>
+            <path d="M322 82 L288 114"/><path d="M346 82 L388 114"/></g>
+          <circle cx="104" cy="118" r="18" fill="#FBE8C4" stroke="#F3B33F"/>
+          <circle cx="288" cy="118" r="18" fill="#FBE8C4" stroke="#F3B33F"/>
+          <text class="svgtxtv" x="12" y="168">灰色圈出的：同一个 f(4)、f(3) 被反复计算</text>
+          <text class="svgm" x="12" y="190">f(6) 一共发起 25 次调用，真正不同的状态只有 7 个</text>
+        </svg>
+        <div class="keyline" style="margin-top:6px"></div>
+        <div class="mono h3">记忆化的三个动作：查 → 算 → 存</div>
+      </div>
+      <div style="flex:1">
+        <div class="meta">数字对比 · 同一个递归式</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:70px">n</th><th>暴力递归调用次数</th><th>记忆化后</th></tr>
+          <tr><td class="k">10</td><td class="k l">177</td><td class="k g">11</td></tr>
+          <tr><td class="k">20</td><td class="k l">21,891</td><td class="k g">21</td></tr>
+          <tr><td class="k">30</td><td class="k l">2,692,537</td><td class="k g">31</td></tr>
+          <tr><td class="k">40</td><td class="k l">331,160,281</td><td class="k g">41</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>记忆化做了什么：</b><br>
+            它没有改变递归的<b>想法</b>，只是保证「每个状态只算一次」。<br>
+            时间从 <b class="l">指数</b> 降到 <b class="g">状态数 × 转移数</b>。</div>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm">代价：<b>多一个记账本</b>，空间 O(状态数)。<br>
+            而且每个状态算完要<b>立刻写回</b>，否则白算。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:286px">同一句递归代码，只多了三行</div>
+  </div>
+</section>
+
+<!-- ============ 06 什么时候用记忆化 ============ -->
+<section class="slide" data-ch="1" data-stagger="150"
+  data-title="什么时候该用记忆化（而不是递推）"
+  data-rec="@lru_cache → O(states)"
+  data-eyebrow="第一章 · 起点 · 目标：知道什么时候该用哪一种">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:520px">
+        <table class="t">
+          <tr><th style="width:170px">情形</th><th>为什么记忆化更合适</th></tr>
+          <tr><td class="k v">① 递推顺序不好定</td>
+            <td>比如要「从终点往回走」、区间 DP、树形 DP，自顶向下天然顺着题意，不必先想清楚填表顺序。</td></tr>
+          <tr><td class="k v">② 状态是稀疏的</td>
+            <td>只有部分状态会被真正访问（如记忆化 DFS、博弈搜索）。
+              递推会把整张表填满，记忆化只算用到的那几个。</td></tr>
+          <tr><td class="k v">③ 想先保证对</td>
+            <td>先写暴力递归并验证正确，再加三行记忆化。这是最不容易出错的路线。</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>反过来</b>，如果状态就是一条直线、顺序一眼可见（爬楼梯、背包），
+            递推更短、更快、还能压空间，就用递推。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="meta">通用模板</div>
+        <div class="code" style="margin-top:12px">
+          <div class="cbar"><span class="cf">memo_template.py</span>
+            <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>from functools import lru_cache</li>
+<li>@lru_cache(maxsize=None)</li>
+<li class="hl" data-note="只算一次：算过的结果自动记在账本里">def dfs(state):</li>
+<li>    if is_base(state):</li>
+<li>        return base_value</li>
+<li>    return combine(dfs(nxt1), dfs(nxt2))</li>
+          </ol>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>三个注意：</b><br>
+            ① 返回值必须<b>存</b>起来，别只 return。<br>
+            ② 传给 dfs 的参数要<b>可哈希</b>（列表要转 tuple）。<br>
+            ③ 递归有深度限制：n 大时用 <span class="mono">sys.setrecursionlimit</span>，或改递推。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:286px">先写对，再写快：记忆化是那条最稳的路</div>
+  </div>
+</section>
+
+<!-- ============ 07 四步法 ============ -->
+<section class="slide" data-ch="1" data-stagger="230"
+  data-title="四步法：从读题到写出代码"
+  data-rec="① ② ③ ④"
+  data-eyebrow="第一章 · 起点 · 目标：记住一套固定动作">
+  <div class="stage-inner">
+    <div class="row" style="align-items:stretch">
+      <div data-seq="0" style="width:250px">
+        <div class="numbox">01</div>
+        <h4 class="h2" style="margin-top:12px">定义状态</h4>
+        <div class="keyline"></div>
+        <p class="sm">用一句中文说清 <span class="mono">dp[i]</span> 到底是什么。<br><br>
+          <b class="v">检验：</b>能不能一句话讲给别人听？</p>
+      </div>
+      <svg width="34" height="110" data-seq="1"><path class="arw" d="M2 10 H24"/><path class="arw" d="M18 6 L27 10 L18 14"/></svg>
+      <div data-seq="1" style="width:250px">
+        <div class="numbox">02</div>
+        <h4 class="h2" style="margin-top:12px">写转移方程</h4>
+        <div class="keyline"></div>
+        <p class="sm">问自己：<b>最后一步是什么？</b><br>按最后一步分类，取最优。<br><br>
+          <b class="v">检验：</b>能不能拼出大问题？</p>
+      </div>
+      <svg width="34" height="110" data-seq="2"><path class="arw" d="M2 10 H24"/><path class="arw" d="M18 6 L27 10 L18 14"/></svg>
+      <div data-seq="2" style="width:250px">
+        <div class="numbox">03</div>
+        <h4 class="h2" style="margin-top:12px">定初始条件</h4>
+        <div class="keyline"></div>
+        <p class="sm">最小的几格直接写答案。<br><br>
+          <b class="v">检验：</b>下标 0 和 1 写对了吗？</p>
+      </div>
+      <svg width="34" height="110" data-seq="3"><path class="arw" d="M2 10 H24"/><path class="arw" d="M18 6 L27 10 L18 14"/></svg>
+      <div data-seq="3" style="width:250px">
+        <div class="numbox">04</div>
+        <h4 class="h2" style="margin-top:12px">定答案位置</h4>
+        <div class="keyline"></div>
+        <p class="sm">是 <span class="mono">dp[n]</span>？还是整行最大值？<br><br>
+          <b class="v">检验：</b>手算 n = 1 的样例。</p>
+      </div>
+    </div>
+    <div class="hrule dot" data-seq="4" style="margin-top:22px"></div>
+    <div class="row" data-seq="5" style="margin-top:14px">
+      <div class="chip">接下来所有题目</div>
+      <div class="p" style="flex:1">都严格按这四步讲。<b class="v mono">先做哪一步，代码就长什么样。</b></div>
+    </div>
+    <div class="hand" data-at="2600" style="left:900px;top:288px">第 2 步最难，多花时间在它身上</div>
+  </div>
+</section>
+
+<!-- ============ 08 暴力慢在哪 ============ -->
+<section class="slide" data-ch="2" data-stagger="160"
+  data-desc="n 级台阶，每次迈 1 级或 2 级，问走到第 n 级一共有多少种不同的走法。"
+  data-title="爬楼梯：暴力到底慢在哪"
+  data-rec="f(n) = f(n-1) + f(n-2)"
+  data-eyebrow="第二章 · 爬楼梯 · 目标：看懂重复计算">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <h4 class="q">写一个递归，10 秒就能写出来：</h4>
+        <div class="code" style="margin-top:12px">
+          <div class="cbar"><span class="cf">brute.py</span>
+            <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li class="hl" data-note="它对了，但太慢">def f(n):</li>
+<li>    if n <= 1:</li>
+<li>        return 1</li>
+<li>    return f(n - 1) + f(n - 2)</li>
+          </ol>
+        </div>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm">答案对，但 n = 40 时大约要算 <b class="mono l">2 亿次</b>，n = 50 就等到天荒地老。</div>
+        </div>
+      </div>
+      <div class="c6-12">
+        <h4 class="q">看看它在重复算什么</h4>
+        <svg viewBox="0 0 620 232" width="620" height="232" style="margin-top:8px">
+          <defs><marker id="ah6" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#9C846A"/></marker></defs>
+          <g class="svgtxt"><text x="272" y="22">f(5)</text>
+            <text x="176" y="90">f(4)</text><text x="372" y="90">f(3)</text>
+            <text x="118" y="158">f(3)</text><text x="238" y="158">f(2)</text>
+            <text x="320" y="158">f(2)</text><text x="418" y="158">f(1)</text></g>
+          <g class="arw" marker-end="url(#ah6)"><path d="M278 32 L200 78"/><path d="M302 32 L382 78"/>
+            <path d="M182 100 L132 146"/><path d="M206 100 L246 146"/>
+            <path d="M378 100 L336 146"/><path d="M402 100 L428 146"/></g>
+          <g>
+            <circle cx="150" cy="146" r="17" fill="#FBE8C4" stroke="#F3B33F"/>
+            <circle cx="336" cy="146" r="17" fill="#FBE8C4" stroke="#F3B33F"/>
+            <text class="svgm" x="112" y="202">同一个 f(3) 被算了 2 次</text>
+            <text class="svgm" x="282" y="202">同一个 f(2) 被算了 2 次</text>
+          </g>
+          <text class="svgtxtv" x="176" y="226">重复的部分，就是 DP 要「记下来」的部分</text>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">慢的原因不是递归，是「算了又算」</div>
+  </div>
+</section>
+
+<!-- ============ 09 手推填表 ============ -->
+<section class="slide" data-ch="2" data-stagger="150"
+  data-desc="同上题：n 级台阶，每次迈 1 或 2 级，求走到第 n 级的走法总数。"
+  data-title="爬楼梯：先在纸上把表填出来"
+  data-rec="dp[0] = 1, dp[1] = 1"
+  data-eyebrow="第二章 · 爬楼梯 · 目标：亲手填一次表">
+  <div class="stage-inner">
+    <div class="row" style="align-items:flex-end;height:236px">
+      <div class="seq-lbl mono">dp[i] =</div>
+      <div class="seq">
+        <div class="dpcell cur" data-seq="0"><i>1</i></div>
+        <div class="dpcell cur" data-seq="1" style="margin-bottom:12px"><i>1</i></div>
+        <div class="dpcell cur" data-seq="2" style="margin-bottom:24px"><i>2</i></div>
+        <div class="dpcell cur" data-seq="3" style="margin-bottom:36px"><i>3</i></div>
+        <div class="dpcell cur" data-seq="4" style="margin-bottom:48px"><i>5</i></div>
+        <div class="dpcell cur" data-seq="5" style="margin-bottom:60px"><i>8</i></div>
+        <div class="dpcell cur" data-seq="6" style="margin-bottom:72px"><i>13</i></div>
+        <div class="dpcell cur" data-seq="7" style="margin-bottom:84px"><i>21</i></div>
+        <div class="dpcell cur" data-seq="8" style="margin-bottom:96px"><i>34</i></div>
+        <div class="dpcell cur" data-seq="9" style="margin-bottom:108px"><i>55</i></div>
+        <div class="dpcell cur" data-seq="10" style="margin-bottom:120px"><i>89</i></div>
+      </div>
+    </div>
+    <div class="seq idxrow" style="margin-top:-4px;margin-left:90px">
+      <div class="ix">0</div><div class="ix">1</div><div class="ix">2</div><div class="ix">3</div><div class="ix">4</div>
+      <div class="ix">5</div><div class="ix">6</div><div class="ix">7</div><div class="ix">8</div><div class="ix">9</div><div class="ix">10</div>
+    </div>
+    <div class="hrule dot" data-at="2200"></div>
+    <div class="row" data-at="2300">
+      <div class="mono h3" style="width:230px">dp[10] = 89</div>
+      <div class="p" style="flex:1">每一格都只是<b>复用前面已经算好的格子</b>。走到第 10 级一共 <b class="v mono">89</b> 种走法。</div>
+      <div class="sm mu" style="width:300px">台阶画成向上的斜线，和下标递增的方向一致。</div>
+    </div>
+    <div class="hand" data-at="2600" style="left:880px;top:196px">橙色 = 你这一步正在算的格子</div>
+  </div>
+</section>
+
+<!-- ============ 10 状态定义 ============ -->
+<section class="slide" data-ch="2" data-stagger="180"
+  data-desc="同上题：n 级台阶，每次迈 1 或 2 级，求走到第 n 级的走法总数。"
+  data-title="第一步：把状态说清楚"
+  data-rec="dp[i] = ?"
+  data-eyebrow="第二章 · 爬楼梯 · 目标：写出状态定义">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">四步法 · 第 1 步</div>
+        <h4 class="h2" style="margin-top:12px">dp[i] 到底代表什么？</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:16px;line-height:1.9">
+            dp[i] = <b>走到第 i 级台阶</b><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;一共有多少种走法
+          </div>
+        </div>
+        <p class="sm" style="margin-top:18px">
+          这句话必须<b>不含糊</b>。含糊的写法是「dp[i] 表示第 i 级的情况」——
+          到底是「停在第 i 级」还是「迈过第 i 级」？两种定义的转移式是不一样的。
+        </p>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>约定好：</b>dp[i] 一律表示「<b>停在</b>第 i 级」的方案数。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <div class="meta">写完定义后，马上问自己</div>
+        <table class="t" style="margin-top:14px">
+          <tr><th style="width:170px">问题</th><th>本题答案</th></tr>
+          <tr><td class="k">单位是什么</td><td>方案数（整数）</td></tr>
+          <tr><td class="k">下标范围</td><td><span class="mono">0 ≤ i ≤ n</span></td></tr>
+          <tr><td class="k">答案在哪一格</td><td><span class="mono v">dp[n]</span></td></tr>
+          <tr><td class="k">需要几个维度</td><td>1 个就够（没有别的限制）</td></tr>
+        </table>
+        <div class="sm" style="margin-top:18px">
+          <b>判断维度够不够：</b>如果你算 <span class="mono">dp[i]</span> 时还想知道「今天是不是雨天」，
+          那就把「天气」也写进状态里，变成 <span class="mono">dp[i][天气]</span>。
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:290px">定义写在代码第一行注释里，永远不删</div>
+  </div>
+</section>
+
+<!-- ============ 11 转移方程 ============ -->
+<section class="slide" data-ch="2" data-stagger="170"
+  data-desc="同上题：n 级台阶，每次迈 1 或 2 级，求走到第 n 级的走法总数。"
+  data-title="第二步：写出转移方程"
+  data-rec="dp[i] = dp[i-1] <span class='v'>+</span> dp[i-2]"
+  data-eyebrow="第二章 · 爬楼梯 · 目标：推导出转移式">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:500px">
+        <h4 class="q">最后一步，你是怎么<b>停在</b>第 <span class="mono">i</span> 级的？</h4>
+        <p class="p" style="margin-top:12px">
+          只有两种可能：<br>
+          <b>从 i−1 迈 1 级上来</b>，或者 <b>从 i−2 迈 2 级上来</b>。<br><br>
+          这两类走法<b>互不重叠</b>，所以方案数把它们<b class="v mono">相加</b>。
+        </p>
+        <div class="keyline"></div>
+        <div class="mono h3">dp[i] = dp[i-1] <span class="v">+</span> dp[i-2]</div>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>为什么是 + 不是 max？</b><br>
+            数「方案数」要把不同类的走法合起来；<br>
+            求「最值」才用 <span class="mono">max / min</span>。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 560 274" width="560" height="274">
+          <defs>
+            <marker id="ah9" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+              <path d="M0 0 L9 4.5 L0 9 z" fill="#5C4736"/></marker></defs>
+          <rect x="30"  y="30" width="76" height="56" rx="5" fill="#FBE8C4" stroke="#F3B33F"/>
+          <rect x="160" y="30" width="76" height="56" rx="5" fill="#FBE8C4" stroke="#F3B33F"/>
+          <rect x="290" y="30" width="76" height="56" rx="5" fill="#FFFCF7" stroke="#E1542B" stroke-width="2"/>
+          <rect x="420" y="30" width="76" height="56" rx="5" fill="none" stroke="#E9D8BE" stroke-dasharray="4 4"/>
+          <g class="svgtxtb"><text x="52" y="64">3</text><text x="182" y="64">5</text></g>
+          <text class="svgtxtv" x="316" y="64">?</text>
+          <g class="svgm"><text x="38" y="106">dp[i-2]</text><text x="168" y="106">dp[i-1]</text>
+            <text x="302" y="106">dp[i]</text><text x="428" y="106">dp[i+1]</text></g>
+
+          <path class="arw" marker-end="url(#ah9)" d="M68 86 V142 H318 V92"/>
+          <path class="arw" marker-end="url(#ah9)" d="M198 86 V124 H300 V92"/>
+          <text class="svgtxtv" x="180" y="140">+</text>
+
+          <rect x="34" y="176" width="380" height="62" rx="6" fill="#FFFCF7" stroke="#E9D8BE"/>
+          <text class="svgtxt" x="52" y="202">答案 = 左边两个已知格子的和</text>
+          <text class="svgtxtv" x="52" y="226">dp[i] = dp[i-1] + dp[i-2]</text>
+
+          <path class="path" data-draw="1500" d="M328 88 V170"/>
+          <path class="path" data-draw="1800" d="M320 162 L328 172 L336 162"/>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:820px;top:282px">转移式的样子：右边 = 左边已知格子的函数</div>
+  </div>
+</section>
+
+<!-- ============ 12 边界与答案 ============ -->
+<section class="slide" data-ch="2" data-stagger="180"
+  data-desc="同上题：n 级台阶，每次迈 1 或 2 级，求走到第 n 级的走法总数。"
+  data-title="第三、四步：边界与答案位置"
+  data-rec="dp[0]=1, dp[1]=1 → ans = dp[n]"
+  data-eyebrow="第二章 · 爬楼梯 · 目标：定好初始条件">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">第 3 步 · 初始条件</div>
+        <h4 class="h2" style="margin-top:12px">最小的两格，直接写答案</h4>
+        <div class="keyline"></div>
+        <div class="row">
+          <div class="seq-lbl mono">dp[0] =</div><div class="seq"><div class="dpcell cur"><i>1</i></div></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="seq-lbl mono">dp[1] =</div><div class="seq"><div class="dpcell cur"><i>1</i></div></div>
+        </div>
+        <p class="sm" style="margin-top:18px">
+          <b>dp[0] = 1 为什么？</b><br>
+          「站在第 0 级、还没走」也算一种确定的方案，这样转移式才不会在 i = 2 处断掉。<br><br>
+          <b>dp[1] = 1</b>：只有一种方式（迈 1 级）。
+        </p>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm">边界写错不会报错，只会<b>答案差一点</b>——这是最贵的 bug。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <div class="meta">第 4 步 · 答案位置</div>
+        <h4 class="h2" style="margin-top:12px">答案 = dp[n]</h4>
+        <div class="keyline"></div>
+        <div class="row">
+          <div class="seq-lbl mono">n = 10</div>
+          <div class="seq">
+            <div class="dpcell"><i>1</i></div><div class="dpcell"><i>1</i></div><div class="dpcell"><i>2</i></div>
+            <div class="dpcell"><i>3</i></div><div class="dpcell"><i>5</i></div><div class="dpcell"><i>8</i></div>
+            <div class="dpcell"><i>13</i></div><div class="dpcell"><i>21</i></div><div class="dpcell"><i>34</i></div>
+            <div class="dpcell"><i>55</i></div><div class="dpcell cur"><i>89</i></div>
+          </div>
+        </div>
+        <div class="sm" style="margin-top:16px">最后一格就是答案，不需要再取 max。</div>
+        <div class="hrule dot"></div>
+        <table class="t">
+          <tr><th>常见问法</th><th>答案位置</th></tr>
+          <tr><td>方案数（走到第 n 级）</td><td class="mono v">dp[n]</td></tr>
+          <tr><td>最大值（任意结尾）</td><td class="mono v">max(dp[:])</td></tr>
+          <tr><td>二维表格</td><td class="mono v">dp[n][m]</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:290px">n = 0 和 n = 1 各跑一遍，省掉 20 分钟调试</div>
+  </div>
+</section>
+
+<!-- ============ 13 两种代码 ============ -->
+<section class="slide" data-ch="2" data-stagger="140"
+  data-desc="同上题：n 级台阶，每次迈 1 或 2 级，求走到第 n 级的走法总数。"
+  data-title="代码：递归版 与 递推版"
+  data-rec="O(2ⁿ) → O(n)"
+  data-eyebrow="第二章 · 爬楼梯 · 目标：两种写法对照">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1">
+        <div class="cbar"><span class="cf">climb_memo.py · 记忆化搜索</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>memo = {}</li>
+<li>def f(n):</li>
+<li>    if n <= 1:</li>
+<li>        return 1</li>
+<li>    if n in memo:</li>
+<li class="hl" data-note="查 → 算 → 存：记忆化的三个动作">        return memo[n]</li>
+<li>    memo[n] = f(n - 1) + f(n - 2)</li>
+<li>    return memo[n]</li>
+        </ol>
+      </div>
+      <div class="code" style="flex:1">
+        <div class="cbar"><span class="cf">climb_dp.py · 递推填表</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>def climb(n):</li>
+<li>    dp = [0] * (n + 1)</li>
+<li>    dp[0] = 1</li>
+<li>    dp[1] = 1</li>
+<li>    for i in range(2, n + 1):</li>
+<li class="hl" data-note="转移式原样搬进来，一行搞定">        dp[i] = dp[i - 1] + dp[i - 2]</li>
+<li>    return dp[n]</li>
+        </ol>
+      </div>
+      <div class="code" style="flex:1">
+        <div class="cbar"><span class="cf">climb_o1.py · 压缩到两个变量</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>def climb(n):</li>
+<li>    a, b = 1, 1</li>
+<li>    for i in range(2, n + 1):</li>
+<li>        a, b = b, a + b</li>
+<li>    return b</li>
+        </ol>
+      </div>
+    </div>
+    <div class="hrule dot" style="margin-top:18px"></div>
+    <div class="row">
+      <div class="term">记忆化 <b class="g">O(n) 时间 / O(n) 空间</b></div>
+      <div class="term">递推 <b class="g">O(n) 时间 / O(n) 空间</b></div>
+      <div class="term">压缩版 <b class="g">O(n) 时间 / O(1) 空间</b></div>
+      <div class="term">LeetCode <a class="link" href="https://leetcode.cn/problems/climbing-stairs/" target="_blank">70 爬楼梯</a></div>
+    </div>
+    <div class="hand" data-at="2600" style="left:880px;top:286px">三份代码，算的东西完全一样</div>
+  </div>
+</section>
+
+<!-- ============ 14 空间压缩 ============ -->
+<section class="slide" data-ch="2" data-stagger="170"
+  data-desc="同上题：n 级台阶，每次迈 1 或 2 级，求走到第 n 级的走法总数。"
+  data-title="为什么可以把数组压成两个变量"
+  data-rec="memory: O(n) → O(1)"
+  data-eyebrow="第二章 · 爬楼梯 · 目标：理解压缩的条件">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">看转移式只用到哪几个格子</h4>
+        <div class="mono" style="margin-top:14px;font-size:19px;font-weight:700">dp[i] = dp[i-1] <span class="v">+</span> dp[i-2]</div>
+        <div class="row" style="margin-top:18px">
+          <div class="seq-lbl mono">用到</div>
+          <div class="seq">
+            <div class="dpcell cur"><i>8</i></div><div class="dpcell cur"><i>13</i></div>
+            <div class="dpcell" style="border-style:dashed"><i>?</i></div>
+          </div>
+        </div>
+        <div class="seq idxrow" style="margin-top:7px;margin-left:90px">
+          <div class="ix">i-2</div><div class="ix">i-1</div><div class="ix">i</div>
+        </div>
+        <p class="sm" style="margin-top:18px">算 <span class="mono">dp[i]</span> 那一刻，你只碰得到 <b>两个</b>格子。
+          更早的格子，这辈子都不会再被读取。</p>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm">压缩原理只有八个字：<b>把不用的格子丢掉。</b></div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">压缩的两个前提</h4>
+        <table class="t" style="margin-top:14px">
+          <tr><th style="width:120px">前提</th><th>说明</th></tr>
+          <tr><td class="k">① 只回看固定几步</td>
+            <td>转移只依赖 <span class="mono">dp[i-1]、dp[i-2]</span> 这类<b>确定的少量</b>格子。</td></tr>
+          <tr><td class="k">② 不需要回溯</td>
+            <td>题目只要求<b>数值</b>，不要求你输出「具体是哪条路径」。
+              如果要输出方案，就得保留完整表格再倒着找。</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm">二维 DP 同理：只要第 i 行只依赖第 i−1 行，就能从
+            <span class="mono">dp[i][j]</span> 压成 <span class="mono">dp[j]</span>。</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="term">O(n) → <b class="g">O(1)</b></div>
+          <div class="term">后面背包章节会再用一次</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:290px">要输出路径就不能压，记住这条</div>
+  </div>
+</section>
+
+<!-- ============ 15 最小花费 ============ -->
+<section class="slide" data-ch="2" data-stagger="150"
+  data-desc="每级台阶各有花费 cost[i]，付了才能踩上去；可以从第 0 或 1 级出发，问走到顶的最小总花费。"
+  data-title="变体：把 + 换成 min，就换了道题"
+  data-rec="dp[i] = min(dp[i-1], dp[i-2]) + cost[i]"
+  data-eyebrow="第二章 · 爬楼梯 · 目标：看到转移式的可替换性">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-7">
+        <h4 class="q">LeetCode 746 · 使用最小花费爬楼梯</h4>
+        <div class="keyline"></div>
+        <div class="mono h3">dp[i] = <span class="v">min</span>( dp[i-1], dp[i-2] ) + cost[i]</div>
+        <div class="row" style="margin-top:16px">
+          <div class="seq-lbl mono">cost =</div>
+          <div class="seq">
+            <div class="dpcell"><i>10</i></div><div class="dpcell"><i>15</i></div><div class="dpcell"><i>20</i></div>
+            <div class="dpcell"><i>17</i></div><div class="dpcell"><i>1</i></div><div class="dpcell"><i>4</i></div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="seq-lbl mono">dp =</div>
+          <div class="seq">
+            <div class="dpcell cur"><i>10</i></div><div class="dpcell cur"><i>15</i></div><div class="dpcell cur"><i>25</i></div>
+            <div class="dpcell cur"><i>32</i></div><div class="dpcell cur"><i>16</i></div><div class="dpcell cur"><i>20</i></div>
+          </div>
+        </div>
+        <div class="sm" style="margin-top:14px">答案 = <span class="mono v">min(dp[n-1], dp[n-2]) = 20</span>
+          （可以从倒数第二级直接跨出去，不必踩最后一级）。</div>
+      </div>
+      <div class="c8-12">
+        <div class="meta">对照 · 换算子就换题型</div>
+        <table class="t" style="margin-top:14px">
+          <tr><th>算子</th><th>题目</th></tr>
+          <tr><td class="k">+</td><td>爬楼梯（数方案）</td></tr>
+          <tr><td class="k">min</td><td>最小花费爬楼梯</td></tr>
+          <tr><td class="k">max</td><td>打家劫舍</td></tr>
+          <tr><td class="k">or / and</td><td>单词拆分</td></tr>
+          <tr><td class="k">max + 权值</td><td>最大子数组和</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>结论：</b>线性 DP 的骨架是固定的，<br>
+            你真正要决定的只有两件事：<b>状态定义</b> 和 <b>用哪个算子</b>。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/min-cost-climbing-stairs/" target="_blank">LC 746</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/climbing-stairs/" target="_blank">LC 70</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">骨架不变，只换算子</div>
+  </div>
+</section>
+
+<!-- ============ 16 四种拆法 ============ -->
+<section class="slide" data-ch="3" data-stagger="110"
+  data-title="线性 DP 的四种常见拆法"
+  data-rec="dp[i] = f(dp[i-1], dp[i-2], …)"
+  data-eyebrow="第三章 · 一维 DP · 目标：见到四类「最后一步」">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:128px">拆法</th><th style="width:330px">最后一步是什么</th><th style="width:280px">转移式</th><th>典型题目</th></tr>
+      <tr><td class="k">① 前一项</td>
+        <td data-seq="0">到 i 只能从 i−1 走一步过来。</td>
+        <td data-seq="0"><span class="mono">dp[i] = dp[i-1] + c</span></td>
+        <td data-seq="0"><a class="link" href="https://leetcode.cn/problems/climbing-stairs/" target="_blank">LC 70</a></td></tr>
+      <tr><td class="k">② 前两项</td>
+        <td data-seq="1">最后迈 1 级或迈 2 级，两类合起来。</td>
+        <td data-seq="1"><span class="mono">dp[i] = dp[i-1] <span class="v">+</span> dp[i-2]</span></td>
+        <td data-seq="1"><a class="link" href="https://leetcode.cn/problems/min-cost-climbing-stairs/" target="_blank">LC 746</a></td></tr>
+      <tr><td class="k">③ 枚举前面的 j</td>
+        <td data-seq="2">第 i 个接在某个 j 后面，枚举所有合法 j。</td>
+        <td data-seq="2"><span class="mono">dp[i] = max(dp[j]) + a[i]</span></td>
+        <td data-seq="2"><a class="link" href="https://leetcode.cn/problems/longest-increasing-subsequence/" target="_blank">LC 300 LIS</a></td></tr>
+      <tr><td class="k">④ 取 / 不取</td>
+        <td data-seq="3">第 i 件拿还是不拿，两种选择取最优。</td>
+        <td data-seq="3"><span class="mono">dp[j] = max(dp[j], dp[j-w]+v)</span></td>
+        <td data-seq="3"><a class="link" href="https://www.luogu.com.cn/problem/P1048" target="_blank">P1048 采药</a></td></tr>
+    </table>
+    <div class="row" data-seq="4" style="margin-top:20px">
+      <div class="numbox">!</div>
+      <div class="p" style="flex:1">拿到题先问：<b class="v">最后一步是怎么走的？</b>
+        把「最后一步」的所有可能列出来，转移方程自己就冒出来了——这就是四步法第 2 步的全部秘密。</div>
+    </div>
+    <div class="hand" data-at="2400" style="left:880px;top:250px">四种拆法背下来，一半题目就通了</div>
+  </div>
+</section>
+
+<!-- ============ 17 最大子数组和 ============ -->
+<section class="slide" data-ch="3" data-stagger="130"
+  data-desc="在整数数组中找一段连续子数组，使它们的和最大，求这个最大和。"
+  data-title="最大子数组和：dp[i] 表示「以 i 结尾」"
+  data-rec="dp[i] = max(a[i], dp[i-1] + a[i])"
+  data-eyebrow="第三章 · 一维 DP · 目标：学会「以 i 结尾」这个技巧">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:600px">
+        <div class="meta">LeetCode 53 · 洛谷 P1115 最大子段和</div>
+        <h4 class="q" style="margin-top:10px">a = [−2, 1, −3, 4, −1, 2, 1, −5, 4]</h4>
+        <div class="keyline"></div>
+        <div class="mono" style="font-size:15px;line-height:1.95">
+          dp[i] = <b>以 a[i] 结尾</b>的最大子数组和<br>
+          dp[i] = <span class="v">max</span>( a[i], &nbsp;dp[i-1] + a[i] )<br>
+          <span class="mu">答案 = max(dp)</span>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="seq-lbl mono">a =</div>
+          <div class="seq">
+            <div class="dpcell"><i>-2</i></div><div class="dpcell"><i>1</i></div><div class="dpcell"><i>-3</i></div>
+            <div class="dpcell"><i>4</i></div><div class="dpcell"><i>-1</i></div><div class="dpcell"><i>2</i></div>
+            <div class="dpcell"><i>1</i></div><div class="dpcell"><i>-5</i></div><div class="dpcell"><i>4</i></div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="seq-lbl mono">dp =</div>
+          <div class="seq">
+            <div class="dpcell cur"><i>-2</i></div><div class="dpcell cur"><i>1</i></div><div class="dpcell cur"><i>-2</i></div>
+            <div class="dpcell cur"><i>4</i></div><div class="dpcell cur"><i>3</i></div><div class="dpcell cur"><i>5</i></div>
+            <div class="dpcell cur"><i>6</i></div><div class="dpcell cur"><i>1</i></div><div class="dpcell cur"><i>5</i></div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="warmbox">
+          <div class="sm"><b>为什么必须写「以 i 结尾」？</b><br><br>
+            如果只写「前 i 个的最大子数组和」，你算 <span class="mono">dp[i]</span> 时
+            不知道前面那段还能不能<b>接上 a[i]</b>——转移就断了。<br><br>
+            加上「以 i 结尾」，转移才成立；<br>
+            最后再对整行取 max，就是答案。</div>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>这一招叫「结尾限制」</b>，LIS、最长回文子串都靠它。</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/maximum-subarray/" target="_blank">LC 53</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1115" target="_blank">P1115</a></div>
+          <div class="term">时间 <b class="g">O(n)</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">答案 6 = [4, -1, 2, 1]</div>
+  </div>
+</section>
+
+<!-- ============ 18 打家劫舍推导 ============ -->
+<section class="slide" data-ch="3" data-stagger="150"
+  data-desc="一排房子各有金额 a[i]，相邻两家不能同时偷，问最多能偷到多少钱。"
+  data-title="打家劫舍：把四步法完整走一遍"
+  data-rec="dp[i] = max(dp[i-1], dp[i-2]+a[i])"
+  data-eyebrow="第三章 · 一维 DP · 目标：完整推导一次">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-7">
+        <table class="t">
+          <tr><th style="width:80px">步骤</th><th>做法</th><th>本题</th></tr>
+          <tr><td class="k v">① 状态</td><td>用一句话说明 dp[i]</td>
+            <td><span class="mono">dp[i]</span> = 偷<b>前 i 家</b>能拿到的最高金额</td></tr>
+          <tr><td class="k v">② 转移</td><td>最后一步的两种可能</td>
+            <td><span class="mono">dp[i] = max(dp[i-1], dp[i-2] + a[i])</span><br>
+              <span class="sm mu">不偷第 i 家 / 偷第 i 家（则 i−1 必须不偷）</span></td></tr>
+          <tr><td class="k v">③ 初始</td><td>最小的格子</td>
+            <td><span class="mono">dp[0] = 0, dp[1] = a[0]</span></td></tr>
+          <tr><td class="k v">④ 答案</td><td>答案在哪</td>
+            <td><span class="mono v">dp[n]</span></td></tr>
+        </table>
+        <div class="row" style="margin-top:16px">
+          <div class="seq-lbl mono">a =</div>
+          <div class="seq">
+            <div class="dpcell"><i>2</i></div><div class="dpcell"><i>7</i></div><div class="dpcell"><i>9</i></div>
+            <div class="dpcell"><i>3</i></div><div class="dpcell"><i>1</i></div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="seq-lbl mono">dp =</div>
+          <div class="seq">
+            <div class="dpcell cur"><i>0</i></div><div class="dpcell cur"><i>2</i></div><div class="dpcell cur"><i>7</i></div>
+            <div class="dpcell cur"><i>11</i></div><div class="dpcell cur"><i>11</i></div><div class="dpcell cur"><i>12</i></div>
+          </div>
+        </div>
+        <div class="seq idxrow" style="margin-top:7px;margin-left:90px">
+          <div class="ix">0</div><div class="ix">1</div><div class="ix">2</div><div class="ix">3</div><div class="ix">4</div><div class="ix">5</div>
+        </div>
+      </div>
+      <div class="c8-12">
+        <div class="warmbox">
+          <div class="sm"><b>dp[0] = 0 的好处：</b><br>
+            「前 0 家」金额为 0，<span class="mono">dp[1] = max(dp[0], dp[-1]+a[0])</span> 就不会越界——
+            只要你把数组开成 <span class="mono">n+1</span>。</div>
+        </div>
+        <div class="hrule dot"></div>
+        <div class="meta">最优方案</div>
+        <div class="row" style="margin-top:12px">
+          <div class="seq">
+            <div class="dpcell"><i>2</i></div><div class="dpcell cur"><i>7</i></div><div class="dpcell cur"><i>9</i></div>
+            <div class="dpcell"><i>3</i></div><div class="dpcell cur"><i>1</i></div>
+          </div>
+        </div>
+        <div class="sm" style="margin-top:12px">偷第 2、3、5 家：<span class="mono">7 + 9 + 1 = <b class="v">12</b></span><br>
+          （第 1、2 家 2+9=11，不如 12）</div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/house-robber/" target="_blank">LC 198</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1802" target="_blank">P1802 五倍经验日</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:288px">「偷 / 不偷」= 「取 / 不取」拆法</div>
+  </div>
+</section>
+
+<!-- ============ 19 打家劫舍代码 ============ -->
+<section class="slide" data-ch="3" data-stagger="150"
+  data-desc="同上题：一排房子各有金额 a[i]，相邻两家不能同时偷，求最高金额。"
+  data-title="打家劫舍：代码与边界陷阱"
+  data-rec="dp[i] = max(dp[i-1], dp[i-2]+a[i])"
+  data-eyebrow="第三章 · 一维 DP · 目标：写出并检查代码">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.25">
+        <div class="cbar"><span class="cf">house_robber.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li># dp[i] = 偷前 i 家能拿到的最高金额，答案 = dp[n]</li>
+<li>def rob(a):</li>
+<li>    n = len(a)</li>
+<li>    dp = [0] * (n + 1)</li>
+<li>    dp[1] = a[0]</li>
+<li>    for i in range(2, n + 1):</li>
+<li class="hl" data-note="两种选择取最大：不偷第 i 家 / 偷第 i 家">        dp[i] = max(dp[i - 1], dp[i - 2] + a[i - 1])</li>
+<li>    return dp[n]</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">三个容易错的地方</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:120px">陷阱</th><th>后果 / 修法</th></tr>
+          <tr><td class="k">n = 1</td><td>循环不执行，靠 <span class="mono">dp[1] = a[0]</span> 兜住 ✓</td></tr>
+          <tr><td class="k">下标差一</td><td><span class="mono">dp[i]</span> 对应 <span class="mono">a[i-1]</span>，因为 dp 多开一格</td></tr>
+          <tr><td class="k">用 dp[n-1]</td><td>答案是 <span class="mono v">dp[n]</span>，不是 dp[n-1]</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm">统一约定：<b>dp 多开一格，dp[i] 表示「前 i 个」</b>，
+            下标就永远和题目里的 i 对齐，少踩一半的坑。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">写完先跑 n = 1 的样例</div>
+  </div>
+</section>
+
+<!-- ============ 20 打家劫舍 II ============ -->
+<section class="slide" data-ch="3" data-stagger="170"
+  data-desc="房子围成一圈，第一家和最后一家相邻，其余规则同上，求最多能偷多少钱。"
+  data-title="打家劫舍 II：断环成链"
+  data-rec="ans = max(f(0..n-2), f(1..n-1))"
+  data-eyebrow="第三章 · 一维 DP · 目标：学会把问题拆成两个子问题">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">房子围成一圈，第一家和最后一家相邻。</h4>
+        <svg viewBox="0 0 500 196" width="500" height="196" style="margin-top:10px">
+          <circle cx="250" cy="98" r="72" fill="none" stroke="#E9D8BE" stroke-width="1.5"/>
+          <g fill="#FFFCF7" stroke="#E1542B" stroke-width="1.5">
+            <circle cx="250" cy="26" r="16"/><circle cx="319" cy="74" r="16"/><circle cx="292" cy="152" r="16"/>
+            <circle cx="208" cy="152" r="16"/><circle cx="181" cy="74" r="16"/></g>
+          <g class="svgtxtb"><text x="243" y="31">2</text><text x="312" y="79">7</text><text x="285" y="157">9</text>
+            <text x="201" y="157">3</text><text x="174" y="79">1</text></g>
+          <text class="svgm" x="206" y="192">首尾相邻，不能同时偷</text>
+        </svg>
+        <div class="sm" style="margin-top:6px">直接套用打家劫舍会把 2 和 1 同时偷到——违反规则。</div>
+      </div>
+      <div class="c7-12">
+        <div class="meta">解法 · 把环切成两条链</div>
+        <table class="t" style="margin-top:14px">
+          <tr><th>情形</th><th>范围</th><th>结果</th></tr>
+          <tr><td class="k">偷第一家</td><td>只看 a[0 … n-2]</td><td class="mono">13</td></tr>
+          <tr><td class="k">不偷第一家</td><td>只看 a[1 … n-1]</td><td class="mono v">13</td></tr>
+        </table>
+        <div class="mono h3" style="margin-top:18px">ans = <span class="v">max</span>( f(a[0:n-1]), f(a[1:n]) )</div>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>这一步叫「断环成链」：</b><br>
+            把一个不能直接做的问题，按某个条件<b>分成两个互不冲突的子问题</b>，
+            分别求解再取最优。</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/house-robber-ii/" target="_blank">LC 213</a></div>
+          <div class="term">时间 <b class="g">O(n)</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">环 → 两条链，取较大者</div>
+  </div>
+</section>
+
+<!-- ============ 21 LIS 朴素 ============ -->
+<section class="slide" data-ch="3" data-stagger="140"
+  data-desc="在数组中找出最长的严格递增子序列，求它的长度（子序列可以跳着取，但相对顺序不能变）。"
+  data-title="最长上升子序列：朴素 O(n²)"
+  data-rec="dp[i] = max(dp[j]) + 1"
+  data-eyebrow="第三章 · 一维 DP · 目标：会用「以 i 结尾」求 LIS">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:560px">
+        <div class="meta">LeetCode 300 · 洛谷 P1020 导弹拦截</div>
+        <div class="row" style="margin-top:14px">
+          <div class="seq-lbl mono">a =</div>
+          <div class="seq">
+            <div class="dpcell"><i>10</i></div><div class="dpcell"><i>9</i></div><div class="dpcell"><i>2</i></div>
+            <div class="dpcell"><i>5</i></div><div class="dpcell"><i>3</i></div><div class="dpcell"><i>7</i></div>
+            <div class="dpcell"><i>101</i></div><div class="dpcell"><i>18</i></div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="seq-lbl mono">dp =</div>
+          <div class="seq">
+            <div class="dpcell cur"><i>1</i></div><div class="dpcell cur"><i>1</i></div><div class="dpcell cur"><i>1</i></div>
+            <div class="dpcell cur"><i>2</i></div><div class="dpcell cur"><i>2</i></div><div class="dpcell cur"><i>3</i></div>
+            <div class="dpcell cur"><i>4</i></div><div class="dpcell cur"><i>4</i></div>
+          </div>
+        </div>
+        <div class="keyline" style="margin-top:18px"></div>
+        <div class="mono" style="font-size:15px;line-height:1.95">
+          dp[i] = <b>以 a[i] 结尾</b>的最长上升子序列长度<br>
+          dp[i] = <span class="v">max</span>( dp[j] ) + 1 &nbsp;&nbsp;<span class="mu">(j &lt; i 且 a[j] &lt; a[i])</span><br>
+          答案 = <span class="mono v">max(dp)</span>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="warmbox">
+          <div class="sm"><b>为什么答案不是 dp[n-1]？</b><br>
+            因为最长的那段不一定<b>以最后一个元素结尾</b>。
+            所以要对整行取 max。<br><br>
+            这就是「结尾限制」带来的代价：答案位置变了。</div>
+        </div>
+        <div class="hrule dot"></div>
+        <table class="t">
+          <tr><th>问</th><th>答</th></tr>
+          <tr><td>时间</td><td class="mono l">O(n²)（每个 i 枚举所有 j）</td></tr>
+          <tr><td>空间</td><td class="mono g">O(n)</td></tr>
+          <tr><td>答案</td><td class="mono v">4（如 2,3,7,18）</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm">n = 10⁵ 时约 10¹⁰ 次运算，会超时 → 下一页讲优化。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/longest-increasing-subsequence/" target="_blank">LC 300</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1020" target="_blank">P1020</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1091" target="_blank">P1091</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">dp 是「以 i 结尾」，答案要再取一次 max</div>
+  </div>
+</section>
+
+<!-- ============ 22 LIS 二分 ============ -->
+<section class="slide" data-ch="3" data-stagger="130"
+  data-desc="同上题：求最长严格递增子序列的长度，要求把 O(n²) 优化到 O(n log n)。"
+  data-title="LIS 优化：tails 数组 + 二分"
+  data-rec="tails[len] = x"
+  data-eyebrow="第三章 · 一维 DP · 目标：看懂 O(n log n) 写法">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">核心想法：把「结尾」尽量变小</h4>
+        <div class="warmbox" style="margin-top:12px">
+          <div class="sm"><span class="mono">tails[len]</span> = 当前所有长度为 len 的上升子序列中，
+            <b>结尾最小</b>的那个值。<br><br>
+            结尾越小，后面能接上的数字就越多。</div>
+        </div>
+        <p class="sm" style="margin-top:16px">
+          遍历每个数 x：<br>
+          · 在 <span class="mono">tails</span> 里二分找第一个 <b>≥ x</b> 的位置 → <b>替换</b>它<br>
+          · 如果都比 x 小 → <b>追加</b>到末尾（长度 +1）
+        </p>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm">注意：<span class="mono">tails</span> 本身<b>不是</b>答案序列，
+            只是<b>长度</b>正确。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <table class="t">
+          <tr><th>处理到</th><th>tails 变成</th><th>动作</th></tr>
+          <tr><td class="k">10</td><td class="k">[10]</td><td>追加</td></tr>
+          <tr><td class="k">9</td><td class="k">[9]</td><td>替换</td></tr>
+          <tr><td class="k">2</td><td class="k">[2]</td><td>替换</td></tr>
+          <tr><td class="k">5</td><td class="k">[2, 5]</td><td>追加</td></tr>
+          <tr><td class="k">3</td><td class="k">[2, 3]</td><td>替换 5 → 3</td></tr>
+          <tr><td class="k">7</td><td class="k">[2, 3, 7]</td><td>追加</td></tr>
+          <tr><td class="k">101</td><td class="k">[2, 3, 7, 101]</td><td>追加</td></tr>
+          <tr><td class="k">18</td><td class="k"><b class="v">[2, 3, 7, 18]</b></td><td>替换</td></tr>
+        </table>
+        <div class="row" style="margin-top:16px">
+          <div class="term">长度 = <b class="v mono">4</b></div>
+          <div class="term">时间 <b class="g mono">O(n log n)</b></div>
+          <div class="term">Python 用 <span class="mono">bisect</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">O(n²) → O(n log n)，只加了一个二分</div>
+  </div>
+</section>
+
+<!-- ============ 23 单词拆分 ============ -->
+<section class="slide" data-ch="3" data-stagger="150"
+  data-desc="给定字符串 s 和一个词表 wordDict，判断 s 能否被词表里的单词完整拼出来（每个词可重复用）。"
+  data-title="单词拆分：值域是 True / False 的 DP"
+  data-rec="dp[j] = OR(dp[i] and s[i:j] in dict)"
+  data-eyebrow="第三章 · 一维 DP · 目标：见到布尔型 DP">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:520px">
+        <h4 class="q">s = <span class="mono">leetcode</span>，字典 = <span class="mono">{"leet","code"}</span></h4>
+        <div class="keyline"></div>
+        <div class="sm">
+          <span class="mono">dp[j]</span> = 前 j 个字符 <b>能不能</b>被字典拼出来。<br><br>
+          转移：枚举上一段的起点 i。<br>
+          <span class="mono">dp[j] = dp[i] and (s[i:j] in wordDict)</span>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm">值域只有 <span class="mono">True / False</span>，<br>
+            把 <span class="mono">max / min</span> 换成 <span class="mono v">or / and</span>，DP 结构不变。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/word-break/" target="_blank">LC 139</a></div>
+          <div class="term">时间 <b class="g">O(n² · L)</b></div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="meta">dp[0 … 8]</div>
+        <div class="row" style="margin-top:14px">
+          <div class="seq-lbl mono">dp =</div>
+          <div class="seq">
+            <div class="dpcell cur"><i>T</i></div><div class="dpcell"><i>F</i></div><div class="dpcell"><i>F</i></div>
+            <div class="dpcell"><i>F</i></div><div class="dpcell cur"><i>T</i></div><div class="dpcell"><i>F</i></div>
+            <div class="dpcell"><i>F</i></div><div class="dpcell"><i>F</i></div><div class="dpcell cur"><i>T</i></div>
+          </div>
+        </div>
+        <div class="seq idxrow" style="margin-top:7px;margin-left:90px">
+          <div class="ix">0</div><div class="ix">1</div><div class="ix">2</div><div class="ix">3</div>
+          <div class="ix">4</div><div class="ix">5</div><div class="ix">6</div><div class="ix">7</div><div class="ix">8</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div style="border:1.5px solid var(--accent);border-radius:4px;padding:7px 16px;font:600 13px var(--mono);color:var(--accent)">leet</div>
+          <div style="border:1.5px solid var(--accent);border-radius:4px;padding:7px 16px;font:600 13px var(--mono);color:var(--accent)">code</div>
+        </div>
+        <div class="sm" style="margin-top:16px">dp[8] = True，整个串可以拆开。<br>
+          若中间某格是 False，说明<b>到那里就断了</b>，更长的后缀也救不回来。</div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">布尔 DP：or 当 max，and 当加法</div>
+  </div>
+</section>
+
+<!-- ============ 24 一维小结 ============ -->
+<section class="slide" data-ch="3" data-stagger="140"
+  data-title="一维 DP 小结与练习"
+  data-rec="dp[i] = f(dp[i-1], …)"
+  data-eyebrow="第三章 · 一维 DP · 目标：形成肌肉记忆">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">四个判断</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:170px">问题</th><th>怎么答</th></tr>
+          <tr><td class="k">要不要「结尾限制」</td><td>接不上前面 → 加「以 i 结尾」，答案再取 max</td></tr>
+          <tr><td class="k">加法还是最值</td><td>数方案用 <span class="v mono">+</span>，求最优用 <span class="v mono">max/min</span></td></tr>
+          <tr><td class="k">枚举不枚举前面</td><td>不枚举 → O(n)；枚举所有 j → O(n²)</td></tr>
+          <tr><td class="k">能不能压空间</td><td>只用到前一格 → 两个变量搞定</td></tr>
+        </table>
+      </div>
+      <div class="c7-12">
+        <div class="meta">练习（按顺序做）</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th>题</th><th>考点</th></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/climbing-stairs/" target="_blank">LC 70 爬楼梯</a></td><td>基础转移</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/min-cost-climbing-stairs/" target="_blank">LC 746 最小花费</a></td><td>换算子</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/maximum-subarray/" target="_blank">LC 53 / P1115</a></td><td>结尾限制</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/house-robber/" target="_blank">LC 198 打家劫舍</a></td><td>取 / 不取</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/house-robber-ii/" target="_blank">LC 213 环形</a></td><td>拆成两个子问题</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/longest-increasing-subsequence/" target="_blank">LC 300 / P1020</a></td><td>枚举 j + 二分</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/word-break/" target="_blank">LC 139 单词拆分</a></td><td>布尔 DP</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:880px;top:286px">做完这七道，一维 DP 就过关了</div>
+  </div>
+</section>
+
+<!-- ============ 25 0/1 背包表格 ============ -->
+<section class="slide" data-ch="4" data-stagger="220"
+  data-desc="有 n 件物品，各有重量 w[i] 和价值 v[i]，背包容量为 W，每件最多拿一次，求能装到的最大价值。"
+  data-title="0/1 背包：先看懂那张表"
+  data-rec="dp[j] = max(dp[j], dp[j-w]+v)"
+  data-eyebrow="第四章 · 背包 · 目标：看懂背包表格">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:660px">
+        <div class="meta">w = [2,3,4,5] · v = [3,4,5,6] · 容量 W = 5</div>
+        <table class="m" style="margin-top:12px">
+          <tr><th class="rl"></th><th class="hd">j=0</th><th class="hd">j=1</th><th class="hd">j=2</th>
+            <th class="hd">j=3</th><th class="hd">j=4</th><th class="hd">j=5</th></tr>
+          <tr><th class="rl">初始</th>
+            <td class="dp" data-seq="0">0</td><td class="dp" data-seq="0">0</td><td class="dp" data-seq="0">0</td>
+            <td class="dp" data-seq="0">0</td><td class="dp" data-seq="0">0</td><td class="dp" data-seq="0">0</td></tr>
+          <tr><th class="rl">A (w2,v3)</th>
+            <td class="dp" data-seq="1">0</td><td class="dp" data-seq="1">0</td><td class="dp cur" data-seq="1">3</td>
+            <td class="dp cur" data-seq="1">3</td><td class="dp cur" data-seq="1">3</td><td class="dp cur" data-seq="1">3</td></tr>
+          <tr><th class="rl">B (w3,v4)</th>
+            <td class="dp" data-seq="2">0</td><td class="dp" data-seq="2">0</td><td class="dp" data-seq="2">3</td>
+            <td class="dp cur" data-seq="2">4</td><td class="dp cur" data-seq="2">4</td><td class="dp cur" data-seq="2">7</td></tr>
+          <tr><th class="rl">C (w4,v5)</th>
+            <td class="dp" data-seq="3">0</td><td class="dp" data-seq="3">0</td><td class="dp" data-seq="3">3</td>
+            <td class="dp" data-seq="3">4</td><td class="dp cur" data-seq="3">5</td><td class="dp" data-seq="3">7</td></tr>
+          <tr><th class="rl">D (w5,v6)</th>
+            <td class="dp" data-seq="4">0</td><td class="dp" data-seq="4">0</td><td class="dp" data-seq="4">3</td>
+            <td class="dp" data-seq="4">4</td><td class="dp" data-seq="4">5</td><td class="dp" data-seq="4">7</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <div class="meta">怎么读这张表</div>
+        <div class="hrule"></div>
+        <p class="sm">每一行 = 处理完一件物品后，<b>各种容量下的最大价值</b>。<br><br>
+          橙色格子 = 这一轮真正被更新过的格子。<br><br>
+          第 4 行 <span class="mono">dp[5] = 7</span>：容量 5 时最多价值 7（装 A + B）。</p>
+        <div class="hrule dot"></div>
+        <div class="mono h3">dp[5] = 7</div>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm">你只需要<b>一行</b>就能还原整个二维表，<br>
+            因为每一行只用到「上一行」。</div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1048" target="_blank">P1048 采药</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1049" target="_blank">P1049 装箱</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2900" style="left:690px;top:240px">表就是 DP 的全部：格子 + 填的顺序</div>
+  </div>
+</section>
+
+<!-- ============ 26 0/1 背包倒序 ============ -->
+<section class="slide" data-ch="4" data-stagger="150"
+  data-desc="同上题：0/1 背包，每件最多拿一次，容量 W，求最大价值。"
+  data-title="0/1 背包：转移式与「为什么要倒着走」"
+  data-rec="for j = W → w: dp[j] = max(...)"
+  data-eyebrow="第四章 · 背包 · 目标：理解循环方向">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">转移式</div>
+        <div class="mono" style="margin-top:12px;font-size:19px;font-weight:700">
+          dp[j] = <span class="v">max</span>( dp[j], &nbsp;dp[j-w[i]] + v[i] )
+        </div>
+        <div class="keyline"></div>
+        <p class="sm">
+          <b>不拿第 i 件</b>：价值还是 <span class="mono">dp[j]</span>。<br>
+          <b>拿第 i 件</b>：腾出 <span class="mono">w[i]</span> 空间，价值 <span class="mono">dp[j-w[i]] + v[i]</span>。<br>
+          两者取大。
+        </p>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>为什么 j 要倒着枚举？</b><br><br>
+            倒着走，<span class="mono">dp[j-w]</span> 一定是「<b>还没放第 i 件</b>」时的旧值，
+            保证每件物品最多用一次。<br><br>
+            正着走，<span class="mono">dp[j-w]</span> 可能已经是<b>本行更新过</b>的值
+            ——相当于同一件物品被拿了两次。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <div class="meta">举个例子看污染</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th>容量 j</th><th>正序（错）</th><th>倒序（对）</th></tr>
+          <tr><td class="k">2</td><td class="k l">3</td><td class="k g">3</td></tr>
+          <tr><td class="k">4</td><td class="k l">6 ← 又用了一次 A</td><td class="k g">3</td></tr>
+          <tr><td class="k">5</td><td class="k l">7</td><td class="k g">7</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm">口诀：<b class="v">0/1 背包倒着走，完全背包正着走。</b><br>
+            差别就一个符号。</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="term">时间 <b class="g mono">O(nW)</b></div>
+          <div class="term">空间 <b class="g mono">O(W)</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">倒着 = 每件只用一次</div>
+  </div>
+</section>
+
+<!-- ============ 27 0/1 背包代码 ============ -->
+<section class="slide" data-ch="4" data-stagger="140"
+  data-desc="同上题：0/1 背包，n 件物品各有重量与价值，容量 W，每件最多拿一次，求最大价值。"
+  data-title="0/1 背包：代码与空间压缩"
+  data-rec="dp = [0] * (W + 1)"
+  data-eyebrow="第四章 · 背包 · 目标：写出可提交的代码">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.3">
+        <div class="cbar"><span class="cf">knapsack01.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>n, W = map(int, input().split())</li>
+<li>w = [0] + list(map(int, input().split()))</li>
+<li>v = [0] + list(map(int, input().split()))</li>
+<li>dp = [0] * (W + 1)</li>
+<li>for i in range(1, n + 1):</li>
+<li class="hl" data-note="倒序，保证每件物品只被用一次">    for j in range(W, w[i] - 1, -1):</li>
+<li>        dp[j] = max(dp[j], dp[j - w[i]] + v[i])</li>
+<li>print(dp[W])</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">三个细节</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:120px">细节</th><th>说明</th></tr>
+          <tr><td class="k">开 n+1 个</td><td>下标和题目对齐，<span class="mono">w[0]=0</span> 当占位</td></tr>
+          <tr><td class="k">下界</td><td><span class="mono">range(W, w[i]-1, -1)</span>，别写成 <span class="mono">w[i]-2</span></td></tr>
+          <tr><td class="k">输出</td><td>答案是 <span class="mono v">dp[W]</span></td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm">把第 6 行的 <span class="mono v">-1</span> 改成 <span class="mono">+1</span>，
+            它就变成完全背包——<b>就差这一个符号</b>。</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1048" target="_blank">P1048 采药</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1049" target="_blank">P1049 装箱问题</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">这行循环，值得抄十遍</div>
+  </div>
+</section>
+
+<!-- ============ 28 完全背包 ============ -->
+<section class="slide" data-ch="4" data-stagger="150"
+  data-desc="每种硬币面值无限枚，问凑出金额 amount 最少需要多少枚硬币（凑不出返回 -1）。"
+  data-title="完全背包：每件可以拿无限次"
+  data-rec="for j = w → W: dp[j] = max(...)"
+  data-eyebrow="第四章 · 背包 · 目标：看懂方向的意义">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">对照 · 同一件物品，两种循环</div>
+        <div class="code" style="margin-top:10px">
+          <div class="cbar"><span class="cf">01 · 倒序</span></div>
+          <ol class="cl">
+<li>for j in range(W, w[i] - 1, -1):</li>
+<li>    dp[j] = max(dp[j], dp[j - w[i]] + v[i])</li>
+          </ol>
+        </div>
+        <div class="code" style="margin-top:12px">
+          <div class="cbar"><span class="cf">complete · 正序</span></div>
+          <ol class="cl">
+<li class="hl" data-note="正序：dp[j-w] 可能已是本行的值，等于允许重复选">for j in range(w[i], W + 1):</li>
+<li>    dp[j] = max(dp[j], dp[j - w[i]] + v[i])</li>
+          </ol>
+        </div>
+        <div class="sm" style="margin-top:14px">两次循环的代码<b>只差一个方向</b>，语义完全不同。</div>
+      </div>
+      <div class="c7-12">
+        <div class="meta">例子 · 零钱兑换（求最少）</div>
+        <div class="keyline"></div>
+        <div class="mono" style="font-size:15px;line-height:1.95">
+          面值 [1, 2, 5]，凑出 11 元<br>
+          dp[j] = <span class="v">min</span>( dp[j], dp[j-coin] + 1 )<br>
+          <span class="mu">dp[0] = 0，其余 = +∞</span>
+        </div>
+        <table class="t" style="margin-top:12px">
+          <tr><th>金额</th><th>0</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>…</th><th>11</th></tr>
+          <tr><td class="k">最少硬币</td><td class="k">0</td><td class="k">1</td><td class="k">1</td><td class="k">2</td>
+            <td class="k">2</td><td class="k">1</td><td class="k mu">…</td><td class="k v">3</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm">求「最少」就把 <span class="mono">max</span> 换成 <span class="mono">min</span>，
+            初值设成 <span class="mono">+∞</span>。<b>结构完全一样。</b></div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/coin-change/" target="_blank">LC 322</a></div>
+          <div class="term">答案 <b class="v mono">3</b>（5+5+1）</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:820px;top:286px">「无限次」＝ 正序</div>
+  </div>
+</section>
+
+<!-- ============ 29 零钱兑换 II ============ -->
+<section class="slide" data-ch="4" data-stagger="150"
+  data-desc="每种硬币无限枚，求凑出金额 amount 一共有多少种不同的组合（顺序不同算同一种）。"
+  data-title="零钱兑换 II：数方案的完全背包"
+  data-rec="dp[j] += dp[j-coin]"
+  data-eyebrow="第四章 · 背包 · 目标：数方案数的背包">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">LeetCode 518 · 凑出 amount 的<b>组合数</b></h4>
+        <div class="keyline"></div>
+        <div class="mono" style="font-size:15px;line-height:1.95">
+          dp[j] = 凑出金额 j 的组合数<br>
+          dp[j] <span class="v">+=</span> dp[j - coin]<br>
+          <span class="mu">dp[0] = 1（什么都不取也是一种方案）</span>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>为什么是 +=？</b><br>
+            因为「最后放的是哪一枚硬币」是<b>互不重叠</b>的分类，
+            把所有类的方案数加起来。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm">如果外层循环是硬币、内层正序金额，<b>每种组合只被数一次</b>。<br>
+            反过来（外层金额）会把顺序不同算成不同方案。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <div class="code">
+          <div class="cbar"><span class="cf">coin_change_2.py</span>
+            <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>def change(amount, coins):</li>
+<li>    dp = [0] * (amount + 1)</li>
+<li>    dp[0] = 1</li>
+<li>    for c in coins:</li>
+<li class="hl" data-note="外层硬币 + 内层正序 = 组合数">        for j in range(c, amount + 1):</li>
+<li>            dp[j] += dp[j - c]</li>
+<li>    return dp[amount]</li>
+          </ol>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/coin-change-ii/" target="_blank">LC 518</a></div>
+          <div class="term">对比 <a class="link" href="https://leetcode.cn/problems/coin-change/" target="_blank">LC 322</a> 求最值</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">求最值用 max，数方案用 +=</div>
+  </div>
+</section>
+
+<!-- ============ 30 分割等和子集 ============ -->
+<section class="slide" data-ch="4" data-stagger="150"
+  data-desc="判断能否把一个正整数数组分成两个子集，使两个子集的元素和相等。"
+  data-title="分割等和子集：布尔型 0/1 背包"
+  data-rec="dp[j] = dp[j] or dp[j-num]"
+  data-eyebrow="第四章 · 背包 · 目标：把问题转成背包">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-7">
+        <h4 class="q">LeetCode 416 · 能不能把数组分成两个和相等的子集？</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          总和为 <span class="mono">sum</span>，若 <span class="mono">sum</span> 是奇数 → 直接 False。<br>
+          否则问题等价于：<b>能否从数组里挑出若干个数，使其和恰好为 sum / 2</b>。
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>这一步叫「问题转化」：</b><br>
+            看起来是「分两堆」，其实是「<b>容量为 sum/2 的 0/1 背包能不能装满</b>」。</div>
+        </div>
+        <div class="mono" style="margin-top:14px;font-size:15px;line-height:1.95">
+          dp[j] = 能否凑出和 j<br>
+          dp[j] = dp[j] <span class="v">or</span> dp[j - num]<br>
+          <span class="mu">dp[0] = True</span>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/partition-equal-subset-sum/" target="_blank">LC 416</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1049" target="_blank">P1049 装箱问题</a></div>
+        </div>
+      </div>
+      <div class="c8-12">
+        <div class="code">
+          <div class="cbar"><span class="cf">can_partition.py</span>
+            <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>def can_partition(nums):</li>
+<li>    s = sum(nums)</li>
+<li>    if s % 2:</li>
+<li>        return False</li>
+<li>    half = s // 2</li>
+<li>    dp = [False] * (half + 1)</li>
+<li>    dp[0] = True</li>
+<li>    for x in nums:</li>
+<li class="hl" data-note="倒序：每个数只能用一次">        for j in range(half, x - 1, -1):</li>
+<li>            dp[j] = dp[j] or dp[j - x]</li>
+<li>    return dp[half]</li>
+          </ol>
+        </div>
+        <div class="notebox" style="margin-top:14px">
+          <div class="sm">背包的三个变种到齐了：<br>
+            <b>max/min 求最值</b> · <b>+= 数方案</b> · <b>or 判可行性</b>。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">看到「能不能装满」就想到布尔背包</div>
+  </div>
+</section>
+
+<!-- ============ 31 背包小结 ============ -->
+<section class="slide" data-ch="4" data-stagger="130"
+  data-title="背包小结与洛谷题单"
+  data-rec="0/1 倒序 · 完全 正序"
+  data-eyebrow="第四章 · 背包 · 目标：形成判断力">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <table class="t">
+          <tr><th>类型</th><th>每件可用次数</th><th>循环方向</th><th>代表题</th></tr>
+          <tr><td class="k">0/1 背包</td><td>最多 1 次</td><td class="v mono">倒序</td>
+            <td><a class="link" href="https://www.luogu.com.cn/problem/P1048" target="_blank">P1048</a></td></tr>
+          <tr><td class="k">完全背包</td><td>无限次</td><td class="v mono">正序</td>
+            <td><a class="link" href="https://leetcode.cn/problems/coin-change/" target="_blank">LC 322</a></td></tr>
+          <tr><td class="k">多重背包</td><td>最多 c 次</td><td>二进制拆分</td>
+            <td><a class="link" href="https://www.luogu.com.cn/problem/P1776" target="_blank">P1776</a></td></tr>
+          <tr><td class="k">分组背包</td><td>每组选一个</td><td>组内倒序</td>
+            <td><a class="link" href="https://www.luogu.com.cn/problem/P1064" target="_blank">P1064</a></td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:20px">
+          <div class="sm"><b>W 特别大时</b>（如 10⁹）<span class="mono">O(nW)</span> 不可行：<br>
+            把 dp 换个含义——<span class="mono">dp[v] = 达到价值 v 的最小重量</span>，
+            值域才是「总价值」的规模。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <div class="meta">洛谷背包练习</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th>题号</th><th>题名</th><th>考点</th></tr>
+          <tr><td class="k"><a class="link" href="https://www.luogu.com.cn/problem/P1048" target="_blank">P1048</a></td><td>采药</td><td>0/1 入门</td></tr>
+          <tr><td class="k"><a class="link" href="https://www.luogu.com.cn/problem/P1049" target="_blank">P1049</a></td><td>装箱问题</td><td>求最大剩余</td></tr>
+          <tr><td class="k"><a class="link" href="https://www.luogu.com.cn/problem/P1064" target="_blank">P1064</a></td><td>金明的预算方案</td><td>分组背包</td></tr>
+          <tr><td class="k"><a class="link" href="https://www.luogu.com.cn/problem/P1802" target="_blank">P1802</a></td><td>五倍经验日</td><td>取 / 不取</td></tr>
+          <tr><td class="k"><a class="link" href="https://www.luogu.com.cn/problem/P1776" target="_blank">P1776</a></td><td>宝物筛选</td><td>多重背包</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:880px;top:286px">先判断类型，再写循环方向</div>
+  </div>
+</section>
+
+<!-- ============ 32 LCS 填表 ============ -->
+<section class="slide" data-ch="5" data-stagger="90"
+  data-desc="给定两个字符串 s1、s2，求它们最长公共子序列的长度（可以跳字符，但顺序不能变）。"
+  data-title="最长公共子序列 LCS：先填表"
+  data-rec="dp[i][j] = dp[i-1][j-1] + 1"
+  data-eyebrow="第五章 · 二维 DP · 目标：会填 LCS 表">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:400px">
+        <h4 class="q">s1 = <span class="mono">abcb</span><br>s2 = <span class="mono">bdcab</span></h4>
+        <div class="keyline"></div>
+        <p class="sm"><b>子序列</b>：可以跳着取，顺序不能变。<br>
+          求两个串<b>最长的公共子序列</b>长度。</p>
+        <div class="mono" style="margin-top:14px;font-size:13.5px;line-height:1.95">
+          若 s1[i] == s2[j]：<br>
+          &nbsp;&nbsp;dp[i][j] = dp[i-1][j-1] + 1<br>
+          否则：<br>
+          &nbsp;&nbsp;dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+        </div>
+        <div class="notebox" style="margin-top:14px">
+          <div class="sm">匹配 → 取<b>左上角</b> + 1。<br>不匹配 → 取<b>上、左</b>里较大的。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <table class="m" style="margin-left:auto">
+          <tr><th class="rl"></th><th class="hd">∅</th><th class="hd">b</th><th class="hd">d</th><th class="hd">c</th><th class="hd">a</th><th class="hd">b</th></tr>
+          <tr><th class="rl">∅</th>
+            <td class="dp" data-seq="0">0</td><td class="dp" data-seq="0">0</td><td class="dp" data-seq="0">0</td>
+            <td class="dp" data-seq="0">0</td><td class="dp" data-seq="0">0</td><td class="dp" data-seq="0">0</td></tr>
+          <tr><th class="rl">a</th>
+            <td class="dp" data-seq="1">0</td><td class="dp" data-seq="1">0</td><td class="dp" data-seq="1">0</td>
+            <td class="dp" data-seq="1">0</td><td class="dp cur" data-seq="1">1</td><td class="dp" data-seq="1">1</td></tr>
+          <tr><th class="rl">b</th>
+            <td class="dp" data-seq="2">0</td><td class="dp cur" data-seq="2">1</td><td class="dp" data-seq="2">1</td>
+            <td class="dp" data-seq="2">1</td><td class="dp" data-seq="2">1</td><td class="dp cur" data-seq="2">2</td></tr>
+          <tr><th class="rl">c</th>
+            <td class="dp" data-seq="3">0</td><td class="dp" data-seq="3">1</td><td class="dp" data-seq="3">1</td>
+            <td class="dp cur" data-seq="3">2</td><td class="dp" data-seq="3">2</td><td class="dp" data-seq="3">2</td></tr>
+          <tr><th class="rl">b</th>
+            <td class="dp" data-seq="4">0</td><td class="dp cur" data-seq="4">1</td><td class="dp" data-seq="4">1</td>
+            <td class="dp" data-seq="4">2</td><td class="dp" data-seq="4">2</td><td class="dp cur" data-seq="4">3</td></tr>
+        </table>
+        <div class="row" style="margin-top:16px;justify-content:flex-end">
+          <div class="term">答案 <b class="v mono">dp[4][5] = 3</b>（bcb）</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:830px;top:232px">橙色就是那条对角线：每匹配一次，+1</div>
+  </div>
+</section>
+
+<!-- ============ 33 LCS 代码 ============ -->
+<section class="slide" data-ch="5" data-stagger="140"
+  data-desc="同上题：求两个字符串的最长公共子序列长度。"
+  data-title="LCS：转移与代码"
+  data-rec="dp[i][j] = dp[i-1][j-1] + 1"
+  data-eyebrow="第五章 · 二维 DP · 目标：写出 LCS 代码">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.25">
+        <div class="cbar"><span class="cf">lcs.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>def lcs(s1, s2):</li>
+<li>    n, m = len(s1), len(s2)</li>
+<li>    dp = [[0] * (m + 1) for _ in range(n + 1)]</li>
+<li>    for i in range(1, n + 1):</li>
+<li>        for j in range(1, m + 1):</li>
+<li>            if s1[i - 1] == s2[j - 1]:</li>
+<li class="hl" data-note="匹配：从左上角继承长度，再 +1">                dp[i][j] = dp[i - 1][j - 1] + 1</li>
+<li>            else:</li>
+<li>                dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])</li>
+<li>    return dp[n][m]</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">空间压缩</div>
+        <p class="sm" style="margin-top:12px">第 i 行只依赖第 i−1 行，所以可以压成<b>一维数组</b>，
+          但内层 j 必须<b>倒序</b>（同背包的道理）。</p>
+        <div class="code" style="margin-top:10px">
+          <div class="cbar"><span class="cf">lcs_o1.py</span><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>dp = [0] * (m + 1)</li>
+<li>for i in range(1, n + 1):</li>
+<li>    prev = 0</li>
+<li>    for j in range(1, m + 1):</li>
+<li>        tmp = dp[j]</li>
+<li>        if s1[i-1] == s2[j-1]:</li>
+<li>            dp[j] = prev + 1</li>
+<li>        else:</li>
+<li>            dp[j] = max(dp[j], dp[j-1])</li>
+<li>        prev = tmp</li>
+          </ol>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/longest-common-subsequence/" target="_blank">LC 1143</a></div>
+          <div class="term">时间 <b class="g">O(nm)</b> 空间 <b class="g">O(min(n,m))</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">prev 存的就是「左上角」</div>
+  </div>
+</section>
+
+<!-- ============ 34 编辑距离概念 ============ -->
+<section class="slide" data-ch="5" data-stagger="160"
+  data-desc="把单词 word1 变成 word2，每步可以插入、删除或替换一个字符，求最少操作次数。"
+  data-title="编辑距离：三种操作怎么选"
+  data-rec="dp[i][j] = 1 + min(删, 插, 改)"
+  data-eyebrow="第五章 · 二维 DP · 目标：理解三种操作">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">horse → ros，最少几步？</h4>
+        <div class="keyline"></div>
+        <div class="mono" style="font-size:15px;line-height:2">
+          若 s1[i] == s2[j]：<br>
+          &nbsp;&nbsp;dp[i][j] = dp[i-1][j-1]<br>
+          否则：<br>
+          &nbsp;&nbsp;dp[i][j] = 1 + <span class="v">min</span>(<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;dp[i-1][j],&nbsp;&nbsp;&nbsp;<span class="mu">← 删掉 s1[i]</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;dp[i][j-1],&nbsp;&nbsp;&nbsp;<span class="mu">← 插入 s2[j]</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;dp[i-1][j-1]&nbsp;<span class="mu">← 替换</span><br>
+          &nbsp;&nbsp;)
+        </div>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm">三种操作分别对应<b>三个相邻格子</b>，取最便宜的一种 + 1。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <div class="meta">边界怎么来的</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th>格子</th><th>含义</th><th>值</th></tr>
+          <tr><td class="k">dp[i][0]</td><td>把 s1 前 i 个字符全删掉</td><td class="mono">i</td></tr>
+          <tr><td class="k">dp[0][j]</td><td>把 s2 前 j 个字符全插入</td><td class="mono">j</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm">边界不是「背下来的公式」，它是<b>三种操作在空串上的自然结果</b>。</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/edit-distance/" target="_blank">LC 72</a></div>
+          <div class="term">时间 <b class="g">O(nm)</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">三个邻居 = 三种操作</div>
+  </div>
+</section>
+
+<!-- ============ 35 编辑距离表格 ============ -->
+<section class="slide" data-ch="5" data-stagger="95"
+  data-desc="同上题：horse → ros 最少需要几步编辑（插入 / 删除 / 替换）。"
+  data-title="编辑距离：把表填完"
+  data-rec="dp[n][m] = 3"
+  data-eyebrow="第五章 · 二维 DP · 目标：填完编辑距离表">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:420px">
+        <h4 class="q">s1 = horse，s2 = ros</h4>
+        <div class="keyline"></div>
+        <div class="sm">从 <span class="mono">dp[5][3]</span> 往回找，可以还原出具体操作：<br><br>
+          horse → rorse（替换 h→r）<br>
+          rorse → rose（删除 r）<br>
+          rose → ros（删除 e）<br>
+          共 <b class="v mono">3</b> 步。
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm">要输出操作方案，就必须<b>保留完整表格</b>再倒推——
+            这时不能做空间压缩。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <table class="m" style="margin-left:auto">
+          <tr><th class="rl"></th><th class="hd">∅</th><th class="hd">r</th><th class="hd">o</th><th class="hd">s</th></tr>
+          <tr><th class="rl">∅</th>
+            <td class="dp" data-seq="0">0</td><td class="dp" data-seq="0">1</td><td class="dp" data-seq="0">2</td><td class="dp" data-seq="0">3</td></tr>
+          <tr><th class="rl">h</th>
+            <td class="dp" data-seq="1">1</td><td class="dp cur" data-seq="1">1</td><td class="dp cur" data-seq="1">2</td><td class="dp cur" data-seq="1">3</td></tr>
+          <tr><th class="rl">o</th>
+            <td class="dp" data-seq="2">2</td><td class="dp cur" data-seq="2">2</td><td class="dp cur" data-seq="2">1</td><td class="dp cur" data-seq="2">2</td></tr>
+          <tr><th class="rl">r</th>
+            <td class="dp" data-seq="3">3</td><td class="dp cur" data-seq="3">2</td><td class="dp cur" data-seq="3">2</td><td class="dp cur" data-seq="3">2</td></tr>
+          <tr><th class="rl">s</th>
+            <td class="dp" data-seq="4">4</td><td class="dp cur" data-seq="4">3</td><td class="dp cur" data-seq="4">3</td><td class="dp cur" data-seq="4">2</td></tr>
+          <tr><th class="rl">e</th>
+            <td class="dp" data-seq="5">5</td><td class="dp cur" data-seq="5">4</td><td class="dp cur" data-seq="5">4</td><td class="dp cur" data-seq="5">3</td></tr>
+        </table>
+        <div class="row" style="margin-top:16px;justify-content:flex-end">
+          <div class="term">答案 <b class="v mono">dp[5][3] = 3</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">每一格都是三种操作里最便宜的一种</div>
+  </div>
+</section>
+
+<!-- ============ 36 数字三角形 / 过河卒 ============ -->
+<section class="slide" data-ch="5" data-stagger="150"
+  data-desc="P1216：数字三角形，从顶走到底（每步向左下或右下），求路径数字之和的最大值；P1002：棋盘上从左上走到右下（只能向右或向下），部分格子被封锁，求方案数。"
+  data-title="洛谷：数字三角形与过河卒"
+  data-rec="dp[i][j] = a[i][j] + max(dp[i-1][j-1], dp[i-1][j])"
+  data-eyebrow="第五章 · 二维 DP · 目标：看到路径型 DP">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:520px">
+        <div class="meta">洛谷 P1216 数字三角形</div>
+        <h4 class="q" style="margin-top:8px">从顶走到底，每步向左下或右下，求最大和。</h4>
+        <svg viewBox="0 0 480 200" width="480" height="200" style="margin-top:6px">
+          <g class="svgtxtb" text-anchor="middle">
+            <text x="240" y="22">7</text>
+            <text x="196" y="62">3</text><text x="284" y="62">8</text>
+            <text x="152" y="102">8</text><text x="240" y="102">1</text><text x="328" y="102">0</text>
+            <text x="108" y="142">2</text><text x="196" y="142">7</text><text x="284" y="142">4</text><text x="372" y="142">4</text>
+            <text x="64" y="182">4</text><text x="152" y="182">5</text><text x="240" y="182">2</text>
+            <text x="328" y="182">6</text><text x="416" y="182">5</text>
+          </g>
+          <path class="path" data-draw="1200" d="M240 32 L196 72 L152 112 L196 152 L240 172"/>
+          <text class="svgtxtv" x="30" y="198">答案 = 30</text>
+        </svg>
+        <div class="mono" style="margin-top:6px;font-size:13.5px">
+          dp[i][j] = a[i][j] + <span class="v">max</span>( dp[i-1][j-1], dp[i-1][j] )
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="meta">洛谷 P1002 过河卒</div>
+        <p class="sm" style="margin-top:12px">棋盘上从左上走到右下，只能向右/向下，某些点不能走（马的控制点）。求方案数。</p>
+        <div class="mono" style="margin-top:12px;font-size:13.5px;line-height:1.9">
+          dp[i][j] = dp[i-1][j] <span class="v">+</span> dp[i][j-1]<br>
+          <span class="mu">if (i,j) 被封：dp[i][j] = 0</span>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>路径型 DP 的共同点：</b><br>
+            「最后一步」只有有限几种走法（左来 / 上来 / 左上来），
+            转移式就是把这几条路的值合起来。<br><br>
+            唯一要注意的是<b>方案数可能很大</b>，要用高精度或 64 位整数。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1216" target="_blank">P1216</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1002" target="_blank">P1002</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/unique-paths/" target="_blank">LC 62</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/minimum-path-sum/" target="_blank">LC 64</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">路径型 DP：最后一步只有几种走法</div>
+  </div>
+</section>
+
+<!-- ============ 37 股票加维度 ============ -->
+<section class="slide" data-ch="5" data-stagger="200"
+  data-desc="给定每天的价格，可以多次买卖但同一时间最多持有一股，求能获得的最大利润。"
+  data-title="股票：为什么状态要多一个维度"
+  data-rec="dp[i][k][0/1]"
+  data-eyebrow="第五章 · 二维 DP · 目标：学会加维度">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:480px">
+        <h4 class="q">价格 p = <span class="mono">[3, 5, 0, 3, 1, 6]</span></h4>
+        <div class="keyline"></div>
+        <p class="sm">只记「今天赚了多少」不够——<br>
+          因为你不知道<b>今天手上有没有股票</b>。</p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>于是把「有没有货」写进状态：</b><br><br>
+            <span class="mono">hold[i]</span> = 第 i 天结束后手里<b>有</b>股票的最大收益<br>
+            <span class="mono">cash[i]</span> = 第 i 天结束后手里<b>没有</b>股票的最大收益</div>
+        </div>
+        <div class="mono" style="margin-top:14px;font-size:14px;line-height:1.95">
+          hold[i] = max( hold[i-1], cash[i-1] - p[i] )<br>
+          cash[i] = max( cash[i-1], hold[i-1] + p[i] )
+        </div>
+      </div>
+      <div style="flex:1">
+        <table class="m" style="margin-top:6px">
+          <tr><th class="rl"></th><th class="hd">i=0</th><th class="hd">i=1</th><th class="hd">i=2</th>
+            <th class="hd">i=3</th><th class="hd">i=4</th><th class="hd">i=5</th></tr>
+          <tr><th class="rl">p[i]</th>
+            <td class="dp" data-seq="0">3</td><td class="dp" data-seq="0">5</td><td class="dp" data-seq="0">0</td>
+            <td class="dp" data-seq="0">3</td><td class="dp" data-seq="0">1</td><td class="dp" data-seq="0">6</td></tr>
+          <tr><th class="rl">hold</th>
+            <td class="dp" data-seq="1">-3</td><td class="dp cur" data-seq="2">-3</td><td class="dp cur" data-seq="3">-3</td>
+            <td class="dp cur" data-seq="4">-3</td><td class="dp cur" data-seq="5">-1</td><td class="dp cur" data-seq="6">-1</td></tr>
+          <tr><th class="rl">cash</th>
+            <td class="dp" data-seq="1">0</td><td class="dp cur" data-seq="2">2</td><td class="dp cur" data-seq="3">2</td>
+            <td class="dp cur" data-seq="4">5</td><td class="dp cur" data-seq="5">5</td><td class="dp cur" data-seq="6">7</td></tr>
+        </table>
+        <div class="row" style="margin-top:16px">
+          <div class="term">答案 <b class="v mono">cash[5] = 7</b></div>
+          <div class="term">交易次数不限 → LC 122</div>
+        </div>
+        <div class="hrule dot"></div>
+        <div class="sm">若限制交易 <b>k</b> 次，再加一维 <span class="mono">dp[i][k][0/1]</span>；
+          若含手续费，只在卖出那一支转移上减去 <span class="mono">fee</span>。</div>
+        <div class="row" style="margin-top:12px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-ii/" target="_blank">LC 122</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-iii/" target="_blank">LC 123</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-iv/" target="_blank">LC 188</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/" target="_blank">LC 714</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="3100" style="left:120px;top:288px">多一个维度 = 多记住一件事实</div>
+  </div>
+</section>
+
+<!-- ============ 38 股票压维 ============ -->
+<section class="slide" data-ch="5" data-stagger="150"
+  data-desc="同上题，但每次卖出要支付固定手续费 fee，求能获得的最大利润。"
+  data-title="含手续费：两个变量就够"
+  data-rec="hold, cash = O(1)"
+  data-eyebrow="第五章 · 二维 DP · 目标：学会压维">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.25">
+        <div class="cbar"><span class="cf">stock_fee.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li># 每次卖出要交 fee 元手续费</li>
+<li>def max_profit(p, fee):</li>
+<li>    hold = -p[0]</li>
+<li>    cash = 0</li>
+<li>    for i in range(1, len(p)):</li>
+<li class="hl" data-note="两个变量互相依赖，必须同时更新">        hold, cash = max(hold, cash - p[i]), \</li>
+<li>                    max(cash, hold + p[i] - fee)</li>
+<li>    return cash</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">为什么可以压成两个变量</div>
+        <div class="keyline"></div>
+        <p class="sm">第 i 天只用到第 i−1 天的两个值，<br>
+          那就不用 <span class="mono">hold[i]、cash[i]</span> 两个数组，两个变量足够。</p>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>压维的判断标准：</b><br>
+            转移只用到「上一行 / 上一个」的<b>固定几个值</b>，
+            就可以滚动覆盖。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm">若两行互相依赖，必须<b>先保存旧值</b>或<b>同时赋值</b>，
+            否则会用到已被本行更新过的数字。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term">O(n) → <b class="g">O(1)</b></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/" target="_blank">LC 714</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">二维 → 两个变量，只是换个记法</div>
+  </div>
+</section>
+
+<!-- ============ 39 常见错误 ============ -->
+<section class="slide" data-ch="6" data-stagger="150"
+  data-title="常见错误与对策"
+  data-rec="状态 · 边界 · 顺序"
+  data-eyebrow="第六章 · 方法与题单 · 目标：避开三个大坑">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:150px">错误</th><th style="width:400px">症状</th><th style="width:340px">对策</th><th>检验</th></tr>
+      <tr><td class="k v">① 状态定义不清</td>
+        <td data-seq="0">写转移式时说不清 dp[i] 是「含第 i 个」还是「前 i 个」。</td>
+        <td data-seq="1">先用一句中文写下来，贴在代码第一行注释里。</td>
+        <td data-seq="2">讲给别人听，看对方能不能懂。</td></tr>
+      <tr><td class="k v">② 循环边界写错</td>
+        <td data-seq="3">n = 1 或 n = 0 时越界 / 答案偏小一格。</td>
+        <td data-seq="4">统一开 <span class="mono">n+1</span>，<span class="mono">dp[i]</span> 表示「前 i 个」。</td>
+        <td data-seq="5">手算 n = 0、1、2 的结果。</td></tr>
+      <tr><td class="k v">③ 循环方向搞反</td>
+        <td data-seq="6">0/1 背包答案偏大，物品被用了多次。</td>
+        <td data-seq="7">0/1 倒序，完全背包正序。</td>
+        <td data-seq="8">用「容量正好等于一件物品」的例子试。</td></tr>
+      <tr><td class="k v">④ 答案位置找错</td>
+        <td data-seq="9">取了 dp[n-1]，其实应该取整行最大值。</td>
+        <td data-seq="10">写完四步法第 4 步，立刻标注答案在哪。</td>
+        <td data-seq="11">拿样例代入，看答案格对不对。</td></tr>
+    </table>
+    <div class="row" style="margin-top:18px">
+      <div class="numbox">!</div>
+      <div class="p" style="flex:1">这四种错误<b class="v">都不难，但一定会犯</b>。
+        最有效的办法只有一个——<b>动键盘之前，先在纸上把表画出来</b>。</div>
+    </div>
+    <div class="hand" data-at="2600" style="left:880px;top:278px">九成的 WA 不是 DP 错，是下标错</div>
+  </div>
+</section>
+
+<!-- ============ 40 边界陷阱 ============ -->
+<section class="slide" data-ch="6" data-stagger="140"
+  data-title="边界与下标陷阱"
+  data-rec="dp[0] = base"
+  data-eyebrow="第六章 · 方法与题单 · 目标：把边界问题讲清">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1">
+        <div class="cbar"><span class="cf">trap_1.py</span></div>
+        <ol class="cl">
+<li>dp = [0] * n</li>
+<li>for i in range(2, n):</li>
+<li>    dp[i] = dp[i-1] + dp[i-2]</li>
+        </ol>
+        <div style="padding:12px">
+          <div class="sm">n = 2 时循环不执行，<b>dp[1] 没赋值</b>。</div>
+          <div style="margin-top:10px"><span class="ans">dp[0]、dp[1] 单独写</span></div>
+        </div>
+      </div>
+      <div class="code" style="flex:1">
+        <div class="cbar"><span class="cf">trap_2.py</span></div>
+        <ol class="cl">
+<li>dp = [0] * (W + 1)</li>
+<li>for c in coins:</li>
+<li>    for j in range(c, W + 1):</li>
+<li>        dp[j] = min(dp[j], dp[j-c] + 1)</li>
+        </ol>
+        <div style="padding:12px">
+          <div class="sm">求最小值时初值必须是 <b>∞</b>，写 0 永远得 0。</div>
+          <div style="margin-top:10px"><span class="ans">max → 0 ｜ min → ∞</span></div>
+        </div>
+      </div>
+      <div class="code" style="flex:1">
+        <div class="cbar"><span class="cf">trap_3.py</span></div>
+        <ol class="cl">
+<li>a = [2, 7, 9, 3, 1]</li>
+<li>dp = [0] * (n + 1)</li>
+<li>for i in range(1, n + 1):</li>
+<li>    dp[i] = max(dp[i-1], dp[i-2] + a[i])</li>
+        </ol>
+        <div style="padding:12px">
+          <div class="sm">下标差一：dp 多开一格后应该是 <b>a[i-1]</b>。</div>
+          <div style="margin-top:10px"><span class="ans">写完先跑 n = 1</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="hrule dot" style="margin-top:18px"></div>
+    <div class="row">
+      <div class="numbox">i</div>
+      <div class="p" style="flex:1">统一套路：<b>数组开 <span class="mono">n+1</span>，dp[i] 表示「前 i 个」</b>。
+        这样 <span class="mono">dp[0]</span> 天然对应「一个都不取」，边界问题会少一大半。</div>
+    </div>
+    <div class="hand" data-at="2600" style="left:880px;top:286px">画表 2 分钟，省掉 20 分钟调试</div>
+  </div>
+</section>
+
+<!-- ============ 41 复杂度 ============ -->
+<section class="slide" data-ch="6" data-stagger="110"
+  data-title="复杂度一览"
+  data-rec="O(n²) / O(n)"
+  data-eyebrow="第六章 · 方法与题单 · 目标：对开销心里有数">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:190px">模型</th><th style="width:150px">状态</th><th style="width:150px">时间</th>
+        <th style="width:190px">空间（可压）</th><th>代表题目</th></tr>
+      <tr><td class="k">线性递推</td><td class="k">dp[i]</td><td class="k g">O(n)</td><td class="k g">O(n) → O(1)</td>
+        <td><a class="link" href="https://leetcode.cn/problems/climbing-stairs/" target="_blank">LC 70</a></td></tr>
+      <tr><td class="k">最大子数组和</td><td class="k">dp[i]</td><td class="k g">O(n)</td><td class="k g">O(n) → O(1)</td>
+        <td><a class="link" href="https://leetcode.cn/problems/maximum-subarray/" target="_blank">LC 53</a> / <a class="link" href="https://www.luogu.com.cn/problem/P1115" target="_blank">P1115</a></td></tr>
+      <tr><td class="k">LIS 朴素</td><td class="k">dp[i]</td><td class="k l">O(n²)</td><td class="k g">O(n)</td>
+        <td><a class="link" href="https://leetcode.cn/problems/longest-increasing-subsequence/" target="_blank">LC 300</a></td></tr>
+      <tr><td class="k">LIS 二分</td><td class="k">tails</td><td class="k g">O(n log n)</td><td class="k g">O(n)</td>
+        <td>同上（进阶）</td></tr>
+      <tr><td class="k">0/1 背包</td><td class="k">dp[i][j]</td><td class="k g">O(nW)</td><td class="k g">O(nW) → O(W)</td>
+        <td><a class="link" href="https://www.luogu.com.cn/problem/P1048" target="_blank">P1048</a></td></tr>
+      <tr><td class="k">完全背包</td><td class="k">dp[i][j]</td><td class="k g">O(nW)</td><td class="k g">O(nW) → O(W)</td>
+        <td><a class="link" href="https://leetcode.cn/problems/coin-change/" target="_blank">LC 322</a></td></tr>
+      <tr><td class="k">LCS / 编辑距离</td><td class="k">dp[i][j]</td><td class="k">O(nm)</td><td class="k">O(nm) → O(min(n,m))</td>
+        <td><a class="link" href="https://leetcode.cn/problems/edit-distance/" target="_blank">LC 72</a></td></tr>
+      <tr><td class="k">股票 k 次</td><td class="k">dp[i][k][2]</td><td class="k">O(nk)</td><td class="k g">O(nk) → O(k)</td>
+        <td><a class="link" href="https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-iv/" target="_blank">LC 188</a></td></tr>
+    </table>
+    <div class="row" style="margin-top:16px">
+      <div class="numbox">i</div>
+      <div class="sm" style="flex:1">先估量级，再决定用哪一版：
+        n = 10⁵ 就不能写 O(n²)；W = 10⁹ 就不能写 O(nW)，要换「按值域」的写法。</div>
+    </div>
+    <div class="hand" data-at="2400" style="left:880px;top:286px">先估量级，再动键盘</div>
+  </div>
+</section>
+
+<!-- ============ 42 流程图 ============ -->
+<section class="slide" data-ch="6" data-stagger="180"
+  data-title="解题流程图"
+  data-rec="if 重叠子问题: dp"
+  data-eyebrow="第六章 · 方法与题单 · 目标：把方法固定成流程">
+  <div class="stage-inner">
+    <svg viewBox="0 0 1120 356" width="1120" height="356">
+      <defs><marker id="ah40" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="#5C4736"/></marker></defs>
+      <g data-seq="0">
+        <rect x="20" y="24" width="200" height="64" rx="6" fill="#FFFCF7" stroke="#E9D8BE"/>
+        <text class="svgtxt" x="42" y="52">读题：问的是什么？</text>
+        <text class="svgm" x="42" y="74">方案数 / 最值 / 可行性</text>
+      </g>
+      <path class="arw" marker-end="url(#ah40)" d="M220 56 H292" data-seq="1"/>
+      <g data-seq="1">
+        <rect x="300" y="24" width="230" height="64" rx="6" fill="#FFFCF7" stroke="#E9D8BE"/>
+        <text class="svgtxt" x="322" y="52">能拆成重复子问题吗？</text>
+        <text class="svgm" x="322" y="74">不能 → 贪心 / 枚举</text>
+      </g>
+      <path class="arw" marker-end="url(#ah40)" d="M530 56 H602" data-seq="2"/>
+      <g data-seq="2">
+        <rect x="610" y="24" width="230" height="64" rx="6" fill="#FBE8C4" stroke="#E1542B" stroke-width="2"/>
+        <text class="svgtxtv" x="632" y="52">① 定义 dp[i] 是什么</text>
+        <text class="svgm" x="632" y="74">写成一句中文</text>
+      </g>
+      <path class="arw" marker-end="url(#ah40)" d="M840 56 H912" data-seq="3"/>
+      <g data-seq="3">
+        <rect x="920" y="24" width="180" height="64" rx="6" fill="#FFFCF7" stroke="#E9D8BE"/>
+        <text class="svgtxt" x="942" y="52">② 写转移式</text>
+        <text class="svgm" x="942" y="74">按最后一步分类</text>
+      </g>
+
+      <path class="arw" marker-end="url(#ah40)" d="M1010 88 V130 H110 V172" data-seq="4"/>
+
+      <g data-seq="4">
+        <rect x="20" y="178" width="200" height="64" rx="6" fill="#FFFCF7" stroke="#E9D8BE"/>
+        <text class="svgtxt" x="42" y="206">③ 定初始条件</text>
+        <text class="svgm" x="42" y="228">dp[0] / dp[1] / 边界</text>
+      </g>
+      <path class="arw" marker-end="url(#ah40)" d="M220 210 H292" data-seq="5"/>
+      <g data-seq="5">
+        <rect x="300" y="178" width="230" height="64" rx="6" fill="#FFFCF7" stroke="#E9D8BE"/>
+        <text class="svgtxt" x="322" y="206">④ 定答案位置</text>
+        <text class="svgm" x="322" y="228">dp[n] / 最大值 / 某格</text>
+      </g>
+      <path class="arw" marker-end="url(#ah40)" d="M530 210 H602" data-seq="6"/>
+      <g data-seq="6">
+        <rect x="610" y="178" width="230" height="64" rx="6" fill="#FFFCF7" stroke="#E9D8BE"/>
+        <text class="svgtxt" x="632" y="206">小数据手算验证</text>
+        <text class="svgm" x="632" y="228">n = 0, 1, 2 画表</text>
+      </g>
+      <path class="arw" marker-end="url(#ah40)" d="M840 210 H912" data-seq="7"/>
+      <g data-seq="7">
+        <rect x="920" y="178" width="180" height="64" rx="6" fill="#FFFCF7" stroke="#E1542B" stroke-width="2"/>
+        <text class="svgtxtv" x="942" y="206">写代码</text>
+        <text class="svgm" x="942" y="228">循环方向要对</text>
+      </g>
+
+      <path class="arw" marker-end="url(#ah40)" d="M1010 242 V278 H620 V304" data-seq="8"/>
+      <g data-seq="8">
+        <rect x="470" y="308" width="300" height="42" rx="6" fill="#FBE8C4" stroke="#F3B33F"/>
+        <text class="svgtxt" x="492" y="335">还能压空间吗？→ 只用到上一行就压</text>
+      </g>
+    </svg>
+    <div class="hand" data-at="2700" style="left:860px;top:42px">红框那一步，占掉一半时间</div>
+  </div>
+</section>
+
+<!-- ============ 43 题单 ============ -->
+<section class="slide" data-ch="6" data-stagger="110"
+  data-title="总题单：LeetCode + 洛谷"
+  data-rec="n = 21 problems"
+  data-eyebrow="第六章 · 方法与题单 · 目标：拿到可执行的练习清单">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="flex:1">
+        <div class="meta">入门 · 必做</div>
+        <table class="t" style="margin-top:10px">
+          <tr><th>题</th><th>考点</th></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/climbing-stairs/" target="_blank">LC 70 爬楼梯</a></td><td>基础转移</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/min-cost-climbing-stairs/" target="_blank">LC 746 最小花费</a></td><td>换算子</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/maximum-subarray/" target="_blank">LC 53 / P1115</a></td><td>结尾限制</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/house-robber/" target="_blank">LC 198 打家劫舍</a></td><td>取 / 不取</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1216" target="_blank">P1216 数字三角形</a></td><td>路径 DP</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1048" target="_blank">P1048 采药</a></td><td>0/1 背包</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1049" target="_blank">P1049 装箱问题</a></td><td>背包判定</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <div class="meta">进阶 · 巩固</div>
+        <table class="t" style="margin-top:10px">
+          <tr><th>题</th><th>考点</th></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/house-robber-ii/" target="_blank">LC 213 环形</a></td><td>拆子问题</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/longest-increasing-subsequence/" target="_blank">LC 300 / P1020</a></td><td>LIS 两种做法</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/word-break/" target="_blank">LC 139 单词拆分</a></td><td>布尔 DP</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/coin-change/" target="_blank">LC 322 零钱兑换</a></td><td>完全背包 min</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/coin-change-ii/" target="_blank">LC 518 零钱 II</a></td><td>数方案</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/partition-equal-subset-sum/" target="_blank">LC 416 / P1049</a></td><td>布尔背包</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1064" target="_blank">P1064 金明的预算</a></td><td>分组背包</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <div class="meta">提高 · 挑战</div>
+        <table class="t" style="margin-top:10px">
+          <tr><th>题</th><th>考点</th></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/longest-common-subsequence/" target="_blank">LC 1143 LCS</a></td><td>二维 DP</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/edit-distance/" target="_blank">LC 72 编辑距离</a></td><td>三种操作</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/longest-palindromic-subsequence/" target="_blank">LC 516 回文子序列</a></td><td>区间感</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-iv/" target="_blank">LC 188 股票 IV</a></td><td>多维状态</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/unique-paths/" target="_blank">LC 62 / 63 / 64</a></td><td>路径三连</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1002" target="_blank">P1002 过河卒</a></td><td>大数方案</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1091" target="_blank">P1091 合唱队形</a></td><td>LIS 双向</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:880px;top:288px">按顺序做，不要跳</div>
+  </div>
+</section>
+
+<!-- ============ 44 词汇表 ============ -->
+<section class="slide" data-ch="6" data-stagger="100"
+  data-title="词汇表"
+  data-rec="state · transition · base"
+  data-eyebrow="第六章 · 方法与题单 · 目标：把术语对上号">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="flex:1">
+        <table class="t">
+          <tr><th style="width:150px">术语</th><th style="width:180px">英文</th><th>一句话</th></tr>
+          <tr><td class="k">状态</td><td class="k">state</td><td>你决定记下来的那个量。</td></tr>
+          <tr><td class="k">转移方程</td><td class="k">transition</td><td>大问题怎么由小问题拼出来。</td></tr>
+          <tr><td class="k">初始条件</td><td class="k">base case</td><td>最小的那几格直接写答案。</td></tr>
+          <tr><td class="k">重叠子问题</td><td class="k">overlapping</td><td>同一个子问题被反复算。</td></tr>
+          <tr><td class="k">最优子结构</td><td class="k">optimal substructure</td><td>最优解由子问题最优解拼成。</td></tr>
+          <tr><td class="k">无后效性</td><td class="k">no aftereffect</td><td>当前只由过去决定。</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <table class="t">
+          <tr><th style="width:150px">术语</th><th style="width:180px">英文</th><th>一句话</th></tr>
+          <tr><td class="k">记忆化搜索</td><td class="k">memoization</td><td>递归 + 记账本，自顶向下。</td></tr>
+          <tr><td class="k">递推 / 填表</td><td class="k">tabulation</td><td>从小到大填表，自底向上。</td></tr>
+          <tr><td class="k">状态压缩</td><td class="k">space optimization</td><td>丢掉不再使用的格子。</td></tr>
+          <tr><td class="k">滚动数组</td><td class="k">rolling array</td><td>只保留当前行与上一行。</td></tr>
+          <tr><td class="k">结尾限制</td><td class="k">ending at i</td><td>dp[i] 表示「以 i 结尾」。</td></tr>
+          <tr><td class="k">问题转化</td><td class="k">reduction</td><td>把新题看成背包 / LIS。</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="hand" data-at="2200" style="left:880px;top:272px">这一页可以截图存下来</div>
+  </div>
+</section>
+
+<!-- ============ 45 结语 ============ -->
+<section class="slide" data-ch="6" data-stagger="180"
+  data-title="收尾"
+  data-rec="dp[i] = f(dp[i-1], …)"
+  data-eyebrow="ALGO PRIMER / DP-01 · 完 · 下一讲：区间 DP">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-7">
+        <div class="meta rise" data-seq="0">结语</div>
+        <h2 class="disp rise" data-seq="1" style="margin-top:14px;font-size:52px">
+          线性 DP 是所有 DP 的<br><b class="v">语法课</b>。
+        </h2>
+        <div class="keyline" data-seq="2"></div>
+        <p class="lead rise" data-seq="3">
+          今天你拿到的不是一个题型，<br>
+          而是一套动作：<b>定状态 → 写转移 → 定边界 → 定答案</b>。
+        </p>
+        <p class="p rise" data-seq="4" style="margin-top:12px">
+          接下来的区间 DP、树形 DP、状态压缩 DP、数位 DP，<br>
+          都只是在这四步上<b>换一种拆法</b>而已。
+        </p>
+      </div>
+      <div class="c8-12">
+        <div class="meta" data-seq="1">今天就做这五道</div>
+        <div class="hrule dot" data-seq="2"></div>
+        <div class="sm rise" data-seq="3">
+          ① <a class="link" href="https://leetcode.cn/problems/climbing-stairs/" target="_blank">LC 70 爬楼梯</a><br>
+          ② <a class="link" href="https://leetcode.cn/problems/house-robber/" target="_blank">LC 198 打家劫舍</a><br>
+          ③ <a class="link" href="https://www.luogu.com.cn/problem/P1216" target="_blank">洛谷 P1216 数字三角形</a><br>
+          ④ <a class="link" href="https://www.luogu.com.cn/problem/P1048" target="_blank">洛谷 P1048 采药</a><br>
+          ⑤ <a class="link" href="https://leetcode.cn/problems/longest-increasing-subsequence/" target="_blank">LC 300 最长上升子序列</a>
+        </div>
+        <div class="notebox" data-seq="4" style="margin-top:16px">
+          <div class="sm">每做一道，先在纸上画出<b>那张表</b>。<br>
+            表画对了，代码只是把它抄下来。</div>
+        </div>
+        <div class="seq" data-seq="5" style="margin-top:20px">
+          <div class="dpcell cur"><i>1</i></div><div class="dpcell cur"><i>1</i></div>
+          <div class="dpcell cur"><i>2</i></div><div class="dpcell cur"><i>3</i></div><div class="dpcell cur"><i>5</i></div>
+        </div>
+      </div>
+    </div>
+    <div class="watermark" style="top:180px">DP</div>
+    <div class="hand" data-at="2600" style="left:120px;top:288px">「记住」这两个字，就是 DP 的全部</div>
+  </div>
+</section>
+
+</div></div>
+
+<div id="panel"><h4>跳转 · 输入编号或点击 · ESC 关闭</h4><div id="plist"></div></div>
+
+<script>
+(function(){
+  'use strict';
+  const deck = document.getElementById('deck');
+  const slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  const TOTAL = slides.length;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---- auto numbering: 插页 / 删页都不用手动改 ---- */
+  slides.forEach(function(s, i){ s.dataset.num = String(i).padStart(2,'0'); });
+
+  /* ---- syntax highlight ---- */
+  const RE = /(#.*$)|("[^"]*"|'[^']*')|\b(def|return|for|in|if|elif|else|while|and|or|not|None|True|False|import|from|class|break|continue|pass|global)\b|\b(len|min|max|range|abs|sum|print|sorted|map|int|str|list|input|append)\b|\b(\d+)\b/g;
+  function hl(line){
+    return line.replace(RE, function(m,c,s,k,f,n){
+      if(c) return '<span class="cm">'+c+'</span>';
+      if(s) return '<span class="s">'+s+'</span>';
+      if(k) return '<span class="k">'+k+'</span>';
+      if(f) return '<span class="fn">'+f+'</span>';
+      return '<span class="n">'+n+'</span>';
+    });
+  }
+  function paintCode(root){
+    root.querySelectorAll('ol.cl li').forEach(function(li){ li.innerHTML = hl(li.textContent); });
+  }
+
+  /* ---- dp strips ---- */
+  function buildStrips(){
+    document.querySelectorAll('[data-strip]').forEach(function(el){
+      const vals = el.dataset.strip.split(',');
+      const base = +(el.dataset.seq0 || 0);
+      const idxs = el.dataset.idxs ? el.dataset.idxs.split(',') : vals.map(function(_,i){return i;});
+      let html = '<div class="seq idxrow">';
+      idxs.forEach(function(x){ html += '<div class="ix">'+x+'</div>'; });
+      html += '</div><div class="seq">';
+      vals.forEach(function(v,i){ html += '<div class="dpcell'+(el.dataset.cur?' cur':'')+'" data-seq="'+(base+i)+'"><i>'+v+'</i></div>'; });
+      el.innerHTML = html + '</div>';
+    });
+  }
+
+  /* ---- chrome ---- */
+  const CH = ['','起点','爬楼梯','一维 DP','背包','二维 DP','方法题单'];
+  function ruler(ch){
+    let h = '<div class="ruler">';
+    for(let i=1;i<=6;i++){
+      h += '<a data-go="'+i+'" class="'+(i===ch?'on':'')+'"><div class="bar"></div><div class="lbl">'+CH[i]+'</div></a>';
+    }
+    return h + '</div>';
+  }
+  function buildChrome(){
+    slides.forEach(function(s){
+      const desc = s.dataset.desc
+        ? '<div class="qdesc"><span class="qlabel">题意</span>'+s.dataset.desc+'</div>'
+        : '';
+      const head =
+        '<header class="top">'+
+          '<div class="wordmark">ALGO PRIMER / DP-01</div>'+
+          '<h1 class="s-title">'+s.dataset.title+'</h1>'+
+          desc+
+          '<div class="top-rule"></div><div class="top-accent"></div>'+
+        '</header>'+
+        '<div class="numline">'+s.dataset.rec+'</div>'+
+        '<div class="numrule"></div>'+
+        '<div class="mnum">'+s.dataset.num+'</div>'+
+        '<div class="mlabel">'+s.dataset.eyebrow.split(' · ')[0]+'</div>';
+      const foot =
+        '<footer class="bottom">'+
+          '<div class="bot-rule"></div>'+
+          '<div class="eyebrow">'+s.dataset.eyebrow+'</div>'+
+          '<div class="help">← → 或空格翻页 &nbsp;｜&nbsp; R 重放动画 &nbsp;｜&nbsp; G 跳页 &nbsp;｜&nbsp; Esc 目录</div>'+
+          '<div class="pager"><div class="pg">'+s.dataset.num+' / '+(TOTAL-1)+'</div></div>'+
+          ruler(+(s.dataset.ch||0))+
+        '</footer>';
+      s.insertAdjacentHTML('afterbegin', head);
+      s.insertAdjacentHTML('beforeend', foot);
+    });
+  }
+
+  /* ---- motion ---- */
+  let timers = [];
+  function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+  function paths(slide){ return Array.prototype.slice.call(slide.querySelectorAll('[data-draw]')); }
+  function setPathLen(slide){
+    paths(slide).forEach(function(p){
+      let L = 0;
+      try{ L = Math.ceil(p.getTotalLength()); }catch(e){ L = 0; }
+      if(!L || !isFinite(L)) L = 600;
+      p.style.setProperty('--len', L);
+    });
+  }
+  function play(slide, instant){
+    clearTimers();
+    const stag = +(slide.dataset.stagger || 180);
+    const items = Array.prototype.slice.call(slide.querySelectorAll('[data-seq],[data-at]'));
+    items.forEach(function(el){ el.classList.remove('on'); });
+    const ps = paths(slide);
+    ps.forEach(function(p){ p.classList.remove('on'); });
+    setPathLen(slide);
+    if(instant || reduce){
+      items.forEach(function(el){ el.classList.add('on'); });
+      ps.forEach(function(p){ p.classList.add('on'); });
+      return;
+    }
+    items.forEach(function(el){
+      const d = (el.dataset.at !== undefined) ? +el.dataset.at : 240 + (+el.dataset.seq) * stag;
+      timers.push(setTimeout(function(){ el.classList.add('on'); }, Math.max(0, d)));
+    });
+    ps.forEach(function(p){
+      timers.push(setTimeout(function(){ p.classList.add('on'); }, +(p.dataset.draw || 900)));
+    });
+  }
+  function reset(slide){
+    clearTimers();
+    slide.querySelectorAll('[data-seq],[data-at]').forEach(function(el){ el.classList.remove('on'); });
+    paths(slide).forEach(function(p){ p.classList.remove('on'); });
+  }
+
+  /* ---- navigation ---- */
+  let cur = 0;
+  function show(i, instant){
+    if(i < 0) i = 0;
+    if(i > TOTAL-1) i = TOTAL-1;
+    slides.forEach(function(s){ s.classList.remove('active'); });
+    cur = i;
+    const s = slides[i];
+    s.classList.add('active');
+    play(s, instant);
+    if(history.replaceState) history.replaceState(null,'','#'+s.dataset.num);
+  }
+  function next(){ show(cur+1); }
+  function prev(){ show(cur-1); }
+
+  /* ---- panel ---- */
+  const panel = document.getElementById('panel');
+  const plist = document.getElementById('plist');
+  function buildPanel(){
+    plist.innerHTML = slides.map(function(s,i){
+      return '<button data-i="'+i+'"><span>'+s.dataset.num+' &nbsp; '+s.dataset.eyebrow.split(' · ')[0]+'</span>'+s.dataset.title+'</button>';
+    }).join('');
+    plist.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click', function(){ panel.classList.remove('open'); show(+b.dataset.i, true); });
+    });
+  }
+  function jumpChapter(c){
+    const s = slides.find(function(x){ return +x.dataset.ch === c; });
+    if(s) show(slides.indexOf(s), true);
+  }
+
+  /* ---- events ---- */
+  document.addEventListener('keydown', function(e){
+    const k = e.key;
+    if(k === 'Escape'){ panel.classList.toggle('open'); return; }
+    if(panel.classList.contains('open')) return;
+    if(k === 'ArrowRight' || k === 'PageDown' || k === ' ' || k === 'Enter'){ e.preventDefault(); next(); }
+    else if(k === 'ArrowLeft' || k === 'PageUp'){ e.preventDefault(); prev(); }
+    else if(k === 'Home'){ show(0, true); }
+    else if(k === 'End'){ show(TOTAL-1, true); }
+    else if(k === 'r' || k === 'R'){ play(slides[cur], false); }
+    else if(k === 'g' || k === 'G'){ panel.classList.add('open'); }
+    else if(/^[0-9]$/.test(k)){ if(+k <= TOTAL-1) show(+k, true); }
+  });
+
+  let wheelLock = 0;
+  window.addEventListener('wheel', function(e){
+    const now = Date.now();
+    if(now - wheelLock < 620 || Math.abs(e.deltaY) < 12) return;
+    wheelLock = now;
+    if(e.deltaY > 0) next(); else prev();
+  }, {passive:true});
+
+  let tx = null;
+  window.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; }, {passive:true});
+  window.addEventListener('touchend', function(e){
+    if(tx === null) return;
+    const dx = e.changedTouches[0].clientX - tx;
+    if(Math.abs(dx) > 50){ if(dx < 0) next(); else prev(); }
+    tx = null;
+  }, {passive:true});
+
+  deck.addEventListener('click', function(e){
+    const go = e.target.closest('[data-go]');
+    if(go){ jumpChapter(+go.dataset.go); return; }
+    if(e.target.closest('[data-run]')){ play(slides[cur], false); return; }
+    if(e.target.closest('[data-reset]')){ reset(slides[cur]); return; }
+    const cp = e.target.closest('[data-copy]');
+    if(cp){
+      const box = cp.closest('.code').querySelector('ol.cl');
+      const txt = Array.prototype.slice.call(box.querySelectorAll('li'))
+        .map(function(li){ return li.textContent; }).join('\n');
+      if(navigator.clipboard) navigator.clipboard.writeText(txt);
+      const old = cp.textContent; cp.textContent = 'ok';
+      setTimeout(function(){ cp.textContent = old; }, 900);
+    }
+  });
+
+  function fit(){
+    deck.style.transform = 'scale(' + Math.min(window.innerWidth/1280, window.innerHeight/720) + ')';
+  }
+  window.addEventListener('resize', fit);
+
+  /* ---- init ---- */
+  buildStrips();
+  buildChrome();
+  paintCode(deck);
+  fit();
+  buildPanel();
+  const startNum = (location.hash || '').replace('#','');
+  const startIdx = slides.findIndex(function(s){ return s.dataset.num === startNum; });
+  show(startIdx >= 0 ? startIdx : 0, false);
+})();
+</script>
+</body>
+</html>

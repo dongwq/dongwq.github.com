@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>树状数组动画演示</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .wrap { width: min(1000px, 100%); }
+
+  h1 {
+    font-size: 19px;
+    font-weight: 600;
+    margin: 0 0 6px;
+    color: #243b53;
+  }
+  .subtitle {
+    font-size: 13px;
+    color: #627d98;
+    margin: 0 0 16px;
+  }
+
+  svg#stage {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  /* ====== 节点样式 ====== */
+  .green-node {
+    fill: #c9efc9;
+    stroke: #57a957;
+    stroke-width: 2;
+    transition: fill .3s, stroke .3s;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .green-node.hl-update {
+    fill: #ffd98a;
+    stroke: #e09b00;
+    stroke-width: 3;
+  }
+  .green-node.hl-query {
+    fill: #9fd4ff;
+    stroke: #2a86d0;
+    stroke-width: 3;
+  }
+
+  .gray-node {
+    fill: #c9cdd2;
+    stroke: #8b929a;
+    stroke-width: 2;
+    transition: fill .3s, stroke .3s;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  .gray-node.hl-range {
+    fill: #ffe9a8;
+    stroke: #e09b00;
+  }
+  .gray-node.hl-cell {
+    fill: #ffb0b0;
+    stroke: #d64545;
+    stroke-width: 3;
+  }
+
+  .edge {
+    stroke: #a8b3bf;
+    stroke-width: 1.6;
+    transition: stroke .3s, stroke-width .3s;
+  }
+  .edge.hl {
+    stroke: #e09b00;
+    stroke-width: 3;
+  }
+
+  .green-val {
+    font-size: 21px;
+    font-weight: 700;
+    fill: #20662c;
+    pointer-events: none;
+    user-select: none;
+  }
+  .green-idx {
+    font-size: 12px;
+    font-weight: 600;
+    fill: #2f6b3a;
+    pointer-events: none;
+    user-select: none;
+  }
+  .gray-idx {
+    font-size: 12px;
+    font-weight: 600;
+    fill: #5a6068;
+    pointer-events: none;
+    user-select: none;
+  }
+  .gray-val {
+    font-size: 19px;
+    font-weight: 700;
+    fill: #2b3138;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* ====== 控制面板 ====== */
+  .panel {
+    margin-top: 18px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 18px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 24px;
+    align-items: center;
+    font-size: 14px;
+  }
+  .group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .group .label { color: #627d98; }
+
+  button {
+    font: inherit;
+    font-size: 13.5px;
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1px solid #bcccdc;
+    background: #f8fafc;
+    color: #243b53;
+    cursor: pointer;
+    transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button.primary {
+    background: #2a7fd0;
+    border-color: #2a7fd0;
+    color: #fff;
+  }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+
+  select, input[type="number"] {
+    font: inherit;
+    font-size: 13.5px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid #bcccdc;
+    background: #fff;
+    color: #243b53;
+  }
+  input[type="number"] { width: 72px; }
+
+  .result {
+    margin-top: 14px;
+    padding: 12px 18px;
+    background: #fff;
+    border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px;
+    color: #334e68;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    transition: border-color .3s;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>树状数组 · 构建 / 更新 / 查询 动画</h1>
+  <p class="subtitle">绿色节点 = 树状数组节点（存区间和）；灰色方块 = 原数组元素</p>
+
+  <svg id="stage" viewBox="0 0 1000 720" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel">
+    <div class="group">
+      <button id="btnBuild" class="primary">重新构建</button>
+    </div>
+
+    <div class="group">
+      <span class="label">单点更新 a[</span>
+      <select id="updIdx"></select>
+      <span class="label">] =</span>
+      <input id="updVal" type="number" value="10" min="0" max="99">
+      <button id="btnUpdate">执行更新</button>
+    </div>
+
+    <div class="group">
+      <span class="label">查询前缀和 [0..</span>
+      <select id="qryIdx"></select>
+      <span class="label">]</span>
+      <button id="btnQuery">执行查询</button>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪</div>
+</div>
+
+<script>
+/* =========================================================
+   1. 基础数据
+   ========================================================= */
+const NS  = 'http://www.w3.org/2000/svg';
+const N   = 8;
+const INIT_ARR = [3, 1, 4, 1, 5, 9, 2, 6];
+
+let arr  = INIT_ARR.slice();
+let tree = new Array(N).fill(null);
+let busy = false;
+
+const PARENT = [1, 3, 3, 7, 5, 7, 7, -1];
+
+const lowbit   = x => x & -x;
+const rangeOf  = i => { const len = lowbit(i + 1); return [i - len + 1, i]; };
+const sumRange = (l, r) => { let s = 0; for (let i = l; i <= r; i++) s += arr[i]; return s; };
+const sleep    = ms => new Promise(r => setTimeout(r, ms));
+
+/* =========================================================
+   2. 坐标布局（关键：绿色节点宽度与灰色方块严格对齐）
+   ---------------------------------------------------------
+   灰色方块之间留有 GAP 间距，绿色节点如果横跨多个方块，
+   也要把这个间距算进去，这样左右边缘才会和方块完全对齐。
+   ========================================================= */
+const GRAY_W  = 78;           // 灰色方块宽
+const GRAY_H  = 58;           // 灰色方块高
+const GAP     = 10;           // 方块之间的间隙
+const LEFT    = 60;           // 第一个方块左边缘
+
+/* 灰色方块中心 x 坐标 */
+const grayCX = i => LEFT + GRAY_W / 2 + i * (GRAY_W + GAP);
+
+/* 灰色方块左边缘 x 坐标 */
+const grayLeft = i => LEFT + i * (GRAY_W + GAP);
+
+/* 灰色方块右边缘 x 坐标 */
+const grayRight = i => LEFT + i * (GRAY_W + GAP) + GRAY_W;
+
+/* 根据区间 [l, r] 计算绿色节点的左边缘和宽度，使其正好覆盖对应方块 */
+function nodeBox(l, r) {
+  const left  = grayLeft(l);
+  const right = grayRight(r);
+  return { left, width: right - left };
+}
+
+/* 灰色方块中心 y */
+const GRAY_Y = 620;
+
+/* 各层绿色节点中心 y */
+const LAYER_Y = {
+  7: 90,
+  3: 215,
+  1: 335,
+  5: 335,
+  0: 465,
+  2: 465,
+  4: 465,
+  6: 465,
+};
+
+/* 绿色节点高度 */
+const NODE_H = 52;
+
+/* 每个节点的管辖区间 [l, r]（0-based） */
+const RANGE = {
+  0: [0, 0],
+  1: [0, 1],
+  2: [2, 2],
+  3: [0, 3],
+  4: [4, 4],
+  5: [4, 5],
+  6: [6, 6],
+  7: [0, 7],
+};
+
+/* 计算每个绿色节点的最终矩形 */
+const GREEN_POS = {};
+for (let i = 0; i < N; i++) {
+  const [l, r] = RANGE[i];
+  const box = nodeBox(l, r);
+  const y   = LAYER_Y[i];
+  GREEN_POS[i] = {
+    left:   box.left,
+    width:  box.width,
+    x:      box.left + box.width / 2,   // 中心 x
+    y:      y,
+    h:      NODE_H,
+    rangeL: l,
+    rangeR: r,
+  };
+}
+
+/* =========================================================
+   3. SVG 工具
+   ========================================================= */
+const svg = document.getElementById('stage');
+
+function mk(tag, attrs = {}, parent) {
+  const el = document.createElementNS(NS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(el);
+  return el;
+}
+
+function rectEdge(rect, tx, ty) {
+  const dx = tx - rect.x, dy = ty - rect.y;
+  const hw = rect.w / 2, hh = rect.h / 2;
+  const sx = dx === 0 ? Infinity : hw / Math.abs(dx);
+  const sy = dy === 0 ? Infinity : hh / Math.abs(dy);
+  const s = Math.min(sx, sy);
+  return { x: rect.x + dx * s, y: rect.y + dy * s };
+}
+
+/* =========================================================
+   4. 场景元素引用
+   ========================================================= */
+let greenRect = [], greenTxt = [], greenIdxTxt = [];
+let grayRect  = [], grayIdxTxt = [], grayValTxt = [];
+const edgeEls = {};
+
+function buildScene() {
+  const defs = mk('defs', {}, svg);
+  const marker = mk('marker', {
+    id: 'ah',
+    viewBox: '0 0 10 10',
+    refX: '8', refY: '5',
+    markerWidth: '6', markerHeight: '6',
+    orient: 'auto'
+  }, defs);
+  mk('path', { d: 'M0,0 L10,5 L0,10 z', fill: '#93a1b0' }, marker);
+
+  const edgeLayer = mk('g', {}, svg);
+  const nodeLayer = mk('g', {}, svg);
+
+  /* ---- 树边（父 → 子） ---- */
+  for (let i = 0; i < N; i++) {
+    const p = PARENT[i];
+    if (p < 0) continue;
+
+    const from = GREEN_POS[p];
+    const to   = GREEN_POS[i];
+
+    const a = rectEdge(from, to.x, to.y);
+    let   b = rectEdge(to, from.x, from.y);
+
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    b.x -= dx / len * 4;
+    b.y -= dy / len * 4;
+
+    edgeEls[i] = mk('line', {
+      x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+      class: 'edge',
+      'marker-end': 'url(#ah)'
+    }, edgeLayer);
+  }
+
+  /* ---- 灰色方块（原数组） ---- */
+  for (let i = 0; i < N; i++) {
+    const cx = grayCX(i);
+
+    grayRect[i] = mk('rect', {
+      x: cx - GRAY_W / 2, y: GRAY_Y - GRAY_H / 2,
+      width: GRAY_W, height: GRAY_H, rx: 9,
+      class: 'gray-node'
+    }, nodeLayer);
+
+    grayIdxTxt[i] = mk('text', {
+      x: cx, y: GRAY_Y - GRAY_H / 2 - 14,
+      class: 'gray-idx',
+      'text-anchor': 'middle',
+      'dominant-baseline': 'central'
+    }, nodeLayer);
+    grayIdxTxt[i].textContent = i;
+
+    grayValTxt[i] = mk('text', {
+      x: cx, y: GRAY_Y,
+      class: 'gray-val',
+      'text-anchor': 'middle',
+      'dominant-baseline': 'central'
+    }, nodeLayer);
+    grayValTxt[i].textContent = arr[i];
+  }
+
+  /* ---- 绿色节点（树状数组） ---- */
+  for (let i = 0; i < N; i++) {
+    const g = GREEN_POS[i];
+
+    greenRect[i] = mk('rect', {
+      x: g.left, y: g.y - g.h / 2,
+      width: g.width, height: g.h, rx: 8,
+      class: 'green-node'
+    }, nodeLayer);
+
+    /* 下标标在节点左上角 */
+    greenIdxTxt[i] = mk('text', {
+      x: g.left + 12, y: g.y - g.h / 2 + 15,
+      class: 'green-idx',
+      'text-anchor': 'start',
+      'dominant-baseline': 'central'
+    }, nodeLayer);
+    greenIdxTxt[i].textContent = i;
+
+    /* 值居中 */
+    greenTxt[i] = mk('text', {
+      x: g.x, y: g.y + 2,
+      class: 'green-val',
+      'text-anchor': 'middle',
+      'dominant-baseline': 'central'
+    }, nodeLayer);
+    greenTxt[i].textContent = '–';
+  }
+}
+
+/* =========================================================
+   5. 通用工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+const setResult = t => { resultEl.textContent = t; };
+
+function pop(el) {
+  el.animate(
+    [{ transform: 'scale(1)' }, { transform: 'scale(1.14)' }, { transform: 'scale(1)' }],
+    { duration: 420, easing: 'ease-out' }
+  );
+}
+
+function clearHighlights() {
+  for (let i = 0; i < N; i++) {
+    greenRect[i].classList.remove('hl-update', 'hl-query');
+    grayRect[i].classList.remove('hl-range', 'hl-cell');
+  }
+  for (const k in edgeEls) edgeEls[k].classList.remove('hl');
+}
+
+function resetState() {
+  arr  = INIT_ARR.slice();
+  tree = new Array(N).fill(null);
+
+  for (let i = 0; i < N; i++) {
+    greenTxt[i].textContent = '–';
+    greenRect[i].setAttribute('class', 'green-node');
+    grayValTxt[i].textContent = arr[i];
+    grayRect[i].setAttribute('class', 'gray-node');
+  }
+  for (const k in edgeEls) edgeEls[k].setAttribute('class', 'edge');
+}
+
+/* =========================================================
+   6. 构建动画
+   ========================================================= */
+async function runBuild() {
+  if (busy) return;
+  busy = true;
+  resetState();
+  setResult('开始构建……');
+  await sleep(350);
+
+  for (let i = 0; i < N; i++) {
+    const [l, r] = rangeOf(i);
+
+    for (let j = l; j <= r; j++) grayRect[j].classList.add('hl-range');
+    setResult(`节点 ${i} 管辖区间 [${l}, ${r}]，正在求和……`);
+    await sleep(330);
+
+    tree[i] = sumRange(l, r);
+    greenTxt[i].textContent = tree[i];
+    pop(greenRect[i]);
+    setResult(`节点 ${i} = ${tree[i]}`);
+    await sleep(300);
+
+    for (let j = l; j <= r; j++) grayRect[j].classList.remove('hl-range');
+    await sleep(70);
+  }
+
+  setResult('构建完成：每个绿色节点存储了它管辖区间的和');
+  busy = false;
+}
+
+/* =========================================================
+   7. 单点更新动画
+   ========================================================= */
+async function runUpdate(idx, newVal) {
+  if (busy) return;
+  if (tree[idx] === null) { setResult('请先点击「重新构建」'); return; }
+
+  busy = true;
+  clearHighlights();
+
+  const oldVal = arr[idx];
+  const delta  = newVal - oldVal;
+  arr[idx] = newVal;
+
+  grayValTxt[idx].textContent = newVal;
+  grayRect[idx].classList.add('hl-cell');
+  pop(grayRect[idx]);
+  setResult(`a[${idx}]：${oldVal} → ${newVal}　（增量 Δ = ${delta >= 0 ? '+' : ''}${delta}）`);
+  await sleep(850);
+
+  let i = idx;
+  while (i !== -1) {
+    tree[i] += delta;
+    greenTxt[i].textContent = tree[i];
+    greenRect[i].classList.add('hl-update');
+    if (PARENT[i] !== -1) edgeEls[i].classList.add('hl');
+    pop(greenRect[i]);
+    setResult(`向上传播 → 更新节点 ${i}，新值 = ${tree[i]}`);
+    await sleep(720);
+    i = PARENT[i];
+  }
+
+  setResult('更新完成：路径上所有节点的值已同步');
+  await sleep(1300);
+  clearHighlights();
+  busy = false;
+}
+
+/* =========================================================
+   8. 前缀和查询动画
+   ========================================================= */
+async function runQuery(p) {
+  if (busy) return;
+  if (tree[p] === null) { setResult('请先点击「重新构建」'); return; }
+
+  busy = true;
+  clearHighlights();
+
+  const nodes = [];
+  let i = p;
+  while (i >= 0) {
+    nodes.push(i);
+    i -= lowbit(i + 1);
+  }
+
+  let sum = 0;
+  for (const n of nodes) {
+    const [l, r] = rangeOf(n);
+
+    for (let j = l; j <= r; j++) grayRect[j].classList.add('hl-range');
+    greenRect[n].classList.add('hl-query');
+    pop(greenRect[n]);
+
+    sum += tree[n];
+    setResult(`累加节点 ${n}（管辖 [${l}, ${r}]）：+${tree[n]}　→　当前合计 = ${sum}`);
+    await sleep(820);
+  }
+
+  setResult(`✔ 前缀和 sum[0..${p}] = ${sum}`);
+  await sleep(1900);
+
+  clearHighlights();
+  busy = false;
+}
+
+/* =========================================================
+   9. 初始化 & 事件绑定
+   ========================================================= */
+buildScene();
+
+const selUpd = document.getElementById('updIdx');
+const selQry = document.getElementById('qryIdx');
+for (let i = 0; i < N; i++) {
+  selUpd.appendChild(new Option(i, i));
+  selQry.appendChild(new Option(i, i));
+}
+selUpd.value = 0;
+selQry.value = 7;
+
+document.getElementById('btnBuild').addEventListener('click', () => runBuild());
+document.getElementById('btnUpdate').addEventListener('click', () => {
+  const idx = +selUpd.value;
+  const val = +document.getElementById('updVal').value;
+  runUpdate(idx, val);
+});
+document.getElementById('btnQuery').addEventListener('click', () => {
+  runQuery(+selQry.value);
+});
+
+setTimeout(() => runBuild(), 450);
+</script>
+</body>
+</html>

@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>树状数组 BIT · 单点更新 / 前缀查询 / 区间查询 动画</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1080px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead {
+    font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px;
+  }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  .bit-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.2;
+    transition: fill .25s, stroke .25s, stroke-width .25s;
+  }
+  .bit-node .node-idx {
+    font-family: ui-monospace, monospace;
+    font-size: 11px; font-weight: 700; fill: #4a5568;
+    pointer-events: none; user-select: none;
+  }
+  .bit-node .node-val {
+    font-size: 20px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .bit-node .node-rng {
+    font-family: ui-monospace, monospace;
+    font-size: 10px; font-weight: 600; fill: #829ab1;
+    pointer-events: none; user-select: none;
+  }
+
+  .bit-node.source .node-bg { fill: #ffd98a; stroke: #e09b00; stroke-width: 3.4; }
+  .bit-node.source .node-val { fill: #a35e00; }
+  .bit-node.visited .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3; }
+  .bit-node.visited .node-val { fill: #1c5e28; }
+  .bit-node.touched .node-bg { fill: #ffe9a8; stroke: #e09b00; stroke-width: 3.2; }
+  .bit-node.touched .node-val { fill: #a35e00; }
+  .bit-node.updated .node-bg { fill: #c9efc9; stroke: #57a957; stroke-width: 3.4; }
+  .bit-node.updated .node-val { fill: #2f7a34; }
+
+  .arr-node .node-bg {
+    fill: #f1f3f6; stroke: #829ab1; stroke-width: 2;
+    transition: fill .25s, stroke .25s;
+  }
+  .arr-node .node-idx {
+    font-family: ui-monospace, monospace;
+    font-size: 11px; font-weight: 700; fill: #5a6068;
+    pointer-events: none; user-select: none;
+  }
+  .arr-node .node-val {
+    font-size: 18px; font-weight: 800; fill: #334e68;
+    pointer-events: none; user-select: none;
+  }
+  .arr-node.covered .node-bg { fill: #ffe9a8; stroke: #e09b00; stroke-width: 2.6; }
+  .arr-node.changed .node-bg { fill: #ffcccc; stroke: #d64545; stroke-width: 3; }
+  .arr-node.changed .node-val { fill: #b33232; }
+
+  .bit-edge {
+    stroke: #cbd2d9; stroke-width: 1.6;
+    stroke-dasharray: 5 4; fill: none;
+    transition: stroke .25s, stroke-width .25s;
+  }
+  .bit-edge.active {
+    stroke: #e09b00; stroke-width: 2.8;
+    stroke-dasharray: 8 5;
+    animation: dashflow .75s linear infinite;
+  }
+  .bit-edge.query {
+    stroke: #7c5cd6; stroke-width: 2.8;
+    stroke-dasharray: 8 5;
+    animation: dashflow .75s linear infinite;
+  }
+  @keyframes dashflow { to { stroke-dashoffset: -13; } }
+
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.base   { color: #2f7a34; }
+  .row-label.upd    { color: #2369ad; }
+  .row-label.prefix { color: #7c5cd6; }
+  .row-label.range  { color: #b45a12; }
+
+  .group { display: flex; align-items: center; gap: 8px; }
+  .group .label { color: #627d98; font-size: 12.5px; }
+
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  .stat-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #f0f7ff; color: #2369ad;
+    padding: 4px 12px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600;
+    border: 1px solid #c7defa;
+  }
+  .stat-badge .num {
+    font-family: ui-monospace, monospace;
+    font-size: 14px; font-weight: 800; color: #2a7fd0;
+  }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.purple  { background: #7c5cd6; border-color: #7c5cd6; color: #fff; }
+  button.purple:hover { background: #634ab0; border-color: #634ab0; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.danger:hover { background: #b33232; border-color: #b33232; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost   { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+  button.ghost:hover { background: #f0f7ff; }
+  button.orange  { background: #d9713b; border-color: #d9713b; color: #fff; }
+  button.orange:hover { background: #b95a28; border-color: #b95a28; }
+
+  input[type="number"] {
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border-radius: 7px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    width: 76px;
+  }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .tree-table {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    font-size: 12.5px;
+  }
+  .tree-table .title {
+    font-weight: 700; color: #243b53; margin-right: 8px;
+  }
+  .tree-cell {
+    display: inline-flex; flex-direction: column; align-items: center;
+    padding: 4px 10px; border-radius: 6px;
+    background: #f0f4f8; color: #4a5568;
+    font-family: ui-monospace, monospace; font-size: 12px;
+    border: 1px solid #dbe4ec; min-width: 56px;
+    transition: background .25s, color .25s, border-color .25s;
+  }
+  .tree-cell .i { font-size: 10px; color: #829ab1; }
+  .tree-cell .v { font-weight: 800; }
+  .tree-cell.done   { background: #eaf9ee; color: #2f7a34; border-color: #b8e0bf; }
+  .tree-cell.active { background: #fffbf2; color: #a35e00; border-color: #ffd98a; }
+  .tree-cell.query  { background: #f2ecff; color: #5b3db8; border-color: #d8c8ff; }
+
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 640px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>树状数组 (Fenwick Tree / BIT) · 更新 / 查询 动画</h1>
+  <p class="subtitle" id="subtitle">
+    <code>tree[i]</code> 管辖区间 <code>(i − lowbit(i), i]</code> · 更新沿 <code>i += lowbit(i)</code> 上行 · 查询沿 <code>i −= lowbit(i)</code> 左移 · 单次操作 <b>O(log N)</b>
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · 为什么 BIT 能做到 O(log N)？</h2>
+    <p class="intro-lead">
+      树状数组用一个长度 N+1 的数组 <code>tree[1..N]</code> 维护前缀和，
+      每个 <code>tree[i]</code> 管辖从 <code>i − lowbit(i) + 1</code> 到 <code>i</code> 这一段连续区间。
+      其中 <code>lowbit(i) = i &amp; (−i)</code>，即 i 的二进制中<b>最低位的 1 所表示的值</b>。
+      修改 <code>a[i]</code> 时只更新"覆盖 i 的那些 tree 节点"（沿 <code>i += lowbit(i)</code> 上行）；
+      查询前缀和 <code>sum[1..i]</code> 时只把"能拼出 [1, i] 的几个 tree 节点"加起来（沿 <code>i −= lowbit(i)</code> 左移）。
+      两条路径长度都不超过 <code>log₂ N + 1</code>，所以单次操作 <b>O(log N)</b>。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">核心 1</div>
+        <div class="title">lowbit 是核心中的核心</div>
+        <div class="desc">
+          <code>lowbit(i) = i &amp; (−i)</code>，取 i 最低位的 1。<br>
+          例：<code>lowbit(6) = 2</code>，<code>lowbit(8) = 8</code>，<code>lowbit(3) = 1</code>。<br>
+          它决定了 <code>tree[i]</code> 管辖的区间长度和它的父节点。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 2</div>
+        <div class="title">管辖区间 (i − lowbit(i), i]</div>
+        <div class="desc">
+          <code>tree[4]</code> 管 <code>[1, 4]</code>（lowbit=4）<br>
+          <code>tree[6]</code> 管 <code>[5, 6]</code>（lowbit=2）<br>
+          <code>tree[7]</code> 管 <code>[7, 7]</code>（lowbit=1）<br>
+          区间长度就是 <code>lowbit(i)</code>。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 3</div>
+        <div class="title">两条路径：加 / 减 lowbit</div>
+        <div class="desc">
+          <b>更新</b>：<code>i += lowbit(i)</code> 沿父链上行<br>
+          <b>查询</b>：<code>i −= lowbit(i)</code> 向左拆解前缀<br>
+          两条路径长度都不超过 <code>log₂ N</code>
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">单点更新 a[i] += Δ</div>
+        <div class="desc">
+          <code>while i ≤ n:</code><br>
+          　　<code>tree[i] += Δ</code><br>
+          　　<code>i += lowbit(i)</code><br>
+          只更新 O(log N) 个节点
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">前缀和 sum[1..i]</div>
+        <div class="desc">
+          <code>s = 0</code><br>
+          <code>while i &gt; 0:</code><br>
+          　　<code>s += tree[i]</code><br>
+          　　<code>i −= lowbit(i)</code>
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">区间和 sum[l..r]</div>
+        <div class="desc">
+          <code>sum[l..r]</code><br>
+          <code>= prefix(r) − prefix(l−1)</code><br>
+          两次前缀和相减，仍是 O(log N)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label base">基本</span>
+      <button id="btnReset" class="ghost">重置为初始数组</button>
+      <span class="stat-badge">
+        初始 a[] = <span class="num" id="arrStat">3,1,4,1,5,9,2,6</span>
+      </span>
+      <span class="row-hint">
+        灰色方块是 a[1..8]；蓝色条带是 tree[1..8]，横向跨度 = 它管辖的 a 区间
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label upd">单点更新</span>
+      <span class="label">a[</span>
+      <input id="updIdx" type="number" value="3" min="1" max="8">
+      <span class="label">] += Δ =</span>
+      <input id="updDelta" type="number" value="5" min="-20" max="20">
+      <button id="btnUpdate" class="primary">update</button>
+      <span class="row-hint">
+        沿 <code>i += lowbit(i)</code> 从 i 一路走到 n，逐个更新 tree[i]
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label prefix">前缀查询</span>
+      <span class="label">sum[1..</span>
+      <input id="prefixIdx" type="number" value="6" min="1" max="8">
+      <span class="label">]</span>
+      <button id="btnPrefix" class="purple">prefix_sum</button>
+      <span class="row-hint">
+        沿 <code>i -= lowbit(i)</code> 一路走到 0，累加经过的 tree[i]
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label range">区间查询</span>
+      <span class="label">sum[</span>
+      <input id="rangeL" type="number" value="3" min="1" max="8">
+      <span class="label">..</span>
+      <input id="rangeR" type="number" value="6" min="1" max="8">
+      <span class="label">]</span>
+      <button id="btnRange" class="orange">range_sum</button>
+      <span class="row-hint">
+        <code>sum[l..r] = prefix(r) − prefix(l−1)</code>
+      </span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 试试 update / prefix_sum / range_sum，或点击「开始演示」</div>
+
+  <div class="tree-table" id="treeTable">
+    <span class="title">tree[]</span>
+  </div>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 树状数组核心要点 <span class="hint">比线段树短，只比它少一点功能</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · 树状数组
+      <span class="badge">单点更新 + 前缀和 + 区间和 + 第 k 小</span>
+      <span class="hint">O(log N) 每次操作</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyCode"></pre></div>
+  </details>
+</div>
+
+<!-- ============ Python 源码 ============ -->
+<script type="text/plain" id="pySrc">
+"""
+树状数组（Binary Indexed Tree / Fenwick Tree）。
+
+维护一个长度为 n 的数组 a[1..n]，支持：
+    update(i, delta)    单点修改 a[i] += delta，O(log N)
+    prefix_sum(i)       查询 a[1] + a[2] + ... + a[i]，O(log N)
+    range_sum(l, r)     查询 a[l] + ... + a[r]，O(log N)
+    kth(k)              找到前缀和 >= k 的最小下标，O(log N)
+
+关键概念：
+    lowbit(i) = i & (-i)   取 i 二进制最低位的 1 所代表的数值
+    tree[i] 管辖区间 (i - lowbit(i), i]，长度 = lowbit(i)
+"""
+
+
+# ============================================================
+# 模块 1：基础工具
+# ============================================================
+def lowbit(i):
+    """取 i 最低位的 1 所代表的数值。i & -i 利用了补码性质。"""
+    return i & (-i)
+
+
+# ============================================================
+# 模块 2：树状数组类
+# ============================================================
+class FenwickTree:
+    """
+    1-based 的树状数组。传入 0-based 的数组 arr 时会自动转换。
+
+    字段：
+        n     —— 元素个数
+        tree  —— tree[1..n]，tree[i] 存 (i - lowbit(i), i] 这段区间的和
+    """
+
+    def __init__(self, arr=None):
+        if arr is None:
+            return
+        self.n = len(arr)
+        self.tree = [0] * (self.n + 1)
+        # O(n) 构建：先把 arr 复制进 tree，再从前往后合并
+        for i, v in enumerate(arr, start=1):
+            self.tree[i] += v
+            j = i + lowbit(i)
+            if j <= self.n:
+                self.tree[j] += self.tree[i]
+
+    def update(self, i, delta):
+        """
+        单点更新 a[i] += delta。
+
+        从 i 出发，沿 i += lowbit(i) 一路向上，把路径上的 tree 全部 +delta。
+        复杂度 O(log N)
+        """
+        while i <= self.n:
+            self.tree[i] += delta
+            i += lowbit(i)
+
+    def prefix_sum(self, i):
+        """
+        查询 a[1] + ... + a[i]。
+
+        从 i 出发，沿 i -= lowbit(i) 一路向左，累加经过的 tree[i]。
+        例如 i=7：7 → 6 → 4 → 0，对应 tree[7]+tree[6]+tree[4]。
+        复杂度 O(log N)
+        """
+        s = 0
+        while i > 0:
+            s += self.tree[i]
+            i -= lowbit(i)
+        return s
+
+    def range_sum(self, l, r):
+        """sum[l..r] = prefix(r) - prefix(l-1)"""
+        return self.prefix_sum(r) - self.prefix_sum(l - 1)
+
+    def kth(self, k):
+        """
+        找到前缀和 >= k 的最小下标，O(log N)。
+        常用于"动态维护第 k 小"。
+        """
+        pos = 0
+        bit = 1 << (self.n.bit_length())
+        while bit > 0:
+            nxt = pos + bit
+            if nxt <= self.n and self.tree[nxt] < k:
+                pos = nxt
+                k -= self.tree[nxt]
+            bit >>= 1
+        return pos + 1
+
+
+# ============================================================
+# 模块 3：差分 + BIT 实现「区间加 + 单点查」
+# ============================================================
+class RangeUpdatePointQuery:
+    """
+    用差分数组做 BIT，支持：
+        range_add(l, r, delta)  区间 [l, r] 全部加 delta，O(log N)
+        point_get(i)            查询 a[i] 的当前值，O(log N)
+    """
+
+    def __init__(self, arr):
+        self.n = len(arr)
+        self.bit = FenwickTree([0] * self.n)
+        prev = 0
+        for i, v in enumerate(arr, start=1):
+            self.bit.update(i, v - prev)
+            prev = v
+
+    def range_add(self, l, r, delta):
+        self.bit.update(l, delta)
+        if r + 1 <= self.n:
+            self.bit.update(r + 1, -delta)
+
+    def point_get(self, i):
+        return self.bit.prefix_sum(i)
+
+
+# ============================================================
+# 模块 4：演示
+# ============================================================
+if __name__ == '__main__':
+    a = [3, 1, 4, 1, 5, 9, 2, 6]
+    bit = FenwickTree(a)
+    print('tree =', bit.tree[1:])
+
+    print('prefix_sum(6) =', bit.prefix_sum(6))
+    print('range_sum(3, 6) =', bit.range_sum(3, 6))
+
+    bit.update(3, 5)
+    print('after update(3, +5), prefix_sum(6) =', bit.prefix_sum(6))
+
+    cnt = FenwickTree([1, 2, 3, 4, 5])
+    print('kth(1) =', cnt.kth(1))
+    print('kth(3) =', cnt.kth(3))
+    print('kth(7) =', cnt.kth(7))
+
+    rupq = RangeUpdatePointQuery([3, 1, 4, 1, 5, 9, 2, 6])
+    rupq.range_add(3, 6, 10)
+    print('after range_add(3, 6, +10):')
+    for i in range(1, 9):
+        print(f'  a[{i}] = {rupq.point_get(i)}')
+</script>
+
+<script>
+/* =========================================================
+   1. 基础数据
+   ========================================================= */
+const N = 8;
+const INIT_A = [null, 3, 1, 4, 1, 5, 9, 2, 6];
+
+let arr = INIT_A.slice();
+let tree = new Array(N + 1).fill(0);
+
+/* ★ 状态变量声明 */
+let busy = false;
+let inDemo = false;
+
+let nodeState = {};
+let arrState = {};
+let edgeState = {};
+
+/* =========================================================
+   2. lowbit / 工具
+   ========================================================= */
+const lowbit = i => i & (-i);
+const rangeOf = i => {
+  const lb = lowbit(i);
+  return [i - lb + 1, i];
+};
+
+function buildTree() {
+  tree = new Array(N + 1).fill(0);
+  for (let i = 1; i <= N; i++) tree[i] = arr[i];
+  for (let i = 1; i <= N; i++) {
+    const j = i + lowbit(i);
+    if (j <= N) tree[j] += tree[i];
+  }
+}
+
+function resetState() {
+  arr = INIT_A.slice();
+  buildTree();
+  nodeState = {};
+  arrState = {};
+  edgeState = {};
+  for (let i = 1; i <= N; i++) {
+    nodeState[i] = '';
+    edgeState[i] = '';
+    arrState[i] = '';
+  }
+}
+
+/* =========================================================
+   3. 坐标布局（加宽间距 + 分层文字）
+   ========================================================= */
+const SVG_W = 900, SVG_H = 600;
+
+/* a 方块：加宽间距 */
+const A_W = 72, A_H = 50, A_GAP = 14;
+const TOTAL_A_W = N * A_W + (N - 1) * A_GAP;   // 8*72 + 7*14 = 674
+const A_LEFT = (SVG_W - TOTAL_A_W) / 2;         // 113
+const A_Y = 500;
+
+const TREE_H = 42;
+
+const aLeft  = j => A_LEFT + (j - 1) * (A_W + A_GAP);
+const aRight = j => aLeft(j) + A_W;
+const aCx    = j => aLeft(j) + A_W / 2;
+
+function treeBox(i) {
+  const [l, r] = rangeOf(i);
+  const left  = aLeft(l);
+  const right = aRight(r);
+  return { left, right, width: right - left, cx: (left + right) / 2 };
+}
+
+/* 层 y：按真实树结构分层 */
+const TREE_Y = {
+  8: 80,
+  4: 180, 6: 180, 7: 180,
+  2: 280, 3: 280, 5: 280,
+  1: 380,
+};
+
+function parentOf(i) {
+  const p = i + lowbit(i);
+  return p <= N ? p : null;
+}
+
+/* =========================================================
+   4. SVG 构建
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const defs = document.createElementNS(NS, 'defs');
+svg.appendChild(defs);
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+/* =========================================================
+   5. 渲染
+   ========================================================= */
+function render() {
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+
+  /* ---------- 父子连线 ---------- */
+  for (let i = 1; i <= N; i++) {
+    const p = parentOf(i);
+    if (p === null) continue;
+    const cb = treeBox(i);
+    const pb = treeBox(p);
+    const x1 = cb.cx;
+    const y1 = TREE_Y[i] - TREE_H / 2;
+    const x2 = pb.cx;
+    const y2 = TREE_Y[p] + TREE_H / 2;
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', `M ${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`);
+    let cls = 'bit-edge';
+    if (edgeState[i] === 'active') cls += ' active';
+    if (edgeState[i] === 'query')  cls += ' query';
+    path.setAttribute('class', cls);
+    edgeLayer.appendChild(path);
+  }
+
+  /* ---------- tree 节点：上方编号 / 中央值 / 下方区间 ---------- */
+  for (let i = 1; i <= N; i++) {
+    const box = treeBox(i);
+    const y = TREE_Y[i];
+    const [l, r] = rangeOf(i);
+
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'bit-node';
+    if (nodeState[i]) cls += ' ' + nodeState[i];
+    g.setAttribute('class', cls);
+
+    /* 条带矩形 */
+    const rect = document.createElementNS(NS, 'rect');
+    rect.setAttribute('x', box.left);
+    rect.setAttribute('y', y - TREE_H / 2);
+    rect.setAttribute('width', box.width);
+    rect.setAttribute('height', TREE_H);
+    rect.setAttribute('rx', '8');
+    rect.setAttribute('class', 'node-bg');
+    g.appendChild(rect);
+
+    /* 上方：tree[i] 编号 */
+    const idxTxt = document.createElementNS(NS, 'text');
+    idxTxt.setAttribute('class', 'node-idx');
+    idxTxt.setAttribute('text-anchor', 'middle');
+    idxTxt.setAttribute('x', box.cx);
+    idxTxt.setAttribute('y', y - TREE_H / 2 - 9);
+    idxTxt.setAttribute('dominant-baseline', 'central');
+    idxTxt.textContent = 'tree[' + i + ']';
+    g.appendChild(idxTxt);
+
+    /* 中央：值 */
+    const valTxt = document.createElementNS(NS, 'text');
+    valTxt.setAttribute('class', 'node-val');
+    valTxt.setAttribute('text-anchor', 'middle');
+    valTxt.setAttribute('x', box.cx);
+    valTxt.setAttribute('y', y + 1);
+    valTxt.setAttribute('dominant-baseline', 'central');
+    valTxt.textContent = tree[i];
+    g.appendChild(valTxt);
+
+    /* 下方：管辖区间 [l, r] */
+    const rngTxt = document.createElementNS(NS, 'text');
+    rngTxt.setAttribute('class', 'node-rng');
+    rngTxt.setAttribute('text-anchor', 'middle');
+    rngTxt.setAttribute('x', box.cx);
+    rngTxt.setAttribute('y', y + TREE_H / 2 + 10);
+    rngTxt.setAttribute('dominant-baseline', 'central');
+    rngTxt.textContent = `[${l},${r}]`;
+    g.appendChild(rngTxt);
+
+    nodeLayer.appendChild(g);
+  }
+
+  /* ---------- a 节点（灰色方块） ---------- */
+  for (let j = 1; j <= N; j++) {
+    const x = aCx(j);
+
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'arr-node';
+    if (arrState[j]) cls += ' ' + arrState[j];
+    g.setAttribute('class', cls);
+
+    const rect = document.createElementNS(NS, 'rect');
+    rect.setAttribute('x', aLeft(j));
+    rect.setAttribute('y', A_Y - A_H / 2);
+    rect.setAttribute('width', A_W);
+    rect.setAttribute('height', A_H);
+    rect.setAttribute('rx', '8');
+    rect.setAttribute('class', 'node-bg');
+    g.appendChild(rect);
+
+    const idxTxt = document.createElementNS(NS, 'text');
+    idxTxt.setAttribute('class', 'node-idx');
+    idxTxt.setAttribute('text-anchor', 'middle');
+    idxTxt.setAttribute('x', x);
+    idxTxt.setAttribute('y', A_Y - A_H / 2 - 12);
+    idxTxt.setAttribute('dominant-baseline', 'central');
+    idxTxt.textContent = 'a[' + j + ']';
+    g.appendChild(idxTxt);
+
+    const valTxt = document.createElementNS(NS, 'text');
+    valTxt.setAttribute('class', 'node-val');
+    valTxt.setAttribute('text-anchor', 'middle');
+    valTxt.setAttribute('x', x);
+    valTxt.setAttribute('y', A_Y);
+    valTxt.setAttribute('dominant-baseline', 'central');
+    valTxt.textContent = arr[j];
+    g.appendChild(valTxt);
+
+    nodeLayer.appendChild(g);
+  }
+
+  updateTreeTable();
+}
+
+/* =========================================================
+   6. tree 数组状态表
+   ========================================================= */
+function updateTreeTable() {
+  const el = document.getElementById('treeTable');
+  if (!el) return;
+  el.innerHTML = '<span class="title">tree[]</span>';
+  for (let i = 1; i <= N; i++) {
+    const cell = document.createElement('span');
+    let cls = 'tree-cell';
+    if (nodeState[i] === 'updated' || nodeState[i] === 'visited') cls += ' done';
+    else if (nodeState[i] === 'source' || nodeState[i] === 'touched') cls += ' active';
+    cell.className = cls;
+    cell.innerHTML = `<span class="i">i=${i}</span><span class="v">${tree[i]}</span>`;
+    el.appendChild(cell);
+  }
+}
+
+/* =========================================================
+   7. 状态工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+function clearHl() {
+  for (let i = 1; i <= N; i++) {
+    nodeState[i] = '';
+    edgeState[i] = '';
+    arrState[i] = '';
+  }
+}
+
+function setButtonsDisabled(d) {
+  if (inDemo) d = true;
+  for (const id of ['btnReset', 'btnUpdate', 'btnPrefix', 'btnRange']) {
+    document.getElementById(id).disabled = d;
+  }
+}
+
+function coverArr(i, cls) {
+  const [l, r] = rangeOf(i);
+  for (let j = l; j <= r; j++) arrState[j] = cls;
+}
+
+function clearArrCover() {
+  for (let j = 1; j <= N; j++) {
+    if (arrState[j] === 'covered') arrState[j] = '';
+  }
+}
+
+/* =========================================================
+   8. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   9. 单点更新动画
+   ========================================================= */
+async function animatedUpdate(i, delta) {
+  if (busy && !inDemo) return;
+  if (i < 1 || i > N) {
+    setStatus(`✘ 下标必须在 [1, ${N}] 范围内`);
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  arrState[i] = 'changed';
+  render();
+  setStatus(`update(${i}, ${delta >= 0 ? '+' : ''}${delta})：a[${i}] 从 ${arr[i]} 变成 ${arr[i] + delta}`);
+  await tick(700);
+
+  let cur = i;
+  let step = 1;
+  while (cur <= N) {
+    const lb = lowbit(cur);
+    const [l, r] = rangeOf(cur);
+
+    nodeState[cur] = 'touched';
+    coverArr(cur, 'covered');
+    const p = parentOf(cur);
+    if (p !== null) edgeState[cur] = 'active';
+    render();
+
+    setStatus(
+      `第 ${step} 站 tree[${cur}]：lowbit(${cur}) = ${lb}，管辖 [${l}, ${r}]，tree[${cur}] += ${delta >= 0 ? '+' : ''}${delta}`
+    );
+    await tick(800);
+
+    tree[cur] += delta;
+    nodeState[cur] = 'updated';
+    render();
+    setStatus(`  ✔ tree[${cur}] = ${tree[cur]}` + (p !== null ? `　下一站 i += ${lb} → ${cur + lb}` : '　到达根，结束'));
+    await tick(700);
+
+    clearArrCover();
+    if (p !== null) edgeState[cur] = '';
+    render();
+
+    cur += lb;
+    step++;
+  }
+
+  arr[i] += delta;
+  arrState[i] = 'changed';
+  render();
+
+  setStatus(`✔ update 完成：a[${i}] = ${arr[i]}，路径上共 ${step - 1} 个 tree 节点被更新（O(log N)）`);
+  await tick(1200);
+
+  clearHl();
+  render();
+
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   10. 前缀和查询动画
+   ========================================================= */
+async function animatedPrefix(i) {
+  if (busy && !inDemo) return;
+  if (i < 1 || i > N) {
+    setStatus(`✘ 下标必须在 [1, ${N}] 范围内`);
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  setStatus(`prefix_sum(${i})：求 a[1] + a[2] + ... + a[${i}]`);
+  await tick(600);
+
+  let sum = 0;
+  let cur = i;
+  let step = 1;
+  const visited = [];
+
+  while (cur > 0) {
+    const lb = lowbit(cur);
+    const [l, r] = rangeOf(cur);
+
+    nodeState[cur] = 'touched';
+    coverArr(cur, 'covered');
+    if (cur !== i) edgeState[cur] = 'query';
+    render();
+
+    setStatus(
+      `第 ${step} 站 tree[${cur}]：lowbit(${cur}) = ${lb}，管辖 [${l}, ${r}]，累加值 ${tree[cur]}`
+    );
+    await tick(800);
+
+    sum += tree[cur];
+    visited.push({ i: cur, v: tree[cur] });
+    nodeState[cur] = 'visited';
+    render();
+
+    setStatus(`  累计 = ${visited.map(x => x.v).join(' + ')} = ${sum}` + (cur - lb > 0 ? `　下一站 i -= ${lb} → ${cur - lb}` : '　i = 0，结束'));
+    await tick(750);
+
+    clearArrCover();
+    if (cur !== i) edgeState[cur] = '';
+    render();
+
+    cur -= lb;
+    step++;
+  }
+
+  setStatus(`✔ prefix_sum(${i}) = ${sum}，路径长度 = ${visited.length} ≤ log₂N + 1`);
+  await tick(1400);
+
+  clearHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   11. 区间和查询动画
+   ========================================================= */
+async function animatedRange(l, r) {
+  if (busy && !inDemo) return;
+  if (l < 1 || r > N || l > r) {
+    setStatus(`✘ 区间不合法，需要 1 ≤ l ≤ r ≤ ${N}`);
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  setStatus(`range_sum(${l}, ${r}) = prefix_sum(${r}) − prefix_sum(${l - 1})，先求 prefix(${r})`);
+  await tick(800);
+
+  let sumR = 0;
+  let cur = r;
+  while (cur > 0) {
+    const lb = lowbit(cur);
+    const [lo, hi] = rangeOf(cur);
+    nodeState[cur] = 'touched';
+    coverArr(cur, 'covered');
+    if (cur !== r) edgeState[cur] = 'query';
+    render();
+
+    setStatus(`【第一遍】tree[${cur}] 管辖 [${lo}, ${hi}]，累加 ${tree[cur]}（prefix(${r})）`);
+    await tick(650);
+
+    sumR += tree[cur];
+    nodeState[cur] = 'visited';
+    render();
+    clearArrCover();
+    if (cur !== r) edgeState[cur] = '';
+    render();
+
+    cur -= lb;
+  }
+
+  setStatus(`prefix_sum(${r}) = ${sumR}　接下来求 prefix_sum(${l - 1})`);
+  await tick(1000);
+
+  for (let i = 1; i <= N; i++) {
+    if (nodeState[i] === 'touched') nodeState[i] = '';
+  }
+  render();
+
+  let sumL = 0;
+  cur = l - 1;
+  while (cur > 0) {
+    const lb = lowbit(cur);
+    const [lo, hi] = rangeOf(cur);
+    nodeState[cur] = 'touched';
+    coverArr(cur, 'covered');
+    if (cur !== l - 1) edgeState[cur] = 'query';
+    render();
+
+    setStatus(`【第二遍】tree[${cur}] 管辖 [${lo}, ${hi}]，累加 ${tree[cur]}（prefix(${l - 1})）`);
+    await tick(650);
+
+    sumL += tree[cur];
+    nodeState[cur] = 'visited';
+    render();
+    clearArrCover();
+    if (cur !== l - 1) edgeState[cur] = '';
+    render();
+
+    cur -= lb;
+  }
+
+  setStatus(`prefix_sum(${l - 1}) = ${sumL}`);
+  await tick(900);
+
+  const result = sumR - sumL;
+  setStatus(`✔ range_sum(${l}, ${r}) = ${sumR} − ${sumL} = ${result}，两次前缀查询，仍是 O(log N)`);
+  await tick(1500);
+
+  clearHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   12. 自动演示
+   ========================================================= */
+async function autoDemo() {
+  resetState();
+  render();
+  setStatus('① 演示开始：初始数组 a = [3,1,4,1,5,9,2,6]');
+  await tick(600);
+
+  setStatus('② 单点更新 a[3] += 5');
+  await tick(400);
+  await animatedUpdate(3, 5);
+  await tick(300);
+
+  setStatus('③ 前缀和查询 sum[1..6]');
+  await tick(400);
+  await animatedPrefix(6);
+  await tick(300);
+
+  setStatus('④ 区间和查询 sum[3..7]');
+  await tick(400);
+  await animatedRange(3, 7);
+  await tick(300);
+
+  setStatus('✔ 演示结束：单点更新 O(log N)，前缀/区间查询 O(log N)');
+}
+
+/* =========================================================
+   13. 演示控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const demoModeGroup = document.getElementById('demoModeGroup');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  inDemo = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  setButtonsDisabled(true);
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await autoDemo();
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  inDemo = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  busy = false;
+  setButtonsDisabled(false);
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+/* =========================================================
+   14. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: '树状数组是什么', key: true, lines: [
+    '一个长度为 <code>N+1</code> 的数组 <code>tree[1..N]</code>，维护前缀和',
+    '<code>tree[i]</code> 管辖区间 <code>(i − lowbit(i), i]</code>',
+    '单点更新 / 前缀查询都是 <b>O(log N)</b>',
+    '代码短、常数小、空间紧凑，是竞赛最常用的数据结构之一',
+  ]},
+  { icon: '🔢', title: 'lowbit：核心中的核心', key: true, lines: [
+    '<code>lowbit(i) = i &amp; (−i)</code>，取 i 二进制最低位的 1',
+    '例：<code>lowbit(6) = 2</code>，<code>lowbit(8) = 8</code>，<code>lowbit(7) = 1</code>',
+    '它决定了 <code>tree[i]</code> 的<b>管辖长度</b>和它的<b>父节点</b>',
+    '父节点 = <code>i + lowbit(i)</code>，超过 N 就没有父节点',
+  ]},
+  { icon: '📊', title: '管辖区间 (i−lowbit(i), i]', key: true, lines: [
+    '<code>tree[4]</code> 管 <code>[1, 4]</code>（lowbit=4）',
+    '<code>tree[6]</code> 管 <code>[5, 6]</code>（lowbit=2）',
+    '<code>tree[7]</code> 管 <code>[7, 7]</code>（lowbit=1）',
+    '区间长度恰好等于 <code>lowbit(i)</code>',
+  ]},
+  { icon: '⬆️', title: '单点更新：i += lowbit(i)', key: true, lines: [
+    '<code>a[i] += Δ</code> 时，只有"管辖 i 的 tree 节点"需要改',
+    '沿 <code>i += lowbit(i)</code> 一路向上，逐个 <code>tree[·] += Δ</code>',
+    '路径长度 ≤ <code>log₂N + 1</code>',
+    '例：更新 a[3] → 访问 tree[3] → tree[4] → tree[8]',
+  ]},
+  { icon: '⬅️', title: '前缀查询：i -= lowbit(i)', key: true, lines: [
+    '<code>sum[1..i]</code> 沿 <code>i -= lowbit(i)</code> 一路向左',
+    '经过的 tree 区间恰好不重不漏地拼出 <code>[1, i]</code>',
+    '例：i=7 → tree[7]（管 [7,7]）+ tree[6]（管 [5,6]）+ tree[4]（管 [1,4]）',
+    '路径长度 ≤ <code>log₂N + 1</code>',
+  ]},
+  { icon: '📐', title: '区间和', key: true, lines: [
+    '<code>sum[l..r] = prefix(r) − prefix(l−1)</code>',
+    '只需两次前缀查询，仍是 <code>O(log N)</code>',
+    '<b>只支持可减操作</b>（求和、异或等）',
+    '不可减操作（max / min / gcd）要用线段树',
+  ]},
+  { icon: '⚖️', title: '与线段树对比', key: false, lines: [
+    '<b>单点更新</b>：BIT <code>O(log N)</code>，ST <code>O(log N)</code>',
+    '<b>区间查询</b>：BIT 需可减操作；ST 支持任意结合律',
+    '<b>区间更新</b>：BIT 需差分，O(log N)；ST 用懒标记，O(log N)',
+    '<b>空间</b>：BIT <code>O(N)</code>；ST <code>O(4N)</code>',
+    '<b>常数</b>：BIT 更小，ST 稍大',
+    '<b>代码</b>：BIT 极简（10 行），ST 中等',
+  ]},
+  { icon: '🧩', title: '典型应用', key: false, lines: [
+    '<b>动态前缀和</b>：最基础用法',
+    '<b>逆序对计数</b>：从左到右扫，用 BIT 统计"右边比当前小的个数"',
+    '<b>第 k 小</b>：BIT 上二分，<code>O(log N)</code>',
+    '<b>区间加 + 单点查</b>：用差分数组做 BIT',
+    '<b>区间加 + 区间和</b>：维护两个 BIT（d 和 d×i）',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    el.className = 'k-card' + (card.key ? ' key-point' : '');
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   15. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue','assert'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','len','range','float','int','str','list','dict',
+    'set','tuple','sum','isinstance','enumerate','FenwickTree'
+  ]);
+  let html = '', i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '#') {
+      let j = i; while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1;
+      while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_.]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+      if (word === 'self') html += '<span class="tok-self">self</span>';
+      else if (KEYWORDS.has(word)) html += '<span class="tok-keyword">' + word + '</span>';
+      else if (BUILTINS.has(word)) html += '<span class="tok-builtin">' + word + '</span>';
+      else if (code[j] === '(') html += '<span class="tok-func">' + word + '</span>';
+      else html += word;
+      i = j; continue;
+    }
+    if (/\d/.test(c)) {
+      let j = i; while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j; continue;
+    }
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+}
+
+/* =========================================================
+   16. 初始化 & 事件
+   ========================================================= */
+renderKnowledge();
+renderPythonCode();
+resetState();
+render();
+updateDemoUI();
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (busy) return;
+  resetState();
+  render();
+  setStatus('已重置为初始数组 a = [3,1,4,1,5,9,2,6]');
+});
+
+document.getElementById('btnUpdate').addEventListener('click', () => {
+  const i = +document.getElementById('updIdx').value;
+  const delta = +document.getElementById('updDelta').value;
+  animatedUpdate(i, delta);
+});
+
+document.getElementById('btnPrefix').addEventListener('click', () => {
+  const i = +document.getElementById('prefixIdx').value;
+  animatedPrefix(i);
+});
+
+document.getElementById('btnRange').addEventListener('click', () => {
+  const l = +document.getElementById('rangeL').value;
+  const r = +document.getElementById('rangeR').value;
+  animatedRange(l, r);
+});
+</script>
+</body>
+</html>

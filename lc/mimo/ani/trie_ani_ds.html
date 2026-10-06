@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trie 前缀树 · 插入 / 查找 / 删除 动画</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1080px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead {
+    font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px;
+  }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+  .trie-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.4;
+    transition: fill .25s, stroke .25s, stroke-width .25s;
+  }
+  .trie-node .node-ch {
+    font-size: 17px; font-weight: 700; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .trie-node.is-end .node-bg {
+    fill: #ffe9a8; stroke: #e09b00;
+  }
+  .trie-node.is-end .node-ch { fill: #a35e00; }
+  .trie-node.visit .node-bg {
+    fill: #ffd98a; stroke: #e09b00; stroke-width: 3.2;
+  }
+  .trie-node.visit .node-ch { fill: #a35e00; }
+  .trie-node.new .node-bg {
+    fill: #c9efc9; stroke: #57a957; stroke-width: 3.2;
+  }
+  .trie-node.new .node-ch { fill: #2f7a34; }
+  .trie-node.removing .node-bg {
+    fill: #ffcccc; stroke: #d64545; stroke-width: 3;
+  }
+  .trie-node.removing .node-ch { fill: #b33232; }
+  .trie-node.found .node-bg {
+    fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.6;
+  }
+  .trie-node.found .node-ch { fill: #1c5e28; }
+  .trie-node.miss .node-bg {
+    fill: #eeeeee; stroke: #999999; stroke-width: 2.4;
+  }
+  .trie-node.miss .node-ch { fill: #666666; }
+
+  .end-ring {
+    fill: none; stroke: #e09b00; stroke-width: 1.8;
+    stroke-dasharray: 3 3;
+  }
+
+  .trie-edge {
+    stroke: #b4bec9; stroke-width: 2;
+    stroke-dasharray: 6 5; stroke-linecap: round;
+    transition: stroke .25s, stroke-width .25s;
+    fill: none;
+  }
+  .trie-edge.path {
+    stroke: #e09b00; stroke-width: 3.2;
+    stroke-dasharray: 9 6;
+    animation: dashflow 0.75s linear infinite;
+  }
+  .trie-edge.new {
+    stroke: #57a957; stroke-width: 3.2;
+    stroke-dasharray: 9 6;
+    animation: dashflow 0.75s linear infinite;
+  }
+  .trie-edge.removing {
+    stroke: #d64545; stroke-width: 3.2;
+    stroke-dasharray: 9 6;
+    animation: dashflow 0.75s linear infinite;
+  }
+  @keyframes dashflow { to { stroke-dashoffset: -15; } }
+
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.base   { color: #2f7a34; }
+  .row-label.insert { color: #2369ad; }
+  .row-label.search { color: #7c5cd6; }
+  .row-label.prefix { color: #b45a12; }
+  .row-label.del    { color: #d64545; }
+  .group { display: flex; align-items: center; gap: 8px; }
+  .group .label { color: #627d98; font-size: 12.5px; }
+
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  .stat-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #f0f7ff; color: #2369ad;
+    padding: 4px 12px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600;
+    border: 1px solid #c7defa;
+  }
+  .stat-badge .num {
+    font-family: ui-monospace, monospace;
+    font-size: 14px; font-weight: 800; color: #2a7fd0;
+  }
+  .stat-badge.word {
+    background: #fffbf2; color: #a35e00;
+    border-color: #ffd98a;
+  }
+  .stat-badge.word .num { color: #b45a12; }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.purple  { background: #7c5cd6; border-color: #7c5cd6; color: #fff; }
+  button.purple:hover { background: #634ab0; border-color: #634ab0; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.danger:hover { background: #b33232; border-color: #b33232; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost   { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+  button.ghost:hover { background: #f0f7ff; }
+  button.orange  { background: #d9713b; border-color: #d9713b; color: #fff; }
+  button.orange:hover { background: #b95a28; border-color: #b95a28; }
+
+  input[type="text"] {
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border-radius: 7px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: 1px;
+    width: 120px;
+  }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 620px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Trie 前缀树 · 插入 / 查找 / 前缀 / 删除 动画</h1>
+  <p class="subtitle" id="subtitle">
+    从根到节点的路径 = 一个字符串前缀 · <code>is_end</code> 标记完整的单词 · 查找复杂度 <b>O(L)</b>（L 为串长）
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · Trie 用"路径"存字符串</h2>
+    <p class="intro-lead">
+      Trie（前缀树 / 字典树）是一棵<b>多叉树</b>：根节点为空，每条边代表一个字符，
+      从根到某个节点的路径拼起来就是一个<b>字符串前缀</b>。
+      每个节点额外带一个 <code>is_end</code> 标记，表示"路径到这里是一个完整的单词"。
+      所有操作——插入、查找、前缀判断、删除——都是<b>沿着字符逐层下降</b>，
+      时间只与字符串长度 <code>L</code> 有关，<b>与字典里有多少单词无关</b>。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">核心 1</div>
+        <div class="title">节点 = 一个字符</div>
+        <div class="desc">
+          每个节点只存一个字符（根为空）。<br>
+          边连接父子节点，代表"下一个字符"。<br>
+          <b>从根往下走的路径 = 一个字符串前缀</b>。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 2</div>
+        <div class="title">is_end 标记单词结尾</div>
+        <div class="desc">
+          路径 <code>c → a → t</code> 存在，并不能说明 "cat" 是单词——<br>
+          还需在 <b>t 节点</b>上有 <code>is_end = True</code>。
+          这个标记区分了"前缀"和"完整单词"。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 3</div>
+        <div class="title">共享前缀压缩空间</div>
+        <div class="desc">
+          "cat"、"car"、"card"、"care" 共享路径 <code>c-a-r</code>，<br>
+          只在分叉处才新建节点。<br>
+          <b>相同前缀越多，节省的空间越多</b>。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">insert(word)</div>
+        <div class="desc">
+          从根开始逐字符下降：<br>
+          · 子节点已有该字符 → 直接下去<br>
+          · 没有 → <b>新建节点</b><br>
+          走完所有字符后，在末尾节点标记 <code>is_end = True</code>
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">search / startsWith</div>
+        <div class="desc">
+          <b>search</b>：沿路径走到末尾，路径存在 <b>且末尾节点 is_end</b><br>
+          <b>startsWith</b>：只要路径存在即可（不要求 is_end）<br>
+          两者复杂度都是 <code>O(L)</code>
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">delete(word)</div>
+        <div class="desc">
+          先走到末尾节点，把 <code>is_end</code> 改为 False。<br>
+          如果该节点<b>没有子节点</b>，可以向上回退并逐层删除"只剩自己"的节点。<br>
+          <b>不能删</b>别的单词的前缀节点。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label base">基本</span>
+      <button id="btnReset" class="ghost">重置为初始词库</button>
+      <span class="stat-badge">
+        节点数：<span class="num" id="nodeStat">0</span>
+      </span>
+      <span class="stat-badge word">
+        单词数：<span class="num" id="wordStat">0</span>
+      </span>
+      <span class="row-hint">
+        初始词库：<code>cat, car, card, care, dog, do</code>　金色双圈节点 = 单词结尾（is_end）
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label insert">insert</span>
+      <span class="label">word =</span>
+      <input id="insertInput" type="text" value="can" maxlength="10" placeholder="小写字母">
+      <button id="btnInsert" class="primary">insert</button>
+      <span class="row-hint">逐字符下降，遇到不存在的字符就<b>新建节点</b>，末尾标记 is_end</span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label search">search</span>
+      <span class="label">word =</span>
+      <input id="searchInput" type="text" value="card" maxlength="10" placeholder="小写字母">
+      <button id="btnSearch" class="purple">search</button>
+      <span class="row-hint">路径存在 <b>且末尾 is_end = True</b> 才算找到</span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label prefix">startsWith</span>
+      <span class="label">prefix =</span>
+      <input id="prefixInput" type="text" value="ca" maxlength="10" placeholder="小写字母">
+      <button id="btnPrefix" class="orange">startsWith</button>
+      <span class="row-hint">只要路径存在即返回 True，不要求 is_end</span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label del">delete</span>
+      <span class="label">word =</span>
+      <input id="deleteInput" type="text" value="dog" maxlength="10" placeholder="小写字母">
+      <button id="btnDelete" class="danger">delete</button>
+      <span class="row-hint">先改 is_end 为 False；若末尾节点无子节点，则向上回退删除</span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 试试 insert / search / startsWith / delete，或点击「开始演示」</div>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · Trie 核心要点 <span class="hint">用空间换时间的字符串索引</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · Trie（模块化）
+      <span class="badge">insert / search / startsWith / delete / autocomplete</span>
+      <span class="hint">O(L) 每次操作</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyCode"></pre></div>
+  </details>
+</div>
+
+<!-- ============ Python 源码 ============ -->
+<script type="text/plain" id="pySrc">
+"""
+Trie（前缀树 / 字典树）。
+"""
+
+
+# ============================================================
+# 模块 1：节点定义
+# ============================================================
+class TrieNode:
+    __slots__ = ('children', 'is_end')
+
+    def __init__(self):
+        self.children = {}
+        self.is_end = False
+
+
+# ============================================================
+# 模块 2：Trie 类
+# ============================================================
+class Trie:
+    def __init__(self):
+        self.root = TrieNode()
+
+    def _find_node(self, s):
+        cur = self.root
+        for ch in s:
+            if ch not in cur.children:
+                return None
+            cur = cur.children[ch]
+        return cur
+
+    def insert(self, word):
+        cur = self.root
+        for ch in word:
+            if ch not in cur.children:
+                cur.children[ch] = TrieNode()
+            cur = cur.children[ch]
+        cur.is_end = True
+
+    def search(self, word):
+        node = self._find_node(word)
+        return node is not None and node.is_end
+
+    def starts_with(self, prefix):
+        return self._find_node(prefix) is not None
+
+    def delete(self, word):
+        def _del(node, word, depth):
+            if depth == len(word):
+                if not node.is_end:
+                    return False
+                node.is_end = False
+                return len(node.children) == 0
+            ch = word[depth]
+            if ch not in node.children:
+                return False
+            should_delete = _del(node.children[ch], word, depth + 1)
+            if should_delete:
+                del node.children[ch]
+                return len(node.children) == 0 and not node.is_end
+            return False
+        return _del(self.root, word, 0)
+
+    def autocomplete(self, prefix):
+        node = self._find_node(prefix)
+        if node is None:
+            return []
+        result = []
+        def dfs(n, path):
+            if n.is_end:
+                result.append(prefix + path)
+            for ch in sorted(n.children):
+                dfs(n.children[ch], path + ch)
+        dfs(node, '')
+        return result
+
+    def count_nodes(self):
+        cnt = 0
+        def dfs(n):
+            nonlocal cnt
+            for c in n.children.values():
+                cnt += 1
+                dfs(c)
+        dfs(self.root)
+        return cnt
+
+    def count_words(self):
+        cnt = 0
+        def dfs(n):
+            nonlocal cnt
+            if n.is_end: cnt += 1
+            for c in n.children.values():
+                dfs(c)
+        dfs(self.root)
+        return cnt
+
+
+if __name__ == '__main__':
+    t = Trie()
+    for w in ['cat', 'car', 'card', 'care', 'dog', 'do']:
+        t.insert(w)
+
+    print('节点数 =', t.count_nodes())
+    print('单词数 =', t.count_words())
+
+    print('search("card")   =', t.search('card'))
+    print('search("ca")     =', t.search('ca'))
+    print('startsWith("ca") =', t.starts_with('ca'))
+    print('autocomplete("ca") =', t.autocomplete('ca'))
+
+    t.insert('can')
+    print('after insert "can", search("can") =', t.search('can'))
+
+    t.delete('dog')
+    print('after delete "dog", search("dog") =', t.search('dog'))
+</script>
+
+<script>
+/* =========================================================
+   1. 基础结构
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const CANVAS_W = 900;
+const TOP_Y = 80;
+const LAYER_H = 82;
+const SLOT_W = 76;
+const NODE_R = 26;
+
+/* ★ 关键修复：声明全局状态变量 busy / inDemo
+   （之前漏了声明，导致 animatedInsert 等函数在
+    `if (busy && !inDemo)` 处抛 ReferenceError，
+    表现为点击按钮无响应） */
+let busy = false;
+let inDemo = false;
+
+const svg = document.getElementById('stage');
+const defs = document.createElementNS(NS, 'defs');
+svg.appendChild(defs);
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+function makeMarker(id, color) {
+  const m = document.createElementNS(NS, 'marker');
+  m.setAttribute('id', id);
+  m.setAttribute('viewBox', '0 0 10 10');
+  m.setAttribute('refX', '9'); m.setAttribute('refY', '5');
+  m.setAttribute('markerWidth', '6'); m.setAttribute('markerHeight', '6');
+  m.setAttribute('orient', 'auto');
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', 'M0,0 L10,5 L0,10 z');
+  p.setAttribute('fill', color);
+  m.appendChild(p);
+  defs.appendChild(m);
+}
+makeMarker('arrow-gray',  '#b4bec9');
+makeMarker('arrow-path',  '#e09b00');
+makeMarker('arrow-new',   '#57a957');
+makeMarker('arrow-rm',    '#d64545');
+
+/* =========================================================
+   2. Trie 数据结构
+   ========================================================= */
+let root = null;
+
+function newNode(ch) {
+  return {
+    ch,
+    isEnd: false,
+    children: new Map(),
+    parent: null,
+    x: CANVAS_W / 2, y: TOP_Y,
+    targetX: CANVAS_W / 2, targetY: TOP_Y,
+    hl: '',
+  };
+}
+
+function initTree() {
+  root = newNode('');
+  for (const w of ['cat', 'car', 'card', 'care', 'dog', 'do']) {
+    insertSync(w);
+  }
+}
+
+function insertSync(word) {
+  let cur = root;
+  for (const ch of word) {
+    if (!cur.children.has(ch)) {
+      const n = newNode(ch);
+      n.parent = cur;
+      cur.children.set(ch, n);
+    }
+    cur = cur.children.get(ch);
+  }
+  cur.isEnd = true;
+}
+
+function sortedChildren(node) {
+  return Array.from(node.children.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+}
+
+function countNodes() {
+  let cnt = 0;
+  (function dfs(n) { for (const c of n.children.values()) { cnt++; dfs(c); } })(root);
+  return cnt;
+}
+
+function countWords() {
+  let cnt = 0;
+  (function dfs(n) {
+    if (n.isEnd) cnt++;
+    for (const c of n.children.values()) dfs(c);
+  })(root);
+  return cnt;
+}
+
+/* =========================================================
+   3. 布局
+   ========================================================= */
+function layout() {
+  let slot = 0;
+  function assign(node, depth) {
+    const chs = sortedChildren(node);
+    if (chs.length === 0) {
+      node._slot = slot;
+      slot += 1;
+    } else {
+      const childSlots = [];
+      for (const [, c] of chs) {
+        assign(c, depth + 1);
+        childSlots.push(c._slot);
+      }
+      node._slot = (childSlots[0] + childSlots[childSlots.length - 1]) / 2;
+    }
+    node._depth = depth;
+  }
+  assign(root, 0);
+
+  const totalSlots = Math.max(slot - 1, 1);
+  const totalW = totalSlots * SLOT_W;
+  const offsetX = (CANVAS_W - totalW) / 2;
+  (function pos(node) {
+    node.targetX = offsetX + node._slot * SLOT_W;
+    node.targetY = TOP_Y + node._depth * LAYER_H;
+    for (const c of node.children.values()) pos(c);
+  })(root);
+}
+
+/* =========================================================
+   4. 渲染
+   ========================================================= */
+function collectAll(node = root, out = []) {
+  out.push(node);
+  for (const c of node.children.values()) collectAll(c, out);
+  return out;
+}
+
+function render() {
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+
+  (function draw(node) {
+    for (const [ch, c] of sortedChildren(node)) {
+      const dx = c.x - node.x, dy = c.y - node.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const r = NODE_R - 2;
+      const x1 = node.x + dx / len * r;
+      const y1 = node.y + dy / len * r;
+      const x2 = c.x - dx / len * r;
+      const y2 = c.y - dy / len * r;
+
+      const line = document.createElementNS(NS, 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      let cls = 'trie-edge';
+      let marker = 'url(#arrow-gray)';
+      if (c.hl === 'new') {
+        cls += ' new'; marker = 'url(#arrow-new)';
+      } else if (c.hl === 'removing') {
+        cls += ' removing'; marker = 'url(#arrow-rm)';
+      } else if (c.hl === 'visit' || c.hl === 'found' || c.hl === 'miss') {
+        cls += ' path'; marker = 'url(#arrow-path)';
+      }
+      line.setAttribute('class', cls);
+      line.setAttribute('marker-end', marker);
+      edgeLayer.appendChild(line);
+    }
+    for (const [, c] of sortedChildren(node)) draw(c);
+  })(root);
+
+  (function drawNode(node) {
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'trie-node';
+    if (node.isEnd) cls += ' is-end';
+    if (node.hl) cls += ' ' + node.hl;
+    g.setAttribute('class', cls);
+    g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+
+    if (node.isEnd) {
+      const ring = document.createElementNS(NS, 'circle');
+      ring.setAttribute('r', NODE_R + 5);
+      ring.setAttribute('class', 'end-ring');
+      g.appendChild(ring);
+    }
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('r', NODE_R);
+    c.setAttribute('class', 'node-bg');
+    g.appendChild(c);
+
+    const txt = document.createElementNS(NS, 'text');
+    txt.setAttribute('class', 'node-ch');
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('dominant-baseline', 'central');
+    txt.textContent = node === root ? '⌂' : node.ch;
+    g.appendChild(txt);
+
+    nodeLayer.appendChild(g);
+    for (const [, c2] of sortedChildren(node)) drawNode(c2);
+  })(root);
+
+  updateStats();
+}
+
+function updateStats() {
+  const el1 = document.getElementById('nodeStat');
+  const el2 = document.getElementById('wordStat');
+  if (el1) el1.textContent = countNodes();
+  if (el2) el2.textContent = countWords();
+}
+
+/* =========================================================
+   5. 动画
+   ========================================================= */
+const easeInOut = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+function animateToTargets(duration = 600) {
+  return new Promise(resolve => {
+    const all = collectAll();
+    const starts = all.map(n => ({ x: n.x, y: n.y }));
+    const t0 = performance.now();
+    function frame(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      const e = easeInOut(t);
+      for (let i = 0; i < all.length; i++) {
+        all[i].x = starts[i].x + (all[i].targetX - starts[i].x) * e;
+        all[i].y = starts[i].y + (all[i].targetY - starts[i].y) * e;
+      }
+      render();
+      if (t < 1) requestAnimationFrame(frame); else resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+function snapToTargets() {
+  for (const n of collectAll()) { n.x = n.targetX; n.y = n.targetY; }
+  render();
+}
+
+/* =========================================================
+   6. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   7. 状态工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+function clearAllHl() {
+  for (const n of collectAll()) n.hl = '';
+}
+
+function setButtonsDisabled(d) {
+  if (inDemo) d = true;
+  for (const id of ['btnReset', 'btnInsert', 'btnSearch', 'btnPrefix', 'btnDelete']) {
+    document.getElementById(id).disabled = d;
+  }
+}
+
+function validStr(s) {
+  return /^[a-z]+$/.test(s);
+}
+
+/* =========================================================
+   8. insert 动画
+   ========================================================= */
+async function animatedInsert(word) {
+  if (busy && !inDemo) return;
+  if (!validStr(word)) {
+    setStatus('✘ 只能包含小写字母');
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearAllHl();
+  render();
+
+  setStatus(`insert("${word}")：从根开始逐字符下降`);
+  await tick(500);
+
+  let cur = root;
+  let createdAny = false;
+
+  for (let i = 0; i < word.length; i++) {
+    const ch = word[i];
+    const prefix = word.slice(0, i + 1);
+
+    if (cur.children.has(ch)) {
+      const next = cur.children.get(ch);
+      next.hl = 'visit';
+      cur = next;
+      render();
+      setStatus(`  "${prefix}" 已存在，沿边下降到节点 '${ch}'`);
+      await tick(550);
+    } else {
+      const nn = newNode(ch);
+      nn.parent = cur;
+      nn.x = cur.x; nn.y = cur.y;
+      cur.children.set(ch, nn);
+      cur = nn;
+      cur.hl = 'new';
+      createdAny = true;
+
+      layout();
+      await animateToTargets(700);
+
+      setStatus(`  "${prefix}" 不存在 → 新建节点 '${ch}'`);
+      await tick(550);
+    }
+  }
+
+  cur.hl = 'found';
+  if (!cur.isEnd) {
+    cur.isEnd = true;
+    render();
+    setStatus(`标记 is_end = True：单词 "${word}" 已插入`);
+  } else {
+    render();
+    setStatus(`is_end 原本就是 True："${word}" 已存在，无变化`);
+  }
+  await tick(1100);
+
+  clearAllHl();
+  render();
+  setStatus(`✔ insert("${word}") 完成${createdAny ? '（新建了若干节点）' : '（路径全部已存在）'}`);
+  await tick(800);
+
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   9. search / startsWith 动画
+   ========================================================= */
+async function animatedSearch(word, checkEnd) {
+  if (busy && !inDemo) return;
+  if (!validStr(word)) {
+    setStatus('✘ 只能包含小写字母');
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearAllHl();
+  render();
+
+  const verb = checkEnd ? 'search' : 'startsWith';
+  setStatus(`${verb}("${word}")：从根开始逐字符下降`);
+  await tick(500);
+
+  let cur = root;
+  let ok = true;
+  for (let i = 0; i < word.length; i++) {
+    const ch = word[i];
+    if (!cur.children.has(ch)) {
+      cur.hl = 'miss';
+      render();
+      setStatus(`  '${ch}' 不存在 → 路径断裂，返回 False`);
+      await tick(1000);
+      ok = false;
+      break;
+    }
+    const next = cur.children.get(ch);
+    next.hl = 'visit';
+    cur = next;
+    render();
+    setStatus(`  沿边下降到节点 '${ch}'`);
+    await tick(500);
+  }
+
+  if (ok) {
+    if (checkEnd) {
+      if (cur.isEnd) {
+        cur.hl = 'found';
+        render();
+        setStatus(`路径存在，且末尾 is_end = True → search 返回 True`);
+      } else {
+        cur.hl = 'miss';
+        render();
+        setStatus(`路径存在，但末尾 is_end = False → search 返回 False（"${word}" 只是前缀）`);
+      }
+    } else {
+      cur.hl = 'found';
+      render();
+      setStatus(`路径存在 → startsWith 返回 True`);
+    }
+    await tick(1200);
+  }
+
+  clearAllHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   10. delete 动画
+   ========================================================= */
+async function animatedDelete(word) {
+  if (busy && !inDemo) return;
+  if (!validStr(word)) {
+    setStatus('✘ 只能包含小写字母');
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearAllHl();
+  render();
+
+  setStatus(`delete("${word}")：先查找，再决定是否回退删除节点`);
+  await tick(500);
+
+  const path = [root];
+  let cur = root;
+  for (let i = 0; i < word.length; i++) {
+    const ch = word[i];
+    if (!cur.children.has(ch)) {
+      cur.hl = 'miss';
+      render();
+      setStatus(`  '${ch}' 不存在 → "${word}" 不在树中，删除失败`);
+      await tick(1200);
+      clearAllHl(); render();
+      busy = false;
+      if (!inDemo) setButtonsDisabled(false);
+      return;
+    }
+    cur = cur.children.get(ch);
+    cur.hl = 'visit';
+    path.push(cur);
+    render();
+    setStatus(`  沿边下降到节点 '${ch}'`);
+    await tick(500);
+  }
+
+  if (!cur.isEnd) {
+    cur.hl = 'miss';
+    render();
+    setStatus(`路径存在，但末尾 is_end = False → "${word}" 不是完整单词，删除失败`);
+    await tick(1300);
+    clearAllHl(); render();
+    busy = false;
+    if (!inDemo) setButtonsDisabled(false);
+    return;
+  }
+
+  cur.isEnd = false;
+  cur.hl = 'removing';
+  render();
+  setStatus(`把末尾节点 '${word[word.length - 1]}' 的 is_end 改为 False`);
+  await tick(900);
+
+  let i = path.length - 1;
+  let removedCount = 0;
+  while (i > 0) {
+    const node = path[i];
+    if (node.children.size === 0 && !node.isEnd) {
+      const parent = node.parent;
+      parent.children.delete(node.ch);
+      removedCount++;
+      i--;
+    } else {
+      break;
+    }
+  }
+
+  if (removedCount > 0) {
+    setStatus(`回退删除 ${removedCount} 个孤立节点（无子节点、非单词结尾）`);
+    layout();
+    await animateToTargets(700);
+  }
+
+  clearAllHl();
+  render();
+  setStatus(`✔ delete("${word}") 完成${removedCount > 0 ? `，回收了 ${removedCount} 个节点` : '（末尾节点有其他子节点或其它单词共享，只改了 is_end）'}`);
+  await tick(900);
+
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   11. 自动演示
+   ========================================================= */
+async function autoDemo() {
+  initTree();
+  layout();
+  snapToTargets();
+  clearAllHl();
+  render();
+  await tick(500);
+
+  setStatus('① insert("can") —— 在 c-a-? 下新建 n 分支');
+  await animatedInsert('can');
+  await tick(300);
+
+  setStatus('② search("car") —— 存在的单词');
+  await animatedSearch('car', true);
+  await tick(300);
+
+  setStatus('③ search("ca") —— 只是前缀，不是完整单词');
+  await animatedSearch('ca', true);
+  await tick(300);
+
+  setStatus('④ startsWith("ca") —— 路径存在即 True');
+  await animatedSearch('ca', false);
+  await tick(300);
+
+  setStatus('⑤ delete("dog") —— 只改 is_end，不删节点');
+  await animatedDelete('dog');
+  await tick(300);
+
+  setStatus('⑥ delete("do") —— 现在 do 也删掉，孤立节点会被回收');
+  await animatedDelete('do');
+  await tick(300);
+
+  setStatus('⑦ delete("care") —— 删除一个叶子单词，节点被回收');
+  await animatedDelete('care');
+  await tick(300);
+
+  setStatus('✔ 自动演示结束');
+}
+
+/* =========================================================
+   12. 演示控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const demoModeGroup = document.getElementById('demoModeGroup');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  inDemo = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  setButtonsDisabled(true);
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await autoDemo();
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  inDemo = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  busy = false;
+  setButtonsDisabled(false);
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+/* =========================================================
+   13. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: 'Trie 是什么', key: true, lines: [
+    'Trie = 前缀树 / 字典树，一棵<b>多叉树</b>',
+    '根节点为空，每条边代表一个字符',
+    '从根到某节点的路径 = 一个<b>字符串前缀</b>',
+    '每个节点带 <code>is_end</code> 标记完整单词',
+  ]},
+  { icon: '🔑', title: 'is_end 是关键', key: true, lines: [
+    '路径 <code>c-a-r</code> 存在 ≠ "car" 是单词',
+    '必须在末尾节点有 <code>is_end = True</code>',
+    '这个标记区分"前缀"和"完整单词"',
+    '<b>search</b> 检查 is_end；<b>startsWith</b> 不检查',
+  ]},
+  { icon: '📥', title: 'insert(word) —— O(L)', key: true, lines: [
+    '从根开始逐字符下降',
+    '子节点已有该字符 → 直接下去（<b>共享前缀</b>）',
+    '没有 → <b>新建节点</b>',
+    '走完后在末尾节点标记 <code>is_end = True</code>',
+  ]},
+  { icon: '🔍', title: 'search(word) —— O(L)', key: true, lines: [
+    '沿 word 逐字符下降',
+    '中途字符不存在 → 返回 False',
+    '全部走完：返回 <code>末尾节点.is_end</code>',
+    '所以 "ca" 在 {"cat", "car"} 中 search 是 False',
+  ]},
+  { icon: '🌿', title: 'startsWith(prefix) —— O(L)', key: true, lines: [
+    '沿 prefix 逐字符下降',
+    '只要路径完整存在 → 返回 True',
+    '<b>不检查</b> is_end',
+    '是 autocomplete 的核心',
+  ]},
+  { icon: '🗑️', title: 'delete(word) 要谨慎', key: true, lines: [
+    '先走到末尾节点，把 <code>is_end</code> 改 False',
+    '若末尾节点<b>无子节点</b>，可向上回退删除孤立节点',
+    '<b>不能删</b>其他单词共享的前缀节点',
+    '例：删 "car" 不能删掉 <code>c-a-r</code>，因为 "card"/"care" 还用到',
+  ]},
+  { icon: '⚡', title: '与其他结构对比', key: false, lines: [
+    '哈希表：<code>O(1)</code> 查找，但<b>不支持前缀</b>',
+    '平衡树：<code>O(L log N)</code>，支持前缀但慢',
+    'Trie：<code>O(L)</code> 查找<b>且支持前缀</b>',
+    '代价：<b>空间较大</b>（每个字符一个节点）',
+  ]},
+  { icon: '🧩', title: '典型应用', key: false, lines: [
+    '<b>自动补全</b>：搜 "ca" 提示 cat/car/card…',
+    '<b>拼写检查</b>：判断单词是否在字典中',
+    '<b>IP 路由</b>：最长前缀匹配',
+    '<b>敏感词过滤</b>：AC 自动机的基础',
+    '<b>字符串排序</b>：先序遍历即可',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    el.className = 'k-card' + (card.key ? ' key-point' : '');
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   14. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','len','range','float','int','str','list','dict',
+    'set','tuple','sum','isinstance','ValueError','Trie','TrieNode'
+  ]);
+  let html = '', i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '#') {
+      let j = i; while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1;
+      while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+      if (word === 'self') html += '<span class="tok-self">self</span>';
+      else if (KEYWORDS.has(word)) html += '<span class="tok-keyword">' + word + '</span>';
+      else if (BUILTINS.has(word)) html += '<span class="tok-builtin">' + word + '</span>';
+      else if (code[j] === '(') html += '<span class="tok-func">' + word + '</span>';
+      else html += word;
+      i = j; continue;
+    }
+    if (/\d/.test(c)) {
+      let j = i; while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j; continue;
+    }
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+}
+
+/* =========================================================
+   15. 初始化 & 事件
+   ========================================================= */
+renderKnowledge();
+renderPythonCode();
+
+initTree();
+layout();
+snapToTargets();
+updateDemoUI();
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (busy) return;
+  initTree();
+  layout();
+  snapToTargets();
+  setStatus('已重置为初始词库：cat, car, card, care, dog, do');
+});
+
+document.getElementById('btnInsert').addEventListener('click', () => {
+  const w = document.getElementById('insertInput').value.trim().toLowerCase();
+  animatedInsert(w);
+});
+
+document.getElementById('btnSearch').addEventListener('click', () => {
+  const w = document.getElementById('searchInput').value.trim().toLowerCase();
+  animatedSearch(w, true);
+});
+
+document.getElementById('btnPrefix').addEventListener('click', () => {
+  const w = document.getElementById('prefixInput').value.trim().toLowerCase();
+  animatedSearch(w, false);
+});
+
+document.getElementById('btnDelete').addEventListener('click', () => {
+  const w = document.getElementById('deleteInput').value.trim().toLowerCase();
+  animatedDelete(w);
+});
+</script>
+</body>
+</html>

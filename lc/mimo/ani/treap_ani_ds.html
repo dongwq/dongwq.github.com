@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Treap 树堆动画演示</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .wrap { width: min(1080px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  /* ===== Treap 节点 ===== */
+  .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2;
+    transition: fill .25s, stroke .25s, stroke-width .25s;
+  }
+  .treap-node.visit .node-bg  { fill: #ffe9a8; stroke: #e09b00; stroke-width: 3; }
+  .treap-node.new   .node-bg  { fill: #c9efc9; stroke: #57a957; stroke-width: 3; }
+  .treap-node.remove .node-bg { fill: #ffcccc; stroke: #d64545; stroke-width: 3; }
+  .treap-node.rotate .node-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3; }
+  .treap-node.found .node-bg  { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.4; }
+
+  .node-key {
+    font-size: 20px; font-weight: 700; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .treap-node.new .node-key     { fill: #2f7a34; }
+  .treap-node.remove .node-key  { fill: #b33232; }
+  .treap-node.rotate .node-key  { fill: #5b3db8; }
+  .treap-node.visit .node-key   { fill: #a35e00; }
+  .treap-node.found .node-key   { fill: #1c5e28; }
+
+  .node-prio {
+    font-size: 11px; font-weight: 600; fill: #627d98;
+    pointer-events: none; user-select: none;
+  }
+  .treap-node.new .node-prio    { fill: #4d8a5a; }
+  .treap-node.remove .node-prio { fill: #b33232; }
+
+  .treap-edge {
+    stroke: #b4bec9; stroke-width: 1.8;
+    stroke-dasharray: 6 5; stroke-linecap: round;
+    transition: stroke .25s, stroke-width .25s;
+  }
+  .treap-edge.path {
+    stroke: #e09b00; stroke-width: 3;
+    stroke-dasharray: 9 6;
+    animation: dashflow 0.75s linear infinite;
+  }
+  .treap-edge.path-find {
+    stroke: #2a86d0; stroke-width: 3;
+    stroke-dasharray: 9 6;
+    animation: dashflow 0.75s linear infinite;
+  }
+  @keyframes dashflow { to { stroke-dashoffset: -15; } }
+
+  /* ===== 面板 ===== */
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 14px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; font-size: 14px;
+  }
+  .group { display: flex; align-items: center; gap: 8px; }
+  .group .label { color: #627d98; }
+
+  button {
+    font: inherit; font-size: 13.5px; padding: 7px 16px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.danger:hover { background: #b33232; border-color: #b33232; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost  { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+  button.ghost:hover { background: #f0f7ff; }
+
+  input[type="number"] {
+    font: inherit; font-size: 13.5px; padding: 6px 8px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53; width: 80px;
+  }
+
+  .result {
+    margin-top: 14px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    transition: border-color .3s;
+  }
+
+  /* ===== 知识模块 ===== */
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+    transition: border-color .25s, box-shadow .25s;
+  }
+  .k-card:hover {
+    border-color: #9dc3e6; box-shadow: 0 3px 12px rgba(42, 127, 208, .10);
+  }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+
+  /* ===== 代码模块 ===== */
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+    transition: background .15s;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-module > summary .badge.blue {
+    background: #e3edf7; color: #2369ad;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 600px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Treap（树堆）· 平衡 BST 动画</h1>
+  <p class="subtitle">
+    <code>key</code> 满足 BST 性质 · <code>prio</code> 满足小根堆性质 · 期望树高 <b>O(log N)</b>
+  </p>
+
+  <svg id="stage" viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel">
+    <div class="group">
+      <button id="btnReset" class="ghost">重置</button>
+    </div>
+
+    <div class="group">
+      <span class="label">key</span>
+      <input id="keyInput" type="number" value="1" min="0" max="99">
+      <button id="btnInsert" class="success">插入</button>
+      <button id="btnRemove" class="danger">删除</button>
+      <button id="btnSearch" class="primary">查找</button>
+    </div>
+
+    <div class="group">
+      <button id="btnDemo" class="ghost">▶ 自动演示</button>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 点击「插入」「删除」「查找」或「自动演示」</div>
+
+  <!-- 知识模块 -->
+  <div class="knowledge">
+    <h2>📚 知识模块 · Treap 核心要点 <span class="hint">随机化平衡二叉搜索树</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <!-- Python 代码 -->
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · Treap
+      <span class="badge">插入 / 删除 / 查找 / 分裂 / 合并</span>
+      <span class="hint">期望 O(log N)</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyCode"></pre></div>
+  </details>
+</div>
+
+<!-- ============ Python 源码 ============ -->
+<script type="text/plain" id="pySrc">
+import random
+from typing import Optional
+
+
+class TreapNode:
+    __slots__ = ('key', 'prio', 'left', 'right')
+
+    def __init__(self, key, prio=None):
+        self.key = key
+        self.prio = prio if prio is not None else random.random()
+        self.left = None
+        self.right = None
+
+
+class Treap:
+    """
+    树堆：同时满足 BST 与堆性质的二叉搜索树。
+
+    每个节点有：
+        key   —— 满足 BST：左 < 根 < 右
+        prio  —— 满足小根堆：父节点的 prio 比两个孩子都小
+        prio 在插入时随机生成，与 key 无关
+
+    这两个性质的组合使得树的期望高度为 O(log N)。
+
+    核心操作：
+        insert(key)        插入
+        remove(key)        删除
+        search(key)        查找
+        split(key)         按 key 分裂为 (<=key, >key) 两棵 Treap
+        merge(left, right) 合并两棵 Treap（要求 left 全部 key < right）
+    """
+
+    def __init__(self, keys=None):
+        self.root: Optional[TreapNode] = None
+        if keys:
+            for k in keys:
+                self.insert(k)
+
+    # ---------- 旋转 ----------
+    @staticmethod
+    def _rotate_right(p):
+        """
+        右旋：p 的左孩子 q 上升为子树根。
+              p              q
+             / \            / \
+            q   C    →     A   p
+           / \                / \
+          A   B              B   C
+        """
+        q = p.left
+        p.left = q.right
+        q.right = p
+        return q
+
+    @staticmethod
+    def _rotate_left(p):
+        """左旋：p 的右孩子 q 上升为子树根。"""
+        q = p.right
+        p.right = q.left
+        q.left = p
+        return q
+
+    # ---------- 插入 ----------
+    def insert(self, key):
+        self.root = self._insert(self.root, key)
+
+    def _insert(self, node, key):
+        if node is None:
+            return TreapNode(key)
+        if key < node.key:
+            node.left = self._insert(node.left, key)
+            if node.left.prio < node.prio:
+                node = self._rotate_right(node)
+        elif key > node.key:
+            node.right = self._insert(node.right, key)
+            if node.right.prio < node.prio:
+                node = self._rotate_left(node)
+        # key 已存在则不动
+        return node
+
+    # ---------- 删除 ----------
+    def remove(self, key):
+        self.root = self._remove(self.root, key)
+
+    def _remove(self, node, key):
+        if node is None:
+            return None
+        if key < node.key:
+            node.left = self._remove(node.left, key)
+        elif key > node.key:
+            node.right = self._remove(node.right, key)
+        else:
+            # 找到了：把 prio 较小的孩子转上来，直到变成叶子
+            if node.left is None:
+                return node.right
+            if node.right is None:
+                return node.left
+            if node.left.prio < node.right.prio:
+                node = self._rotate_right(node)
+                node.right = self._remove(node.right, key)
+            else:
+                node = self._rotate_left(node)
+                node.left = self._remove(node.left, key)
+        return node
+
+    # ---------- 查找 ----------
+    def search(self, key):
+        cur = self.root
+        while cur:
+            if key == cur.key:
+                return True
+            cur = cur.left if key < cur.key else cur.right
+        return False
+
+    # ---------- 分裂 ----------
+    def split(self, key):
+        """
+        把当前 Treap 按 key 分裂为两棵：
+            left  : 所有 key <= 给定 key
+            right : 所有 key >  给定 key
+        """
+        left_root, right_root = self._split(self.root, key)
+        l_tree = Treap()
+        l_tree.root = left_root
+        r_tree = Treap()
+        r_tree.root = right_root
+        return l_tree, r_tree
+
+    def _split(self, node, key):
+        if node is None:
+            return None, None
+        if node.key <= key:
+            l, r = self._split(node.right, key)
+            node.right = l
+            return node, r
+        else:
+            l, r = self._split(node.left, key)
+            node.left = r
+            return l, node
+
+    # ---------- 合并 ----------
+    @staticmethod
+    def merge(left: 'Treap', right: 'Treap') -> 'Treap':
+        """
+        合并两棵 Treap，要求 left 中所有 key < right 中所有 key。
+        以 prio 较小者为新根。
+        """
+        result = Treap()
+        result.root = Treap._merge(left.root, right.root)
+        return result
+
+    @staticmethod
+    def _merge(a, b):
+        if a is None: return b
+        if b is None: return a
+        if a.prio < b.prio:
+            a.right = Treap._merge(a.right, b)
+            return a
+        else:
+            b.left = Treap._merge(a, b.left)
+            return b
+
+
+# ---------- 有序表（用 Treap 维护）----------
+class OrderedSet:
+    """
+    有序集合：支持 insert / erase / contains / kth / rank
+    """
+
+    def __init__(self):
+        self.t = Treap()
+        self.size = 0
+
+    def insert(self, key):
+        if not self.t.search(key):
+            self.t.insert(key)
+            self.size += 1
+
+    def erase(self, key):
+        if self.t.search(key):
+            self.t.remove(key)
+            self.size -= 1
+
+    def contains(self, key):
+        return self.t.search(key)
+
+
+if __name__ == '__main__':
+    import random as rnd
+    rnd.seed(42)
+
+    t = Treap()
+    for k in [5, 3, 7, 2, 4, 6, 8]:
+        t.insert(k)
+
+    print('search(4) =', t.search(4))
+    print('search(9) =', t.search(9))
+
+    t.remove(3)
+    print('after remove(3), search(3) =', t.search(3))
+
+    left, right = t.split(5)
+    print('left keys  :', end=' ')
+    def inorder(n):
+        if not n: return
+        inorder(n.left); print(n.key, end=' '); inorder(n.right)
+    inorder(left.root);  print()
+    print('right keys :', end=' ')
+    inorder(right.root); print()
+
+    merged = Treap.merge(left, right)
+    print('after merge:', end=' ')
+    inorder(merged.root); print()
+</script>
+
+<script>
+/* =========================================================
+   1. 基础数据
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+let root = null;
+let nextId = 1;
+let busy = false;
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* 初始 Treap（预先构造好，保证结构合法） */
+const INIT_KEYS = [
+  { key: 5, prio: 10 },
+  { key: 3, prio: 20 },
+  { key: 7, prio: 30 },
+  { key: 2, prio: 40 },
+  { key: 4, prio: 50 },
+  { key: 6, prio: 60 },
+  { key: 8, prio: 70 },
+];
+
+function makeNode(key, prio) {
+  return {
+    id: nextId++,
+    key,
+    prio,
+    left: null,
+    right: null,
+    parent: null,
+    x: 0, y: 0,
+    targetX: 0, targetY: 0,
+  };
+}
+
+function buildInitial() {
+  nextId = 1;
+  root = null;
+  /* 按上面的结构手工构造：
+           5(p10)
+          /       \
+        3(p20)   7(p30)
+        /  \     /  \
+      2(40) 4(50) 6(60) 8(70)
+  */
+  const n5 = makeNode(5, 10);
+  const n3 = makeNode(3, 20);
+  const n7 = makeNode(7, 30);
+  const n2 = makeNode(2, 40);
+  const n4 = makeNode(4, 50);
+  const n6 = makeNode(6, 60);
+  const n8 = makeNode(8, 70);
+  n5.left = n3; n5.right = n7;
+  n3.parent = n5; n7.parent = n5;
+  n3.left = n2; n3.right = n4;
+  n2.parent = n3; n4.parent = n3;
+  n7.left = n6; n7.right = n8;
+  n6.parent = n7; n8.parent = n7;
+  root = n5;
+}
+
+/* =========================================================
+   2. 渲染层
+   ========================================================= */
+const svg = document.getElementById('stage');
+const defs = document.createElementNS(NS, 'defs');
+svg.appendChild(defs);
+
+/* 三种颜色的箭头 */
+function makeMarker(id, color) {
+  const m = document.createElementNS(NS, 'marker');
+  m.setAttribute('id', id);
+  m.setAttribute('viewBox', '0 0 10 10');
+  m.setAttribute('refX', '9');
+  m.setAttribute('refY', '5');
+  m.setAttribute('markerWidth', '7');
+  m.setAttribute('markerHeight', '7');
+  m.setAttribute('orient', 'auto');
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', 'M0,0 L10,5 L0,10 z');
+  p.setAttribute('fill', color);
+  m.appendChild(p);
+  defs.appendChild(m);
+}
+makeMarker('ah-gray',   '#b4bec9');
+makeMarker('ah-orange', '#e09b00');
+makeMarker('ah-blue',   '#2a86d0');
+
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+/* 节点/边元素缓存 */
+const nodeEls = new Map();   // node -> <g>
+const edgeEls = new Map();   // node -> <line>（父 → 此节点）
+
+/* =========================================================
+   3. 节点与边的渲染
+   ========================================================= */
+function createNodeEl(node) {
+  const g = document.createElementNS(NS, 'g');
+  g.setAttribute('class', 'treap-node');
+  g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+
+  const rect = document.createElementNS(NS, 'rect');
+  rect.setAttribute('x', -32);
+  rect.setAttribute('y', -26);
+  rect.setAttribute('width', 64);
+  rect.setAttribute('height', 52);
+  rect.setAttribute('rx', 10);
+  rect.setAttribute('class', 'node-bg');
+  g.appendChild(rect);
+
+  const keyTxt = document.createElementNS(NS, 'text');
+  keyTxt.setAttribute('class', 'node-key');
+  keyTxt.setAttribute('text-anchor', 'middle');
+  keyTxt.setAttribute('y', -4);
+  keyTxt.setAttribute('dominant-baseline', 'central');
+  keyTxt.textContent = node.key;
+  g.appendChild(keyTxt);
+
+  const prioTxt = document.createElementNS(NS, 'text');
+  prioTxt.setAttribute('class', 'node-prio');
+  prioTxt.setAttribute('text-anchor', 'middle');
+  prioTxt.setAttribute('y', 14);
+  prioTxt.setAttribute('dominant-baseline', 'central');
+  prioTxt.textContent = 'p:' + node.prio;
+  g.appendChild(prioTxt);
+
+  nodeLayer.appendChild(g);
+  nodeEls.set(node, g);
+}
+
+function updateNodeEl(node) {
+  const g = nodeEls.get(node);
+  if (g) g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+}
+
+function createEdgeEl(child) {
+  const line = document.createElementNS(NS, 'line');
+  line.setAttribute('class', 'treap-edge');
+  line.setAttribute('marker-end', 'url(#ah-gray)');
+  edgeLayer.appendChild(line);
+  edgeEls.set(child, line);
+}
+
+function updateEdgeEl(child) {
+  const par = child.parent;
+  const line = edgeEls.get(child);
+  if (!line) return;
+  if (!par) { line.setAttribute('x1', 0); line.setAttribute('y1', 0); line.setAttribute('x2', 0); line.setAttribute('y2', 0); return; }
+  const dx = par.x - child.x;
+  const dy = par.y - child.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const r = 30;
+  line.setAttribute('x1', child.x + dx / len * r);
+  line.setAttribute('y1', child.y + dy / len * r);
+  line.setAttribute('x2', par.x - dx / len * r);
+  line.setAttribute('y2', par.y - dy / len * r);
+}
+
+function removeNodeEl(node) {
+  const g = nodeEls.get(node);
+  if (g) { g.remove(); nodeEls.delete(node); }
+  const line = edgeEls.get(node);
+  if (line) { line.remove(); edgeEls.delete(node); }
+}
+
+/* 遍历整棵树 */
+function forEachNode(fn) {
+  (function dfs(n) {
+    if (!n) return;
+    fn(n);
+    dfs(n.left); dfs(n.right);
+  })(root);
+}
+
+/* 完全重绘（节点位置 + 边） */
+function redraw() {
+  forEachNode(n => {
+    updateNodeEl(n);
+    updateEdgeEl(n);
+  });
+}
+
+/* =========================================================
+   4. 布局
+   ========================================================= */
+function relayout() {
+  const arr = [];
+  (function inorder(n, depth) {
+    if (!n) return;
+    inorder(n.left, depth + 1);
+    arr.push({ node: n, depth });
+    inorder(n.right, depth + 1);
+  })(root, 0);
+
+  const n = arr.length;
+  if (n === 0) return;
+
+  const AVAIL = 800;
+  const MIN_GAP = 72;
+  const gap = n <= 1 ? 0 : Math.max(MIN_GAP, Math.min(95, AVAIL / (n - 1)));
+  const totalW = (n - 1) * gap;
+  const startX = 450 - totalW / 2;
+  const startY = 80;
+  const layerH = 92;
+
+  for (let i = 0; i < n; i++) {
+    const { node, depth } = arr[i];
+    node.targetX = startX + i * gap;
+    node.targetY = startY + depth * layerH;
+  }
+}
+
+/* 缓动函数 */
+function easeInOut(t) {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+
+/* 平移动画：所有节点从当前位置滑到目标位置 */
+function animateLayout(duration = 420) {
+  return new Promise(resolve => {
+    const starts = new Map();
+    forEachNode(n => starts.set(n, { x: n.x, y: n.y }));
+
+    const t0 = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      const e = easeInOut(t);
+      forEachNode(n => {
+        const s = starts.get(n);
+        n.x = s.x + (n.targetX - s.x) * e;
+        n.y = s.y + (n.targetY - s.y) * e;
+      });
+      redraw();
+      if (t < 1) requestAnimationFrame(step);
+      else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+/* 立即把节点放到目标位置（无动画） */
+function snapToTarget() {
+  forEachNode(n => {
+    n.x = n.targetX;
+    n.y = n.targetY;
+  });
+  redraw();
+}
+
+/* =========================================================
+   5. 高亮辅助
+   ========================================================= */
+function setNodeState(node, state) {
+  const g = nodeEls.get(node);
+  if (!g) return;
+  g.setAttribute('class', 'treap-node' + (state ? ' ' + state : ''));
+}
+function clearNodeState(node) {
+  setNodeState(node, '');
+}
+function clearAllStates() {
+  forEachNode(n => clearNodeState(n));
+  for (const [, line] of edgeEls) {
+    line.setAttribute('class', 'treap-edge');
+    line.setAttribute('marker-end', 'url(#ah-gray)');
+  }
+}
+function markEdge(child, kind) {
+  const line = edgeEls.get(child);
+  if (!line) return;
+  if (kind === 'path') {
+    line.setAttribute('class', 'treap-edge path');
+    line.setAttribute('marker-end', 'url(#ah-orange)');
+  } else if (kind === 'path-find') {
+    line.setAttribute('class', 'treap-edge path-find');
+    line.setAttribute('marker-end', 'url(#ah-blue)');
+  } else {
+    line.setAttribute('class', 'treap-edge');
+    line.setAttribute('marker-end', 'url(#ah-gray)');
+  }
+}
+
+/* =========================================================
+   6. 旋转（含 parent / root 维护）
+   ========================================================= */
+function rotateRight(p) {
+  const q = p.left;
+  const gp = p.parent;
+  p.left = q.right;
+  if (q.right) q.right.parent = p;
+  q.right = p;
+  p.parent = q;
+  q.parent = gp;
+  if (gp) {
+    if (gp.left === p) gp.left = q; else gp.right = q;
+  } else {
+    root = q;
+  }
+  return q;
+}
+
+function rotateLeft(p) {
+  const q = p.right;
+  const gp = p.parent;
+  p.right = q.left;
+  if (q.left) q.left.parent = p;
+  q.left = p;
+  p.parent = q;
+  q.parent = gp;
+  if (gp) {
+    if (gp.left === p) gp.left = q; else gp.right = q;
+  } else {
+    root = q;
+  }
+  return q;
+}
+
+/* =========================================================
+   7. 完整渲染：构建所有元素（用于 reset）
+   ========================================================= */
+function renderAll() {
+  /* 清空 */
+  nodeEls.clear();
+  edgeEls.clear();
+  while (nodeLayer.firstChild) nodeLayer.removeChild(nodeLayer.firstChild);
+  while (edgeLayer.firstChild) edgeLayer.removeChild(edgeLayer.firstChild);
+
+  /* 先给每个节点算目标位置，然后初始化坐标 */
+  relayout();
+  forEachNode(n => {
+    n.x = n.targetX;
+    n.y = n.targetY;
+  });
+
+  /* 创建所有节点元素 */
+  forEachNode(n => createNodeEl(n));
+
+  /* 创建所有边 */
+  forEachNode(n => { if (n.parent) createEdgeEl(n); });
+
+  redraw();
+}
+
+/* =========================================================
+   8. 查找
+   ========================================================= */
+async function animatedSearch(key) {
+  if (busy) return;
+  if (!root) return;
+  busy = true;
+  clearAllStates();
+  updateStatus(`查找 ${key}：从根开始沿 BST 规则向下`);
+
+  let cur = root;
+  const path = [];
+  while (cur) {
+    path.push(cur);
+    setNodeState(cur, 'visit');
+    if (path.length > 1) {
+      markEdge(cur, 'path-find');
+    }
+    updateStatus(`访问节点 ${cur.key}（prio ${cur.prio}）`);
+    await sleep(450);
+
+    if (key === cur.key) {
+      setNodeState(cur, 'found');
+      updateStatus(`✔ 找到 key = ${key}！`);
+      await sleep(1400);
+      clearAllStates();
+      busy = false;
+      return;
+    }
+    cur = key < cur.key ? cur.left : cur.right;
+  }
+
+  updateStatus(`✘ 未找到 key = ${key}`);
+  await sleep(1400);
+  clearAllStates();
+  busy = false;
+}
+
+/* =========================================================
+   9. 插入
+   ========================================================= */
+async function animatedInsert(key) {
+  if (busy) return;
+  busy = true;
+  clearAllStates();
+  updateStatus(`插入 ${key}：先按 BST 找到位置，再按 prio 向上旋转`);
+
+  const newNode = makeNode(key, Math.floor(Math.random() * 70) + 15);
+
+  /* ---------- 空树 ---------- */
+  if (!root) {
+    root = newNode;
+    relayout();
+    newNode.x = newNode.targetX;
+    newNode.y = newNode.targetY;
+    createNodeEl(newNode);
+    setNodeState(newNode, 'new');
+    updateStatus(`空树，新节点 ${key} 成为根`);
+    await sleep(1200);
+    clearAllStates();
+    busy = false;
+    return;
+  }
+
+  /* ---------- 1. 按 BST 向下查找插入位置 ---------- */
+  let cur = root;
+  let prev = null;
+  let side = null;   // 'left' or 'right'
+
+  while (cur) {
+    setNodeState(cur, 'visit');
+    if (prev) markEdge(cur, 'path');
+    updateStatus(`访问节点 ${cur.key}：${key} ${key < cur.key ? '<' : key > cur.key ? '>' : '='} ${cur.key}`);
+    await sleep(420);
+
+    if (key === cur.key) {
+      updateStatus(`key = ${key} 已存在，跳过插入`);
+      await sleep(1300);
+      clearAllStates();
+      busy = false;
+      return;
+    }
+    prev = cur;
+    if (key < cur.key) { side = 'left'; cur = cur.left; }
+    else               { side = 'right'; cur = cur.right; }
+  }
+
+  /* ---------- 2. 挂载新节点 ---------- */
+  newNode.parent = prev;
+  if (side === 'left') prev.left = newNode;
+  else                 prev.right = newNode;
+
+  /* 新节点初始位置 = 父节点位置，便于动画“飞出来” */
+  newNode.x = prev.x;
+  newNode.y = prev.y;
+  createNodeEl(newNode);
+  createEdgeEl(newNode);
+  setNodeState(newNode, 'new');
+
+  updateStatus(`在节点 ${prev.key} 的${side === 'left' ? '左' : '右'}边插入 ${key}（prio ${newNode.prio}）`);
+  await sleep(500);
+
+  /* 重新布局 */
+  relayout();
+  await animateLayout(500);
+
+  await sleep(300);
+
+  /* ---------- 3. 沿父链向上旋转 ---------- */
+  let p = newNode;
+  while (p.parent && p.prio < p.parent.prio) {
+    const parent = p.parent;
+
+    setNodeState(parent, 'rotate');
+    setNodeState(p, 'rotate');
+    updateStatus(`prio(${p.key}) = ${p.prio} < prio(${parent.key}) = ${parent.prio}，需要${p === parent.left ? '右' : '左'}旋`);
+    await sleep(520);
+
+    if (p === parent.left) rotateRight(parent);
+    else                   rotateLeft(parent);
+
+    relayout();
+    await animateLayout(450);
+
+    /* 旋转后 p 的位置已经上移，清一下状态 */
+    clearNodeState(parent);
+    clearNodeState(p);
+
+    /* 再继续检查 p 与新父节点 */
+    await sleep(250);
+  }
+
+  setNodeState(newNode, 'new');
+  updateStatus(`✔ 插入完成：${key}（prio ${newNode.prio}）`);
+  await sleep(1100);
+  clearAllStates();
+  busy = false;
+}
+
+/* =========================================================
+   10. 删除
+   ========================================================= */
+async function animatedRemove(key) {
+  if (busy) return;
+  if (!root) { updateStatus('空树，无需删除'); return; }
+  busy = true;
+  clearAllStates();
+  updateStatus(`删除 ${key}：先找到节点，再把它旋转到叶子后摘除`);
+
+  /* ---------- 1. 查找 ---------- */
+  let cur = root;
+  const path = [];
+  while (cur && cur.key !== key) {
+    path.push(cur);
+    setNodeState(cur, 'visit');
+    if (path.length > 1) markEdge(cur, 'path');
+    updateStatus(`访问节点 ${cur.key}`);
+    await sleep(420);
+    cur = key < cur.key ? cur.left : cur.right;
+  }
+
+  if (!cur) {
+    updateStatus(`✘ 未找到 key = ${key}，无法删除`);
+    await sleep(1400);
+    clearAllStates();
+    busy = false;
+    return;
+  }
+
+  setNodeState(cur, 'found');
+  updateStatus(`找到节点 ${key}（prio ${cur.prio}），准备旋转到叶子`);
+  await sleep(700);
+
+  /* ---------- 2. 旋转到叶子 ---------- */
+  while (cur.left || cur.right) {
+    /* 选择 prio 较小的孩子旋转上来 */
+    let rotateChild;
+    let goRight;   // 是否需要从右孩子方向删除
+
+    if (!cur.right) { rotateChild = cur.left; goRight = false; }
+    else if (!cur.left) { rotateChild = cur.right; goRight = true; }
+    else if (cur.left.prio < cur.right.prio) { rotateChild = cur.left; goRight = false; }
+    else { rotateChild = cur.right; goRight = true; }
+
+    setNodeState(cur, 'remove');
+    setNodeState(rotateChild, 'rotate');
+    updateStatus(`旋转：孩子 ${rotateChild.key}（prio ${rotateChild.prio}）上升，${cur.key} 下降`);
+    await sleep(520);
+
+    if (goRight) rotateLeft(cur);
+    else         rotateRight(cur);
+
+    relayout();
+    await animateLayout(400);
+
+    clearNodeState(rotateChild);
+    await sleep(200);
+  }
+
+  /* ---------- 3. 摘除叶子 ---------- */
+  setNodeState(cur, 'remove');
+  updateStatus(`节点 ${key} 已成为叶子，摘除`);
+  await sleep(500);
+
+  const parent = cur.parent;
+  if (parent) {
+    if (parent.left === cur) parent.left = null;
+    else                     parent.right = null;
+  } else {
+    root = null;
+  }
+  removeNodeEl(cur);
+  redraw();
+
+  relayout();
+  await animateLayout(420);
+
+  updateStatus(`✔ 删除完成：${key} 已移出`);
+  await sleep(1000);
+  clearAllStates();
+  busy = false;
+}
+
+/* =========================================================
+   11. 自动演示
+   ========================================================= */
+async function autoDemo() {
+  if (busy) return;
+  await sleep(300);
+  await animatedInsert(1);
+  await sleep(300);
+  await animatedSearch(6);
+  await sleep(200);
+  await animatedRemove(5);
+  await sleep(300);
+  await animatedInsert(9);
+  await sleep(200);
+  await animatedSearch(1);
+}
+
+/* =========================================================
+   12. 状态显示 & 控制
+   ========================================================= */
+const resultEl = document.getElementById('result');
+function updateStatus(t) { resultEl.textContent = t; }
+
+function setButtonsDisabled(disabled) {
+  for (const id of ['btnReset', 'btnInsert', 'btnRemove', 'btnSearch', 'btnDemo']) {
+    document.getElementById(id).disabled = disabled;
+  }
+}
+const _origUpdate = updateStatus;
+function updateStatusBusy(t) { _origUpdate(t); }
+
+/* 覆盖 updateStatus，自动管理按钮 */
+const realUpdate = updateStatus;
+updateStatus = function (t) { realUpdate(t); };
+
+document.getElementById('btnReset').addEventListener('click', async () => {
+  if (busy) return;
+  busy = true;
+  setButtonsDisabled(true);
+  buildInitial();
+  renderAll();
+  updateStatus('已重置为初始 Treap');
+  await sleep(400);
+  busy = false;
+  setButtonsDisabled(false);
+});
+
+document.getElementById('btnInsert').addEventListener('click', async () => {
+  if (busy) return;
+  const key = +document.getElementById('keyInput').value;
+  setButtonsDisabled(true);
+  await animatedInsert(key);
+  setButtonsDisabled(false);
+});
+
+document.getElementById('btnRemove').addEventListener('click', async () => {
+  if (busy) return;
+  const key = +document.getElementById('keyInput').value;
+  setButtonsDisabled(true);
+  await animatedRemove(key);
+  setButtonsDisabled(false);
+});
+
+document.getElementById('btnSearch').addEventListener('click', async () => {
+  if (busy) return;
+  const key = +document.getElementById('keyInput').value;
+  setButtonsDisabled(true);
+  await animatedSearch(key);
+  setButtonsDisabled(false);
+});
+
+document.getElementById('btnDemo').addEventListener('click', async () => {
+  if (busy) return;
+  setButtonsDisabled(true);
+  await autoDemo();
+  setButtonsDisabled(false);
+});
+
+/* =========================================================
+   13. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎲', title: '什么是 Treap', lines: [
+    'Treap = Tree + Heap，即同时满足 BST 与堆性质的二叉树',
+    '每个节点带一个随机优先级 <code>prio</code>',
+    '<code>key</code> 满足 BST：左 &lt; 根 &lt; 右',
+    '<code>prio</code> 满足小根堆：父节点的 prio 比两个孩子都小',
+    '随机化带来 <b>期望 O(log N)</b> 的树高',
+  ]},
+  { icon: '🔧', title: '旋转 · 平衡的关键', lines: [
+    '<b>右旋</b>：左孩子上升为父，原父变为右孩子',
+    '<b>左旋</b>：右孩子上升为父，原父变为左孩子',
+    '旋转不改变 BST 中序序列，只调整结构',
+    '插入 / 删除通过旋转恢复堆性质',
+  ]},
+  { icon: '➕', title: '插入 insert(key)', lines: [
+    '按 BST 规则向下查找，到达空位后挂上新节点',
+    '新节点的 <code>prio</code> 随机生成',
+    '如果 <code>prio</code> 比父节点小，就旋转一次',
+    '持续向上旋转，直到父节点 prio 更小或到达根',
+    '期望旋转次数 <code>O(log N)</code>',
+  ]},
+  { icon: '🗑️', title: '删除 remove(key)', lines: [
+    '先按 BST 找到目标节点',
+    '把它的 <b>prio 较小的孩子</b>不断旋转上来',
+    '目标节点一路下降，直到变成叶子',
+    '直接摘除叶子，不需要再调整堆性质',
+    '期望旋转次数 <code>O(log N)</code>',
+  ]},
+  { icon: '✂️', title: '分裂 split(key)', lines: [
+    '把 Treap 拆成两棵：左树所有 key ≤ 给定值，右树所有 key &gt; 给定值',
+    '从根开始递归：节点 key ≤ 给定值 → 划到左树',
+    '否则划到右树',
+    '递归结束就得到两棵合法 Treap',
+    '期望 <code>O(log N)</code>',
+  ]},
+  { icon: '🔗', title: '合并 merge(left, right)', lines: [
+    '前提：left 中所有 key &lt; right 中所有 key',
+    '比较两棵树根的 <code>prio</code>',
+    'prio 较小者作为新根，递归合并另一侧',
+    '最终得到一棵合法 Treap',
+    '期望 <code>O(log N)</code>',
+  ]},
+  { icon: '⚖️', title: '与 AVL / 红黑树对比', lines: [
+    'Treap 期望高度 <code>O(log N)</code>，最坏 <code>O(N)</code>（概率极低）',
+    'AVL 严格 <code>O(log N)</code>，Treap 靠随机化保证平衡',
+    'Treap 代码比 AVL / 红黑树简单得多',
+    '旋转 + 随机化让实现非常精炼',
+    'C++ <code>std::map</code> 通常用红黑树，Treap 常用于竞赛',
+  ]},
+  { icon: '🧩', title: '常见应用', lines: [
+    '有序集合（替代 <code>set</code>）',
+    '按排名查询（第 k 小 / 某元素的 rank）',
+    '区间操作（配合分裂 / 合并的 FHQ Treap）',
+    '可持久化平衡树',
+    '带随机化的平衡 BST 模板题',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    el.className = 'k-card';
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   14. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','len','range','float','int','str','list','dict',
+    'set','tuple','sum','isinstance','ValueError','random','Optional'
+  ]);
+  let html = '', i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '#') {
+      let j = i; while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1;
+      while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+      if (word === 'self') html += '<span class="tok-self">self</span>';
+      else if (KEYWORDS.has(word)) html += '<span class="tok-keyword">' + word + '</span>';
+      else if (BUILTINS.has(word)) html += '<span class="tok-builtin">' + word + '</span>';
+      else if (code[j] === '(') html += '<span class="tok-func">' + word + '</span>';
+      else html += word;
+      i = j; continue;
+    }
+    if (/\d/.test(c)) {
+      let j = i; while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j; continue;
+    }
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+}
+
+/* =========================================================
+   15. 初始化
+   ========================================================= */
+renderKnowledge();
+renderPythonCode();
+buildInitial();
+renderAll();
+</script>
+</body>
+</html>

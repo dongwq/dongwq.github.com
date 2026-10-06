@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FHQ Treap · 无旋平衡树动画</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1080px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead {
+    font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px;
+  }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+  .treap-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2;
+    transition: fill .25s, stroke .25s, stroke-width .25s;
+  }
+  .treap-node .node-key   { font-size: 20px; font-weight: 700; fill: #2369ad; pointer-events: none; user-select: none; }
+  .treap-node .node-prio  { font-size: 11px; font-weight: 600; fill: #627d98; pointer-events: none; user-select: none; }
+
+  .treap-node.compare  .node-bg { fill: #ffe9a8; stroke: #e09b00; stroke-width: 3; }
+  .treap-node.compare  .node-key { fill: #a35e00; }
+  .treap-node.winner   .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.4; }
+  .treap-node.winner   .node-key { fill: #1c5e28; }
+  .treap-node.visit    .node-bg { fill: #ffd98a; stroke: #e09b00; stroke-width: 3; }
+  .treap-node.visit    .node-key { fill: #a35e00; }
+  .treap-node.left-tree  .node-bg { fill: #b9daff; stroke: #2a86d0; stroke-width: 3; }
+  .treap-node.left-tree  .node-key { fill: #1c5e9e; }
+  .treap-node.right-tree .node-bg { fill: #ffd0b8; stroke: #d9713b; stroke-width: 3; }
+  .treap-node.right-tree .node-key { fill: #a34d1a; }
+  .treap-node.new      .node-bg { fill: #c9efc9; stroke: #57a957; stroke-width: 3.2; }
+  .treap-node.new      .node-key { fill: #2f7a34; }
+  .treap-node.removing .node-bg { fill: #ffcccc; stroke: #d64545; stroke-width: 3; }
+  .treap-node.removing .node-key { fill: #b33232; }
+
+  .treap-edge {
+    stroke: #b4bec9; stroke-width: 1.8;
+    stroke-dasharray: 6 5; stroke-linecap: round;
+    transition: stroke .25s, stroke-width .25s;
+  }
+  .treap-edge.path {
+    stroke: #e09b00; stroke-width: 3;
+    stroke-dasharray: 9 6;
+    animation: dashflow 0.75s linear infinite;
+  }
+  @keyframes dashflow { to { stroke-dashoffset: -15; } }
+
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 96px;
+  }
+  .row-label.key   { color: #2369ad; }
+  .row-label.rank  { color: #7c5cd6; }
+  .row-label.base  { color: #2f7a34; }
+  .row-label.merge { color: #d9713b; }
+  .group { display: flex; align-items: center; gap: 8px; }
+  .group .label { color: #627d98; font-size: 12.5px; }
+
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.purple  { background: #7c5cd6; border-color: #7c5cd6; color: #fff; }
+  button.purple:hover { background: #634ab0; border-color: #634ab0; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.danger:hover { background: #b33232; border-color: #b33232; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost   { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+  button.ghost:hover { background: #f0f7ff; }
+  button.orange  { background: #d9713b; border-color: #d9713b; color: #fff; }
+  button.orange:hover { background: #b95a28; border-color: #b95a28; }
+
+  input[type="number"] {
+    font: inherit; font-size: 13px; padding: 5px 8px;
+    border-radius: 7px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53; width: 72px;
+  }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 620px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FHQ Treap（无旋 Treap）· 分裂 / 合并 / 增删 动画</h1>
+  <p class="subtitle" id="subtitle">
+    两种分裂<b>并列共存</b>：<code>split_by_key</code> 按值域拆 · <code>split_by_rank</code> 按位置拆 · 无旋转
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · 为什么 FHQ Treap 不需要旋转？</h2>
+    <p class="intro-lead">
+      Treap = <b>Tree + Heap</b>。每个节点同时满足 <b>BST 性质</b>（key 左 &lt; 根 &lt; 右）
+      和 <b>堆性质</b>（prio 父小于子）。FHQ Treap 用 <code>split</code> + <code>merge</code>
+      两个操作取代旋转，代码更短、可持久化。它<b>同时提供两种分裂方式</b>，服务于不同场景：
+      <code>split_by_key</code> 用于有序集合，<code>split_by_rank</code> 用于序列 / 区间。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">核心 1</div>
+        <div class="title">split_by_key —— 按值域拆</div>
+        <div class="desc">
+          左树所有 key ≤ 阈值，右树 key &gt; 阈值。<br>
+          <b>用途</b>：有序集合（map / set）、按值查找。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 2</div>
+        <div class="title">split_by_rank —— 按位置拆</div>
+        <div class="desc">
+          左树是中序前 k 小，右树是剩余节点。<br>
+          <b>用途</b>：区间操作（翻转、区间加）、可持久化序列。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 3</div>
+        <div class="title">merge —— 合树</div>
+        <div class="desc">
+          前提：左树 key 全部 &lt; 右树 key。<br>
+          比较根 <code>prio</code>，小者当新根，另一棵递归接入。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">性质 1</div>
+        <div class="title">两者不冲突</div>
+        <div class="desc">
+          它们依据不同的维度（值域 / 位置），<b>可以共存于同一棵树</b>。
+          同一个节点既能在 split_by_key 里按 key 归类，也能在 split_by_rank 里按位置归类。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">性质 2</div>
+        <div class="title">组合成一切操作</div>
+        <div class="desc">
+          <b>插入</b>：split → 新节点 → merge<br>
+          <b>删除</b>：split 三段 → 丢弃中间 → merge<br>
+          <b>区间翻转</b>：split_by_rank 出区间 → 打标记 → merge
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">性质 3</div>
+        <div class="title">可持久化</div>
+        <div class="desc">
+          split / merge 只修改路径上 <code>O(log N)</code> 个节点。
+          复制路径节点即得历史版本，旋转 Treap 做不到。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label base">基本操作</span>
+      <button id="btnReset" class="ghost">重置</button>
+      <div class="group" style="margin-left:8px;">
+        <span class="label">值</span>
+        <input id="valInput" type="number" value="1" min="0" max="99">
+        <button id="btnInsert" class="success">插入</button>
+        <button id="btnRemove" class="danger">删除</button>
+      </div>
+      <span class="row-hint">插入 / 删除都通过 <code>split + merge</code> 组合实现</span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label key">按 key 分裂</span>
+      <span class="label">key =</span>
+      <input id="keyInput" type="number" value="4" min="0" max="99">
+      <button id="btnSplitByKey" class="primary">split_by_key</button>
+      <span class="row-hint">左树所有 <code>key ≤ 输入值</code>，右树所有 <code>key &gt; 输入值</code></span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label rank">按 size 分裂</span>
+      <span class="label">k =</span>
+      <input id="rankInput" type="number" value="3" min="0" max="99">
+      <button id="btnSplitByRank" class="purple">split_by_rank</button>
+      <span class="row-hint" id="rankHint">左树中序前 <code>k</code> 小，右树剩余节点</span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label merge">合并两棵树</span>
+      <button id="btnMerge" class="orange">merge 合并</button>
+      <span class="row-hint">把当前两棵并列的树合并回一棵（前提：左树 key 全部小于右树）</span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 可分别尝试两种分裂：按 key 或按 size</div>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · FHQ Treap 核心原理 <span class="hint">两种分裂并列共存</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · FHQ Treap（模块化）
+      <span class="badge">split_by_key + split_by_rank + merge</span>
+      <span class="hint">期望 O(log N)</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyCode"></pre></div>
+  </details>
+</div>
+
+<!-- ============ Python 源码 ============ -->
+<script type="text/plain" id="pySrc">
+import random
+from typing import Optional, Tuple
+
+
+class Node:
+    """FHQ Treap 节点。key 满足 BST，prio 满足小根堆，size 用于按排名分裂。"""
+    __slots__ = ('key', 'prio', 'left', 'right', 'size')
+
+    def __init__(self, key, prio=None):
+        self.key = key
+        self.prio = prio if prio is not None else random.random()
+        self.left = None
+        self.right = None
+        self.size = 1
+
+
+def sz(n: Optional[Node]) -> int:
+    return n.size if n else 0
+
+
+def update_size(n: Optional[Node]) -> None:
+    """重算节点 n 的子树大小。所有修改孩子指针的操作都要调用它。"""
+    if n is None:
+        return
+    n.size = 1 + sz(n.left) + sz(n.right)
+
+
+def split_by_key(node: Optional[Node], key) -> Tuple[Optional[Node], Optional[Node]]:
+    """
+    按 key 拆分：左树 key <= 阈值，右树 key > 阈值。期望 O(log N)
+    """
+    if node is None:
+        return None, None
+    if node.key <= key:
+        l, r = split_by_key(node.right, key)
+        node.right = l
+        update_size(node)
+        return node, r
+    else:
+        l, r = split_by_key(node.left, key)
+        node.left = r
+        update_size(node)
+        return l, node
+
+
+def split_by_rank(node: Optional[Node], k: int) -> Tuple[Optional[Node], Optional[Node]]:
+    """
+    按 size 拆分：左树是中序前 k 小，右树剩余。期望 O(log N)
+
+    关键：向右递归时，k 要减去 (left_size + 1)，
+    因为 node 本身和整个左子树已被划入左树。
+    """
+    if node is None:
+        return None, None
+    left_size = sz(node.left)
+    if left_size >= k:
+        l, r = split_by_rank(node.left, k)
+        node.left = r
+        update_size(node)
+        return l, node
+    else:
+        l, r = split_by_rank(node.right, k - left_size - 1)
+        node.right = l
+        update_size(node)
+        return node, r
+
+
+def merge(a: Optional[Node], b: Optional[Node]) -> Optional[Node]:
+    """
+    合并两棵 Treap：要求 a 中所有 key < b 中所有 key。
+    prio 小者当根，另一棵递归接入。期望 O(log N)
+    """
+    if a is None: return b
+    if b is None: return a
+    if a.prio < b.prio:
+        a.right = merge(a.right, b)
+        update_size(a)
+        return a
+    else:
+        b.left = merge(a, b.left)
+        update_size(b)
+        return b
+
+
+class FHQTreap:
+    def __init__(self):
+        self.root: Optional[Node] = None
+
+    def split_key(self, key):
+        left, right = split_by_key(self.root, key)
+        self.root = None
+        return FHQTreap._wrap(left), FHQTreap._wrap(right)
+
+    def split_rank(self, k):
+        left, right = split_by_rank(self.root, k)
+        self.root = None
+        return FHQTreap._wrap(left), FHQTreap._wrap(right)
+
+    @staticmethod
+    def merge_trees(left: 'FHQTreap', right: 'FHQTreap') -> 'FHQTreap':
+        t = FHQTreap()
+        t.root = merge(left.root, right.root)
+        return t
+
+    def insert(self, key):
+        a, b = split_by_key(self.root, key)
+        n = Node(key)
+        self.root = merge(merge(a, n), b)
+
+    def remove(self, key):
+        a, b = split_by_key(self.root, key - 1)
+        m, c = split_by_key(b, key)
+        self.root = merge(a, c)
+
+    def search(self, key) -> bool:
+        cur = self.root
+        while cur:
+            if key == cur.key: return True
+            cur = cur.left if key < cur.key else cur.right
+        return False
+
+    def kth(self, k: int):
+        cur = self.root
+        while cur:
+            ls = sz(cur.left)
+            if k == ls + 1: return cur.key
+            elif k <= ls:  cur = cur.left
+            else: k -= ls + 1; cur = cur.right
+        return None
+
+    @staticmethod
+    def _wrap(node) -> 'FHQTreap':
+        t = FHQTreap()
+        t.root = node
+        return t
+
+
+if __name__ == '__main__':
+    random.seed(7)
+    t = FHQTreap()
+    for k in [5, 3, 7, 2, 4, 6, 8]:
+        t.insert(k)
+
+    print('search(4) =', t.search(4))
+    print('kth(1) =', t.kth(1), ' kth(7) =', t.kth(7))
+
+    t.remove(3)
+    print('after remove(3), search(3) =', t.search(3))
+
+    left, right = t.split_key(5)
+    print('split_by_key(5): left size =', sz(left.root),
+          ', right size =', sz(right.root))
+
+    left, right = t.split_rank(3)
+    print('split_by_rank(3): left size =', sz(left.root),
+          ', right size =', sz(right.root))
+
+    t = FHQTreap.merge_trees(left, right)
+    print('after merge, kth(3) =', t.kth(3))
+</script>
+
+<script>
+/* =========================================================
+   1. 基础结构
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const defs = document.createElementNS(NS, 'defs');
+svg.appendChild(defs);
+
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+(function makeMarker(id, color) {
+  const m = document.createElementNS(NS, 'marker');
+  m.setAttribute('id', id);
+  m.setAttribute('viewBox', '0 0 10 10');
+  m.setAttribute('refX', '9'); m.setAttribute('refY', '5');
+  m.setAttribute('markerWidth', '6'); m.setAttribute('markerHeight', '6');
+  m.setAttribute('orient', 'auto');
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', 'M0,0 L10,5 L0,10 z');
+  p.setAttribute('fill', color);
+  m.appendChild(p);
+  defs.appendChild(m);
+})('arrow', '#b4bec9');
+
+let nodeIdCounter = 0;
+let activeRoots = [];
+let busy = false;
+let inDemo = false;
+
+function createNode(key, prio) {
+  return {
+    id: ++nodeIdCounter,
+    key, prio,
+    left: null, right: null,
+    size: 1,
+    x: 450, y: 80, targetX: 450, targetY: 80,
+    hl: '',
+  };
+}
+
+function randPrio() { return Math.floor(Math.random() * 90) + 10; }
+
+/* =========================================================
+   2. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) {
+    await new Promise(r => setTimeout(r, ms / demoSpeed));
+  }
+  if (demoAborted) throw new Error('aborted');
+}
+
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   3. 核心算法
+   ========================================================= */
+function splitByKey(node, key) {
+  if (!node) return [null, null];
+  if (node.key <= key) {
+    const [l, r] = splitByKey(node.right, key);
+    node.right = l;
+    updateSize(node);
+    return [node, r];
+  } else {
+    const [l, r] = splitByKey(node.left, key);
+    node.left = r;
+    updateSize(node);
+    return [l, node];
+  }
+}
+
+function splitByRank(node, k) {
+  if (!node) return [null, null];
+  const leftSize = node.left ? node.left.size : 0;
+  if (leftSize >= k) {
+    const [l, r] = splitByRank(node.left, k);
+    node.left = r;
+    updateSize(node);
+    return [l, node];
+  } else {
+    const [l, r] = splitByRank(node.right, k - leftSize - 1);
+    node.right = l;
+    updateSize(node);
+    return [node, r];
+  }
+}
+
+/* 同步版 merge —— 用于插入 / 删除，正确调用 updateSize */
+function mergeTreap(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  if (a.prio < b.prio) {
+    a.right = mergeTreap(a.right, b);
+    updateSize(a);
+    return a;
+  } else {
+    b.left = mergeTreap(a, b.left);
+    updateSize(b);
+    return b;
+  }
+}
+
+function updateSize(n) {
+  if (!n) return;
+  n.size = 1 + (n.left ? n.left.size : 0) + (n.right ? n.right.size : 0);
+}
+
+/* 兜底：按结构动态计数（不依赖 size 字段） */
+function countNodes(n) {
+  if (!n) return 0;
+  return 1 + countNodes(n.left) + countNodes(n.right);
+}
+
+function collectAll() {
+  const out = [];
+  function dfs(n) { if (!n) return; out.push(n); dfs(n.left); dfs(n.right); }
+  for (const r of activeRoots) dfs(r);
+  return out;
+}
+
+function collectInorder(root) {
+  const out = [];
+  (function dfs(n) { if (!n) return; dfs(n.left); out.push(n); dfs(n.right); })(root);
+  return out;
+}
+
+/* =========================================================
+   4. 布局 & 渲染
+   ========================================================= */
+function positionTree(root, xLeft, xRight, yTop, layerH) {
+  const items = [];
+  (function dfs(n, depth) {
+    if (!n) return;
+    dfs(n.left, depth + 1);
+    items.push({ node: n, depth });
+    dfs(n.right, depth + 1);
+  })(root, 0);
+  if (!items.length) return;
+  const gap = items.length === 1 ? 0 : (xRight - xLeft) / (items.length - 1);
+  for (let i = 0; i < items.length; i++) {
+    items[i].node.targetX = xLeft + i * gap;
+    items[i].node.targetY = yTop + items[i].depth * layerH;
+  }
+}
+
+function drawTree(node, parent) {
+  if (!node) return;
+  if (parent) {
+    const line = document.createElementNS(NS, 'line');
+    const dx = parent.x - node.x;
+    const dy = parent.y - node.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const r = 30;
+    line.setAttribute('x1', node.x + dx / len * r);
+    line.setAttribute('y1', node.y + dy / len * r);
+    line.setAttribute('x2', parent.x - dx / len * r);
+    line.setAttribute('y2', parent.y - dy / len * r);
+    let cls = 'treap-edge';
+    if (node.hl === 'visit') cls += ' path';
+    line.setAttribute('class', cls);
+    line.setAttribute('marker-end', 'url(#arrow)');
+    edgeLayer.appendChild(line);
+  }
+  drawNode(node);
+  drawTree(node.left, node);
+  drawTree(node.right, node);
+}
+
+function drawNode(node) {
+  const g = document.createElementNS(NS, 'g');
+  g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
+  g.setAttribute('class', 'treap-node' + (node.hl ? ' ' + node.hl : ''));
+  const rect = document.createElementNS(NS, 'rect');
+  rect.setAttribute('x', -30); rect.setAttribute('y', -26);
+  rect.setAttribute('width', 60); rect.setAttribute('height', 52);
+  rect.setAttribute('rx', 10);
+  rect.setAttribute('class', 'node-bg');
+  g.appendChild(rect);
+  const keyTxt = document.createElementNS(NS, 'text');
+  keyTxt.setAttribute('class', 'node-key');
+  keyTxt.setAttribute('text-anchor', 'middle');
+  keyTxt.setAttribute('y', -4);
+  keyTxt.setAttribute('dominant-baseline', 'central');
+  keyTxt.textContent = node.key;
+  g.appendChild(keyTxt);
+  const prioTxt = document.createElementNS(NS, 'text');
+  prioTxt.setAttribute('class', 'node-prio');
+  prioTxt.setAttribute('text-anchor', 'middle');
+  prioTxt.setAttribute('y', 14);
+  prioTxt.setAttribute('dominant-baseline', 'central');
+  prioTxt.textContent = 'p:' + node.prio;
+  g.appendChild(prioTxt);
+  nodeLayer.appendChild(g);
+}
+
+function renderAll() {
+  nodeLayer.innerHTML = '';
+  edgeLayer.innerHTML = '';
+  for (const r of activeRoots) if (r) drawTree(r, null);
+  updateRankHint();
+}
+
+function easeInOut(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+
+function animateToTargets(duration = 600) {
+  return new Promise(resolve => {
+    const nodes = collectAll();
+    if (!nodes.length) { resolve(); return; }
+    const starts = nodes.map(n => ({ x: n.x, y: n.y }));
+    const t0 = performance.now();
+    function frame(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      const e = easeInOut(t);
+      for (let i = 0; i < nodes.length; i++) {
+        nodes[i].x = starts[i].x + (nodes[i].targetX - starts[i].x) * e;
+        nodes[i].y = starts[i].y + (nodes[i].targetY - starts[i].y) * e;
+      }
+      renderAll();
+      if (t < 1) requestAnimationFrame(frame);
+      else resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+function snapToTargets() {
+  for (const n of collectAll()) { n.x = n.targetX; n.y = n.targetY; }
+  renderAll();
+}
+
+/* =========================================================
+   5. 状态工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+function clearAllHl() { for (const n of collectAll()) n.hl = ''; }
+
+function setButtonsDisabled(d) {
+  if (inDemo) d = true;
+  const ids = ['btnReset', 'btnSplitByKey', 'btnSplitByRank', 'btnMerge', 'btnInsert', 'btnRemove'];
+  for (const id of ids) document.getElementById(id).disabled = d;
+}
+
+function markSubtree(n, cls) {
+  if (!n) return;
+  n.hl = cls;
+  markSubtree(n.left, cls);
+  markSubtree(n.right, cls);
+}
+
+/* 更新按 size 分裂提示：用 countNodes 动态计数，不依赖 size 字段 */
+function updateRankHint() {
+  const hintEl = document.getElementById('rankHint');
+  if (!hintEl) return;
+  if (activeRoots.length === 1 && activeRoots[0]) {
+    const n = countNodes(activeRoots[0]);
+    hintEl.innerHTML = `左树中序前 <code>k</code> 小，右树剩余节点　（当前单棵树 N = <b>${n}</b>，k ∈ [0, ${n}]）`;
+  } else if (activeRoots.length === 2) {
+    const n1 = activeRoots[0] ? countNodes(activeRoots[0]) : 0;
+    const n2 = activeRoots[1] ? countNodes(activeRoots[1]) : 0;
+    hintEl.innerHTML = `当前是两棵树（左 ${n1} + 右 ${n2} 个节点），需要先 merge 才能再 split`;
+  } else {
+    hintEl.textContent = '左树中序前 k 小，右树剩余节点';
+  }
+}
+
+/* =========================================================
+   6. 初始树
+   ========================================================= */
+function buildInitial() {
+  nodeIdCounter = 0;
+  const n5 = createNode(5, 10);
+  const n3 = createNode(3, 20);
+  const n7 = createNode(7, 30);
+  const n2 = createNode(2, 40);
+  const n4 = createNode(4, 50);
+  const n6 = createNode(6, 60);
+  const n8 = createNode(8, 70);
+  n5.left = n3; n5.right = n7;
+  n3.left = n2; n3.right = n4;
+  n7.left = n6; n7.right = n8;
+  activeRoots = [n5];
+  positionTree(n5, 200, 700, 80, 90);
+  snapToTargets();
+}
+
+/* =========================================================
+   7. 分裂动画
+   ========================================================= */
+async function animatedSplit(value, mode) {
+  if (busy && !inDemo) return;
+  if (activeRoots.length !== 1 || !activeRoots[0]) {
+    setStatus('请先「重置」或「merge 合并」成单棵树后再分裂');
+    return;
+  }
+
+  /* size 模式参数校验（用 countNodes 保底） */
+  if (mode === 'size') {
+    const N = countNodes(activeRoots[0]);
+    if (value < 0 || value > N) {
+      setStatus(`✘ split_by_rank 的参数 k 必须满足 0 ≤ k ≤ N（当前 N = ${N}），请修正`);
+      return;
+    }
+  }
+
+  busy = true;
+  setButtonsDisabled(true);
+  clearAllHl();
+
+  const root = activeRoots[0];
+
+  let cur = root;
+  let k = value;
+  while (cur) {
+    cur.hl = 'visit';
+    renderAll();
+    if (mode === 'key') {
+      setStatus(`【split_by_key】访问 ${cur.key} → ${cur.key <= value ? '归左树' : '归右树'}`);
+    } else {
+      const ls = cur.left ? cur.left.size : 0;
+      setStatus(`【split_by_rank】访问 ${cur.key}（左子树 ${ls} 个，当前 k = ${k}）`);
+    }
+    await tick(430);
+
+    if (mode === 'key') {
+      cur = cur.key <= value ? cur.right : cur.left;
+    } else {
+      const ls = cur.left ? cur.left.size : 0;
+      if (ls >= k) cur = cur.left;
+      else { cur = cur.right; k = k - ls - 1; }
+    }
+  }
+
+  const all = [];
+  (function dfs(n) { if (!n) return; all.push(n); dfs(n.left); dfs(n.right); })(root);
+
+  let leftSize, rightSize;
+  if (mode === 'key') {
+    for (const n of all) n.hl = n.key <= value ? 'left-tree' : 'right-tree';
+    leftSize = all.filter(n => n.key <= value).length;
+    rightSize = all.length - leftSize;
+  } else {
+    const inorder = collectInorder(root);
+    leftSize = Math.max(0, Math.min(value, inorder.length));
+    rightSize = inorder.length - leftSize;
+    for (let i = 0; i < inorder.length; i++) {
+      inorder[i].hl = i < leftSize ? 'left-tree' : 'right-tree';
+    }
+  }
+  renderAll();
+  setStatus(`【split_by_${mode === 'key' ? 'key' : 'rank'}】左树 ${leftSize} 个，右树 ${rightSize} 个`);
+  await tick(800);
+
+  const [leftRoot, rightRoot] = (mode === 'key')
+    ? splitByKey(root, value)
+    : splitByRank(root, value);
+
+  activeRoots = [];
+  if (leftRoot) activeRoots.push(leftRoot);
+  if (rightRoot) activeRoots.push(rightRoot);
+
+  if (leftRoot && rightRoot) {
+    positionTree(leftRoot, 80, 400, 80, 90);
+    positionTree(rightRoot, 500, 820, 80, 90);
+  } else if (leftRoot) {
+    positionTree(leftRoot, 200, 700, 80, 90);
+  } else if (rightRoot) {
+    positionTree(rightRoot, 200, 700, 80, 90);
+  }
+
+  await tick(300);
+  await animateToTargets(700);
+  for (const n of all) n.hl = '';
+  renderAll();
+
+  const lName = leftRoot ? `根=${leftRoot.key}(${leftRoot.size}个)` : '空';
+  const rName = rightRoot ? `根=${rightRoot.key}(${rightRoot.size}个)` : '空';
+  setStatus(`✔ 分裂完成：左树 ${lName}，右树 ${rName}`);
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   8. 合并动画
+   ========================================================= */
+async function animatedMerge() {
+  if (busy && !inDemo) return;
+  if (activeRoots.length !== 2) {
+    setStatus('需要恰好两棵树才能合并（请先执行一次分裂）');
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearAllHl();
+
+  const [a, b] = activeRoots;
+  const result = await mergeVis(a, b, 0);
+
+  activeRoots = [result];
+  clearAllHl();
+  positionTree(result, 200, 700, 80, 90);
+  await animateToTargets(700);
+
+  const n = countNodes(result);
+  setStatus(`✔ 合并完成：两棵树已合并为一棵合法 FHQ Treap（N = ${n}）`);
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+async function mergeVis(a, b, depth) {
+  if (!a) return b;
+  if (!b) return a;
+
+  a.hl = 'compare'; b.hl = 'compare';
+  renderAll();
+  setStatus(`【merge】第 ${depth + 1} 层：比较 a=${a.key}(p${a.prio}) 与 b=${b.key}(p${b.prio})`);
+  await tick(600);
+
+  let result;
+  if (a.prio < b.prio) {
+    a.hl = 'winner'; b.hl = '';
+    renderAll();
+    setStatus(`→ a=${a.key} prio 更小，成为根，递归合并 a.right 与 b`);
+    await tick(520);
+    a.right = await mergeVis(a.right, b, depth + 1);
+    /* ★ 关键修复：合并完右子树后必须重算 a 的 size */
+    updateSize(a);
+    result = a;
+  } else {
+    b.hl = 'winner'; a.hl = '';
+    renderAll();
+    setStatus(`→ b=${b.key} prio 更小，成为根，递归合并 a 与 b.left`);
+    await tick(520);
+    b.left = await mergeVis(a, b.left, depth + 1);
+    /* ★ 关键修复：合并完左子树后必须重算 b 的 size */
+    updateSize(b);
+    result = b;
+  }
+  a.hl = ''; b.hl = '';
+  return result;
+}
+
+/* =========================================================
+   9. 插入动画
+   ========================================================= */
+async function animatedInsert(key) {
+  if (busy && !inDemo) return;
+  if (activeRoots.length !== 1) {
+    setStatus('请先 merge 成单棵树再插入');
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearAllHl();
+
+  const root = activeRoots[0];
+
+  if (!root) {
+    const n = createNode(key, randPrio());
+    activeRoots = [n];
+    positionTree(n, 200, 700, 80, 90);
+    snapToTargets();
+    n.hl = 'new'; renderAll();
+    setStatus(`空树，新节点 ${key} 成为根`);
+    await tick(1000);
+    n.hl = ''; renderAll();
+    busy = false;
+    if (!inDemo) setButtonsDisabled(false);
+    return;
+  }
+
+  let cur = root;
+  while (cur) {
+    cur.hl = 'visit'; renderAll();
+    setStatus(`【插入】查找位置：访问 ${cur.key}（${key} ${key < cur.key ? '<' : key > cur.key ? '>' : '='} ${cur.key}）`);
+    await tick(400);
+    if (key === cur.key) {
+      setStatus(`key = ${key} 已存在，跳过`);
+      await tick(1000);
+      clearAllHl(); renderAll();
+      busy = false;
+      if (!inDemo) setButtonsDisabled(false);
+      return;
+    }
+    cur = key < cur.key ? cur.left : cur.right;
+  }
+
+  clearAllHl(); renderAll();
+  setStatus(`位置确定：split_by_key(${key}) → 新节点 → merge`);
+  await tick(560);
+
+  const [a, b] = splitByKey(root, key);
+  const newNode = createNode(key, randPrio());
+  const merged = mergeTreap(mergeTreap(a, newNode), b);
+
+  activeRoots = [merged];
+  positionTree(merged, 200, 700, 80, 90);
+  newNode.hl = 'new';
+
+  await animateToTargets(700);
+  setStatus(`✔ 插入完成：${key}（prio ${newNode.prio}）已加入`);
+  await tick(1000);
+  newNode.hl = '';
+  renderAll();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   10. 删除动画
+   ========================================================= */
+async function animatedRemove(key) {
+  if (busy && !inDemo) return;
+  if (activeRoots.length !== 1) {
+    setStatus('请先 merge 成单棵树再删除');
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearAllHl();
+
+  const root = activeRoots[0];
+  if (!root) {
+    setStatus('空树，无法删除');
+    busy = false;
+    if (!inDemo) setButtonsDisabled(false);
+    return;
+  }
+
+  let cur = root, found = null;
+  while (cur) {
+    cur.hl = 'visit'; renderAll();
+    setStatus(`【删除】查找目标：访问 ${cur.key}`);
+    await tick(400);
+    if (key === cur.key) { found = cur; break; }
+    cur = key < cur.key ? cur.left : cur.right;
+  }
+
+  if (!found) {
+    setStatus(`✘ 未找到 key = ${key}`);
+    await tick(1100);
+    clearAllHl(); renderAll();
+    busy = false;
+    if (!inDemo) setButtonsDisabled(false);
+    return;
+  }
+
+  clearAllHl();
+  found.hl = 'removing'; renderAll();
+  setStatus(`找到 ${key}(p${found.prio})：split(${key - 1}) 与 split(${key})`);
+  await tick(820);
+
+  const [a, b] = splitByKey(root, key - 1);
+  const [m, c] = splitByKey(b, key);
+
+  if (m) {
+    markSubtree(m, 'removing');
+    renderAll();
+    setStatus(`中间段（含 ${key}，共 ${m.size} 个节点）被丢弃`);
+    await tick(820);
+  }
+
+  const merged = mergeTreap(a, c);
+  activeRoots = merged ? [merged] : [];
+  if (merged) {
+    positionTree(merged, 200, 700, 80, 90);
+    await animateToTargets(700);
+  } else {
+    renderAll();
+  }
+
+  setStatus(`✔ 删除完成：${key} 已移出`);
+  await tick(900);
+  clearAllHl();
+  renderAll();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   11. 自动演示
+   ========================================================= */
+async function autoDemo() {
+  buildInitial();
+  clearAllHl();
+  setStatus('▶ 演示开始：插入 9');
+  await tick(500);
+  await animatedInsert(9);
+  await tick(350);
+
+  setStatus('▶ 演示：split_by_key(4)');
+  await tick(400);
+  await animatedSplit(4, 'key');
+  await tick(350);
+
+  setStatus('▶ 演示：merge 合并');
+  await tick(400);
+  await animatedMerge();
+  await tick(350);
+
+  setStatus('▶ 演示：删除 3');
+  await tick(400);
+  await animatedRemove(3);
+  await tick(350);
+
+  setStatus('▶ 演示：split_by_rank(3) —— 按位置拆');
+  await tick(400);
+  await animatedSplit(3, 'size');
+  await tick(350);
+
+  setStatus('▶ 演示：merge 合并');
+  await tick(400);
+  await animatedMerge();
+  await tick(400);
+
+  setStatus('✔ 演示结束：两种分裂都演示过一遍，全程无一次旋转');
+}
+
+/* =========================================================
+   12. 演示控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const demoModeGroup = document.getElementById('demoModeGroup');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  inDemo = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  setButtonsDisabled(true);
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await autoDemo();
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  inDemo = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  busy = false;
+  setButtonsDisabled(false);
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+/* =========================================================
+   13. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: 'FHQ Treap 是什么', key: true, lines: [
+    'FHQ Treap = 范浩强 Treap，Treap 的 <b>无旋转</b> 实现',
+    '只用两个核心操作：<code>split</code> + <code>merge</code>',
+    '其他操作（插入、删除、区间）都由它们组合而成',
+    '<b>代码短、不易写错</b>，竞赛中最常用的平衡树之一',
+  ]},
+  { icon: '🔀', title: '两种分裂：并列而非互斥', key: true, lines: [
+    '它们依据 <b>不同维度</b>，并不冲突：',
+    '<code>split_by_key</code> —— 依据值域（key 的大小）',
+    '<code>split_by_rank</code> —— 依据位置（中序序号）',
+    '两者可以<b>共存于同一棵 FHQ Treap</b>，服务于不同场景',
+  ]},
+  { icon: '✂️', title: 'split_by_key —— 按值域拆', key: true, lines: [
+    '左树：所有 <code>key ≤ 阈值</code> 的节点',
+    '右树：所有 <code>key > 阈值</code> 的节点',
+    '阈值可以是任意整数（无范围约束）',
+    '<b>用途</b>：有序集合 / map、按 key 查找插入删除',
+  ]},
+  { icon: '🔢', title: 'split_by_rank —— 按位置拆', key: true, lines: [
+    '左树：中序前 <code>k</code> 小的节点',
+    '右树：剩余节点',
+    'k 的范围：<code>0 ≤ k ≤ N</code>（N = 当前节点数）',
+    '向右递归时 <b>k 要减去 (left.size + 1)</b>',
+    '<b>用途</b>：区间操作（翻转、区间加）、可持久化序列',
+  ]},
+  { icon: '🔗', title: 'merge 合并', key: true, lines: [
+    '前提：<code>a</code> 中所有 key <code>&lt;</code> <code>b</code> 中所有 key',
+    '比较 <code>a.prio</code> 与 <code>b.prio</code>，prio 小者当根',
+    '期望 <b>O(log N)</b>，不会退化成链',
+    '两种 split 得到的两棵树都可以用 merge 拼回',
+  ]},
+  { icon: '⚡', title: '高级操作全靠组合', key: true, lines: [
+    '<b>插入</b>：split_by_key(key) → 新节点 → merge',
+    '<b>删除</b>：split_by_key(key-1)、split_by_key(key) → 丢弃中间 → merge',
+    '<b>区间加 / 翻转</b>：split_by_rank(l-1)、split_by_rank(len) → 打标记 → merge',
+    '所有操作都是 <b>O(log N)</b>',
+  ]},
+  { icon: '💾', title: '可持久化优势', key: true, lines: [
+    '无旋转 → split / merge 只修改路径上的 O(log N) 个节点',
+    '把路径上的节点复制一份，就得到了 <b>可持久化 Treap</b>',
+    '旋转版本的 Treap / AVL / Splay 都难以可持久化',
+    '可持久化线段树的思路也源于此',
+  ]},
+  { icon: '⚖️', title: '与旋转 Treap 对比', key: false, lines: [
+    '旋转 Treap 靠左旋 / 右旋维护堆性质',
+    'FHQ Treap <b>完全没有旋转</b>，代码更短',
+    'FHQ Treap 支持区间操作更加自然',
+    'FHQ Treap 可持久化；旋转 Treap 不行',
+    '两者期望复杂度都是 <b>O(log N)</b>',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    el.className = 'k-card' + (card.key ? ' key-point' : '');
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   14. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','len','range','float','int','str','list','dict',
+    'set','tuple','sum','isinstance','random','Optional','Tuple'
+  ]);
+  let html = '', i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '#') {
+      let j = i; while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1;
+      while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+      if (word === 'self') html += '<span class="tok-self">self</span>';
+      else if (KEYWORDS.has(word)) html += '<span class="tok-keyword">' + word + '</span>';
+      else if (BUILTINS.has(word)) html += '<span class="tok-builtin">' + word + '</span>';
+      else if (code[j] === '(') html += '<span class="tok-func">' + word + '</span>';
+      else html += word;
+      i = j; continue;
+    }
+    if (/\d/.test(c)) {
+      let j = i; while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j; continue;
+    }
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+}
+
+/* =========================================================
+   15. 初始化 & 事件
+   ========================================================= */
+renderKnowledge();
+renderPythonCode();
+buildInitial();
+updateDemoUI();
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (busy) return;
+  clearAllHl();
+  buildInitial();
+  setStatus('已重置为一棵初始 FHQ Treap');
+});
+
+document.getElementById('btnSplitByKey').addEventListener('click', () => {
+  animatedSplit(+document.getElementById('keyInput').value, 'key');
+});
+
+document.getElementById('btnSplitByRank').addEventListener('click', () => {
+  animatedSplit(+document.getElementById('rankInput').value, 'size');
+});
+
+document.getElementById('btnMerge').addEventListener('click', () => {
+  animatedMerge();
+});
+
+document.getElementById('btnInsert').addEventListener('click', () => {
+  animatedInsert(+document.getElementById('valInput').value);
+});
+
+document.getElementById('btnRemove').addEventListener('click', () => {
+  animatedRemove(+document.getElementById('valInput').value);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,2726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>栈与队列 · 算法竞赛 Primer</title>
+<style>
+:root{
+  --paper:#fdf7ef; --card:#fffdf9;
+  --ink:#2c2117;   --ink2:#5c4a3a;  --muted:#a5907a;
+  --rule:#ecdcc6;  --rule2:#f3e6d4;
+  --accent:#e2622f; --accent2:#d99b2c; --accent3:#3f8f74;
+  --hl:#fdeada;
+  --serif:"Songti SC","Noto Serif SC","Source Han Serif SC",serif;
+  --sans:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+  --stage-h:528px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:#3b322a;overflow:hidden;-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+#deck{position:relative;width:1280px;height:720px;background:var(--paper);overflow:hidden;
+  transform-origin:center;will-change:transform;box-shadow:0 24px 80px rgba(0,0,0,.42)}
+
+.slide{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .32s ease}
+.slide.on{opacity:1;pointer-events:auto}
+
+/* ---- 头部 0–72 ---- */
+.s-title{position:absolute;left:80px;top:18px;width:780px;z-index:2;
+  font:600 24px/1.28 var(--serif);color:var(--ink);letter-spacing:.02em}
+.qdesc{position:absolute;left:80px;top:48px;width:1120px;z-index:2;
+  display:flex;align-items:baseline;gap:10px;
+  font:400 11px/1.45 var(--sans);color:var(--muted);letter-spacing:.02em}
+.qlabel{flex:0 0 44px;font:600 9.5px/1.45 var(--mono);color:var(--accent);
+  letter-spacing:.08em;text-transform:uppercase}
+.qtext{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pager{position:absolute;right:80px;top:22px;z-index:2;
+  font:500 15px/1 var(--mono);color:var(--ink);letter-spacing:.06em}
+.pager .tot{color:var(--muted);font-size:11px}
+
+.mnum{position:absolute;left:26px;top:80px;font:600 20px/1 var(--mono);color:var(--rule)}
+.mlabel{position:absolute;left:32px;top:130px;writing-mode:vertical-rl;
+  font:500 10px/1 var(--mono);color:var(--muted);letter-spacing:.18em}
+
+/* ---- 横线 ---- */
+.top-rule{position:absolute;left:80px;top:72px;width:1120px;height:1px;background:var(--rule)}
+.top-rule::before{content:"";position:absolute;left:0;top:-1px;width:76px;height:3px;background:var(--accent)}
+.numrule{position:absolute;left:80px;top:116px;width:1120px;height:1px;
+  background-image:linear-gradient(to right,var(--rule2) 0 4px,transparent 4px 8px);
+  background-size:8px 1px;background-repeat:repeat-x}
+.bot-rule{position:absolute;left:80px;top:660px;width:1120px;height:1px;background:var(--rule)}
+
+/* ---- 公式行 80–108 ---- */
+.numline{position:absolute;left:80px;top:80px;width:1120px;z-index:2;
+  font:500 19px/1.4 var(--mono);color:var(--ink2);letter-spacing:.01em}
+.numline b{color:var(--accent);font-weight:700}
+.numline i{color:var(--ink);font-style:normal;background:var(--hl);padding:1px 5px;border-radius:2px}
+
+/* ---- 内容区 ---- */
+.stage-inner{position:absolute;left:80px;top:128px;width:1120px;height:var(--stage-h);z-index:1}
+.grid{display:grid;grid-template-columns:repeat(12,64px);gap:32px;width:1120px}
+.c1-12{grid-column:1/13} .c1-7{grid-column:1/8} .c8-12{grid-column:8/13}
+.c1-5{grid-column:1/6}   .c6-12{grid-column:6/13} .c1-4{grid-column:1/5}
+.c5-12{grid-column:5/13} .c1-6{grid-column:1/7}  .c7-12{grid-column:7/13}
+.c1-8{grid-column:1/9}   .c9-12{grid-column:9/13} .c1-3{grid-column:1/4}
+.c4-12{grid-column:4/13} .c2-11{grid-column:2/12}
+
+.lead{font:400 20px/1.85 var(--sans);color:var(--ink2);letter-spacing:.015em}
+.body{font:400 16px/1.8 var(--sans);color:var(--ink2)}
+.cap{font:500 10px/1.4 var(--mono);color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+.disp{font:600 52px/1.22 var(--serif);color:var(--ink);letter-spacing:.03em}
+.disp .em{color:var(--accent)}
+.big{font:600 32px/1.35 var(--serif);color:var(--ink);letter-spacing:.02em}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:4px;
+  padding:20px 22px;position:relative}
+.panel.accent{border-left:3px solid var(--accent)}
+.panel.gold{border-left:3px solid var(--accent2)}
+.panel.green{border-left:3px solid var(--accent3)}
+.panel.h{display:flex;flex-direction:column}
+.panel.grow{flex:1 1 auto}
+.panel h4{font:600 14px/1.5 var(--sans);color:var(--ink);margin-bottom:8px;letter-spacing:.02em}
+.panel p{font:400 14px/1.75 var(--sans);color:var(--ink2)}
+.panel p+p{margin-top:7px}
+
+.step{display:flex;gap:14px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--rule2)}
+.step:last-child{border-bottom:0}
+.step .n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--ink2);color:var(--paper);
+  font:600 11px/22px var(--mono);text-align:center}
+.step.on .n{background:var(--accent)}
+.step .t{flex:1;font:400 15px/1.65 var(--sans);color:var(--ink2)}
+.step.on .t{color:var(--ink)}
+.step .t b{color:var(--ink);font-weight:600}
+.step .t code, .panel code{font:500 12.5px/1 var(--mono);background:var(--hl);
+  padding:2px 5px;border-radius:2px;color:#a8431c}
+
+.code{background:var(--card);border:1px solid var(--rule);border-radius:4px;overflow:hidden;
+  height:100%;display:flex;flex-direction:column}
+.cbar{flex:0 0 32px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;background:var(--ink);color:var(--paper);
+  font:500 11px/1 var(--mono);letter-spacing:.1em}
+.cbar .lang{opacity:.55}
+ol.cl{list-style:none;counter-reset:l;flex:1 1 auto;padding:14px 0;overflow:hidden;
+  font:400 13.5px/1.72 var(--mono);color:var(--ink2)}
+ol.cl li{counter-increment:l;display:flex;gap:12px;padding:0 14px 0 0;position:relative}
+ol.cl li::before{content:counter(l,decimal-leading-zero);flex:0 0 34px;text-align:right;
+  color:var(--rule);font-size:10.5px}
+ol.cl li.hi{background:var(--hl)}
+ol.cl li.hi::before{color:var(--accent)}
+ol.cl .kw{color:#c2451f;font-weight:700}
+ol.cl .fn{color:#a8741a;font-weight:700}
+ol.cl .cm{color:var(--muted);font-style:italic}
+ol.cl .st{color:#2f7d5e}
+
+table{width:100%;border-collapse:collapse;font:400 13.5px/1.5 var(--sans)}
+thead th{background:var(--ink);color:var(--paper);text-align:left;padding:11px;
+  font:600 11px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+tbody td{padding:9px 11px;border-bottom:1px solid var(--rule2);color:var(--ink2);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:nth-child(even) td{background:rgba(255,255,255,.6)}
+td.k{font-weight:600;color:var(--ink)}
+.tag{display:inline-block;padding:1px 7px;border-radius:2px;
+  font:600 10px/1.5 var(--mono);letter-spacing:.06em}
+.tag.a{background:rgba(226,98,47,.13);color:#c2451f}
+.tag.b{background:rgba(63,143,116,.14);color:#2b6b56}
+.tag.c{background:rgba(217,155,44,.16);color:#9a6c12}
+
+.fig{width:100%;height:auto;display:block}
+.fig .ax{stroke:var(--rule);stroke-width:1}
+.fig .ln{fill:none;stroke:var(--ink2);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.fig .ln-a{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.fig .ln-b{fill:none;stroke:var(--accent3);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.fig .bar{fill:rgba(92,74,58,.13)}
+.fig .bar-a{fill:rgba(226,98,47,.20);stroke:var(--accent);stroke-width:1.3}
+.fig .bar-b{fill:rgba(63,143,116,.18);stroke:var(--accent3);stroke-width:1.3}
+.fig .box{fill:var(--card);stroke:var(--rule);stroke-width:1.4}
+.fig .box-a{fill:rgba(226,98,47,.12);stroke:var(--accent);stroke-width:1.6}
+.fig .box-b{fill:rgba(63,143,116,.13);stroke:var(--accent3);stroke-width:1.6}
+.fig .dot{fill:var(--accent)}
+.fig .tx{font:500 11px var(--mono);fill:var(--muted)}
+.fig .tx-a{font:600 11px var(--mono);fill:var(--accent)}
+.fig .tx-b{font:600 11px var(--mono);fill:var(--accent3)}
+.fig .tx-i{font:600 13px var(--serif);fill:var(--ink)}
+
+.hand{position:absolute;font:500 13px/1.5 "Kaiti SC","STKaiti",var(--serif);
+  color:var(--accent);opacity:0;transform:rotate(-2.2deg);
+  letter-spacing:.04em;z-index:5;pointer-events:none}
+.hand.show{opacity:.85;transition:opacity .5s ease}
+
+.watermark{position:absolute;right:-50px;top:110px;font:700 230px/1 var(--serif);
+  color:var(--ink);opacity:.055;user-select:none;pointer-events:none;letter-spacing:-.04em;z-index:0}
+
+/* ---- 尾部 660–720 ---- */
+.ruler{position:absolute;left:80px;top:666px;width:1120px;display:flex;gap:6px}
+.ruler button{flex:1 1 auto;min-width:160px;height:16px;border:0;border-radius:2px;cursor:pointer;
+  background:rgba(92,74,58,.13);display:flex;align-items:center;justify-content:center;
+  font:500 9.5px/1 var(--mono);color:var(--ink2);letter-spacing:.12em;
+  transition:background .22s ease,color .22s ease}
+.ruler button:hover{background:rgba(226,98,47,.22);color:var(--accent)}
+.ruler button.on{background:var(--accent);color:#fff}
+.botline{position:absolute;left:80px;bottom:5px;width:1120px;
+  display:flex;align-items:baseline;justify-content:space-between}
+.eyebrow{font:500 10.5px/1.3 var(--mono);color:var(--muted);letter-spacing:.16em;text-transform:uppercase}
+.help{font:400 9.5px/1.3 var(--sans);color:var(--muted);letter-spacing:.06em}
+.bmark{font:600 10.5px/1.3 var(--mono);color:var(--ink2);letter-spacing:.2em}
+
+.linklist{display:flex;flex-direction:column;gap:0}
+.link{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--rule2);
+  text-decoration:none}
+.link:last-child{border-bottom:0}
+.link .lv{flex:0 0 56px;font:700 10px/1 var(--mono);letter-spacing:.08em;
+  padding:5px 0;text-align:center;border-radius:2px}
+.link .lv.e{background:rgba(63,143,116,.16);color:#2b6b56}
+.link .lv.m{background:rgba(217,155,44,.2);color:#9a6c12}
+.link .lv.h{background:rgba(226,98,47,.17);color:#c2451f}
+.link .ln2{flex:1;font:500 14px/1.5 var(--sans);color:var(--ink)}
+.link .ln2 small{display:block;font:400 11px/1.5 var(--sans);color:var(--muted);letter-spacing:.02em}
+.link .lgo{font:500 11px/1 var(--mono);color:var(--accent);letter-spacing:.1em}
+.link:hover .ln2{color:var(--accent)}
+
+.anim{opacity:0;transform:translateY(8px)}
+.slide.play .anim{opacity:1;transform:none;
+  transition:opacity .5s ease,transform .5s cubic-bezier(.22,.8,.28,1)}
+.slide.play .anim.d1{transition-delay:.12s}
+.slide.play .anim.d2{transition-delay:.24s}
+.slide.play .anim.d3{transition-delay:.36s}
+.slide.play .anim.d4{transition-delay:.48s}
+.slide.play .anim.d5{transition-delay:.6s}
+
+.draw{stroke-dasharray:var(--L);stroke-dashoffset:var(--L)}
+.slide.play .draw{stroke-dashoffset:0;transition:stroke-dashoffset 1.1s cubic-bezier(.3,.7,.3,1)}
+.slide.play .draw.d1{transition-delay:.18s}
+.slide.play .draw.d2{transition-delay:.36s}
+.slide.play .draw.d3{transition-delay:.54s}
+
+@keyframes pop{0%{opacity:0;transform:translateY(10px)}100%{opacity:1;transform:none}}
+.slide.play .anim{animation:none}
+@media(prefers-reduced-motion:reduce){
+  .anim,.slide.play .anim{opacity:1;transform:none;transition:none}
+  .draw,.slide.play .draw{stroke-dasharray:none;stroke-dashoffset:0;transition:none}
+  .hand.show{transition:none}
+}
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="deck">
+
+<!-- ═════════ 01 封面 ═════════ -->
+<section class="slide" data-ch="起点" data-num="01" data-ml="STACK &amp; QUEUE" data-wm="栈">
+  <div class="s-title">算法中的「栈」与「队列」</div>
+  <div class="qdesc"><span class="qlabel">定位</span><span class="qtext">算法竞赛基础课 · 50 分钟 · 面向已掌握基础语法、正在学数据结构的学习者</span></div>
+  <div class="numline anim">主线 = <i>限制访问顺序</i> → 衍生 <b>嵌套</b> · <b>层次</b> · <b>单调</b> · <b>优先级</b> 四种思维模型</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-7 anim d1" style="display:flex;flex-direction:column;justify-content:center;gap:26px">
+        <div>
+          <div class="cap" style="margin-bottom:14px">ALGORITHM PRIMER · 01</div>
+          <div class="disp">栈与队列<span class="em">.</span></div>
+          <div class="big" style="margin-top:16px;color:var(--ink2);font-size:22px">不只是两个容器，是两套<span style="color:var(--accent)">思考问题的方式</span></div>
+        </div>
+        <div class="panel accent">
+          <p>今天不背模板。<b>每个结构出现之前，先看它要解决什么问题</b>；每次换结构，都说清楚「为什么要换」。</p>
+        </div>
+        <div class="cap">50 MIN · 40 SLIDES · PYTHON · LEETCODE + 洛谷</div>
+      </div>
+      <div class="c8-12 anim d2">
+        <svg class="fig" viewBox="0 0 500 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="30">FOUR MENTAL MODELS</text>
+          <g>
+            <rect class="box-a anim d2" x="20" y="52" width="220" height="106" rx="4"/>
+            <text class="tx-a" x="38" y="82">01 / LIFO</text>
+            <text class="tx-i" x="38" y="112">嵌套 · 未决 · 回退</text>
+            <text class="tx" x="38" y="138">括号 / 表达式 / 递归</text>
+          </g>
+          <g>
+            <rect class="box-b anim d3" x="260" y="52" width="220" height="106" rx="4"/>
+            <text class="tx-b" x="278" y="82">02 / FIFO</text>
+            <text class="tx-i" x="278" y="112">分层 · 顺序处理</text>
+            <text class="tx" x="278" y="138">BFS / 拓扑 / 任务调度</text>
+          </g>
+          <g>
+            <rect class="box anim d4" x="20" y="182" width="220" height="106" rx="4" style="stroke:var(--accent2)"/>
+            <text x="38" y="212" style="font:600 11px var(--mono);fill:#9a6c12">03 / MONOTONE</text>
+            <text class="tx-i" x="38" y="242">候选集裁剪</text>
+            <text class="tx" x="38" y="268">单调栈 / 单调队列</text>
+          </g>
+          <g>
+            <rect class="box anim d5" x="260" y="182" width="220" height="106" rx="4" style="stroke:var(--ink2)"/>
+            <text class="tx" x="278" y="212">04 / PRIORITY</text>
+            <text class="tx-i" x="278" y="242">全局最优优先</text>
+            <text class="tx" x="278" y="268">堆 / Top-K / Dijkstra</text>
+          </g>
+          <path class="ln-a draw d2" d="M130 288 L130 330 L370 330 L370 288" style="--L:320"/>
+          <text class="tx-a" x="205" y="352">O(n²) → O(n) 的关键跃迁</text>
+          <rect class="box anim d5" x="20" y="382" width="460" height="118" rx="4"/>
+          <text class="tx" x="40" y="412">TODAY'S ROUTE</text>
+          <path class="ln draw d5" d="M40 450 L460 450" style="--L:420"/>
+          <circle class="dot" cx="60" cy="450" r="5"/><circle class="dot" cx="190" cy="450" r="5"/>
+          <circle class="dot" cx="320" cy="450" r="5"/><circle class="dot" cx="450" cy="450" r="5"/>
+          <text class="tx" x="40" y="482">起点</text><text class="tx" x="168" y="482">栈 / 队列</text>
+          <text class="tx" x="292" y="482">单调结构</text><text class="tx" x="418" y="482">应用</text>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" style="left:120px;top:452px" data-at="2600">↑ 今天只要记住这一行</div>
+  </div>
+</section>
+
+<!-- ═════════ 02 路线图 ═════════ -->
+<section class="slide" data-ch="起点" data-num="02" data-ml="ROADMAP" data-wm="栈">
+  <div class="s-title">50 分钟路线图：每一站解决一个具体问题</div>
+  <div class="qdesc"><span class="qlabel">路线</span><span class="qtext">先看到问题的痛点，再引出结构；换结构时一定说清「为什么变」</span></div>
+  <div class="numline anim">学习路径 = <i>痛点 → 结构 → 证明 → 代码</i>，<b>四步一循环</b>，不跳步</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1" style="height:212px">
+        <svg class="fig" viewBox="0 0 1120 212" preserveAspectRatio="xMidYMid meet">
+          <path class="ln draw" d="M60 96 L1060 96" style="--L:1000"/>
+          <g>
+            <circle class="dot" cx="60" cy="96" r="9"/><text class="tx-a" x="42" y="72">00</text>
+            <text class="tx-i" x="30" y="132">起点</text><text class="tx" x="18" y="156">为什么限制顺序</text>
+          </g>
+          <g>
+            <circle class="dot" cx="260" cy="96" r="9"/><text class="tx-a" x="242" y="72">01</text>
+            <text class="tx-i" x="228" y="132">栈</text><text class="tx" x="200" y="156">嵌套 / 未决 / 回退</text>
+          </g>
+          <g>
+            <circle class="dot" cx="460" cy="96" r="9"/><text class="tx-a" x="442" y="72">02</text>
+            <text class="tx-i" x="428" y="132">队列</text><text class="tx" x="400" y="156">分层 / 最短路</text>
+          </g>
+          <g>
+            <circle class="dot" cx="660" cy="96" r="9"/><text class="tx-a" x="642" y="72">03</text>
+            <text class="tx-i" x="612" y="132">单调结构</text><text class="tx" x="592" y="156">O(n²) → O(n)</text>
+          </g>
+          <g>
+            <circle class="dot" cx="860" cy="96" r="9"/><text class="tx-a" x="842" y="72">04</text>
+            <text class="tx-i" x="828" y="132">应用</text><text class="tx" x="800" y="156">堆 / 拓扑 / 模拟</text>
+          </g>
+          <g>
+            <circle class="dot" cx="1060" cy="96" r="9"/><text class="tx-a" x="1030" y="72">05</text>
+            <text class="tx-i" x="1016" y="132">题单</text><text class="tx" x="1000" y="156">分类刷题路径</text>
+          </g>
+        </svg>
+      </div>
+      <div class="c1-4 anim d2">
+        <div class="panel h grow accent">
+          <h4>今天解决的 5 个问题</h4>
+          <div class="step on"><div class="n">1</div><div class="t">重复扫描太慢，<b>能不能只看一次</b>？</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">嵌套结构怎么<b>自动配对</b>？</div></div>
+          <div class="step"><div class="n">3</div><div class="t">图上<b>最短步数</b>怎么保证正确？</div></div>
+          <div class="step"><div class="n">4</div><div class="t">窗口滑动时<b>最值</b>怎么 O(1) 取？</div></div>
+          <div class="step"><div class="n">5</div><div class="t">什么时候该用<b>堆</b>？</div></div>
+        </div>
+      </div>
+      <div class="c5-12 anim d3">
+        <div class="panel h grow">
+          <h4>时间分配（50 分钟）</h4>
+          <table>
+            <thead><tr><th style="width:112px">时长</th><th style="width:150px">内容</th><th>核心产出</th></tr></thead>
+            <tbody>
+              <tr><td>0 – 5 min</td><td class="k">起点</td><td>建立「限制访问顺序」的统一视角</td></tr>
+              <tr><td>5 – 18 min</td><td class="k">栈</td><td>括号、表达式、递归转迭代、最小栈</td></tr>
+              <tr><td>18 – 28 min</td><td class="k">队列</td><td>BFS 模板 + 分层正确性证明</td></tr>
+              <tr><td>28 – 42 min</td><td class="k">单调结构</td><td>单调栈 / 单调队列的统一推导</td></tr>
+              <tr><td>42 – 50 min</td><td class="k">应用 + 题单</td><td>堆、拓扑、分类刷题清单</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:820px;top:470px" data-at="2600">← 后面 14 分钟是今天的重头戏</div>
+  </div>
+</section>
+
+<!-- ═════════ 03 为什么要限制顺序 ═════════ -->
+<section class="slide" data-ch="起点" data-num="03" data-ml="THE PAIN" data-wm="栈">
+  <div class="s-title">痛点：每次都要回头看，就一定有重复劳动</div>
+  <div class="qdesc"><span class="qlabel">问题</span><span class="qtext">对数组每个元素，找它右边第一个比它大的数——暴力怎么做？慢在哪？</span></div>
+  <div class="numline anim">暴力 = 对每个 <i>a[i]</i> 向右扫到 <b>O(n²)</b>；浪费在<b>「同一个元素被反复比较」</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-6 anim d1">
+        <div class="panel h grow">
+          <h4>暴力做法</h4>
+          <p>双层循环：外层定 <code>i</code>，内层从 <code>i+1</code> 往右找第一个更大的。</p>
+          <div class="step" style="margin-top:10px"><div class="n">O</div><div class="t">时间复杂度 <b>O(n²)</b>，n = 10⁵ 就卡死</div></div>
+          <div class="step"><div class="n">?</div><div class="t">慢在哪里？<b>元素被反复比较</b></div></div>
+        </div>
+      </div>
+      <div class="c7-12 anim d2" style="height:100%">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="10" y="26">BRUTE FORCE · O(n²) COMPARISONS</text>
+          <g>
+            <rect class="bar" x="10" y="44" width="34" height="34" rx="3"/><text class="tx-i" x="20" y="67">3</text>
+            <rect class="bar" x="52" y="44" width="34" height="34" rx="3"/><text class="tx-i" x="62" y="67">1</text>
+            <rect class="bar-a" x="94" y="44" width="34" height="34" rx="3"/><text class="tx-a" x="104" y="67">4</text>
+            <rect class="bar" x="136" y="44" width="34" height="34" rx="3"/><text class="tx-i" x="146" y="67">1</text>
+            <rect class="bar" x="178" y="44" width="34" height="34" rx="3"/><text class="tx-i" x="188" y="67">5</text>
+            <rect class="bar" x="220" y="44" width="34" height="34" rx="3"/><text class="tx-i" x="230" y="67">9</text>
+            <rect class="bar" x="262" y="44" width="34" height="34" rx="3"/><text class="tx-i" x="272" y="67">2</text>
+            <rect class="bar" x="304" y="44" width="34" height="34" rx="3"/><text class="tx-i" x="314" y="67">6</text>
+            <text class="tx" x="360" y="67">a[ ]</text>
+          </g>
+          <text class="tx-a" x="10" y="110">i = 2（值为 4）向右比较</text>
+          <path class="ln-a draw" d="M110 92 L196 92 M196 92 L258 92" style="--L:160"/>
+          <text class="tx" x="10" y="140">i = 4（值为 5）向右比较</text>
+          <path class="ln draw d1" d="M194 122 L258 122" style="--L:64"/>
+          <text class="tx" x="10" y="170">i = 6（值为 2）向右比较</text>
+          <path class="ln draw d2" d="M276 152 L318 152" style="--L:42"/>
+          <text class="tx" x="10" y="196">↑ 4 和 2 都跟 6 比较过 —— 重复劳动</text>
+
+          <line class="ax" x1="10" y1="232" x2="534" y2="232"/>
+          <text class="tx-b" x="10" y="262">KEY INSIGHT · 关键观察</text>
+          <rect class="box-b" x="10" y="282" width="524" height="102" rx="4"/>
+          <text class="tx-i" x="30" y="316">如果 a[j] 已经被 a[i]（i &lt; j）「挡住了」，</text>
+          <text class="tx-i" x="30" y="344">那么 a[j] 之后再找答案时，a[i] 就<b>永远不需要再看</b>。</text>
+          <text class="tx" x="30" y="372">→ 该元素可以被永久丢弃。</text>
+
+          <rect class="box-a" x="10" y="410" width="524" height="98" rx="4"/>
+          <text class="tx-a" x="30" y="442">于是我们需要一种结构：</text>
+          <text class="tx-i" x="30" y="472">只保存「还没解决的元素」，且能按约定顺序取出。</text>
+          <text class="tx" x="30" y="498">这正是 —— 栈 / 队列。</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 04 两种限制 ═════════ -->
+<section class="slide" data-ch="起点" data-num="04" data-ml="LIFO VS FIFO" data-wm="栈">
+  <div class="s-title">两种访问限制：LIFO 与 FIFO</div>
+  <div class="qdesc"><span class="qlabel">概念</span><span class="qtext">数据结构的差别，本质上只是「允许你先拿哪一个」的差别</span></div>
+  <div class="numline anim">抽象数据类型 = <i>接口 + 约束</i>；栈约束 <b>后进先出</b>，队列约束 <b>先进先出</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1" style="height:320px">
+        <svg class="fig" viewBox="0 0 1120 320" preserveAspectRatio="xMidYMid meet">
+          <text class="tx-a" x="80" y="26">STACK · LIFO</text>
+          <text class="tx-b" x="700" y="26">QUEUE · FIFO</text>
+
+          <!-- 栈 -->
+          <g>
+            <rect class="box" x="80" y="52" width="220" height="230" rx="4"/>
+            <rect class="bar-a anim d2" x="94" y="212" width="192" height="32" rx="3"/>
+            <text class="tx-a" x="176" y="233">A</text>
+            <rect class="bar-a anim d1" x="94" y="172" width="192" height="32" rx="3"/>
+            <text class="tx-a" x="176" y="193">B</text>
+            <rect class="bar-a anim d1" x="94" y="132" width="192" height="32" rx="3"/>
+            <text class="tx-a" x="176" y="153">C</text>
+            <rect class="bar-a anim d2" x="94" y="92" width="192" height="32" rx="3"/>
+            <text class="tx-a" x="176" y="113">D</text>
+            <path class="ln-a draw" d="M420 74 L340 74 M420 100 L340 100" style="--L:180"/>
+            <text class="tx-a" x="432" y="80">push 进</text>
+            <text class="tx-a" x="432" y="106">pop 出 ← 只能动顶端</text>
+            <path class="ln draw d2" d="M190 300 L190 320" style="--L:22"/>
+            <text class="tx" x="80" y="316">bottom</text>
+          </g>
+
+          <!-- 队列 -->
+          <g>
+            <rect class="box" x="700" y="52" width="380" height="120" rx="4"/>
+            <rect class="bar-b anim d1" x="714" y="82" width="82" height="60" rx="3"/>
+            <text class="tx-b" x="748" y="118">A</text>
+            <rect class="bar-b anim d2" x="806" y="82" width="82" height="60" rx="3"/>
+            <text class="tx-b" x="840" y="118">B</text>
+            <rect class="bar-b anim d3" x="898" y="82" width="82" height="60" rx="3"/>
+            <text class="tx-b" x="932" y="118">C</text>
+            <rect class="bar-b anim d4" x="990" y="82" width="76" height="60" rx="3"/>
+            <text class="tx-b" x="1022" y="118">D</text>
+            <path class="ln-b draw d1" d="M640 66 L700 66" style="--L:60"/>
+            <text class="tx-b" x="560" y="62">enqueue 进</text>
+            <path class="ln-b draw d2" d="M1090 172 L1030 172 M1090 146 L1030 146" style="--L:130"/>
+            <text class="tx-b" x="1080" y="196">dequeue 出 ← 只能动队头</text>
+            <text class="tx" x="700" y="212">head ↑ 先进的先被处理</text>
+          </g>
+
+          <rect class="box-a" x="80" y="230" width="0" height="0"/>
+          <text class="tx-i" x="700" y="256">差别不在实现，在于<b>语义</b>：</text>
+          <text class="tx-i" x="700" y="286">栈 = 「最近发生的最先处理」</text>
+          <text class="tx-i" x="700" y="312">队列 = 「最早发生的最先处理」</text>
+        </svg>
+      </div>
+      <div class="c1-4 anim d2">
+        <div class="panel h grow accent">
+          <h4>什么时候用栈</h4>
+          <p>问题里出现<b>「嵌套」「配对」「撤销」「最近」「回退」</b>这些词。</p>
+          <p>典型：括号匹配、表达式、DFS、路径压缩。</p>
+        </div>
+      </div>
+      <div class="c5-12 anim d3">
+        <div class="panel h grow green">
+          <h4>什么时候用队列</h4>
+          <p>问题里出现<b>「按顺序」「同时进行」「层次」「最短步数」「公平」</b>这些词。</p>
+          <p>典型：BFS、拓扑排序、任务调度、滑动窗口。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 05 栈的定义 ═════════ -->
+<section class="slide" data-ch="栈" data-num="05" data-ml="STACK ADT" data-wm="栈">
+  <div class="s-title">栈：定义、接口与复杂度</div>
+  <div class="qdesc"><span class="qlabel">定义</span><span class="qtext">只在一端（栈顶）进行插入删除的线性结构</span></div>
+  <div class="numline anim">栈接口 = <i>push / pop / top / empty</i>，四操作均 <b>均摊 O(1)</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-6 anim d1" style="height:100%">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="28">ARRAY-BASED STACK</text>
+          <rect class="box" x="20" y="60" width="440" height="300" rx="4"/>
+          <rect class="bar-a anim d1" x="36" y="86" width="408" height="52" rx="3"/><text class="tx-a" x="222" y="118">top → 9</text>
+          <rect class="bar" x="36" y="148" width="408" height="52" rx="3"/><text class="tx-i" x="222" y="180">7</text>
+          <rect class="bar" x="36" y="210" width="408" height="52" rx="3"/><text class="tx-i" x="222" y="242">4</text>
+          <rect class="bar" x="36" y="272" width="408" height="52" rx="3"/><text class="tx-i" x="222" y="304">2</text>
+          <path class="ln-a draw d2" d="M486 112 L516 112 M486 86 L516 86" style="--L:90"/>
+          <text class="tx-a" x="380" y="404">top 指针 = 栈内元素个数 - 1</text>
+          <text class="tx" x="380" y="432">栈空 ⇔ top == -1</text>
+          <text class="tx-i" x="20" y="412">push ：a[++top] = x</text>
+          <text class="tx-i" x="20" y="442">pop  ：return a[top--]</text>
+          <text class="tx-i" x="20" y="472">top  ：return a[top]</text>
+          <text class="tx" x="20" y="506">空间 O(n)，无指针开销，缓存友好</text>
+        </svg>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:22px">
+        <div class="panel accent anim d2">
+          <h4>四个接口的语义</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><code>push(x)</code> 放到<b>栈顶</b>，旧的暂时看不见</div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><code>pop()</code> 取走<b>栈顶</b>，顺序不可跳过</div></div>
+          <div class="step"><div class="n">3</div><div class="t"><code>top()</code> 只看不取，用于<b>决策</b></div></div>
+          <div class="step"><div class="n">4</div><div class="t"><code>empty()</code> 判空，<b>pop 前必查</b></div></div>
+        </div>
+        <div class="panel gold anim d3">
+          <h4>为什么是「均摊 O(1)」而不是「最坏 O(1)」</h4>
+          <p>数组扩容时一次 <code>push</code> 是 O(n)，但 n 次 <code>push</code> 总代价仍是 O(n)，<b>均摊下来 O(1)</b>。竞赛中直接写 O(1) 就行。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>栈的「隐藏能力」</h4>
+          <p>栈顶永远是<b>「最新且未解决」的元素</b>。这个性质是后面单调栈的全部来源——记住这句话。</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:300px;top:400px" data-at="2500">↑ 这句话后面会反复用到</div>
+  </div>
+</section>
+
+<!-- ═════════ 06 栈实现 + Python ═════════ -->
+<section class="slide" data-ch="栈" data-num="06" data-ml="IMPLEMENT" data-wm="栈">
+  <div class="s-title">Python 实现：用 list，但别用错</div>
+  <div class="qdesc"><span class="qlabel">代码</span><span class="qtext">Python 的 list 就是动态数组，append/pop(末尾) 都是均摊 O(1)</span></div>
+  <div class="numline anim">用 <i>list.append / list.pop</i> 当栈；<b>禁止 pop(0)</b>（那是 O(n) 的队列行为）</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-7 anim d1">
+        <div class="code">
+          <div class="cbar"><span>stack_basic.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">class</span> <span class="fn">Stack</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span>(self):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self._a = []&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 动态数组</span></li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">push</span>(self, x):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self._a.<span class="fn">append</span>(x)&nbsp;&nbsp;&nbsp;<span class="cm"># O(1) 均摊</span></li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">pop</span>(self):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> <span class="kw">not</span> self._a: <span class="kw">raise</span> <span class="fn">IndexError</span>(<span class="st">"pop from empty"</span>)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> self._a.<span class="fn">pop</span>()&nbsp;&nbsp;<span class="cm"># O(1)</span></li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">top</span>(self):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> self._a[-<span class="st">1</span>]</li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">empty</span>(self):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">not</span> self._a</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 竞赛里通常直接写 st = []，不必封装类</li>
+            <li class="cm"># st.append(x)  /  st.pop()  /  st[-1]</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:22px">
+        <div class="panel accent anim d2">
+          <h4>⚠️ 三个常见坑</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><code>st.pop(0)</code> 是 <b>O(n)</b>，会把你的栈变慢</div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><code>st[-1]</code> 前<b>必须判空</b>，否则 IndexError</div></div>
+          <div class="step"><div class="n">3</div><div class="t">递归深度超 <b>1000</b> 会爆栈，需转迭代</div></div>
+        </div>
+        <div class="panel gold anim d3">
+          <h4>什么时候用 collections.deque</h4>
+          <p>只需要栈时 <code>list</code> 更快；<b>既当栈又当队列</b>时用 <code>deque</code>（两端操作都是 O(1)）。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>竞赛速写模板</h4>
+          <p><code>st = []</code><br><code>st.append(x)</code> &nbsp;·&nbsp; <code>st.pop()</code><br><code>while st and 条件: ...</code></p>
+          <p style="margin-top:8px">这个 <code>while st and ...</code> 的写法，是后面<b>所有单调栈题的骨架</b>。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 07 括号匹配 ═════════ -->
+<section class="slide" data-ch="栈" data-num="07" data-ml="BRACKETS" data-wm="栈">
+  <div class="s-title">应用① 括号匹配：最近的左括号配最近的右括号</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">给定只含 ( ) [ ] { } 的字符串，判断括号是否合法匹配（如 "([]{})" 合法，"([)]" 不合法）</span></div>
+  <div class="numline anim">匹配规则 = 遇左括号<b>入栈</b>，遇右括号看 <i>栈顶</i> 是否配对，<b>最后栈必须为空</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1" style="height:186px">
+        <svg class="fig" viewBox="0 0 1120 186" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="10" y="24">INPUT</text>
+          <g>
+            <rect class="bar" x="10" y="38" width="56" height="42" rx="3"/><text class="tx-i" x="30" y="66">(</text>
+            <rect class="bar-a anim d1" x="74" y="38" width="56" height="42" rx="3"/><text class="tx-a" x="94" y="66">[</text>
+            <rect class="bar-a anim d1" x="138" y="38" width="56" height="42" rx="3"/><text class="tx-a" x="158" y="66">{</text>
+            <rect class="bar-a anim d2" x="202" y="38" width="56" height="42" rx="3"/><text class="tx-a" x="222" y="66">}</text>
+            <rect class="bar-a anim d2" x="266" y="38" width="56" height="42" rx="3"/><text class="tx-a" x="286" y="66">]</text>
+            <rect class="bar-a anim d3" x="330" y="38" width="56" height="42" rx="3"/><text class="tx-a" x="350" y="66">)</text>
+          </g>
+          <text class="tx" x="10" y="112">STACK STATE</text>
+          <g>
+            <rect class="box" x="10" y="126" width="376" height="46" rx="4"/>
+            <rect class="bar-a anim d1" x="22" y="134" width="110" height="30" rx="3"/><text class="tx-a" x="58" y="155">(</text>
+            <rect class="bar-a anim d1" x="140" y="134" width="110" height="30" rx="3"/><text class="tx-a" x="180" y="155">[</text>
+            <rect class="bar-a anim d1" x="258" y="134" width="110" height="30" rx="3"/><text class="tx-a" x="300" y="155">{</text>
+            <text class="tx-a" x="400" y="155">← 入栈三次</text>
+          </g>
+          <path class="ln-a draw d2" d="M480 60 L560 60 M560 60 L560 140 M560 140 L480 140" style="--L:240"/>
+          <text class="tx-a" x="578" y="106">遇到 } → 栈顶是 { → 配对成功，pop</text>
+
+          <rect class="box-b" x="700" y="38" width="410" height="134" rx="4"/>
+          <text class="tx-b" x="722" y="70">WHY STACK WORKS</text>
+          <text class="tx-i" x="722" y="102">右括号只能配「最近未闭合」的左括号，</text>
+          <text class="tx-i" x="722" y="130">这正是 <b>LIFO</b> 的定义。</text>
+          <text class="tx" x="722" y="158">栈内永远是「当前打开着的括号序列」。</text>
+        </svg>
+      </div>
+      <div class="c1-7 anim d2">
+        <div class="code" style="height:330px">
+          <div class="cbar"><span>valid_parentheses.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">is_valid</span>(s: <span class="fn">str</span>) -&gt; <span class="fn">bool</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;pair = {<span class="st">')'</span>: <span class="st">'('</span>, <span class="st">']'</span>: <span class="st">'['</span>, <span class="st">'}'</span>: <span class="st">'{'</span>}</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;st = []</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> ch <span class="kw">in</span> s:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> ch <span class="kw">in</span> <span class="st">'([{'</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.<span class="fn">append</span>(ch)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">else</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> <span class="kw">not</span> st <span class="kw">or</span> st[-<span class="st">1</span>] != pair[ch]:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">False</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.<span class="fn">pop</span>()</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">not</span> st&nbsp;&nbsp;&nbsp;<span class="cm"># 栈空才合法</span></li>
+          </ol>
+        </div>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:20px">
+        <div class="panel accent anim d3">
+          <h4>三处必须写对</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><code>not st</code> 判空 → 避免越界</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">右括号时先查<b>栈顶是否配对</b></div></div>
+          <div class="step"><div class="n">3</div><div class="t">结束后 <b>栈必须为空</b>（防 "((("）</div></div>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>扩展题</h4>
+          <p>· 只有一种括号：<b>计数器</b>即可，不用栈<br>· 要求<b>最少插入</b>：贪心 + 计数<br>· 要求<b>最长合法子串</b>：见下一页链接</p>
+          <div class="linklist" style="margin-top:10px">
+            <a class="link" href="https://leetcode.cn/problems/valid-parentheses/" target="_blank"><span class="lv e">EASY</span><span class="ln2">20 · 有效的括号<small>今天这题的原型</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/longest-valid-parentheses/" target="_blank"><span class="lv h">HARD</span><span class="ln2">32 · 最长有效括号<small>栈存下标的经典升级</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1241" target="_blank"><span class="lv m">MID</span><span class="ln2">P1241 · 括号序列<small>洛谷 · 输出补全后的括号</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:420px" data-at="2600">↑ 「not st」这一行是全场最容易漏的</div>
+  </div>
+</section>
+
+<!-- ═════════ 08 表达式求值 ═════════ -->
+<section class="slide" data-ch="栈" data-num="08" data-ml="EXPRESSION" data-wm="栈">
+  <div class="s-title">应用② 表达式求值：两个栈各管一件事</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">给定算术表达式字符串，含 + - * / 与括号和空格，计算其值（如 "2*(3+4)-5" = 9）</span></div>
+  <div class="numline anim">双栈法 = <i>数字栈</i> 存操作数，<i>运算符栈</i> 存<b>优先级递减</b>的未决运算</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1" style="height:172px">
+        <svg class="fig" viewBox="0 0 1120 172" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="10" y="24">3 + 4 × 2 - 6 ÷ 3</text>
+          <text class="tx-a" x="10" y="60">NUM STACK</text>
+          <rect class="box" x="10" y="72" width="330" height="46" rx="4"/>
+          <rect class="bar-a anim d1" x="20" y="80" width="70" height="30" rx="3"/><text class="tx-a" x="44" y="101">3</text>
+          <rect class="bar-a anim d2" x="98" y="80" width="70" height="30" rx="3"/><text class="tx-a" x="122" y="101">4</text>
+          <rect class="bar-a anim d3" x="176" y="80" width="70" height="30" rx="3"/><text class="tx-a" x="200" y="101">2</text>
+          <text class="tx" x="10" y="150">→ 遇到 - 时，先把 4×2 算完</text>
+
+          <text class="tx-b" x="420" y="60">OP STACK</text>
+          <rect class="box" x="420" y="72" width="330" height="46" rx="4"/>
+          <rect class="bar-b anim d1" x="430" y="80" width="70" height="30" rx="3"/><text class="tx-b" x="456" y="101">+</text>
+          <rect class="bar-b anim d2" x="508" y="80" width="70" height="30" rx="3"/><text class="tx-b" x="534" y="101">×</text>
+          <text class="tx" x="420" y="150">→ 栈内优先级<b>单调递减</b>，可直接 pop 结算</text>
+
+          <rect class="box-a" x="810" y="30" width="300" height="122" rx="4"/>
+          <text class="tx-a" x="832" y="62">RULE</text>
+          <text class="tx-i" x="832" y="94">新运算符优先级 ≤ 栈顶</text>
+          <text class="tx-i" x="832" y="122">→ 先结算栈顶，再入栈</text>
+          <text class="tx" x="832" y="148">这就是<b>单调栈</b>的雏形！</text>
+        </svg>
+      </div>
+      <div class="c1-7 anim d2">
+        <div class="code" style="height:344px">
+          <div class="cbar"><span>eval_expr.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">eval_expr</span>(s: <span class="fn">str</span>) -&gt; <span class="fn">int</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;prec = {<span class="st">'+'</span>: <span class="st">1</span>, <span class="st">'-'</span>: <span class="st">1</span>, <span class="st">'*'</span>: <span class="st">2</span>, <span class="st">'/'</span>: <span class="st">2</span>}</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;nums, ops = [], []</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">apply</span>():</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;b, a = nums.<span class="fn">pop</span>(), nums.<span class="fn">pop</span>()</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;op = ops.<span class="fn">pop</span>()</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nums.<span class="fn">append</span>({<span class="st">'+'</span>: a+b, <span class="st">'-'</span>: a-b,</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="st">'*'</span>: a*b, <span class="st">'/'</span>: <span class="fn">int</span>(a/b)}[op])</li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;i = <span class="st">0</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> i &lt; <span class="fn">len</span>(s):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> s[i].<span class="fn">isdigit</span>():</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v = <span class="st">0</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> i &lt; <span class="fn">len</span>(s) <span class="kw">and</span> s[i].<span class="fn">isdigit</span>():</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v = v*<span class="st">10</span> + <span class="fn">int</span>(s[i]); i += <span class="st">1</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nums.<span class="fn">append</span>(v); <span class="kw">continue</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> s[i] <span class="kw">in</span> <span class="st">'([{'</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ops.<span class="fn">append</span>(s[i])</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">elif</span> s[i] <span class="kw">in</span> <span class="st">')]}'</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> ops[-<span class="st">1</span>] <span class="kw">not</span> <span class="kw">in</span> <span class="st">'([{'</span>: <span class="fn">apply</span>()</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ops.<span class="fn">pop</span>()</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">else</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> ops <span class="kw">and</span> ops[-<span class="st">1</span>] <span class="kw">in</span> prec \</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">and</span> prec[ops[-<span class="st">1</span>]] &gt;= prec[s[i]]: <span class="fn">apply</span>()</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ops.<span class="fn">append</span>(s[i])</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i += <span class="st">1</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> ops: <span class="fn">apply</span>()</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> nums[-<span class="st">1</span>]</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>每一步解决什么</h4>
+          <div class="step on"><div class="n">1</div><div class="t">数字入 <b>nums</b>，暂不计算</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">遇 <b>高优先级</b> 运算符，等它</div></div>
+          <div class="step"><div class="n">3</div><div class="t">遇 <b>低优先级</b>，先结算栈顶</div></div>
+          <div class="step"><div class="n">4</div><div class="t">括号 = <b>重置优先级边界</b></div></div>
+        </div>
+        <div class="panel gold anim d4" style="flex:1">
+          <h4>为什么转变：从「一个栈」到「两个栈」</h4>
+          <p>单栈只能记住「顺序」，但运算还需要<b>记住「等待中的值」</b>。把<b>数据</b>与<b>操作</b>分开放，问题立刻清晰——这是「分而治之」的最小示范。</p>
+          <div class="linklist" style="margin-top:10px">
+            <a class="link" href="https://leetcode.cn/problems/basic-calculator-ii/" target="_blank"><span class="lv m">MID</span><span class="ln2">227 · 基本计算器 II<small>本页代码的直接对应</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1175" target="_blank"><span class="lv m">MID</span><span class="ln2">P1175 · 表达式求值<small>洛谷 · 含括号与乘方</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 09 递归转迭代 ═════════ -->
+<section class="slide" data-ch="栈" data-num="09" data-ml="RECURSION" data-wm="栈">
+  <div class="s-title">应用③ 递归 → 显式栈：系统栈自己也是栈</div>
+  <div class="qdesc"><span class="qlabel">问题</span><span class="qtext">递归深度超限 / 需要暂停与恢复 / 需要记录路径时，怎么办？</span></div>
+  <div class="numline anim">转变原因 = 递归的<b>隐式调用栈</b>不可控；显式栈把「恢复现场」写在<b>你自己的变量</b>里</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-5 anim d1">
+        <div class="panel h grow accent">
+          <h4>递归的三个麻烦</h4>
+          <div class="step on"><div class="n">1</div><div class="t">Python 默认递归深度 <b>1000</b>，深图会崩</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">无法<b>中途暂停</b>再继续</div></div>
+          <div class="step"><div class="n">3</div><div class="t">无法访问<b>祖先链</b>做剪枝</div></div>
+          <div class="step"><div class="n">4</div><div class="t">每层调用<b>开销大</b>（参数压栈）</div></div>
+        </div>
+        <div class="panel gold anim d2" style="margin-top:22px">
+          <h4>可手动扩栈（慎用）</h4>
+          <p><code>import sys; sys.setrecursionlimit(200000)</code><br>能救急，但<b>爆内存风险更大</b>，竞赛里更推荐改迭代。</p>
+        </div>
+      </div>
+      <div class="c6-12 anim d2">
+        <div class="code" style="height:100%">
+          <div class="cbar"><span>inorder_iterative.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li class="cm"># 二叉树中序遍历：递归 vs 显式栈</li>
+            <li>&nbsp;</li>
+            <li class="cm"># ---------- 递归写法 ----------</li>
+            <li><span class="kw">def</span> <span class="fn">inorder_rec</span>(root, res):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> <span class="kw">not</span> root: <span class="kw">return</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">inorder_rec</span>(root.left, res)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;res.<span class="fn">append</span>(root.val)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">inorder_rec</span>(root.right, res)</li>
+            <li>&nbsp;</li>
+            <li class="cm"># ---------- 显式栈写法 ----------</li>
+            <li class="hi"><span class="kw">def</span> <span class="fn">inorder_iter</span>(root):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;st, cur, res = [], root, []</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> cur <span class="kw">or</span> st:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> cur:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 一路向左，全部入栈</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.<span class="fn">append</span>(cur)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur = cur.left</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur = st.<span class="fn">pop</span>()&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 回到最近的未访问节点</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;res.<span class="fn">append</span>(cur.val)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cur = cur.right&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 转向右子树</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> res</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 栈里存的是「还没访问 val 的祖先」</li>
+            <li class="cm"># 每次 pop 就是「回到最近一次未完成的现场」</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 其他同类：前序/后序/图 DFS/回溯/迭代加深</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:640px;top:300px" data-at="2600">← 栈里装的是「未完成的工作」</div>
+  </div>
+</section>
+
+<!-- ═════════ 10 最小栈 ═════════ -->
+<section class="slide" data-ch="栈" data-num="10" data-ml="MIN STACK" data-wm="栈">
+  <div class="s-title">应用④ 最小栈：栈内「额外维护一个答案」</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">设计一个栈，push / pop / top / getMin 都在 O(1) 时间完成，返回当前栈内最小值</span></div>
+  <div class="numline anim">思路 = <b>同步维护</b>「最小值栈」，<i>每个状态都有对应最小值</i>，pop 时一起退</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-6 anim d1" style="height:100%">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">VALUE STACK</text>
+          <text class="tx-b" x="300" y="26">MIN STACK</text>
+          <rect class="box" x="20" y="44" width="220" height="290" rx="4"/>
+          <rect class="box-b" x="300" y="44" width="220" height="290" rx="4"/>
+          <g>
+            <rect class="bar-a anim d1" x="34" y="60" width="192" height="52" rx="3"/><text class="tx-a" x="116" y="92">1</text>
+            <rect class="bar-a anim d2" x="34" y="122" width="192" height="52" rx="3"/><text class="tx-a" x="116" y="154">3</text>
+            <rect class="bar-a anim d3" x="34" y="184" width="192" height="52" rx="3"/><text class="tx-a" x="116" y="216">2</text>
+            <rect class="bar-a anim d4" x="34" y="246" width="192" height="52" rx="3"/><text class="tx-a" x="116" y="278">5</text>
+          </g>
+          <g>
+            <rect class="bar-b anim d1" x="314" y="60" width="192" height="52" rx="3"/><text class="tx-b" x="396" y="92">1</text>
+            <rect class="bar-b anim d2" x="314" y="122" width="192" height="52" rx="3"/><text class="tx-b" x="396" y="154">3</text>
+            <rect class="bar-b anim d3" x="314" y="184" width="192" height="52" rx="3"/><text class="tx-b" x="396" y="216">2</text>
+            <rect class="bar-b anim d4" x="314" y="246" width="192" height="52" rx="3"/><text class="tx-b" x="396" y="278">5</text>
+          </g>
+          <path class="ln draw d3" d="M244 216 L300 216 M244 92 L300 92 M244 154 L300 154 M244 278 L300 278" style="--L:280"/>
+          <text class="tx" x="20" y="372">push(5,2,3,1) 后：两栈同步</text>
+          <text class="tx-a" x="20" y="404">getMin() → min[-1] = 1</text>
+          <text class="tx" x="20" y="432">pop() → 两栈同时 pop</text>
+          <text class="tx-b" x="20" y="462">getMin() → min[-1] = 2</text>
+          <rect class="box-a" x="20" y="484" width="504" height="34" rx="4"/>
+          <text class="tx-a" x="36" y="506">空间 O(n)，用空间换 O(1) 时间</text>
+        </svg>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:20px">
+        <div class="code anim d2" style="height:224px">
+          <div class="cbar"><span>min_stack.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">class</span> <span class="fn">MinStack</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span>(self):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.a, self.m = [], []</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">push</span>(self, x):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.a.<span class="fn">append</span>(x)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.m.<span class="fn">append</span>(x <span class="kw">if</span> <span class="kw">not</span> self.m</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">else</span> <span class="fn">min</span>(x, self.m[-<span class="st">1</span>]))</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">pop</span>(self):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.a.<span class="fn">pop</span>(); self.m.<span class="fn">pop</span>()</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">top</span>(self): <span class="kw">return</span> self.a[-<span class="st">1</span>]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">getMin</span>(self): <span class="kw">return</span> self.m[-<span class="st">1</span>]</li>
+          </ol>
+        </div>
+        <div class="panel green anim d3" style="flex:1">
+          <h4>为什么转变：从「存数据」到「存答案」</h4>
+          <p>朴素做法是 <code>getMin</code> 时扫一遍 O(n)。<b>把「查询」的结果提前算好并随状态一起保存</b>，是所有「辅助结构」类题型的核心手法。</p>
+          <p>同类：<b>单调栈（存候选答案）</b>、<b>前缀和</b>、<b>线段树懒标记</b>。</p>
+          <div class="linklist" style="margin-top:10px">
+            <a class="link" href="https://leetcode.cn/problems/min-stack/" target="_blank"><span class="lv m">MID</span><span class="ln2">155 · 最小栈<small>本页原型</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/min-stack/submissions/" target="_blank"><span class="lv h">HARD</span><span class="ln2">155 · 常数空间变体<small>用「差值存法」压到 O(1) 空间</small></span><span class="lgo">LC ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 11 栈的思维模型 ═════════ -->
+<section class="slide" data-ch="栈" data-num="11" data-ml="MENTAL MODEL" data-wm="栈">
+  <div class="s-title">栈的三个思维模型：下次看到题就知道往哪想</div>
+  <div class="qdesc"><span class="qlabel">抽象</span><span class="qtext">把「栈」从容器升级成思考工具，三句话覆盖 80% 的栈题</span></div>
+  <div class="numline anim">模型 = <i>未决集合</i> ＋ <i>撤销现场</i> ＋ <i>单调候选</i>，<b>任一成立就用栈</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%;align-items:stretch">
+      <div class="c1-4 anim d1">
+        <div class="panel h grow accent">
+          <h4>模型 ① 未决集合</h4>
+          <p><b>特征</b>：「当前还有哪些没解决」，且<b>后进的先解决</b>。</p>
+          <div class="step on" style="margin-top:12px"><div class="n">Q</div><div class="t">括号配对、表达式、括号树</div></div>
+          <div class="step on"><div class="n">Q</div><div class="t">「下一个更大元素」</div></div>
+          <div class="step"><div class="n">Q</div><div class="t">匹配、合并、消除类</div></div>
+          <p style="margin-top:12px;color:var(--accent)"><b>栈顶 = 当前最需要被解决的</b></p>
+        </div>
+      </div>
+      <div class="c5-8 anim d2" style="grid-column:5/9">
+        <div class="panel h grow gold">
+          <h4>模型 ② 撤销现场</h4>
+          <p><b>特征</b>：「走过的路要能原路返回」。</p>
+          <div class="step on" style="margin-top:12px"><div class="n">Q</div><div class="t">DFS / 递归转迭代</div></div>
+          <div class="step on"><div class="n">Q</div><div class="t">回溯（状态入栈出栈）</div></div>
+          <div class="step"><div class="n">Q</div><div class="t">撤销 / 重做（编辑器）</div></div>
+          <p style="margin-top:12px;color:#9a6c12"><b>栈顶 = 最近的岔路口</b></p>
+        </div>
+      </div>
+      <div class="c9-12 anim d3">
+        <div class="panel h grow green">
+          <h4>模型 ③ 单调候选</h4>
+          <p><b>特征</b>：「候选答案集合里，某些元素<b>永远不可能成为答案</b>」。</p>
+          <div class="step on" style="margin-top:12px"><div class="n">Q</div><div class="t">单调栈 / 单调队列</div></div>
+          <div class="step on"><div class="n">Q</div><div class="t">区间最值 / 直方图</div></div>
+          <div class="step"><div class="n">Q</div><div class="t">DP 转移的候选裁剪</div></div>
+          <p style="margin-top:12px;color:#2b6b56"><b>栈顶 = 当前最优候选</b></p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:700px;top:500px" data-at="2500">↓ 今天后半段都在讲模型 ③</div>
+  </div>
+</section>
+
+<!-- ═════════ 12 栈小结 ═════════ -->
+<section class="slide" data-ch="栈" data-num="12" data-ml="STACK WRAP" data-wm="栈">
+  <div class="s-title">栈小结：带走这四句话</div>
+  <div class="qdesc"><span class="qlabel">小结</span><span class="qtext">章节收束 · 检查自己是否真的理解了，而不是背下了</span></div>
+  <div class="numline anim">栈小结 = <i>顺序受限</i> → <b>均摊 O(1)</b> → <b>辅助结构存答案</b> → <b>单调候选</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1">
+        <table>
+          <thead><tr><th style="width:220px">场景</th><th style="width:250px">栈的角色</th><th>关键点</th></tr></thead>
+          <tbody>
+            <tr><td class="k">括号匹配</td><td>存「未闭合的左括号」</td><td>最后栈必须为空</td></tr>
+            <tr><td class="k">表达式求值</td><td>数字栈 + 运算符栈</td><td>运算符栈保持<b>优先级递减</b></td></tr>
+            <tr><td class="k">递归 / DFS</td><td>存「未完成的现场」</td><td>pop 即回到最近岔路口</td></tr>
+            <tr><td class="k">最小栈</td><td>存「历史最小值」</td><td>辅助结构随状态同步</td></tr>
+            <tr><td class="k">下一个更大</td><td>存「尚未找到答案的下标」</td><td>出栈即得答案，<b>摊销 O(1)</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="c1-6 anim d2" style="margin-top:22px">
+        <div class="panel h grow accent">
+          <h4>四句话带走</h4>
+          <div class="step on"><div class="n">1</div><div class="t">栈解决<b>「最近的未决问题」</b></div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><b>pop 出去的元素不再回来</b>，所以能摊销</div></div>
+          <div class="step"><div class="n">3</div><div class="t">遇到「查最值 / 查下一个」，先想<b>能不能提前存</b></div></div>
+          <div class="step"><div class="n">4</div><div class="t">递归爆栈就<b>改成显式栈</b>，别硬撑</div></div>
+        </div>
+      </div>
+      <div class="c7-12 anim d3" style="margin-top:22px">
+        <div class="panel h grow green">
+          <h4>下一章预告：队列</h4>
+          <p>栈给「最近」，队列给「最早」。当问题从<b>「嵌套」</b>变成<b>「扩散」</b>，就该换结构了。</p>
+          <p>我们将会看到：<b>为什么 BFS 能保证最短</b>，以及<b>为什么不能用栈代替队列做 BFS</b>。</p>
+          <div class="cap" style="margin-top:16px">NEXT · FIFO ORDER &amp; BFS</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 13 队列定义 ═════════ -->
+<section class="slide" data-ch="队列" data-num="13" data-ml="QUEUE ADT" data-wm="队">
+  <div class="s-title">队列：先来先服务，天然公平</div>
+  <div class="qdesc"><span class="qlabel">定义</span><span class="qtext">只在一端插入（队尾）、另一端删除（队头）的线性结构</span></div>
+  <div class="numline anim">队列接口 = <i>enqueue / dequeue / front</i>，均 <b>均摊 O(1)</b>，语义 <b>FIFO</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1" style="height:268px">
+        <svg class="fig" viewBox="0 0 1120 268" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">CIRCULAR BUFFER · head / tail</text>
+          <rect class="box" x="20" y="52" width="720" height="120" rx="4"/>
+          <rect class="bar-b anim d1" x="36" y="68" width="128" height="88" rx="3"/><text class="tx-b" x="92" y="118">A</text>
+          <rect class="bar-b anim d2" x="172" y="68" width="128" height="88" rx="3"/><text class="tx-b" x="228" y="118">B</text>
+          <rect class="bar-b anim d3" x="308" y="68" width="128" height="88" rx="3"/><text class="tx-b" x="364" y="118">C</text>
+          <rect class="bar-b anim d4" x="444" y="68" width="128" height="88" rx="3"/><text class="tx-b" x="500" y="118">D</text>
+          <rect class="box" x="580" y="68" width="144" height="88" rx="3" style="stroke-dasharray:5 4"/>
+          <text class="tx" x="628" y="118">empty</text>
+          <path class="ln-b draw" d="M20 200 L100 200 M20 180 L20 220" style="--L:100"/>
+          <text class="tx-b" x="20" y="238">head ↑ 出队</text>
+          <path class="ln-b draw d1" d="M740 200 L660 200 M740 180 L740 220" style="--L:100"/>
+          <text class="tx-b" x="620" y="238">入队 ↓ tail</text>
+
+          <rect class="box-a" x="800" y="52" width="300" height="120" rx="4"/>
+          <text class="tx-a" x="822" y="84">WHY NOT LIST?</text>
+          <text class="tx-i" x="822" y="116">list.pop(0) 是 <b>O(n)</b></text>
+          <text class="tx-i" x="822" y="144">deque.popleft() 是 <b>O(1)</b></text>
+          <text class="tx" x="822" y="164">→ 队列必用 deque</text>
+
+          <text class="tx-i" x="800" y="216">队列 = 「按发生顺序处理」</text>
+          <text class="tx-i" x="800" y="246">所以它天然是<b>公平调度</b>的模型</text>
+        </svg>
+      </div>
+      <div class="c1-4 anim d2">
+        <div class="panel h grow green">
+          <h4>队列的语义</h4>
+          <p>「<b>谁先来，谁先被处理</b>」。<br>所有「层次 / 扩散 / 逐层推进」的问题，都落在这个语义上。</p>
+        </div>
+      </div>
+      <div class="c5-12 anim d3">
+        <div class="panel h grow">
+          <h4>与栈的语义对照</h4>
+          <table>
+            <thead><tr><th>维度</th><th>栈 LIFO</th><th>队列 FIFO</th></tr></thead>
+            <tbody>
+              <tr><td class="k">取出顺序</td><td>最近入的</td><td>最早入的</td></tr>
+              <tr><td class="k">思维模型</td><td>嵌套 / 回退</td><td>扩散 / 分层</td></tr>
+              <tr><td class="k">典型应用</td><td>括号、表达式、DFS</td><td>BFS、拓扑、调度</td></tr>
+              <tr><td class="k">答案性质</td><td>「最近的匹配」</td><td>「最近的最短」</td></tr>
+              <tr><td class="k">Python</td><td><code>list</code> 即可</td><td>必须 <code>deque</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:120px;top:452px" data-at="2500">← 用 list 当队列是老手也常犯的错</div>
+  </div>
+</section>
+
+<!-- ═════════ 14 队列实现 ═════════ -->
+<section class="slide" data-ch="队列" data-num="14" data-ml="DEQUE" data-wm="队">
+  <div class="s-title">Python 实现：collections.deque 的三种用法</div>
+  <div class="qdesc"><span class="qlabel">代码</span><span class="qtext">deque 两端操作都是 O(1)，队列、栈、双端队列全能覆盖</span></div>
+  <div class="numline anim">deque = <i>双端 O(1)</i>，<b>queue</b> 模块过慢，竞赛<b>一律用 deque</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-7 anim d1">
+        <div class="code">
+          <div class="cbar"><span>deque_usage.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">from</span> collections <span class="kw">import</span> deque</li>
+            <li>&nbsp;</li>
+            <li class="cm"># ---------- 用法 1：普通队列（BFS）----------</li>
+            <li>q = <span class="fn">deque</span>()</li>
+            <li>q.<span class="fn">append</span>(start)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 入队</span></li>
+            <li class="hi"><span class="kw">while</span> q:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;u = q.<span class="fn">popleft</span>()&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 出队 O(1)</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> v <span class="kw">in</span> g[u]:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> <span class="kw">not</span> vis[v]:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vis[v] = <span class="kw">True</span>; q.<span class="fn">append</span>(v)</li>
+            <li>&nbsp;</li>
+            <li class="cm"># ---------- 用法 2：当作栈 ----------</li>
+            <li>st = <span class="fn">deque</span>()</li>
+            <li>st.<span class="fn">append</span>(x)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># push</span></li>
+            <li>st.<span class="fn">pop</span>()&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># pop</span></li>
+            <li>&nbsp;</li>
+            <li class="cm"># ---------- 用法 3：双端队列 ----------</li>
+            <li>d.<span class="fn">append</span>(x)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 右端加</span></li>
+            <li>d.<span class="fn">appendleft</span>(x)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 左端加</span></li>
+            <li>d.<span class="fn">pop</span>()&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 右端出</span></li>
+            <li>d.<span class="fn">popleft</span>()&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 左端出</span></li>
+            <li>&nbsp;</li>
+            <li class="cm"># deque 也可设定 maxlen，自动淘汰旧元素</li>
+            <li class="cm"># d = deque(maxlen=k)</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:20px">
+        <div class="panel accent anim d2">
+          <h4>⚠️ 三个坑</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><code>list.pop(0)</code> 慢，deque 才是正解</div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><code>queue.Queue</code> 带锁，<b>竞赛不要用</b></div></div>
+          <div class="step"><div class="n">3</div><div class="t">deque 不支持 <b>任意下标访问</b>（O(n)）</div></div>
+        </div>
+        <div class="panel gold anim d3">
+          <h4>为什么 deque 两端都 O(1)</h4>
+          <p>内部是<b>分块的双向链表</b>（块状数组），两端插入删除只改指针，不搬移元素。代价是<b>随机访问慢</b>。</p>
+          <p>→ 所以：<b>要顺序处理用 deque，要随机查询用 list / 数组</b>。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>竞赛速写模板</h4>
+          <p><code>from collections import deque</code><br><code>q = deque([start])</code><br><code>while q: u = q.popleft()</code></p>
+          <p style="margin-top:8px">这一行 <code>popleft()</code> 就是 BFS 的全部起点。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 15 BFS 模板 ═════════ -->
+<section class="slide" data-ch="队列" data-num="15" data-ml="BFS TEMPLATE" data-wm="队">
+  <div class="s-title">应用⑤ BFS：网格最短路的万能模板</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">给定 n×m 的 0/1 网格（0 可走），从左上走到右下，每步四方向，求最少步数（不可达返回 -1）</span></div>
+  <div class="numline anim">BFS = <i>队列存「当前层的所有起点」</i>，<b>第一次到达即最短</b>，到达后立刻标记</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-6 anim d1" style="height:100%">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">GRID BFS · LEVEL BY LEVEL</text>
+          <g>
+            <rect class="box-b" x="20" y="48" width="72" height="72" rx="3"/><text class="tx-b" x="48" y="90">S</text>
+            <rect class="bar-b anim d1" x="98" y="48" width="72" height="72" rx="3"/><text class="tx-b" x="126" y="90">1</text>
+            <rect class="bar-b anim d2" x="176" y="48" width="72" height="72" rx="3"/><text class="tx-b" x="204" y="90">2</text>
+            <rect class="bar-b anim d3" x="254" y="48" width="72" height="72" rx="3"/><text class="tx-b" x="282" y="90">3</text>
+            <rect class="box" x="332" y="48" width="72" height="72" rx="3"/><text class="tx" x="352" y="90">#</text>
+            <rect class="bar-b anim d4" x="410" y="48" width="72" height="72" rx="3"/><text class="tx-b" x="438" y="90">5</text>
+
+            <rect class="bar-b anim d1" x="20" y="126" width="72" height="72" rx="3"/><text class="tx-b" x="48" y="168">1</text>
+            <rect class="box" x="98" y="126" width="72" height="72" rx="3"/><text class="tx" x="118" y="168">#</text>
+            <rect class="bar-b anim d2" x="176" y="126" width="72" height="72" rx="3"/><text class="tx-b" x="204" y="168">2</text>
+            <rect class="bar-b anim d3" x="254" y="126" width="72" height="72" rx="3"/><text class="tx-b" x="282" y="168">3</text>
+            <rect class="bar-b anim d3" x="332" y="126" width="72" height="72" rx="3"/><text class="tx-b" x="360" y="168">4</text>
+            <rect class="bar-b anim d4" x="410" y="126" width="72" height="72" rx="3"/><text class="tx-b" x="438" y="168">5</text>
+
+            <rect class="bar-b anim d2" x="20" y="204" width="72" height="72" rx="3"/><text class="tx-b" x="48" y="246">2</text>
+            <rect class="bar-b anim d2" x="98" y="204" width="72" height="72" rx="3"/><text class="tx-b" x="126" y="246">2</text>
+            <rect class="bar-b anim d3" x="176" y="204" width="72" height="72" rx="3"/><text class="tx-b" x="204" y="246">3</text>
+            <rect class="box" x="254" y="204" width="72" height="72" rx="3"/><text class="tx" x="274" y="246">#</text>
+            <rect class="bar-b anim d4" x="332" y="204" width="72" height="72" rx="3"/><text class="tx-b" x="360" y="246">4</text>
+            <rect class="box-a" x="410" y="204" width="72" height="72" rx="3"/><text class="tx-a" x="432" y="246">T</text>
+          </g>
+          <text class="tx" x="20" y="312">每层推进一步 → 「第一次到达」一定是「最短」</text>
+          <path class="ln-b draw d1" d="M56 290 L56 288 M134 290 L204 290" style="--L:80"/>
+          <rect class="box-b" x="20" y="334" width="504" height="92" rx="4"/>
+          <text class="tx-b" x="42" y="366">INVARIANT</text>
+          <text class="tx-i" x="42" y="398">队列中元素的 <b>dist 值</b>，最多相差 <b>1</b>，</text>
+          <text class="tx-i" x="42" y="422">且单调不减 —— 这就是「分层」。</text>
+          <rect class="box-a" x="20" y="446" width="504" height="66" rx="4"/>
+          <text class="tx-a" x="42" y="478">⚠️ 入队时立刻标记 visited，</text>
+          <text class="tx-a" x="42" y="502">否则同一格会被重复入队。</text>
+        </svg>
+      </div>
+      <div class="c7-12 anim d2">
+        <div class="code" style="height:100%">
+          <div class="cbar"><span>grid_bfs.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">from</span> collections <span class="kw">import</span> deque</li>
+            <li>&nbsp;</li>
+            <li><span class="kw">def</span> <span class="fn">min_steps</span>(grid):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;n, m = <span class="fn">len</span>(grid), <span class="fn">len</span>(grid[<span class="st">0</span>])</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> grid[<span class="st">0</span>][<span class="st">0</span>] == <span class="st">1</span> <span class="kw">or</span> grid[n-<span class="st">1</span>][m-<span class="st">1</span>] == <span class="st">1</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> -<span class="st">1</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;q = <span class="fn">deque</span>([(<span class="st">0</span>, <span class="st">0</span>)])</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;dist = [[-<span class="st">1</span>]*m <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;dist[<span class="st">0</span>][<span class="st">0</span>] = <span class="st">0</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> q:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x, y = q.<span class="fn">popleft</span>()</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> (x, y) == (n-<span class="st">1</span>, m-<span class="st">1</span>):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> dist[x][y]</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> dx, dy <span class="kw">in</span> ((<span class="st">1</span>,<span class="st">0</span>),(-<span class="st">1</span>,<span class="st">0</span>),(<span class="st">0</span>,<span class="st">1</span>),(<span class="st">0</span>,-<span class="st">1</span>)):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nx, ny = x+dx, y+dy</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> <span class="st">0</span> &lt;= nx &lt; n <span class="kw">and</span> <span class="st">0</span> &lt;= ny &lt; m \</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">and</span> grid[nx][ny] == <span class="st">0</span> \</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">and</span> dist[nx][ny] == -<span class="st">1</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dist[nx][ny] = dist[x][y] + <span class="st">1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q.<span class="fn">append</span>((nx, ny))</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> -<span class="st">1</span></li>
+            <li>&nbsp;</li>
+            <li class="cm"># 复杂度 O(n·m)：每格最多入队一次</li>
+            <li class="cm"># 加 visited 数组可省去 dist 的 -1 判断</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 16 BFS 为何最短 ═════════ -->
+<section class="slide" data-ch="队列" data-num="16" data-ml="WHY SHORTEST" data-wm="队">
+  <div class="s-title">为什么 BFS 一定给出最短路？</div>
+  <div class="qdesc"><span class="qlabel">证明</span><span class="qtext">不理解这一层，BFS 就只是「背模板」——换个题就不会用</span></div>
+  <div class="numline anim">性质 = <i>队列 dist 单调不减</i> ⇒ <b>第一次到达即最短</b>；用<b>反证法</b>一步可证</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1" style="height:242px">
+        <svg class="fig" viewBox="0 0 1120 242" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="24">LEVELLED GRAPH</text>
+          <g>
+            <rect class="box-a" x="20" y="80" width="90" height="52" rx="26"/><text class="tx-a" x="55" y="112">S</text>
+            <rect class="box-b" x="200" y="40" width="90" height="52" rx="26"/><text class="tx-b" x="238" y="72">A</text>
+            <rect class="box-b" x="200" y="126" width="90" height="52" rx="26"/><text class="tx-b" x="238" y="158">B</text>
+            <rect class="box-b" x="400" y="20" width="90" height="52" rx="26"/><text class="tx-b" x="438" y="52">C</text>
+            <rect class="box-b" x="400" y="106" width="90" height="52" rx="26"/><text class="tx-b" x="438" y="138">D</text>
+            <rect class="box" x="600" y="62" width="90" height="52" rx="26"/><text class="tx-i" x="632" y="94">T</text>
+            <path class="ln-a draw" d="M110 100 L200 70" style="--L:100"/>
+            <path class="ln-a draw d1" d="M110 116 L200 148" style="--L:110"/>
+            <path class="ln draw d1" d="M290 62 L400 44" style="--L:115"/>
+            <path class="ln draw d2" d="M290 148 L400 132" style="--L:115"/>
+            <path class="ln draw d2" d="M490 42 L600 80" style="--L:125"/>
+            <path class="ln draw d3" d="M490 128 L600 98" style="--L:118"/>
+            <text class="tx-a" x="20" y="182">层 0</text>
+            <text class="tx-b" x="212" y="182">层 1</text>
+            <text class="tx-b" x="412" y="182">层 2</text>
+            <text class="tx" x="612" y="182">层 3</text>
+            <text class="tx" x="20" y="216">队列中永远是「同一层 + 下一层」，dist 差 ≤ 1</text>
+            <text class="tx-a" x="20" y="240">⇒ 弹出的顺序就是「按距离递增」</text>
+          </g>
+          <rect class="box-a" x="720" y="30" width="380" height="184" rx="4"/>
+          <text class="tx-a" x="744" y="62">PROOF · 反证</text>
+          <text class="tx-i" x="744" y="96">若 T 首次被访问时距离不是最短，</text>
+          <text class="tx-i" x="744" y="124">则存在更短的路径 P，长度 d' &lt; d。</text>
+          <text class="tx-i" x="744" y="152">P 上必有一个「首次离开已访问集」的点，</text>
+          <text class="tx-i" x="744" y="180">它会更早被入队 ⇒ 矛盾。∎</text>
+        </svg>
+      </div>
+      <div class="c1-4 anim d2">
+        <div class="panel h grow accent">
+          <h4>不能用栈代替队列</h4>
+          <p>栈会「深度优先」，先走进一条长路，<b>第一次到达 T 时距离不是最短</b>。</p>
+          <p>DFS 求最短路需要<b>遍历完所有路径</b>，退化成指数级。</p>
+        </div>
+      </div>
+      <div class="c5-8 anim d3" style="grid-column:5/9">
+        <div class="panel h grow gold">
+          <h4>BFS 的三个前提</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><b>边权相等</b>（通常为 1）</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">入队时<b>立即标记</b>，防止重复</div></div>
+          <div class="step"><div class="n">3</div><div class="t">要记录<b>路径</b>时，额外存 parent</div></div>
+        </div>
+      </div>
+      <div class="c9-12 anim d4">
+        <div class="panel h grow green">
+          <h4>边权不等时怎么办？</h4>
+          <p>换 <b>Dijkstra + 堆</b>（下一章），或 <b>0-1 BFS</b>（双端队列，见下一页）。</p>
+          <p>这是<b>「为什么要转变」</b>的典型例子：边权一变，队列就不够用了。</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:180px;top:400px" data-at="2500">↑ 这一行是 BFS 正确性的全部</div>
+  </div>
+</section>
+
+<!-- ═════════ 17 双端队列三用法 ═════════ -->
+<section class="slide" data-ch="队列" data-num="17" data-ml="DEQUE USES" data-wm="队">
+  <div class="s-title">双端队列的三种进阶用法</div>
+  <div class="qdesc"><span class="qlabel">技巧</span><span class="qtext">从「一端进一端出」升级到「两端都能动」，能解决的问题立刻变多</span></div>
+  <div class="numline anim">双端队列 = <i>能撤销「最早的」也能撤销「最晚的」</i>，<b>0-1 BFS 与单调队列的基础</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%;align-items:stretch">
+      <div class="c1-4 anim d1">
+        <div class="panel h grow accent">
+          <h4>用法 ① 0-1 BFS</h4>
+          <p><b>场景</b>：边权只有 0 或 1。</p>
+          <p><b>做法</b>：权 0 走<b>队头</b>，权 1 走<b>队尾</b>，保持 dist 有序。</p>
+          <div class="step on" style="margin-top:12px"><div class="n">O</div><div class="t">复杂度 <b>O(V+E)</b>，比 Dijkstra 快</div></div>
+          <div class="step on"><div class="n">Q</div><div class="t">典型：<b>网格翻墙</b>、双状态图</div></div>
+          <div class="step"><div class="n">!</div><div class="t">本质是<b>单调队列</b>的特例</div></div>
+        </div>
+      </div>
+      <div class="c5-8 anim d2" style="grid-column:5/9">
+        <div class="panel h grow gold">
+          <h4>用法 ② 滑动窗口</h4>
+          <p><b>场景</b>：窗口 [i-k+1, i] 滑动，查询窗口内最值。</p>
+          <p><b>做法</b>：deque 存下标，<b>值单调递减</b>，队头即最大值。</p>
+          <div class="step on" style="margin-top:12px"><div class="n">O</div><div class="t">均摊 <b>O(1)</b> 取窗口最值</div></div>
+          <div class="step on"><div class="n">Q</div><div class="t">典型：<b>LC 239</b>、洛谷 P1886</div></div>
+          <div class="step"><div class="n">!</div><div class="t">存<b>下标</b>而非值，便于判断过期</div></div>
+        </div>
+      </div>
+      <div class="c9-12 anim d3">
+        <div class="panel h grow green">
+          <h4>用法 ③ 首尾贪心</h4>
+          <p><b>场景</b>：每次要取「当前最大 / 最小」，且<b>只能取两端</b>。</p>
+          <p><b>做法</b>：维护 deque，每次从合适的一端取。</p>
+          <div class="step on" style="margin-top:12px"><div class="n">Q</div><div class="t">典型：<b>LC 1696</b> 跳跃游戏 VI</div></div>
+          <div class="step on"><div class="n">Q</div><div class="t">取牌、博弈类问题</div></div>
+          <div class="step"><div class="n">!</div><div class="t">常与 <b>DP</b> 结合</div></div>
+        </div>
+      </div>
+      <div class="c1-12 anim d4" style="margin-top:22px">
+        <div class="panel accent" style="padding:16px 22px">
+          <p style="font:500 16px/1.75 var(--sans);color:var(--ink)">
+            <b>共同点</b>：都在维护一个「<b>候选集合</b>」，并且这个集合里的元素<b>按某个维度单调</b>。
+            于是「取出最优候选」变成 <b>O(1)</b> —— 这就是下一章「单调结构」的由来。
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:820px;top:410px" data-at="2500">← 下一章的钥匙已经出现了</div>
+  </div>
+</section>
+
+<!-- ═════════ 18 队列小结 ═════════ -->
+<section class="slide" data-ch="队列" data-num="18" data-ml="QUEUE WRAP" data-wm="队">
+  <div class="s-title">队列小结：分层、公平、最短</div>
+  <div class="qdesc"><span class="qlabel">小结</span><span class="qtext">章末收束 · 栈与队列是同一枚硬币的两面</span></div>
+  <div class="numline anim">队列小结 = <i>FIFO</i> → <b>分层</b> → <b>最短</b>；<b>边权一变，就要升级结构</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1">
+        <table>
+          <thead><tr><th style="width:210px">场景</th><th style="width:250px">队列的角色</th><th>关键点</th></tr></thead>
+          <tbody>
+            <tr><td class="k">网格 / 图最短路</td><td>存「当前层的所有起点」</td><td>入队即标记，<b>O(V+E)</b></td></tr>
+            <tr><td class="k">拓扑排序</td><td>存「入度为 0 的点」</td><td>判环 / 求合法顺序</td></tr>
+            <tr><td class="k">滑动窗口最值</td><td>存「可能成为最值的下标」</td><td><b>单调队列</b>，见下一章</td></tr>
+            <tr><td class="k">多源扩散</td><td>把所有源<b>同时入队</b></td><td>天然求「最近的源」</td></tr>
+            <tr><td class="k">0-1 权图</td><td>两端分别操作</td><td>代替 Dijkstra</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="c1-6 anim d2" style="margin-top:22px">
+        <div class="panel h grow green">
+          <h4>三句话带走</h4>
+          <div class="step on"><div class="n">1</div><div class="t">队列解决<b>「按发生顺序处理」</b></div></div>
+          <div class="step on"><div class="n">2</div><div class="t">BFS 的正确性来自<b>分层</b>，不是运气</div></div>
+          <div class="step"><div class="n">3</div><div class="t">边权不等 → 换 <b>堆 / 0-1 BFS</b></div></div>
+        </div>
+      </div>
+      <div class="c7-12 anim d3" style="margin-top:22px">
+        <div class="panel h grow accent">
+          <h4>下一章：单调结构</h4>
+          <p>栈和队列只解决了「顺序」，还没解决「效率」。<b>当问题里有「下一个更大 / 窗口最值」，朴素做法是 O(n²)。</b></p>
+          <p>下一章我们要做的事：<b>把「候选答案集合」裁剪成单调的</b>，让每次查询变成 O(1)。</p>
+          <div class="cap" style="margin-top:16px">NEXT · MONOTONE STACK &amp; QUEUE</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 19 为什么单调 ═════════ -->
+<section class="slide" data-ch="单调结构" data-num="19" data-ml="WHY MONOTONE" data-wm="单">
+  <div class="s-title">为什么需要「单调」：把候选集裁掉无用的</div>
+  <div class="qdesc"><span class="qlabel">动机</span><span class="qtext">再看一遍「下一个更大元素」——现在我们知道该怎么想了</span></div>
+  <div class="numline anim">单调性 = 栈内元素<b>按值有序</b>；新元素一来，<i>比它小的全 pop 掉</i>，<b>不再有资格</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1" style="height:236px">
+        <svg class="fig" viewBox="0 0 1120 236" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="24">WHEN 5 ARRIVES · 单调递减栈被打破</text>
+          <g>
+            <rect class="box" x="20" y="48" width="420" height="112" rx="4"/>
+            <rect class="bar-a anim d1" x="36" y="64" width="84" height="80" rx="3"/><text class="tx-a" x="70" y="110">7</text>
+            <rect class="bar-a anim d1" x="128" y="64" width="84" height="80" rx="3"/><text class="tx-a" x="162" y="110">4</text>
+            <rect class="bar-a anim d1" x="220" y="64" width="84" height="80" rx="3"/><text class="tx-a" x="254" y="110">2</text>
+            <rect class="bar-a anim d2" x="312" y="64" width="84" height="80" rx="3"/><text class="tx-a" x="346" y="110">5</text>
+            <text class="tx" x="20" y="186">栈：7 → 4 → 2 → 5 （2、4 已被 5 淘汰）</text>
+          </g>
+          <path class="ln-a draw d2" d="M470 90 L560 90 M470 118 L560 118" style="--L:190"/>
+          <text class="tx-a" x="578" y="98">2 和 4 的「下一个更大」</text>
+          <text class="tx-a" x="578" y="126">都是 5 —— 出栈即得答案</text>
+
+          <rect class="box-b" x="760" y="30" width="340" height="180" rx="4"/>
+          <text class="tx-b" x="784" y="64">KEY LEMMA</text>
+          <text class="tx-i" x="784" y="100">每个元素<b>最多入栈一次、</b></text>
+          <text class="tx-i" x="784" y="128"><b>出栈一次</b>。</text>
+          <text class="tx-i" x="784" y="164">⇒ 总操作 2n 次</text>
+          <text class="tx-a" x="784" y="196">⇒ 摊销 O(n)，不是 O(n²)</text>
+        </svg>
+      </div>
+      <div class="c1-4 anim d2">
+        <div class="panel h grow accent">
+          <h4>为什么要裁剪</h4>
+          <p>栈里如果同时存 <b>4</b> 和 <b>2</b>，那么只要 <b>2 在栈里，4 永远轮不到被选</b>。</p>
+          <p>这种「<b>永远不可能成为答案</b>」的元素，就该<b>立刻扔掉</b>。</p>
+        </div>
+      </div>
+      <div class="c5-8 anim d3" style="grid-column:5/9">
+        <div class="panel h grow gold">
+          <h4>如何裁剪</h4>
+          <p>把栈维护成<b>单调</b>（递增或递减，取决于题意）。</p>
+          <p>新元素入栈前，<b>先把被它「压死」的都 pop 掉</b>。</p>
+          <p>于是栈内元素<b>按值有序</b>，栈顶就是<b>当前最优候选</b>。</p>
+        </div>
+      </div>
+      <div class="c9-12 anim d4">
+        <div class="panel h grow green">
+          <h4>为什么转变：从「存全部」到「存候选」</h4>
+          <p>朴素做法：把所有元素都留下，逐个比较 → <b>O(n²)</b>。</p>
+          <p>单调做法：只留下<b>还有机会的</b>，其他立刻丢 → <b>O(n)</b>。</p>
+          <p>这是<b>「用空间换时间」的另一种形态</b>：用<b>「维护有序」</b>换<b>「查询 O(1)」</b>。</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:420px" data-at="2500">← 「出栈即得答案」是单调栈的核心</div>
+  </div>
+</section>
+
+<!-- ═════════ 20 单调栈原理 ═════════ -->
+<section class="slide" data-ch="单调结构" data-num="20" data-ml="MONO STACK" data-wm="单">
+  <div class="s-title">单调栈：Next Greater Element 的标准推导</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">给定数组 a，对每个 i 求右侧第一个严格大于 a[i] 的元素下标，不存在则为 -1</span></div>
+  <div class="numline anim">维护 <i>单调递减栈</i>（存下标）；<b>新元素 &gt; 栈顶</b> ⇒ 栈顶的答案就是新元素</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1" style="height:200px">
+        <svg class="fig" viewBox="0 0 1120 200" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="24">TRACE · a = [2, 1, 5, 3, 4]</text>
+          <g>
+            <rect class="bar" x="20" y="44" width="70" height="42" rx="3"/><text class="tx-i" x="44" y="72">2</text>
+            <rect class="bar" x="98" y="44" width="70" height="42" rx="3"/><text class="tx-i" x="122" y="72">1</text>
+            <rect class="bar-a anim d1" x="176" y="44" width="70" height="42" rx="3"/><text class="tx-a" x="200" y="72">5</text>
+            <rect class="bar-a anim d2" x="254" y="44" width="70" height="42" rx="3"/><text class="tx-a" x="278" y="72">3</text>
+            <rect class="bar-a anim d3" x="332" y="44" width="70" height="42" rx="3"/><text class="tx-a" x="356" y="72">4</text>
+            <text class="tx" x="20" y="112">i=2（值 5）：pop 1、pop 2 → res[1]=5, res[0]=5</text>
+            <text class="tx" x="20" y="138">i=3（值 3）：栈里 [5]，5&gt;3 不动 → 栈 [5,3]</text>
+            <text class="tx" x="20" y="164">i=4（值 4）：pop 3 → res[3]=4，栈 [5,4]</text>
+            <text class="tx-a" x="20" y="192">最后剩 [5,4] 没找到答案 → res = [5,5,-1,4,-1]</text>
+          </g>
+          <rect class="box-a" x="760" y="34" width="340" height="150" rx="4"/>
+          <text class="tx-a" x="784" y="68">TEMPLATE</text>
+          <text class="tx-i" x="784" y="102">while st and a[st[-1]] &lt; v:</text>
+          <text class="tx-i" x="784" y="130">&nbsp;&nbsp;&nbsp;&nbsp;res[st.pop()] = v</text>
+          <text class="tx-i" x="784" y="158">st.append(i)</text>
+          <text class="tx" x="784" y="180">栈内<b>值单调递减</b>（存下标）</text>
+        </svg>
+      </div>
+      <div class="c1-7 anim d2">
+        <div class="code" style="height:314px">
+          <div class="cbar"><span>next_greater.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">next_greater</span>(a):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;n = <span class="fn">len</span>(a)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;res = [-<span class="st">1</span>] * n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 默认 -1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;st = []&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 存下标，值递减</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> i, v <span class="kw">in</span> <span class="fn">enumerate</span>(a):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> st <span class="kw">and</span> a[st[-<span class="st">1</span>]] &lt; v:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;res[st.<span class="fn">pop</span>()] = v</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.<span class="fn">append</span>(i)</li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> res</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 若求「下一个更小」：条件改 &gt;，栈改递增</li>
+            <li class="cm"># 若求「上一个更大」：从右往左扫，或倒转比较符</li>
+            <li class="cm"># 若允许相等：把 &lt; 改成 &lt;=（注意稳定性）</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 复杂度 O(n)：每个下标至多进出栈各一次</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>四方向变体（背下来）</h4>
+          <div class="step on"><div class="n">R</div><div class="t"><b>下一个更大</b>：递减栈，正向扫</div></div>
+          <div class="step on"><div class="n">L</div><div class="t"><b>上一个更大</b>：递减栈，反向扫</div></div>
+          <div class="step"><div class="n">↓</div><div class="t"><b>下一个更小</b>：递增栈，正向扫</div></div>
+          <div class="step"><div class="n">↑</div><div class="t"><b>上一个更小</b>：递增栈，反向扫</div></div>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>常见错误</h4>
+          <p>· 忘记 <code>while st and ...</code> 里的<b>判空</b><br>· 比较符方向搞反（递增 / 递减）<br>· 存<b>值</b>而非<b>下标</b>，导致无法定位答案<br>· <b>相等元素</b>的处理前后不一致</p>
+          <div class="linklist" style="margin-top:10px">
+            <a class="link" href="https://leetcode.cn/problems/next-greater-element-i/" target="_blank"><span class="lv e">EASY</span><span class="ln2">496 · 下一个更大元素 I<small>入门，熟悉模板</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/next-greater-element-ii/" target="_blank"><span class="lv m">MID</span><span class="ln2">503 · 下一个更大元素 II<small>环形数组：跑两遍</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P5788" target="_blank"><span class="lv e">EASY</span><span class="ln2">P5788 · 【模板】单调栈<small>洛谷模板题</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:418px" data-at="2600">↑ 「存下标」是实战里最容易出错的点</div>
+  </div>
+</section>
+
+<!-- ═════════ 21 单调栈代码 ═════════ -->
+<section class="slide" data-ch="单调结构" data-num="21" data-ml="AMORTIZED" data-wm="单">
+  <div class="s-title">摊销分析：为什么是 O(n) 而不是 O(n²)</div>
+  <div class="qdesc"><span class="qlabel">证明</span><span class="qtext">会写代码还不够，能讲清楚复杂度，才能换题也用得对</span></div>
+  <div class="numline anim">摊销 = <i>单次可能 O(n)，但 n 次总和仍是 O(n)</i>；<b>计数法</b>一步证明</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-6 anim d1" style="height:100%">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">ACCOUNTING METHOD</text>
+          <rect class="box" x="20" y="48" width="504" height="240" rx="4"/>
+          <text class="tx-i" x="42" y="84">设 push 总次数为 P，pop 总次数为 Q。</text>
+          <text class="tx-i" x="42" y="118">每个下标 <b>最多 push 一次</b>：</text>
+          <text class="tx-a" x="60" y="150">P ≤ n</text>
+          <text class="tx-i" x="42" y="184">每个下标 <b>最多 pop 一次</b>（pop 后不再回来）：</text>
+          <text class="tx-a" x="60" y="216">Q ≤ n</text>
+          <text class="tx-i" x="42" y="252">总操作数 = P + Q ≤ <b>2n</b></text>
+          <text class="tx-a" x="42" y="282">⇒ O(n)，与 n² 无关</text>
+
+          <rect class="box-b" x="20" y="312" width="504" height="106" rx="4"/>
+          <text class="tx-b" x="42" y="346">⚠️ 常见误解</text>
+          <text class="tx-i" x="42" y="380">「while 循环里还有 pop」看起来是嵌套循环，</text>
+          <text class="tx-i" x="42" y="406">但<b>每次 pop 都永久减少栈大小</b>，所以不会退化。</text>
+
+          <rect class="box-a" x="20" y="442" width="504" height="70" rx="4"/>
+          <text class="tx-a" x="42" y="474">同样的分析适用于：</text>
+          <text class="tx-a" x="42" y="500">单调队列、并查集路径压缩、KMP</text>
+        </svg>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:20px">
+        <div class="panel accent anim d2">
+          <h4>换个角度：势能法</h4>
+          <p>定义势能 Φ = <b>当前栈大小</b>。</p>
+          <div class="step on" style="margin-top:10px"><div class="n">1</div><div class="t">push：Φ 增加 1，<b>实际代价 1</b></div></div>
+          <div class="step on"><div class="n">2</div><div class="t">pop：Φ 减少 1，<b>摊销代价 ≤ 2</b></div></div>
+          <div class="step"><div class="n">3</div><div class="t">总摊销代价 = <b>O(n)</b> ∎</div></div>
+        </div>
+        <div class="panel gold anim d3">
+          <h4>为什么一定要理解这个</h4>
+          <p>不知道摊销，就会<b>在 while 循环里加 break</b>，以为「这样会快一点」——反而错。</p>
+          <p>知道摊销，你就敢放心写<b>经典的 <code>while st and ...: st.pop()</code></b>骨架。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>常见同类题</h4>
+          <p>· 单调栈 / 单调队列<br>· 并查集<b>路径压缩</b><br>· <b>KMP</b> 的 fail 指针回退<br>· 持续 <code>top()</code> + <code>pop()</code> 的滑动查询</p>
+          <p style="margin-top:10px">一句话：<b>凡是「回退后不再回来」的结构，都摊销 O(n)。</b></p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:700px;top:420px" data-at="2500">← 记住「P ≤ n，Q ≤ n」就够了</div>
+  </div>
+</section>
+
+<!-- ═════════ 22 直方图最大矩形 ═════════ -->
+<section class="slide" data-ch="单调结构" data-num="22" data-ml="HISTOGRAM" data-wm="单">
+  <div class="s-title">应用⑥ 直方图最大矩形：单调栈的满分题</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">给定非负数组 heights 表示柱子高度，求能勾出的最大矩形面积（柱宽均为 1）</span></div>
+  <div class="numline anim">思路 = 对每根柱子，找<b>左右第一个比它矮的</b>；<b>递增栈</b>一次遍历即可算出宽度</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1" style="height:196px">
+        <svg class="fig" viewBox="0 0 1120 196" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="24">heights = [2,1,5,6,2,3]</text>
+          <g>
+            <rect class="bar" x="20" y="82" width="70" height="30" rx="2"/><text class="tx-i" x="44" y="102">2</text>
+            <rect class="bar" x="98" y="97" width="70" height="15" rx="2"/><text class="tx-i" x="122" y="110">1</text>
+            <rect class="bar-a anim d1" x="176" y="37" width="70" height="75" rx="2"/><text class="tx-a" x="200" y="82">5</text>
+            <rect class="bar-a anim d1" x="254" y="22" width="70" height="90" rx="2"/><text class="tx-a" x="278" y="72">6</text>
+            <rect class="bar-a anim d2" x="332" y="82" width="70" height="30" rx="2"/><text class="tx-a" x="356" y="102">2</text>
+            <rect class="bar" x="410" y="67" width="70" height="45" rx="2"/><text class="tx-i" x="434" y="97">3</text>
+            <rect class="box" x="20" y="112" width="460" height="2" rx="1"/>
+          </g>
+          <text class="tx-a" x="20" y="148">最大矩形 = 高 5 × 宽 2 = 10（柱 5 和 6）</text>
+          <text class="tx" x="20" y="176">对每根柱子 h[i]：面积 = h[i] × (右边界 - 左边界 - 1)</text>
+
+          <rect class="box-a" x="560" y="30" width="540" height="150" rx="4"/>
+          <text class="tx-a" x="584" y="64">WHY INCREASING STACK</text>
+          <text class="tx-i" x="584" y="98">栈内柱高<b>单调递增</b>；遇到更矮的柱子，</text>
+          <text class="tx-i" x="584" y="126">说明栈顶柱子的<b>右边界到了</b>，可以结算。</text>
+          <text class="tx-i" x="584" y="154">结算完 pop，左边界就是新的栈顶。</text>
+        </svg>
+      </div>
+      <div class="c1-7 anim d2">
+        <div class="code" style="height:318px">
+          <div class="cbar"><span>largest_rectangle.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">largest_rectangle</span>(heights):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;h = heights + [<span class="st">0</span>]&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 哨兵：清空栈</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;st, best = [], <span class="st">0</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> i, v <span class="kw">in</span> <span class="fn">enumerate</span>(h):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> st <span class="kw">and</span> h[st[-<span class="st">1</span>]] &gt; v:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;top = st.<span class="fn">pop</span>()</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;left = st[-<span class="st">1</span>] <span class="kw">if</span> st <span class="kw">else</span> -<span class="st">1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;best = <span class="fn">max</span>(best, h[top] * (i - left - <span class="st">1</span>))</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.<span class="fn">append</span>(i)</li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> best</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 哨兵 +0 的作用：结束时强制清空栈，</li>
+            <li class="cm"># 避免再写一遍「收尾处理」的代码</li>
+            <li class="cm"># 时间 O(n)，空间 O(n)</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>为什么要「哨兵」</h4>
+          <p>不加 <code>+[0]</code> 时，循环结束后栈里还剩柱子，<b>它们的右边界是 n</b>，需要额外写一段收尾代码。</p>
+          <p>加一个<b>高度为 0 的哨兵</b>，它会把所有柱子 pop 干净，<b>省掉一类边界 bug</b>。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>同类题：还能问什么</h4>
+          <p>· <b>每个元素作为最小值的区间</b> → 907<br>· <b>接雨水</b>：两边最大值 → 42<br>· <b>最大正方形</b>：逐行累加柱高 → 85</p>
+          <div class="linklist" style="margin-top:10px">
+            <a class="link" href="https://leetcode.cn/problems/largest-rectangle-in-histogram/" target="_blank"><span class="lv h">HARD</span><span class="ln2">84 · 柱状图中最大的矩形<small>本页原型</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/sum-of-subarray-minimums/" target="_blank"><span class="lv m">MID</span><span class="ln2">907 · 子数组的最小值之和<small>左右第一个更小 + 计数</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/trapping-rain-water/" target="_blank"><span class="lv h">HARD</span><span class="ln2">42 · 接雨水<small>单调栈解法 vs 双指针</small></span><span class="lgo">LC ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:150px;top:412px" data-at="2600">↑ 哨兵是「少写一段代码」的经典技巧</div>
+  </div>
+</section>
+
+<!-- ═════════ 23 单调队列原理 ═════════ -->
+<section class="slide" data-ch="单调结构" data-num="23" data-ml="MONO QUEUE" data-wm="单">
+  <div class="s-title">单调队列：滑动窗口最值的 O(1) 方案</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">给定数组 nums 与窗口大小 k，窗口从左滑到右，输出每个窗口中的最大值</span></div>
+  <div class="numline anim">deque 存<b>下标</b>，对应值<b>单调递减</b>；队头 = 当前窗口最大，<b>过期即出队</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1" style="height:238px">
+        <svg class="fig" viewBox="0 0 1120 238" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="24">nums = [1,3,-1,-3,5,3,6,7], k = 3</text>
+          <g>
+            <rect class="bar-b anim d1" x="20" y="44" width="72" height="46" rx="3"/><text class="tx-b" x="46" y="72">1</text>
+            <rect class="bar-a anim d1" x="100" y="44" width="72" height="46" rx="3"/><text class="tx-a" x="126" y="72">3</text>
+            <rect class="bar-b anim d2" x="180" y="44" width="72" height="46" rx="3"/><text class="tx-b" x="206" y="72">-1</text>
+            <rect class="bar-b anim d3" x="260" y="44" width="72" height="46" rx="3"/><text class="tx-b" x="286" y="72">-3</text>
+            <rect class="bar-a anim d3" x="340" y="44" width="72" height="46" rx="3"/><text class="tx-a" x="366" y="72">5</text>
+            <rect class="bar-a anim d4" x="420" y="44" width="72" height="46" rx="3"/><text class="tx-a" x="446" y="72">3</text>
+            <rect class="bar-a anim d4" x="500" y="44" width="72" height="46" rx="3"/><text class="tx-a" x="526" y="72">6</text>
+            <rect class="bar-a anim d5" x="580" y="44" width="72" height="46" rx="3"/><text class="tx-a" x="606" y="72">7</text>
+          </g>
+          <path class="ln-a draw" d="M20 108 L252 108" style="--L:232"/>
+          <text class="tx-a" x="20" y="134">窗口 1 → 最大值 3</text>
+
+          <rect class="box-b" x="700" y="30" width="400" height="118" rx="4"/>
+          <text class="tx-b" x="722" y="64">DEQUE 状态（存下标）</text>
+          <rect class="bar-b" x="722" y="82" width="82" height="42" rx="3"/><text class="tx-b" x="752" y="110">1</text>
+          <rect class="bar-b" x="812" y="82" width="82" height="42" rx="3"/><text class="tx-b" x="842" y="110">2</text>
+          <text class="tx" x="910" y="110">← 队头 = 最大</text>
+          <text class="tx-i" x="722" y="142">队头下标过期（&lt; i-k+1）就 popleft</text>
+
+          <rect class="box-a" x="700" y="166" width="400" height="56" rx="4"/>
+          <text class="tx-a" x="722" y="200">入队前 pop 掉所有 ≤ 新值的，保持递减</text>
+        </svg>
+      </div>
+      <div class="c1-7 anim d2">
+        <div class="code" style="height:276px">
+          <div class="cbar"><span>sliding_window_max.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">from</span> collections <span class="kw">import</span> deque</li>
+            <li>&nbsp;</li>
+            <li><span class="kw">def</span> <span class="fn">max_sliding_window</span>(nums, k):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dq, res = <span class="fn">deque</span>(), []&nbsp;&nbsp;<span class="cm"># 存下标</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> i, v <span class="kw">in</span> <span class="fn">enumerate</span>(nums):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> dq <span class="kw">and</span> nums[dq[-<span class="st">1</span>]] &lt;= v:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dq.<span class="fn">pop</span>()&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 淘汰无望者</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dq.<span class="fn">append</span>(i)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> dq[<span class="st">0</span>] &lt;= i - k:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dq.<span class="fn">popleft</span>()&nbsp;&nbsp;<span class="cm"># 过期</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> i &gt;= k - <span class="st">1</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;res.<span class="fn">append</span>(nums[dq[<span class="st">0</span>]])</li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> res</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 两件事同时做：淘汰过期（左端）+ 淘汰无望（右端）</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>为什么转变：从「栈」到「队列」</h4>
+          <p>窗口<b>会滑走</b>，所以最早进来的元素<b>可能过期</b>——必须能从<b>左端</b>删。</p>
+          <p>而「淘汰无望者」需要从<b>右端</b>删。<b>两端都能删</b> ⇒ deque。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>细节清单</h4>
+          <p>· 存<b>下标</b>，才能判断是否过期<br>· 出队条件写 <code>&lt;= i-k</code>，别写 <code>&lt;</code><br>· 从 <code>i &gt;= k-1</code> 开始收集结果<br>· 求最小值：把 <code>&lt;=</code> 改 <code>&gt;=</code></p>
+          <div class="linklist" style="margin-top:10px">
+            <a class="link" href="https://leetcode.cn/problems/sliding-window-maximum/" target="_blank"><span class="lv h">HARD</span><span class="ln2">239 · 滑动窗口最大值<small>本页原型</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1886" target="_blank"><span class="lv m">MID</span><span class="ln2">P1886 · 滑动窗口<small>洛谷 · 求最大与最小</small></span><span class="lgo">LG ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1440" target="_blank"><span class="lv m">MID</span><span class="ln2">P1440 · 求 m 区间内的最小值<small>洛谷 · 只求最小值</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:150px;top:416px" data-at="2600">↑ 「两件事同时做」是单调队列的精髓</div>
+  </div>
+</section>
+
+<!-- ═════════ 24 单调队列优化 DP ═════════ -->
+<section class="slide" data-ch="单调结构" data-num="24" data-ml="DP OPT" data-wm="单">
+  <div class="s-title">单调队列优化 DP：从「扫窗口」到「取窗口」</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">给定数组 nums 与整数 k，从下标 0 跳到 n-1，每步跳 1~k 步，得分为路径元素之和，求最大得分</span></div>
+  <div class="numline anim">DP = <i>dp[i] = nums[i] + max(dp[i-k..i-1])</i>；<b>窗口最大值</b> ⇒ 单调队列 <b>O(1)</b> 转移</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1" style="height:172px">
+        <svg class="fig" viewBox="0 0 1120 172" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="24">TRANSITION · dp[i] = nums[i] + max(dp[i-k .. i-1])</text>
+          <rect class="box" x="20" y="44" width="700" height="86" rx="4"/>
+          <rect class="bar" x="36" y="60" width="82" height="54" rx="3"/><text class="tx-i" x="70" y="92">dp[0]</text>
+          <rect class="bar-b anim d1" x="126" y="60" width="82" height="54" rx="3"/><text class="tx-b" x="160" y="92">dp[1]</text>
+          <rect class="bar-b anim d1" x="216" y="60" width="82" height="54" rx="3"/><text class="tx-b" x="250" y="92">dp[2]</text>
+          <rect class="bar-a anim d2" x="306" y="60" width="82" height="54" rx="3"/><text class="tx-a" x="340" y="92">dp[3]</text>
+          <rect class="box-a" x="396" y="60" width="82" height="54" rx="3"/><text class="tx-a" x="430" y="92">dp[4]</text>
+          <text class="tx" x="20" y="156">dp[4] 由窗口 [dp[1], dp[2], dp[3]] 的最大值转移而来</text>
+          <rect class="box-b" x="780" y="30" width="320" height="120" rx="4"/>
+          <text class="tx-b" x="802" y="64">COMPLEXITY</text>
+          <text class="tx-i" x="802" y="98">朴素：每步扫 k 个 → <b>O(nk)</b></text>
+          <text class="tx-i" x="802" y="126">单调队列：每步 O(1) → <b>O(n)</b></text>
+        </svg>
+      </div>
+      <div class="c1-7 anim d2">
+        <div class="code" style="height:344px">
+          <div class="cbar"><span>jump_game_vi.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">from</span> collections <span class="kw">import</span> deque</li>
+            <li>&nbsp;</li>
+            <li><span class="kw">def</span> <span class="fn">max_result</span>(nums, k):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;n = <span class="fn">len</span>(nums)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;dp = [<span class="st">0</span>] * n</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dp[<span class="st">0</span>] = nums[<span class="st">0</span>]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dq = <span class="fn">deque</span>([<span class="st">0</span>])&nbsp;&nbsp;<span class="cm"># 存下标，dp 值递减</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="st">1</span>, n):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> dq <span class="kw">and</span> dq[<span class="st">0</span>] &lt; i - k:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dq.<span class="fn">popleft</span>()&nbsp;&nbsp;<span class="cm"># 过期</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dp[i] = dp[dq[<span class="st">0</span>]] + nums[i]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> dq <span class="kw">and</span> dp[dq[-<span class="st">1</span>]] &lt;= dp[i]:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dq.<span class="fn">pop</span>()&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 淘汰无望者</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dq.<span class="fn">append</span>(i)</li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> dp[-<span class="st">1</span>]</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 与滑动窗口最大值的唯一区别：</li>
+            <li class="cm"># 淘汰的对象从 nums 换成 dp</li>
+            <li class="cm"># 这就是「转移只依赖窗口」的标准解法</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>什么时候能用单调队列优化 DP</h4>
+          <div class="step on"><div class="n">1</div><div class="t">转移式形如 <b>dp[i] = f(i) + max/min(dp[窗口])</b></div></div>
+          <div class="step on"><div class="n">2</div><div class="t">窗口<b>随 i 单调移动</b>（不是任意区间）</div></div>
+          <div class="step"><div class="n">3</div><div class="t">决策单调性<b>可证明</b>（无后效）</div></div>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>更多同类</h4>
+          <p>· <b>LC 1425</b> 带限制的子序列和<br>· <b>LC 1696</b> 本页原型<br>· <b>斜率优化 DP</b> 的前置知识<br>· <b>P1714 切蛋糕</b>（前缀和 + 单调队列）</p>
+          <div class="linklist" style="margin-top:10px">
+            <a class="link" href="https://leetcode.cn/problems/jump-game-vi/" target="_blank"><span class="lv m">MID</span><span class="ln2">1696 · 跳跃游戏 VI<small>本页原型</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/constrained-subsequence-sum/" target="_blank"><span class="lv h">HARD</span><span class="ln2">1425 · 带限制的子序列和<small>同型升级</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1714" target="_blank"><span class="lv m">MID</span><span class="ln2">P1714 · 切蛋糕<small>洛谷 · 前缀和 + 单调队列</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:680px;top:270px" data-at="2600">← 唯一的变化：nums → dp</div>
+  </div>
+</section>
+
+<!-- ═════════ 25 单调栈 vs 单调队列 ═════════ -->
+<section class="slide" data-ch="单调结构" data-num="25" data-ml="COMPARE" data-wm="单">
+  <div class="s-title">对照表：单调栈 vs 单调队列</div>
+  <div class="qdesc"><span class="qlabel">对照</span><span class="qtext">什么时候该选哪个？看「答案的有效范围」是否有限制</span></div>
+  <div class="numline anim">区别 = <i>栈只能从一端淘汰</i>，队列<b>还能淘汰过期的</b>；<b>有窗口就用队列</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1">
+        <table>
+          <thead><tr><th style="width:180px">维度</th><th>单调栈</th><th>单调队列</th></tr></thead>
+          <tbody>
+            <tr><td class="k">容器</td><td><code>list</code>（一端操作）</td><td><code>deque</code>（两端操作）</td></tr>
+            <tr><td class="k">典型问题</td><td>下一个更大 / 更小</td><td>滑动窗口最值</td></tr>
+            <tr><td class="k">答案范围</td><td><b>无限制</b>（一直往右找）</td><td><b>有窗口</b>（k 大小内）</td></tr>
+            <tr><td class="k">淘汰时机</td><td>被新元素「压死」</td><td>被压死 <b>或</b> 过期</td></tr>
+            <tr><td class="k">复杂度</td><td><b>O(n)</b> 摊销</td><td><b>O(n)</b> 摊销</td></tr>
+            <tr><td class="k">代码特征</td><td><code>while st and 条件: st.pop()</code></td><td>再加 <code>if dq[0] &lt;= i-k: dq.popleft()</code></td></tr>
+            <tr><td class="k">升级方向</td><td>直方图 / 子数组计数</td><td>DP 优化 / 斜率优化</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="c1-4 anim d2" style="margin-top:22px">
+        <div class="panel h grow accent">
+          <h4>选栈的信号</h4>
+          <p>· 「<b>右边第一个</b>…」<br>· 「<b>以它为最值的区间</b>」<br>· 「<b>消除 / 匹配</b>」<br>· 答案<b>不受距离限制</b></p>
+        </div>
+      </div>
+      <div class="c5-8 anim d3" style="grid-column:5/9;margin-top:22px">
+        <div class="panel h grow gold">
+          <h4>选队列的信号</h4>
+          <p>· 「<b>连续 k 个</b>…」<br>· 「<b>窗口内</b>最值」<br>· 「<b>最近 m 个</b>」<br>· 转移<b>依赖固定区间</b></p>
+        </div>
+      </div>
+      <div class="c9-12 anim d4" style="margin-top:22px">
+        <div class="panel h grow green">
+          <h4>一句话判断</h4>
+          <p><b>有窗口 → 单调队列；无窗口 → 单调栈。</b></p>
+          <p>记住这句，考场上 5 秒决定用哪个，剩下的都是肌肉记忆。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 26 区间最值扩展 ═════════ -->
+<section class="slide" data-ch="单调结构" data-num="26" data-ml="RANGE MIN" data-wm="单">
+  <div class="s-title">扩展：单调栈求「每个元素的管辖范围」</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">给定数组 a，对每个 i，求 a[i] 作为最小值的最长区间 [L, R]（区间内 a[i] 最小）</span></div>
+  <div class="numline anim">正向一次求 <i>L</i>（上一个更小），反向一次求 <i>R</i>（下一个更小），<b>两次 O(n) 合并</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-6 anim d1" style="height:100%">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">a = [3, 1, 2, 4]</text>
+          <rect class="box" x="20" y="48" width="504" height="112" rx="4"/>
+          <rect class="bar" x="36" y="64" width="112" height="80" rx="3"/><text class="tx-i" x="84" y="110">3</text>
+          <rect class="bar-a anim d1" x="156" y="64" width="112" height="80" rx="3"/><text class="tx-a" x="204" y="110">1</text>
+          <rect class="bar" x="276" y="64" width="112" height="80" rx="3"/><text class="tx-i" x="324" y="110">2</text>
+          <rect class="bar" x="396" y="64" width="112" height="80" rx="3"/><text class="tx-i" x="444" y="110">4</text>
+          <text class="tx-a" x="20" y="196">a[1] = 1 的管辖范围：整个数组 [0,3]</text>
+
+          <rect class="box-b" x="20" y="222" width="504" height="150" rx="4"/>
+          <text class="tx-b" x="42" y="258">TWO PASSES</text>
+          <text class="tx-i" x="42" y="296">第 1 次：递增栈，求每个 i 的 <b>left[i]</b></text>
+          <text class="tx-i" x="42" y="326">第 2 次：递增栈（反向），求 <b>right[i]</b></text>
+          <text class="tx-a" x="42" y="358">答案 = a[i] × (right[i] - left[i] - 1)</text>
+
+          <rect class="box-a" x="20" y="396" width="504" height="112" rx="4"/>
+          <text class="tx-a" x="42" y="432">WHY USEFUL</text>
+          <text class="tx-i" x="42" y="466">「子数组最小值之和」「最大矩形」</text>
+          <text class="tx-i" x="42" y="494">都依赖这一步的 <b>L / R 计数</b>。</text>
+        </svg>
+      </div>
+      <div class="c7-12 anim d2">
+        <div class="code" style="height:100%">
+          <div class="cbar"><span>range_min_span.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">min_span</span>(a):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;n = <span class="fn">len</span>(a)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;left = [-<span class="st">1</span>] * n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 左侧第一个更小</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;right = [n] * n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 右侧第一个更小</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;st = []</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> st <span class="kw">and</span> a[st[-<span class="st">1</span>]] &gt;= a[i]:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.<span class="fn">pop</span>()</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;left[i] = st[-<span class="st">1</span>] <span class="kw">if</span> st <span class="kw">else</span> -<span class="st">1</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.<span class="fn">append</span>(i)</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;st = []</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n-<span class="st">1</span>, -<span class="st">1</span>, -<span class="st">1</span>):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> st <span class="kw">and</span> a[st[-<span class="st">1</span>]] &gt; a[i]:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.<span class="fn">pop</span>()</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;right[i] = st[-<span class="st">1</span>] <span class="kw">if</span> st <span class="kw">else</span> n</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.<span class="fn">append</span>(i)</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 注意两次的比较符不同（&gt;= 与 &gt;）：</li>
+            <li class="cm"># 这是为了「相同元素不重复计数」</li>
+            <li class="cm"># 统一用 &gt; 会导致区间重叠、答案翻倍</li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> left, right</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:340px;top:318px" data-at="2600">↑ 这里是唯一一个「必须抠细节」的地方</div>
+  </div>
+</section>
+
+<!-- ═════════ 27 堆 / 优先队列 ═════════ -->
+<section class="slide" data-ch="应用" data-num="27" data-ml="HEAP" data-wm="应">
+  <div class="s-title">堆：当优先级比顺序更重要</div>
+  <div class="qdesc"><span class="qlabel">定义</span><span class="qtext">栈和队列管顺序，堆管「优先级」——每次取当前最优，但不保证整体有序</span></div>
+  <div class="numline anim">堆 = <i>只能取最优，不能直接查任意</i>；<b>push / pop 均 O(log n)</b>，<b>top O(1)</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-6 anim d1" style="height:100%">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">MIN-HEAP · 父 ≤ 子</text>
+          <rect class="box-a" x="220" y="48" width="104" height="52" rx="26"/><text class="tx-a" x="256" y="80">1</text>
+          <rect class="box-b" x="110" y="152" width="104" height="52" rx="26"/><text class="tx-b" x="146" y="184">3</text>
+          <rect class="box-b" x="330" y="152" width="104" height="52" rx="26"/><text class="tx-b" x="366" y="184">2</text>
+          <rect class="box" x="40" y="256" width="104" height="52" rx="26"/><text class="tx-i" x="76" y="288">7</text>
+          <rect class="box" x="180" y="256" width="104" height="52" rx="26"/><text class="tx-i" x="216" y="288">5</text>
+          <rect class="box" x="300" y="256" width="104" height="52" rx="26"/><text class="tx-i" x="336" y="288">4</text>
+          <rect class="box" x="420" y="256" width="104" height="52" rx="26"/><text class="tx-i" x="456" y="288">9</text>
+          <path class="ln-a draw" d="M272 100 L162 152" style="--L:122"/>
+          <path class="ln-a draw d1" d="M272 100 L382 152" style="--L:122"/>
+          <path class="ln draw d1" d="M162 204 L92 256" style="--L:92"/>
+          <path class="ln draw d1" d="M162 204 L232 256" style="--L:92"/>
+          <path class="ln draw d2" d="M382 204 L352 256" style="--L:60"/>
+          <path class="ln draw d2" d="M382 204 L472 256" style="--L:118"/>
+          <text class="tx" x="20" y="348">根 = 全局最优；但左右子树<b>不一定有序</b></text>
+
+          <rect class="box-b" x="20" y="374" width="504" height="134" rx="4"/>
+          <text class="tx-b" x="42" y="408">COMPLEXITY</text>
+          <text class="tx-i" x="42" y="442">push / pop ：<b>O(log n)</b>（下沉或上浮）</text>
+          <text class="tx-i" x="42" y="472">top ：<b>O(1)</b></text>
+          <text class="tx-i" x="42" y="502">heapify 建堆 ：<b>O(n)</b>，不是 O(n log n)</text>
+        </svg>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="code anim d2" style="height:212px">
+          <div class="cbar"><span>heapq_usage.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">import</span> heapq</li>
+            <li>&nbsp;</li>
+            <li class="cm"># Python 的 heapq 是<b>小根堆</b></li>
+            <li>h = []</li>
+            <li class="hi">heapq.<span class="fn">heappush</span>(h, x)&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># O(log n)</span></li>
+            <li class="hi">x = heapq.<span class="fn">heappop</span>(h)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># O(log n)</span></li>
+            <li>x = h[<span class="st">0</span>]&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># O(1) 看堆顶</span></li>
+            <li>&nbsp;</li>
+            <li class="cm"># 想要大根堆 → 存<b>相反数</b></li>
+            <li class="hi">heapq.<span class="fn">heappush</span>(h, -x); heapq.<span class="fn">heappop</span>(h)</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 或用 tuple，按第一关键字排序</li>
+            <li class="cm"># heapq.heappush(h, (-val, idx))</li>
+          </ol>
+        </div>
+        <div class="panel accent anim d3">
+          <h4>为什么转变：从「队列」到「堆」</h4>
+          <p>队列只能「<b>谁先来谁先走</b>」；但 Dijkstra 里，我们要「<b>当前距离最小的先走</b>」。</p>
+          <p>顺序被<b>优先级</b>替代 ⇒ 需要<b>能随时取出全局最优</b>的结构 ⇒ 堆。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>典型应用</h4>
+          <p>· <b>Top-K</b>：维护大小为 k 的小根堆<br>· <b>合并 K 个有序</b>：每次取堆顶最小<br>· <b>Dijkstra</b>：堆优化到 O((V+E) log V)<br>· <b>任务调度 / 中位数</b>：双堆</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:340px;top:432px" data-at="2500">↑ 大根堆取相反数，是 Python 的固定套路</div>
+  </div>
+</section>
+
+<!-- ═════════ 28 堆的应用 ═════════ -->
+<section class="slide" data-ch="应用" data-num="28" data-ml="HEAP APPS" data-wm="应">
+  <div class="s-title">堆的三大应用：Top-K、合并、Dijkstra</div>
+  <div class="qdesc"><span class="qlabel">代码</span><span class="qtext">三个最常考的堆应用，各一行核心代码就能说清</span></div>
+  <div class="numline anim">Top-K 用 <i>大小 k 的小根堆</i>；合并用 <i>元组堆</i>；Dijkstra 用 <i>(距离, 点)</i> 堆</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-4 anim d1">
+        <div class="code" style="height:100%">
+          <div class="cbar"><span>top_k.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="kw">import</span> heapq</li>
+            <li>&nbsp;</li>
+            <li><span class="kw">def</span> <span class="fn">kth_largest</span>(nums, k):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;h = []</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> x <span class="kw">in</span> nums:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;heapq.<span class="fn">heappush</span>(h, x)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> <span class="fn">len</span>(h) &gt; k:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;heapq.<span class="fn">heappop</span>(h)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> h[<span class="st">0</span>]</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 时间 O(n log k)</li>
+            <li class="cm"># 空间 O(k)</li>
+            <li class="cm"># 比排序 O(n log n) 快</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 注意：求「第 k 大」用<b>小根堆</b>，</li>
+            <li class="cm"># 因为要淘汰掉比堆顶还小的。</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c5-8 anim d2" style="grid-column:5/9">
+        <div class="code" style="height:100%">
+          <div class="cbar"><span>merge_k.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="kw">import</span> heapq</li>
+            <li>&nbsp;</li>
+            <li><span class="kw">def</span> <span class="fn">merge_k</span>(lists):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;h = [(l[<span class="st">0</span>], i, <span class="st">0</span>)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> i, l <span class="kw">in</span> <span class="fn">enumerate</span>(lists) <span class="kw">if</span> l]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;heapq.<span class="fn">heapify</span>(h)&nbsp;&nbsp;<span class="cm"># O(k)</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;out = []</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> h:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;v, i, j = heapq.<span class="fn">heappop</span>(h)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;out.<span class="fn">append</span>(v)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> j + <span class="st">1</span> &lt; <span class="fn">len</span>(lists[i]):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;heapq.<span class="fn">heappush</span>(</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;h, (lists[i][j+<span class="st">1</span>], i, j+<span class="st">1</span>))</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> out</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 元组 (val, list_id, idx)</li>
+            <li class="cm"># 避免 val 相同时比较 list 对象</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c9-12 anim d3">
+        <div class="code" style="height:100%">
+          <div class="cbar"><span>dijkstra.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="kw">import</span> heapq</li>
+            <li>&nbsp;</li>
+            <li><span class="kw">def</span> <span class="fn">dijkstra</span>(g, src):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;n = <span class="fn">len</span>(g)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;dist = [<span class="st">10</span>**<span class="st">18</span>] * n</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dist[src] = <span class="st">0</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;h = [(<span class="st">0</span>, src)]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> h:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;d, u = heapq.<span class="fn">heappop</span>(h)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> d &gt; dist[u]: <span class="kw">continue</span></li>
+            <li class="cm">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# 惰性删除，省去 decrease-key</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> v, w <span class="kw">in</span> g[u]:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> d + w &lt; dist[v]:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dist[v] = d + w</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;heapq.<span class="fn">heappush</span>(h, (d+w, v))</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> dist</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 复杂度 O((V+E) log V)</li>
+            <li class="cm"># 边权必须非负</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c1-12 anim d4" style="margin-top:20px">
+        <div class="panel accent" style="padding:16px 22px;display:flex;gap:32px">
+          <div style="flex:1"><p style="font:500 15px/1.7 var(--sans);color:var(--ink)"><b>Top-K</b>：堆里只留「有希望的 k 个」</p></div>
+          <div style="flex:1"><p style="font:500 15px/1.7 var(--sans);color:var(--ink)"><b>合并 K 个</b>：堆里是「k 条链的队头」</p></div>
+          <div style="flex:1"><p style="font:500 15px/1.7 var(--sans);color:var(--ink)"><b>Dijkstra</b>：堆里是「还没确定的候选点」</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 29 互模拟 ═════════ -->
+<section class="slide" data-ch="应用" data-num="29" data-ml="SIMULATION" data-wm="应">
+  <div class="s-title">互模拟：双栈成队、双队成栈</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">① 用两个栈实现队列 ② 用两个队列实现栈——只用 push/pop/top/empty 接口</span></div>
+  <div class="numline anim">关键 = <i>「倒腾一次」把 LIFO 变 FIFO</i>；<b>懒转移</b>让均摊代价 <b>O(1)</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-6 anim d1" style="height:100%">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">TWO STACKS → QUEUE</text>
+          <rect class="box" x="20" y="48" width="220" height="230" rx="4"/>
+          <rect class="bar-a anim d1" x="34" y="72" width="192" height="52" rx="3"/><text class="tx-a" x="116" y="104">3</text>
+          <rect class="bar-a anim d2" x="34" y="134" width="192" height="52" rx="3"/><text class="tx-a" x="116" y="166">2</text>
+          <rect class="bar-a anim d3" x="34" y="196" width="192" height="52" rx="3"/><text class="tx-a" x="116" y="228">1</text>
+          <text class="tx-a" x="34" y="304">stack A（存新入）</text>
+
+          <rect class="box-b" x="300" y="48" width="220" height="230" rx="4"/>
+          <rect class="bar-b anim d1" x="314" y="72" width="192" height="52" rx="3"/><text class="tx-b" x="396" y="104">1</text>
+          <rect class="bar-b anim d2" x="314" y="134" width="192" height="52" rx="3"/><text class="tx-b" x="396" y="166">2</text>
+          <rect class="bar-b anim d3" x="314" y="196" width="192" height="52" rx="3"/><text class="tx-b" x="396" y="228">3</text>
+          <text class="tx-b" x="314" y="304">stack B（存已倒）</text>
+
+          <path class="ln-a draw d2" d="M130 328 L130 366 L400 366 L400 328" style="--L:400"/>
+          <text class="tx-a" x="150" y="394">pop 时：B 空则把 A 全倒入 B</text>
+
+          <rect class="box-a" x="20" y="418" width="500" height="94" rx="4"/>
+          <text class="tx-a" x="42" y="452">均摊 O(1)</text>
+          <text class="tx-i" x="42" y="486">每个元素<b>至多被搬运 2 次</b>（进 A、进 B、出 B）</text>
+          <text class="tx-i" x="42" y="506">所以 n 次操作总代价 O(n)</text>
+        </svg>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="code anim d2" style="height:238px">
+          <div class="cbar"><span>queue_with_stacks.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">class</span> <span class="fn">MyQueue</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span>(self):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.a, self.b = [], []</li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">push</span>(self, x):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.a.<span class="fn">append</span>(x)</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">_move</span>(self):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> <span class="kw">not</span> self.b:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> self.a:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.b.<span class="fn">append</span>(self.a.<span class="fn">pop</span>())</li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">pop</span>(self):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.<span class="fn">_move</span>(); <span class="kw">return</span> self.b.<span class="fn">pop</span>()</li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">peek</span>(self):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.<span class="fn">_move</span>(); <span class="kw">return</span> self.b[-<span class="st">1</span>]</li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">empty</span>(self):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">not</span> self.a <span class="kw">and</span> <span class="kw">not</span> self.b</li>
+          </ol>
+        </div>
+        <div class="panel green anim d3" style="flex:1">
+          <h4>反向：两队列成栈</h4>
+          <p><b>入栈</b>：push 到非空的那个队列。<b>出栈</b>：把前 n-1 个搬到另一队，剩下的就是栈顶。</p>
+          <p>代价比双栈成队<b>更贵</b>（每次出栈都搬），均摊 <b>O(n)</b>——题目多考<b>思路而非效率</b>。</p>
+          <div class="linklist" style="margin-top:10px">
+            <a class="link" href="https://leetcode.cn/problems/implement-queue-using-stacks/" target="_blank"><span class="lv e">EASY</span><span class="ln2">232 · 用栈实现队列<small>本页原型</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/implement-stack-using-queues/" target="_blank"><span class="lv e">EASY</span><span class="ln2">225 · 用队列实现栈<small>反向练习</small></span><span class="lgo">LC ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:150px;top:390px" data-at="2600">↑ 「懒转移」是均摊 O(1) 的关键</div>
+  </div>
+</section>
+
+<!-- ═════════ 30 拓扑排序 ═════════ -->
+<section class="slide" data-ch="应用" data-num="30" data-ml="TOPO SORT" data-wm="应">
+  <div class="s-title">拓扑排序：队列在「依赖关系」上的用法</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">给定 n 门课程与先修关系 pairs，判断是否可能修完所有课程（等价于判断有向图是否有环）</span></div>
+  <div class="numline anim">Kahn 算法 = <i>入度为 0 入队</i>，出队<b>删除出边</b>；<b>访问数 &lt; n</b> ⇒ 有环</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-6 anim d1" style="height:100%">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">DAG · 3 → 1 → 2 → 4</text>
+          <rect class="box-b" x="30" y="90" width="104" height="56" rx="28"/><text class="tx-b" x="72" y="124">3</text>
+          <rect class="box-a" x="190" y="90" width="104" height="56" rx="28"/><text class="tx-a" x="232" y="124">1</text>
+          <rect class="box-b" x="350" y="90" width="104" height="56" rx="28"/><text class="tx-b" x="392" y="124">2</text>
+          <rect class="box" x="190" y="222" width="104" height="56" rx="28"/><text class="tx-i" x="232" y="256">4</text>
+          <path class="ln draw" d="M134 118 L190 118" style="--L:56"/>
+          <path class="ln draw d1" d="M294 118 L350 118" style="--L:56"/>
+          <path class="ln draw d2" d="M242 146 L242 222" style="--L:76"/>
+          <text class="tx" x="20" y="316">入度：3→0, 1→1, 2→1, 4→1</text>
+
+          <rect class="box-b" x="20" y="340" width="504" height="76" rx="4"/>
+          <text class="tx-b" x="42" y="374">QUEUE 过程</text>
+          <text class="tx-i" x="42" y="402">[3] → [1] → [2] → [4] → 空，共访问 4 个</text>
+
+          <rect class="box-a" x="20" y="436" width="504" height="76" rx="4"/>
+          <text class="tx-a" x="42" y="470">有环检测</text>
+          <text class="tx-i" x="42" y="498">若队列空时 <b>visited &lt; n</b>，说明剩下成环</text>
+        </svg>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="code anim d2" style="height:238px">
+          <div class="cbar"><span>topo_kahn.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">from</span> collections <span class="kw">import</span> deque</li>
+            <li>&nbsp;</li>
+            <li><span class="kw">def</span> <span class="fn">can_finish</span>(n, edges):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;g = [[] <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;deg = [<span class="st">0</span>] * n</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> u, v <span class="kw">in</span> edges:&nbsp;&nbsp;<span class="cm"># v → u</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;g[v].<span class="fn">append</span>(u); deg[u] += <span class="st">1</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;q = <span class="fn">deque</span>([i <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n)</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> deg[i] == <span class="st">0</span>])</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;seen = <span class="st">0</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> q:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;u = q.<span class="fn">popleft</span>(); seen += <span class="st">1</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> w <span class="kw">in</span> g[u]:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;deg[w] -= <span class="st">1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> deg[w] == <span class="st">0</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;q.<span class="fn">append</span>(w)</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> seen == n</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 复杂度 O(V+E)</li>
+            <li class="cm"># 求「字典序最小」拓扑：把 deque 换成堆</li>
+          </ol>
+        </div>
+        <div class="panel accent anim d3" style="flex:1">
+          <h4>为什么用队列，不用栈</h4>
+          <p>拓扑排序里<b>所有入度为 0 的点是平级</b>的，谁先处理都行。用<b>队列</b>保证「按层推进」，让排序结果<b>更稳定可预测</b>。</p>
+          <p>若用栈，结果虽也合法，但顺序变成 DFS 序——<b>某些题目要求字典序最小</b>时反而要换堆。</p>
+          <div class="linklist" style="margin-top:10px">
+            <a class="link" href="https://leetcode.cn/problems/course-schedule/" target="_blank"><span class="lv m">MID</span><span class="ln2">207 · 课程表<small>本页原型（判环）</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1347" target="_blank"><span class="lv m">MID</span><span class="ln2">P1347 · 排序<small>洛谷 · 边加边判环</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 31 真题演练 A ═════════ -->
+<section class="slide" data-ch="应用" data-num="31" data-ml="DRILL A" data-wm="应">
+  <div class="s-title">真题演练 A：洛谷 P5788 单调栈模板</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">给定长度为 n 的数列 a，对每个 i 输出右边第一个比 a[i] 大的元素的下标（从 1 开始），不存在输出 0</span></div>
+  <div class="numline anim">解法 = <i>从右往左扫</i>，维护<b>单调递减</b>栈；栈顶即「右边第一个更大的下标」</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-5 anim d1">
+        <div class="panel h grow accent">
+          <h4>审题三步</h4>
+          <div class="step on"><div class="n">1</div><div class="t">输出<b>下标</b>，不是值 → 栈存下标</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">下标从 <b>1</b> 开始，不存在输出 <b>0</b></div></div>
+          <div class="step"><div class="n">3</div><div class="t">「右边第一个」→ <b>反向扫描更直接</b></div></div>
+          <div class="step"><div class="n">4</div><div class="t">「<b>比它大</b>」→ 严格大于，条件用 <code>&lt;=</code> 清栈</div></div>
+        </div>
+        <div class="panel gold anim d2" style="margin-top:22px">
+          <h4>为什么反向扫更简单</h4>
+          <p>正向扫需要<b>「出栈时回填答案」</b>，反向扫则<b>「栈顶直接就是答案」</b>，代码更短，边界更少。</p>
+          <p>两种都能过，<b>选自己不容易写错的那个</b>。</p>
+        </div>
+      </div>
+      <div class="c6-12 anim d2">
+        <div class="code" style="height:100%">
+          <div class="cbar"><span>P5788 · 单调栈</span><span class="lang">PYTHON 3</span></div>
+          <ol class="cl">
+            <li><span class="kw">import</span> sys</li>
+            <li>input = sys.stdin.readline</li>
+            <li>&nbsp;</li>
+            <li>n = <span class="fn">int</span>(<span class="fn">input</span>())</li>
+            <li>a = <span class="fn">list</span>(<span class="fn">map</span>(<span class="fn">int</span>, <span class="fn">input</span>().<span class="fn">split</span>()))</li>
+            <li>&nbsp;</li>
+            <li class="hi">res = [<span class="st">0</span>] * n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 默认 0</span></li>
+            <li class="hi">st = []&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 存下标，a 值递减</span></li>
+            <li>&nbsp;</li>
+            <li class="hi"><span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n - <span class="st">1</span>, -<span class="st">1</span>, -<span class="st">1</span>):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> st <span class="kw">and</span> a[st[-<span class="st">1</span>]] &lt;= a[i]:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;st.<span class="fn">pop</span>()</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;res[i] = (st[-<span class="st">1</span>] + <span class="st">1</span>) <span class="kw">if</span> st <span class="kw">else</span> <span class="st">0</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;st.<span class="fn">append</span>(i)</li>
+            <li>&nbsp;</li>
+            <li>sys.stdout.<span class="fn">write</span>(<span class="st">' '</span>.<span class="fn">join</span>(<span class="fn">map</span>(str, res)) + <span class="st">'\n'</span>)</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 时间 O(n)，空间 O(n)</li>
+            <li class="cm"># 注意 st[-1] + 1：题目下标从 1 开始</li>
+            <li class="cm"># n ≤ 3e6 时记得用 sys.stdin.readline</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:400px;top:378px" data-at="2600">↑ 「+1」这一细节被卡掉过无数人</div>
+  </div>
+</section>
+
+<!-- ═════════ 32 真题演练 B ═════════ -->
+<section class="slide" data-ch="应用" data-num="32" data-ml="DRILL B" data-wm="应">
+  <div class="s-title">真题演练 B：LeetCode 239 滑动窗口最大值</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">给定数组 nums 与窗口大小 k，窗口从最左滑到最右（每次右移 1），输出每个窗口的最大值</span></div>
+  <div class="numline anim">解法 = <i>单调递减 deque 存下标</i>；<b>队头过期就出</b>，<b>队尾无望就出</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-5 anim d1">
+        <div class="panel h grow gold">
+          <h4>三种解法对比</h4>
+          <div class="step"><div class="n">1</div><div class="t">暴力：每窗口扫 k 个 → <b>O(nk)</b> TLE</div></div>
+          <div class="step"><div class="n">2</div><div class="t">堆：延迟删除，下标判过期 → <b>O(n log n)</b></div></div>
+          <div class="step on"><div class="n">3</div><div class="t"><b>单调队列</b> → <b>O(n)</b> ✅ 首选</div></div>
+        </div>
+        <div class="panel accent anim d2" style="margin-top:22px">
+          <h4>为什么堆不够好</h4>
+          <p>堆能拿到最大值，但<b>没法知道它是否过期</b>，只能「惰性删除」——pop 时才检查。</p>
+          <p>单调队列<b>天然有序 + 天然知道边界</b>，是唯一能达到 O(n) 的写法。</p>
+        </div>
+        <div class="panel green anim d3" style="margin-top:22px">
+          <h4>拓展</h4>
+          <p>· 求最小值：改比较符<br>· 求<b>窗口第 k 大</b>：要平衡树 / 二分<br>· <b>窗口不同元素数</b>：哈希 + 队列</p>
+        </div>
+      </div>
+      <div class="c6-12 anim d2">
+        <div class="code" style="height:100%">
+          <div class="cbar"><span>LC 239 · Sliding Window Maximum</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">from</span> collections <span class="kw">import</span> deque</li>
+            <li>&nbsp;</li>
+            <li><span class="kw">def</span> <span class="fn">maxSlidingWindow</span>(nums, k):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dq = <span class="fn">deque</span>()&nbsp;&nbsp;<span class="cm"># 存下标，对应值递减</span></li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;res = []</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> i, v <span class="kw">in</span> <span class="fn">enumerate</span>(nums):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 1) 淘汰「无望」的队尾</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> dq <span class="kw">and</span> nums[dq[-<span class="st">1</span>]] &lt;= v:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dq.<span class="fn">pop</span>()</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dq.<span class="fn">append</span>(i)</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 2) 淘汰「过期」的队头</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> dq[<span class="st">0</span>] &lt;= i - k:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dq.<span class="fn">popleft</span>()</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 3) 窗口成型后收集</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> i &gt;= k - <span class="st">1</span>:</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;res.<span class="fn">append</span>(nums[dq[<span class="st">0</span>]])</li>
+            <li>&nbsp;</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> res</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 时间 O(n)，空间 O(k)</li>
+            <li class="cm"># 每个下标至多进出 deque 各一次</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:410px" data-at="2600">↑ 三步顺序很重要，换一下就错</div>
+  </div>
+</section>
+
+<!-- ═════════ 33 五大思想全景 ═════════ -->
+<section class="slide" data-ch="题单" data-num="33" data-ml="PANORAMA" data-wm="题">
+  <div class="s-title">全景图：从「限制顺序」到「优化 DP」</div>
+  <div class="qdesc"><span class="qlabel">全景</span><span class="qtext">把今天所有内容压缩成一张图——下次看到新题，先在这张图上定位</span></div>
+  <div class="numline anim">全景 = <i>限制顺序</i> → <b>摊销 O(1)</b> → <b>单调候选</b> → <b>优化 DP</b>，<b>四步递进</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1" style="height:332px">
+        <svg class="fig" viewBox="0 0 1120 332" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">THE LADDER</text>
+
+          <rect class="box-a" x="20" y="48" width="248" height="118" rx="4"/>
+          <text class="tx-a" x="40" y="82">① 限制访问顺序</text>
+          <text class="tx-i" x="40" y="112">栈（LIFO）</text>
+          <text class="tx-i" x="40" y="138">队列（FIFO）</text>
+
+          <rect class="box-b" x="292" y="48" width="248" height="118" rx="4"/>
+          <text class="tx-b" x="312" y="82">② 摊销 O(1)</text>
+          <text class="tx-i" x="312" y="112">push/pop 各一次</text>
+          <text class="tx-i" x="312" y="138">计数法 / 势能法</text>
+
+          <rect class="box" x="564" y="48" width="248" height="118" rx="4" style="stroke:var(--accent2)"/>
+          <text x="584" y="82" style="font:600 11px var(--mono);fill:#9a6c12">③ 单调候选</text>
+          <text class="tx-i" x="584" y="112">单调栈 / 单调队列</text>
+          <text class="tx-i" x="584" y="138">淘汰「无望者」</text>
+
+          <rect class="box" x="836" y="48" width="264" height="118" rx="4" style="stroke:var(--ink2)"/>
+          <text class="tx" x="856" y="82">④ 优化 DP / 图</text>
+          <text class="tx-i" x="856" y="112">窗口转移、拓扑</text>
+          <text class="tx-i" x="856" y="138">Dijkstra + 堆</text>
+
+          <path class="ln-a draw" d="M268 107 L292 107" style="--L:24"/>
+          <path class="ln-b draw d1" d="M540 107 L564 107" style="--L:24"/>
+          <path class="ln draw d2" d="M812 107 L836 107" style="--L:24"/>
+
+          <line class="ax" x1="20" y1="204" x2="1100" y2="204"/>
+          <text class="tx" x="20" y="232">PROBLEM SIGNALS · 看到这些词就往上找</text>
+
+          <text class="tx-a" x="20" y="268">「嵌套 / 配对 / 回退」</text>
+          <text class="tx-b" x="312" y="268">「反复比较 / O(n²)」</text>
+          <text x="584" y="268" style="font:600 11px var(--mono);fill:#9a6c12">「下一个更大 / 窗口最值」</text>
+          <text class="tx" x="856" y="268">「转移只依赖区间」</text>
+
+          <text class="tx-a" x="20" y="300">→ 栈</text>
+          <text class="tx-b" x="312" y="300">→ 想办法减少重复</text>
+          <text x="584" y="300" style="font:600 11px var(--mono);fill:#9a6c12">→ 单调栈 / 队列</text>
+          <text class="tx" x="856" y="300">→ 单调队列优化 DP</text>
+        </svg>
+      </div>
+      <div class="c1-4 anim d2">
+        <div class="panel h grow accent">
+          <h4>方法论：先定位，再动手</h4>
+          <p>看到题，<b>先在全景图上找信号词</b>，再决定用哪个结构。<b>不要上来就套模板</b>。</p>
+        </div>
+      </div>
+      <div class="c5-8 anim d3" style="grid-column:5/9">
+        <div class="panel h grow gold">
+          <h4>三个「转变时刻」</h4>
+          <div class="step on"><div class="n">1</div><div class="t">栈 → 队列：问题从<b>嵌套</b>变<b>扩散</b></div></div>
+          <div class="step on"><div class="n">2</div><div class="t">队列 → 单调：出现<b>「最值 / 下一个」</b></div></div>
+          <div class="step"><div class="n">3</div><div class="t">队列 → 堆：顺序被<b>优先级</b>替代</div></div>
+        </div>
+      </div>
+      <div class="c9-12 anim d4">
+        <div class="panel h grow green">
+          <h4>最后的自检</h4>
+          <p>· 能说清<b>为什么转变</b>吗？<br>· 能写出<b>摊销分析</b>吗？<br>· 能<b>构造反例</b>推翻贪心吗？<br>· 换个题还<b>用得对</b>吗？</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:620px;top:262px" data-at="2500">← 信号词一出现，答案就在嘴边</div>
+  </div>
+</section>
+
+<!-- ═════════ 34 复杂度对照 ═════════ -->
+<section class="slide" data-ch="题单" data-num="34" data-ml="COMPLEXITY" data-wm="题">
+  <div class="s-title">复杂度对照表：所有结构一屏记完</div>
+  <div class="qdesc"><span class="qlabel">速查</span><span class="qtext">考前扫一眼这张表，比翻笔记快</span></div>
+  <div class="numline anim">核心 = <i>栈 / 队列 / 单调结构</i> 均 <b>均摊 O(1)</b>；<b>堆是 O(log n)</b>，别混用</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-12 anim d1">
+        <table>
+          <thead><tr><th style="width:180px">结构</th><th style="width:140px">push</th><th style="width:140px">pop / 取最值</th><th>典型题型</th></tr></thead>
+          <tbody>
+            <tr><td class="k">栈 list</td><td>O(1) 均摊</td><td>O(1)</td><td>括号、表达式、DFS、下一个更大</td></tr>
+            <tr><td class="k">队列 deque</td><td>O(1)</td><td>O(1)</td><td>BFS、拓扑、调度、滑动窗口</td></tr>
+            <tr><td class="k">单调栈</td><td>O(1) 摊销</td><td>O(1) 摊销</td><td>下一个更大、直方图、子数组计数</td></tr>
+            <tr><td class="k">单调队列</td><td>O(1) 摊销</td><td>O(1) 摊销</td><td>窗口最值、DP 优化</td></tr>
+            <tr><td class="k">堆（优先队列）</td><td>O(log n)</td><td>O(log n)</td><td>Top-K、合并 K 个、Dijkstra</td></tr>
+            <tr><td class="k">双端队列</td><td>O(1)</td><td>O(1)</td><td>0-1 BFS、单调队列、首尾贪心</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="c1-6 anim d2" style="margin-top:22px">
+        <div class="panel h grow accent">
+          <h4>空间复杂度</h4>
+          <p>栈 / 队列 / 单调结构：最坏 <b>O(n)</b>，通常实际使用远小于 n。</p>
+          <p>堆：<b>O(n)</b>。<br>BFS visited 数组：<b>O(V)</b>。<br>递归栈：<b>O(深度)</b>，可能爆。</p>
+        </div>
+      </div>
+      <div class="c7-12 anim d3" style="margin-top:22px">
+        <div class="panel h grow green">
+          <h4>竞赛里的「常数」现实</h4>
+          <p>· Python <b>deque 比 list 慢</b>（额外对象开销），只需栈时用 list</p>
+          <p>· n &gt; 10⁶ 时用 <code>sys.stdin.readline</code>，否则<b>卡在 IO</b> 而不是算法</p>
+          <p>· 大数据量下 <b>heapq 比 sorted 慢</b>，小规模反而快</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:840px;top:452px" data-at="2500">← 这一列最容易记反</div>
+  </div>
+</section>
+
+<!-- ═════════ 35 常见错误 ═════════ -->
+<section class="slide" data-ch="题单" data-num="35" data-ml="PITFALLS" data-wm="题">
+  <div class="s-title">常见错误清单：这些坑我都踩过</div>
+  <div class="qdesc"><span class="qlabel">避坑</span><span class="qtext">算法会了但代码过不了？八成是这一页里的某一条</span></div>
+  <div class="numline anim">检查清单 = <i>边界 / 空栈 / 比较符 / 下标</i>，<b>四类占 90% 的 WA</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-6 anim d1">
+        <div class="panel h grow accent">
+          <h4>⚠️ 栈 / 单调栈</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><code>while st and ...</code> <b>漏判空</b> → IndexError</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">比较符<b>方向搞反</b>（递增 / 递减）</div></div>
+          <div class="step on"><div class="n">3</div><div class="t">栈存<b>值</b>而非<b>下标</b>，答案无法定位</div></div>
+          <div class="step"><div class="n">4</div><div class="t">相等元素处理<b>前后不一致</b></div></div>
+          <div class="step"><div class="n">5</div><div class="t">忘记<b>哨兵</b>，收尾漏算</div></div>
+          <div class="step"><div class="n">6</div><div class="t">下标 <b>0/1 基</b>转换出错</div></div>
+        </div>
+      </div>
+      <div class="c7-12 anim d2">
+        <div class="panel h grow green">
+          <h4>⚠️ 队列 / BFS / 单调队列</h4>
+          <div class="step on"><div class="n">1</div><div class="t">用 <code>list.pop(0)</code> → <b>超时</b></div></div>
+          <div class="step on"><div class="n">2</div><div class="t">入队时<b>没标记 visited</b> → 爆队列</div></div>
+          <div class="step on"><div class="n">3</div><div class="t">过期条件写 <code>&lt; i-k</code>，应为 <code>&lt;= i-k</code></div></div>
+          <div class="step"><div class="n">4</div><div class="t">窗口没成型就开始收集结果</div></div>
+          <div class="step"><div class="n">5</div><div class="t">BFS 用在<b>边权不等</b>的图上</div></div>
+          <div class="step"><div class="n">6</div><div class="t">递归爆栈不自知，该转<b>显式栈</b></div></div>
+        </div>
+      </div>
+      <div class="c1-6 anim d3" style="margin-top:22px">
+        <div class="panel h grow gold">
+          <h4>⚠️ 堆</h4>
+          <div class="step"><div class="n">1</div><div class="t">忘记 Python 是<b>小根堆</b></div></div>
+          <div class="step"><div class="n">2</div><div class="t">heap 元组<b>第二关键字是对象</b> → 报错</div></div>
+          <div class="step"><div class="n">3</div><div class="t">Top-K 用<b>大根堆</b>导致空间爆炸</div></div>
+        </div>
+      </div>
+      <div class="c7-12 anim d4" style="margin-top:22px">
+        <div class="panel h grow accent">
+          <h4>调试三板斧</h4>
+          <p><b>① 手跑小样例</b>：n ≤ 5，把每一步栈/队列状态打出来</p>
+          <p><b>② 边界极值</b>：空、单元素、全相等、严格递增、严格递减</p>
+          <p><b>③ 对拍暴力</b>：写个 O(n²) 的正确版本，随机数据跑 10⁴ 次对比</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 36 LeetCode 题单 ═════════ -->
+<section class="slide" data-ch="题单" data-num="36" data-ml="LEETCODE" data-wm="题">
+  <div class="s-title">LeetCode 题单：按今天的主线排好序</div>
+  <div class="qdesc"><span class="qlabel">刷题</span><span class="qtext">按「栈 → 队列 → 单调结构 → 堆 → 综合」的顺序刷，不要乱跳</span></div>
+  <div class="numline anim">刷题法 = <i>先做模板题</i> → <b>再做变体</b> → <b>最后做综合</b>，<b>每个阶段写反思</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-6 anim d1">
+        <div class="panel h grow accent">
+          <h4>栈 · 8 题</h4>
+          <div class="linklist">
+            <a class="link" href="https://leetcode.cn/problems/valid-parentheses/" target="_blank"><span class="lv e">E</span><span class="ln2">20 · 有效的括号<small>入门模板</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/min-stack/" target="_blank"><span class="lv m">M</span><span class="ln2">155 · 最小栈<small>辅助结构</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/implement-queue-using-stacks/" target="_blank"><span class="lv e">E</span><span class="ln2">232 · 用栈实现队列<small>互模拟</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/decode-string/" target="_blank"><span class="lv m">M</span><span class="ln2">394 · 字符串解码<small>嵌套栈</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/simplify-path/" target="_blank"><span class="lv m">M</span><span class="ln2">71 · 简化路径<small>栈当撤销</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/longest-valid-parentheses/" target="_blank"><span class="lv h">H</span><span class="ln2">32 · 最长有效括号<small>栈存下标</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/basic-calculator-ii/" target="_blank"><span class="lv m">M</span><span class="ln2">227 · 基本计算器 II<small>双栈求值</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/daily-temperatures/" target="_blank"><span class="lv m">M</span><span class="ln2">739 · 每日温度<small>下一个更大</small></span><span class="lgo">↗</span></a>
+          </div>
+        </div>
+      </div>
+      <div class="c7-12 anim d2">
+        <div class="panel h grow green">
+          <h4>单调结构 · 堆 · 综合 · 8 题</h4>
+          <div class="linklist">
+            <a class="link" href="https://leetcode.cn/problems/next-greater-element-i/" target="_blank"><span class="lv e">E</span><span class="ln2">496 · 下一个更大元素 I<small>单调栈入门</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/next-greater-element-ii/" target="_blank"><span class="lv m">M</span><span class="ln2">503 · 下一个更大元素 II<small>环形 + 单调栈</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/largest-rectangle-in-histogram/" target="_blank"><span class="lv h">H</span><span class="ln2">84 · 柱状图中最大的矩形<small>满分题</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/sliding-window-maximum/" target="_blank"><span class="lv h">H</span><span class="ln2">239 · 滑动窗口最大值<small>单调队列</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/jump-game-vi/" target="_blank"><span class="lv m">M</span><span class="ln2">1696 · 跳跃游戏 VI<small>DP 优化</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/kth-largest-element-in-an-array/" target="_blank"><span class="lv m">M</span><span class="ln2">215 · 数组中的第 K 个最大元素<small>堆 / 快选</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/merge-k-sorted-lists/" target="_blank"><span class="lv h">H</span><span class="ln2">23 · 合并 K 个升序链表<small>元组堆</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/course-schedule/" target="_blank"><span class="lv m">M</span><span class="ln2">207 · 课程表<small>拓扑 + 队列</small></span><span class="lgo">↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 37 洛谷题单 ═════════ -->
+<section class="slide" data-ch="题单" data-num="37" data-ml="LUOGU" data-wm="题">
+  <div class="s-title">洛谷题单：竞赛向，难度从 ★2 到 ★5</div>
+  <div class="qdesc"><span class="qlabel">刷题</span><span class="qtext">洛谷的题更贴合 OI 风格，输入输出和边界更严格，适合练手感</span></div>
+  <div class="numline anim">洛谷 = <i>练 IO 与边界</i>；LeetCode = <b>练思路与模板</b>，<b>两边都要做</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-6 anim d1">
+        <div class="panel h grow gold">
+          <h4>模板 &amp; 基础 · 8 题</h4>
+          <div class="linklist">
+            <a class="link" href="https://www.luogu.com.cn/problem/P5788" target="_blank"><span class="lv e">★2</span><span class="ln2">P5788 · 【模板】单调栈<small>必做第一题</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1886" target="_blank"><span class="lv m">★3</span><span class="ln2">P1886 · 滑动窗口<small>单调队列模板</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1440" target="_blank"><span class="lv m">★3</span><span class="ln2">P1440 · 求 m 区间内的最小值<small>注意是 n-1 行输出</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1044" target="_blank"><span class="lv m">★3</span><span class="ln2">P1044 · 栈<small>卡特兰数 / DP</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1241" target="_blank"><span class="lv m">★3</span><span class="ln2">P1241 · 括号序列<small>栈 + 输出构造</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1175" target="_blank"><span class="lv m">★3</span><span class="ln2">P1175 · 表达式求值<small>双栈 + 后缀</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1162" target="_blank"><span class="lv e">★2</span><span class="ln2">P1162 · 填涂颜色<small>网格 BFS</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1347" target="_blank"><span class="lv m">★3</span><span class="ln2">P1347 · 排序<small>拓扑判环</small></span><span class="lgo">↗</span></a>
+          </div>
+        </div>
+      </div>
+      <div class="c7-12 anim d2">
+        <div class="panel h grow accent">
+          <h4>进阶 &amp; 综合 · 8 题</h4>
+          <div class="linklist">
+            <a class="link" href="https://www.luogu.com.cn/problem/P2947" target="_blank"><span class="lv m">★3</span><span class="ln2">P2947 · 向右看齐<small>单调栈正向版</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1901" target="_blank"><span class="lv m">★3</span><span class="ln2">P1901 · 发射站<small>单调栈 + 累加</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1823" target="_blank"><span class="lv h">★4</span><span class="ln2">P1823 · 排队<small>单调栈计数对</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P2032" target="_blank"><span class="lv m">★3</span><span class="ln2">P2032 · 扫描<small>单调队列</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1714" target="_blank"><span class="lv h">★4</span><span class="ln2">P1714 · 切蛋糕<small>前缀和 + 单调队列</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P3378" target="_blank"><span class="lv m">★3</span><span class="ln2">P3378 · 【模板】堆<small>手写堆</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1631" target="_blank"><span class="lv h">★4</span><span class="ln2">P1631 · 序列合并<small>堆 + 双指针</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1825" target="_blank"><span class="lv h">★4</span><span class="ln2">P1825 · Corn Maze<small>多状态 BFS</small></span><span class="lgo">↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 38 刷题方法 ═════════ -->
+<section class="slide" data-ch="题单" data-num="38" data-ml="HOW TO PRACTICE" data-wm="题">
+  <div class="s-title">怎么刷才有效：三阶段法</div>
+  <div class="qdesc"><span class="qlabel">方法</span><span class="qtext">会背模板不等于会做题——三阶段法解决「一看就会，一做就废」</span></div>
+  <div class="numline anim">三阶段 = <i>默写模板</i> → <b>闭卷变体</b> → <b>限时综合</b>，<b>每题必写反思</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%;align-items:stretch">
+      <div class="c1-4 anim d1">
+        <div class="panel h grow accent">
+          <h4>阶段 ① 默写模板</h4>
+          <p><b>目标</b>：闭卷写出栈 / 队列 / 单调栈 / 单调队列四个模板。</p>
+          <div class="step on" style="margin-top:12px"><div class="n">D</div><div class="t">每天 <b>1 次默写</b>，连续 5 天</div></div>
+          <div class="step on"><div class="n">Q</div><div class="t">不看笔记，<b>计时 10 分钟</b></div></div>
+          <div class="step"><div class="n">Q</div><div class="t">写完<b>对照</b>，标出错点</div></div>
+          <p style="margin-top:12px;color:var(--accent)"><b>完成标准</b>：5 分钟内零错误。</p>
+        </div>
+      </div>
+      <div class="c5-8 anim d2" style="grid-column:5/9">
+        <div class="panel h grow gold">
+          <h4>阶段 ② 闭卷变体</h4>
+          <p><b>目标</b>：同一模板，改一个条件还能做对。</p>
+          <div class="step on" style="margin-top:12px"><div class="n">Q</div><div class="t">下一个<b>更大</b> → 下一个<b>更小</b></div></div>
+          <div class="step on"><div class="n">Q</div><div class="t">窗口<b>最大</b> → 窗口<b>最小</b></div></div>
+          <div class="step"><div class="n">Q</div><div class="t">正向扫 → <b>反向扫</b></div></div>
+          <div class="step"><div class="n">Q</div><div class="t">值 → 下标，<b>0 基 → 1 基</b></div></div>
+          <p style="margin-top:12px;color:#9a6c12"><b>完成标准</b>：变体一遍过。</p>
+        </div>
+      </div>
+      <div class="c9-12 anim d3">
+        <div class="panel h grow green">
+          <h4>阶段 ③ 限时综合</h4>
+          <p><b>目标</b>：看到题能<b>独立定位</b>到该用什么结构。</p>
+          <div class="step on" style="margin-top:12px"><div class="n">D</div><div class="t">每题 <b>25 分钟</b>限时</div></div>
+          <div class="step on"><div class="n">Q</div><div class="t">先<b>写思路</b>再写代码</div></div>
+          <div class="step"><div class="n">Q</div><div class="t">卡住 <b>15 分钟</b>就看题解</div></div>
+          <p style="margin-top:12px;color:#2b6b56"><b>完成标准</b>：能讲清「为什么转变」。</p>
+        </div>
+      </div>
+      <div class="c1-12 anim d4" style="margin-top:22px">
+        <div class="panel accent" style="padding:18px 22px">
+          <p style="font:500 16px/1.8 var(--sans);color:var(--ink)">
+            <b>每题反思三句话（必写）</b>：
+            <span style="color:var(--accent)">① 这题的「信号词」是什么？</span> &nbsp;·&nbsp;
+            <span style="color:var(--accent)">② 为什么不用另一种结构？</span> &nbsp;·&nbsp;
+            <span style="color:var(--accent)">③ 我在哪一步卡住了？</span>
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:700px;top:452px" data-at="2500">← 写反思的那 3 分钟，比多做 5 道题更值</div>
+  </div>
+</section>
+
+<!-- ═════════ 39 十条军规 ═════════ -->
+<section class="slide" data-ch="题单" data-num="39" data-ml="TEN RULES" data-wm="题">
+  <div class="s-title">十条军规：带出这个教室就能用</div>
+  <div class="qdesc"><span class="qlabel">带走</span><span class="qtext">把 50 分钟压成十句话，贴在屏幕旁边</span></div>
+  <div class="numline anim">十条军规 = <i>限制顺序</i> → <b>摊销</b> → <b>单调</b> → <b>边界</b>，<b>四组归类</b></div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-3 anim d1">
+        <div class="panel h grow accent">
+          <h4>关于结构</h4>
+          <div class="step on"><div class="n">1</div><div class="t">数据结构 = <b>限制访问顺序</b></div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><b>嵌套</b>用栈，<b>扩散</b>用队列</div></div>
+          <div class="step"><div class="n">3</div><div class="t">顺序被<b>优先级</b>替代 → 堆</div></div>
+        </div>
+      </div>
+      <div class="c4-6 anim d2" style="grid-column:4/7">
+        <div class="panel h grow gold">
+          <h4>关于效率</h4>
+          <div class="step on"><div class="n">4</div><div class="t"><b>pop 后不再回来</b> ⇒ 摊销 O(1)</div></div>
+          <div class="step on"><div class="n">5</div><div class="t">重复比较 → 想<b>单调结构</b></div></div>
+          <div class="step"><div class="n">6</div><div class="t">窗口转移 → <b>单调队列 DP</b></div></div>
+        </div>
+      </div>
+      <div class="c7-9 anim d3" style="grid-column:7/10">
+        <div class="panel h grow green">
+          <h4>关于正确性</h4>
+          <div class="step on"><div class="n">7</div><div class="t">栈<b>先判空</b>，队列<b>先判过期</b></div></div>
+          <div class="step on"><div class="n">8</div><div class="t">存<b>下标</b>而不是值</div></div>
+          <div class="step"><div class="n">9</div><div class="t">比较符方向<b>先写例子验证</b></div></div>
+        </div>
+      </div>
+      <div class="c10-12 anim d4" style="grid-column:10/13">
+        <div class="panel h grow" style="border-left:3px solid var(--ink)">
+          <h4>关于方法</h4>
+          <div class="step on"><div class="n">10</div><div class="t">写不出<b>正确性证明</b>，就别赌</div></div>
+          <div class="step"><div class="n">+</div><div class="t">每题写<b>三句话反思</b></div></div>
+          <div class="step"><div class="n">+</div><div class="t">先<b>定位信号词</b>，再动手</div></div>
+        </div>
+      </div>
+      <div class="c1-12 anim d5" style="margin-top:22px">
+        <div class="panel accent" style="padding:22px">
+          <p class="big" style="color:var(--ink)">看到题目先问一句：<b style="color:var(--accent)">「谁该先被处理？」</b> —— 这一句的答案，就是你要的数据结构。</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:420px;top:518px" data-at="2500">↑ 记这一句就够了</div>
+  </div>
+</section>
+
+<!-- ═════════ 40 结语 ═════════ -->
+<section class="slide" data-ch="题单" data-num="40" data-ml="FIN" data-wm="题">
+  <div class="s-title">50 分钟回望：我们到底学了什么</div>
+  <div class="qdesc"><span class="qlabel">回望</span><span class="qtext">从一个「为什么这么慢」的问题出发，走到单调结构，最后落到刷题路径</span></div>
+  <div class="numline anim">回望 = <i>一个问题</i>（重复比较）→ <b>一个视角</b>（限制顺序）→ <b>一套方法</b>（单调候选）</div>
+  <div class="stage-inner">
+    <div class="grid" style="height:100%">
+      <div class="c1-7 anim d1" style="display:flex;flex-direction:column;justify-content:center;gap:28px">
+        <div>
+          <div class="cap" style="margin-bottom:16px">THE END · 40 / 40</div>
+          <div class="disp">栈与队列<span class="em">.</span></div>
+          <div class="big" style="margin-top:18px;color:var(--ink2);font-size:21px">现在你看到「下一个更大」四个字，<br>应该在 <span style="color:var(--accent)">3 秒内</span>想到单调栈。</div>
+        </div>
+        <div class="panel accent">
+          <h4>接下来 21 天怎么走</h4>
+          <div class="step on"><div class="n">1</div><div class="t">第 <b>1–5 天</b>：四个模板默写 + 栈 8 题</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">第 <b>6–12 天</b>：单调结构 8 题 + 变体</div></div>
+          <div class="step"><div class="n">3</div><div class="t">第 <b>13–21 天</b>：洛谷 16 题 + 限时训练</div></div>
+        </div>
+        <div class="cap">ALGORITHM PRIMER · STACK &amp; QUEUE · 2025</div>
+      </div>
+      <div class="c8-12 anim d2">
+        <svg class="fig" viewBox="0 0 500 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="30">WHAT CHANGED TODAY</text>
+          <rect class="box-a" x="20" y="52" width="460" height="86" rx="4"/>
+          <text class="tx-a" x="42" y="84">BEFORE</text>
+          <text class="tx-i" x="42" y="116">看到「下一个更大」→ 写双层循环</text>
+
+          <path class="ln-a draw" d="M250 152 L250 196" style="--L:44"/>
+          <path class="ln-a draw" d="M232 178 L250 196 L268 178" style="--L:50"/>
+
+          <rect class="box-b" x="20" y="216" width="460" height="86" rx="4"/>
+          <text class="tx-b" x="42" y="248">AFTER</text>
+          <text class="tx-i" x="42" y="280">看到「下一个更大」→ 写单调栈模板</text>
+
+          <rect class="box" x="20" y="342" width="460" height="152" rx="4"/>
+          <text class="tx" x="42" y="376">ONE LINE TO REMEMBER</text>
+          <text class="tx-i" x="42" y="412">「<b>谁该先被处理？</b>」</text>
+          <text class="tx-i" x="42" y="448">最近的 → 栈</text>
+          <text class="tx-i" x="42" y="476">最早的 → 队列</text>
+          <text class="tx-a" x="42" y="502">最有希望的 → 单调结构</text>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" style="left:120px;top:492px" data-at="2400">谢谢，开始刷题吧</div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script>
+(function(){
+  const deck   = document.getElementById('deck');
+  const slides = [...document.querySelectorAll('.slide')];
+  const CHAPTERS = ['起点','栈','队列','单调结构','应用','题单'];
+  const TOTAL = slides.length;
+  let cur = 0, playing = false;
+
+  /* ---------- 注入公共框架 ---------- */
+  slides.forEach((s,i)=>{
+    const ch = s.dataset.ch || '';
+    const ml = s.dataset.ml || '';
+    const wm = s.dataset.wm || '';
+    const nm = s.dataset.num || String(i+1).padStart(2,'0');
+    s.insertAdjacentHTML('beforeend', `
+      <div class="pager"><span class="cur">${String(i+1).padStart(2,'0')}</span><span class="tot"> / ${TOTAL}</span></div>
+      <div class="mnum">${nm}</div>
+      <div class="mlabel">${ml}</div>
+      <div class="top-rule"></div>
+      <div class="numrule"></div>
+      <div class="watermark">${wm}</div>
+      <div class="bot-rule"></div>
+      <div class="ruler"></div>
+      <div class="botline">
+        <div class="eyebrow">${ch}</div>
+        <div class="help">← → 或空格翻页 ｜ R 重放动画 ｜ G 跳页 ｜ Esc 目录</div>
+        <div class="bmark">STACK &amp; QUEUE</div>
+      </div>`);
+    const r = s.querySelector('.ruler');
+    CHAPTERS.forEach(c=>{
+      const b = document.createElement('button');
+      b.type='button'; b.textContent=c; b.dataset.ch=c;
+      b.addEventListener('click',()=>goToChapter(c));
+      r.appendChild(b);
+    });
+  });
+
+  /* ---------- 缩放 ---------- */
+  function fit(){
+    const s = Math.min(innerWidth/1280, innerHeight/720);
+    deck.style.transform = `scale(${Math.round(s*1000)/1000})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  /* ---------- 动画 ---------- */
+  function play(i){
+    const s = slides[i];
+    s.classList.remove('play');
+    deck.querySelectorAll('.hand.show').forEach(h=>h.classList.remove('show'));
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      s.classList.add('play');
+      s.querySelectorAll('.hand').forEach(h=>{
+        setTimeout(()=>h.classList.add('show'), +h.dataset.at || 2500);
+      });
+    }));
+  }
+
+  /* ---------- 切换 ---------- */
+  function show(i){
+    if(i<0||i>=slides.length||playing) return;
+    playing = true;
+    slides[cur].classList.remove('on');
+    cur = i;
+    const s = slides[cur];
+    s.classList.add('on');
+    const ch = s.dataset.ch;
+    deck.querySelectorAll('.ruler button').forEach(b=>b.classList.toggle('on', b.dataset.ch===ch));
+    play(cur);
+    setTimeout(()=>playing=false, 340);
+  }
+  const next = ()=>show(Math.min(cur+1, slides.length-1));
+  const prev = ()=>show(Math.max(cur-1, 0));
+  function goToChapter(c){
+    const idx = slides.findIndex(s=>s.dataset.ch===c);
+    if(idx>=0) show(idx);
+  }
+
+  /* ---------- 键盘 ---------- */
+  addEventListener('keydown', e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){ e.preventDefault(); next(); }
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){ e.preventDefault(); prev(); }
+    else if(e.key==='r'||e.key==='R'){ play(cur); }
+    else if(e.key==='g'||e.key==='G'){
+      const n = prompt(`跳转到第几页（1 – ${slides.length}）`);
+      const v = parseInt(n,10); if(v>=1&&v<=slides.length) show(v-1);
+    }
+    else if(e.key==='Escape'){ goToChapter(CHAPTERS[0]); }
+  });
+
+  /* ---------- 点击 / 触摸 ---------- */
+  deck.addEventListener('click', e=>{
+    if(e.target.closest('.ruler') || e.target.closest('a') || e.target.closest('button')) return;
+    next();
+  });
+  let tx=null;
+  deck.addEventListener('touchstart', e=>tx=e.touches[0].clientX, {passive:true});
+  deck.addEventListener('touchend', e=>{
+    if(tx===null) return;
+    const dx=e.changedTouches[0].clientX-tx;
+    if(Math.abs(dx)>50) dx<0?next():prev();
+    tx=null;
+  }, {passive:true});
+
+  /* ---------- SVG 路径长度 ---------- */
+  document.querySelectorAll('.draw').forEach(p=>{
+    if(!p.style.getPropertyValue('--L')){
+      try{ p.style.setProperty('--L', p.getTotalLength()); }catch(_){}
+    }
+  });
+
+  show(0);
+})();
+</script>
+</body>
+</html>

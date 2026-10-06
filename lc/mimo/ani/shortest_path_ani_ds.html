@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>最短路算法 · Dijkstra / Bellman-Ford / SPFA 动画</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1080px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead {
+    font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px;
+  }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  .g-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.4;
+    transition: fill .3s, stroke .3s, stroke-width .3s;
+  }
+  .g-node .node-id {
+    font-size: 22px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .g-node .node-dist {
+    font-family: ui-monospace, monospace;
+    font-size: 12px; font-weight: 700; fill: #ffffff;
+    pointer-events: none; user-select: none;
+  }
+  .g-node .dist-bg { fill: #829ab1; transition: fill .3s; }
+  .g-node.unreached .dist-bg { fill: #cbd2d9; }
+  .g-node.current .node-bg { fill: #ffd98a; stroke: #e09b00; stroke-width: 3.6; }
+  .g-node.current .node-id { fill: #a35e00; }
+  .g-node.done .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3; }
+  .g-node.done .node-id { fill: #1c5e28; }
+  .g-node.relaxing .node-bg { fill: #ffe9a8; stroke: #e09b00; stroke-width: 3.4; }
+  .g-node.relaxing .node-id { fill: #a35e00; }
+  .g-node.source .node-bg { stroke: #d64545; stroke-width: 3.6; }
+  .g-node.target .node-bg { stroke: #7c5cd6; stroke-width: 3.6; }
+  .g-node.on-path .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.6; }
+  .g-node.on-path .node-id { fill: #1c5e28; }
+  .g-node.inqueue .node-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3; }
+  .g-node.inqueue .node-id { fill: #5b3db8; }
+
+  .g-edge-base {
+    stroke: #cbd2d9; stroke-width: 3; stroke-linecap: round;
+    fill: none;
+  }
+  .g-edge-check {
+    stroke: #e09b00; stroke-width: 4.5; stroke-linecap: round;
+    fill: none; opacity: 0; transition: opacity .3s;
+    stroke-dasharray: 10 6;
+    animation: dashflow .8s linear infinite;
+  }
+  .g-edge-path {
+    stroke: #57a957; stroke-width: 4.5; stroke-linecap: round;
+    fill: none; opacity: 0; transition: opacity .3s;
+  }
+  .g-edge-path.show { opacity: 1; }
+  @keyframes dashflow { to { stroke-dashoffset: -16; } }
+
+  .edge-w-label {
+    font-family: ui-monospace, monospace;
+    font-size: 14px; font-weight: 700; fill: #4a5568;
+    pointer-events: none; user-select: none;
+    paint-order: stroke;
+    stroke: #ffffff;
+    stroke-width: 5;
+    stroke-linejoin: round;
+  }
+  .edge-w-label.check { fill: #b45a12; }
+  .edge-w-label.path  { fill: #2f7a34; }
+
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.algo { color: #7c5cd6; }
+  .row-label.src  { color: #d64545; }
+  .row-label.dst  { color: #2f7a34; }
+
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  .stat-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #f0f7ff; color: #2369ad;
+    padding: 4px 12px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600;
+    border: 1px solid #c7defa;
+  }
+  .stat-badge .num {
+    font-family: ui-monospace, monospace;
+    font-size: 14px; font-weight: 800; color: #2a7fd0;
+  }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.danger:hover { background: #b33232; border-color: #b33232; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost   { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+  button.ghost:hover { background: #f0f7ff; }
+  button.purple  { background: #7c5cd6; border-color: #7c5cd6; color: #fff; }
+  button.purple:hover { background: #634ab0; border-color: #634ab0; }
+
+  input[type="number"], select {
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border-radius: 7px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  select { min-width: 170px; }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .dist-table {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    font-size: 12.5px;
+  }
+  .dist-table .title {
+    font-weight: 700; color: #243b53; margin-right: 8px;
+  }
+  .dist-cell {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 6px;
+    background: #f0f4f8; color: #4a5568;
+    font-family: ui-monospace, monospace; font-size: 12px;
+    border: 1px solid #dbe4ec;
+    transition: background .25s, color .25s, border-color .25s;
+  }
+  .dist-cell .k { font-weight: 700; }
+  .dist-cell .v { font-weight: 800; }
+  .dist-cell.done   { background: #eaf9ee; color: #2f7a34; border-color: #b8e0bf; }
+  .dist-cell.active { background: #fffbf2; color: #a35e00; border-color: #ffd98a; }
+  .dist-cell.inqueue { background: #f2ecff; color: #5b3db8; border-color: #d8c8ff; }
+
+  .queue-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    font-size: 12.5px;
+    border-left: 4px solid #7c5cd6;
+  }
+  .queue-bar .title {
+    font-weight: 700; color: #5b3db8; margin-right: 8px;
+  }
+  .queue-item {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 3px 12px; border-radius: 6px;
+    background: #f2ecff; color: #5b3db8;
+    font-family: ui-monospace, monospace; font-size: 12.5px;
+    font-weight: 800; border: 1px solid #d8c8ff;
+    transition: background .25s, color .25s;
+  }
+  .queue-item.front { background: #7c5cd6; color: #fff; border-color: #7c5cd6; }
+  .queue-empty {
+    color: #829ab1; font-style: italic; font-size: 12px;
+  }
+
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 620px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>最短路算法 · Dijkstra / Bellman-Ford / SPFA 动画</h1>
+  <p class="subtitle" id="subtitle">
+    支持三种单源最短路算法，同一张图实时对比 · <code>Dijkstra</code> 贪心取最小 · <code>Bellman-Ford</code> 全局松弛 · <code>SPFA</code> 队列优化
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · 三种单源最短路算法对比</h2>
+    <p class="intro-lead">
+      三种算法都围绕<b>松弛操作</b>展开：对边 <code>(u, v, w)</code>，若 <code>dist[u] + w &lt; dist[v]</code> 就更新 <code>dist[v]</code>。
+      区别在于<b>谁来发起松弛、按什么顺序发起</b>。Dijkstra 用优先队列，每次只处理当前最近的点；Bellman-Ford 每轮遍历全部边，做 V−1 轮；
+      SPFA 用队列只把"被更新过的点"重新入队。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">算法 1</div>
+        <div class="title">Dijkstra（堆优化）</div>
+        <div class="desc">
+          <b>贪心</b>：每次取出 <code>dist</code> 最小的未确定节点 u，<br>
+          用它松弛所有邻居。<br>
+          复杂度 <code>O((V+E) log V)</code>，要求边权 <b>非负</b>。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">算法 2</div>
+        <div class="title">Bellman-Ford</div>
+        <div class="desc">
+          每轮遍历<b>全部边</b>，全部尝试松弛一次。<br>
+          重复 <code>V−1</code> 轮，最多能让最短路"边长"增加 V−1。<br>
+          复杂度 <code>O(VE)</code>，可处理<b>负权</b>，能检测负环。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">算法 3</div>
+        <div class="title">SPFA（队列优化 Bellman-Ford）</div>
+        <div class="desc">
+          只把"刚被更新过的点"重新入队，去松弛它的邻居。<br>
+          队列空 → 结束。平均 <code>O(kE)</code>，k 一般很小。<br>
+          <b>最坏 <code>O(VE)</code></b>，被恶意数据可退化。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">对比</div>
+        <div class="title">核心区别</div>
+        <div class="desc">
+          <b>Dijkstra</b>：一次处理一个确定的点，快但只能非负权<br>
+          <b>Bellman-Ford</b>：每轮全局扫描，慢但可负权<br>
+          <b>SPFA</b>：只对"有变化"的点做松弛，兼顾速度与负权
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">本质</div>
+        <div class="title">松弛操作 Relax</div>
+        <div class="desc">
+          对边 <code>(u, v, w)</code>：<br>
+          <code>if dist[u] + w &lt; dist[v]</code>：<br>
+          　　<code>dist[v] = dist[u] + w</code>；<br>
+          　　<code>prev[v] = u</code>
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">典型图</div>
+        <div class="title">本页面用图</div>
+        <div class="desc">
+          7 个节点（A~G），10 条无向边，权值 1~8。<br>
+          包含"<b>绕路更短</b>"的情形：<br>
+          从 A 到 F，直接走 C-F 是 11，<br>
+          而 A-D-E-F 只需 10。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label algo">算法</span>
+      <select id="algoSel">
+        <option value="dijkstra">Dijkstra（堆优化）</option>
+        <option value="bellman">Bellman-Ford</option>
+        <option value="spfa">SPFA（队列优化）</option>
+      </select>
+      <span class="row-label src" style="margin-left:16px;">源点</span>
+      <select id="srcSel" style="min-width:90px;"></select>
+      <span class="row-label dst" style="margin-left:8px;">目标</span>
+      <select id="dstSel" style="min-width:90px;"></select>
+      <button id="btnReset" class="ghost" style="margin-left:12px;">重置</button>
+      <span class="row-hint">
+        切换算法后点击「开始演示」，可以直接看到三种算法在同一张图上的行为差异
+      </span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 选择算法后点击「开始演示」</div>
+
+  <div class="dist-table" id="distTable">
+    <span class="title">距离表 dist[]</span>
+  </div>
+
+  <div class="queue-bar" id="queueBar">
+    <span class="title">队列 / 优先队列</span>
+    <span class="queue-empty">（空）</span>
+  </div>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 三种最短路算法对比 <span class="hint">同一张图，不同策略</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · 三种单源最短路
+      <span class="badge">Dijkstra + Bellman-Ford + SPFA</span>
+      <span class="hint">同一接口，可直接对比</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyCode"></pre></div>
+  </details>
+</div>
+
+<!-- ============ Python 源码 ============ -->
+<script type="text/plain" id="pySrc">
+"""
+三种单源最短路算法：Dijkstra、Bellman-Ford、SPFA。
+
+统一接口：
+    dist, prev = algorithm(n, edges, adj, src)
+    dist[v]  = 从 src 到 v 的最短距离
+    prev[v]  = 最短路径上 v 的前驱（用于还原路径）
+"""
+
+import heapq
+import math
+from collections import deque
+
+INF = math.inf
+
+
+# ============================================================
+# 算法 1：Dijkstra（堆优化）—— 非负权，O((V+E) log V)
+# ============================================================
+def dijkstra(n, adj, src):
+    """
+    每次从优先队列取出 dist 最小的未确定节点 u，
+    用它松弛所有邻居 v。
+
+    关键性质：所有边权非负，所以"取出即确定"。
+    """
+    dist = [INF] * n
+    prev = [-1] * n
+    done = [False] * n
+    dist[src] = 0
+
+    pq = [(0, src)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if done[u]:
+            continue                # 堆里可能存了旧版本
+        done[u] = True              # u 的 dist 从此确定
+
+        for v, w in adj[u]:
+            if not done[v] and d + w < dist[v]:
+                dist[v] = d + w
+                prev[v] = u
+                heapq.heappush(pq, (dist[v], v))
+
+    return dist, prev
+
+
+# ============================================================
+# 算法 2：Bellman-Ford —— 可负权，O(VE)
+# ============================================================
+def bellman_ford(n, edges, src):
+    """
+    对所有边做 V-1 轮松弛。每轮至少让最短路的"边数"增加 1 层。
+
+    返回 (dist, prev, has_negative_cycle)。
+    """
+    dist = [INF] * n
+    prev = [-1] * n
+    dist[src] = 0
+
+    for _ in range(n - 1):
+        updated = False
+        for u, v, w in edges:
+            if dist[u] != INF and dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                prev[v] = u
+                updated = True
+        if not updated:
+            break                   # 提前结束
+
+    # 第 V 轮还能松弛 → 存在负环
+    has_neg = False
+    for u, v, w in edges:
+        if dist[u] != INF and dist[u] + w < dist[v]:
+            has_neg = True
+            break
+
+    return dist, prev, has_neg
+
+
+# ============================================================
+# 算法 3：SPFA —— Bellman-Ford 的队列优化，平均 O(kE)
+# ============================================================
+def spfa(n, adj, src):
+    """
+    用一个队列存"刚刚被更新过"的节点。
+    每次取出队首 u，松弛所有邻居 v。
+    若 v 被更新 且 v 不在队列中，就把 v 入队。
+
+    队列空即结束。平均 O(kE)，k 一般很小；最坏 O(VE)。
+    """
+    dist = [INF] * n
+    prev = [-1] * n
+    in_queue = [False] * n
+    dist[src] = 0
+
+    q = deque([src])
+    in_queue[src] = True
+
+    while q:
+        u = q.popleft()
+        in_queue[u] = False
+
+        for v, w in adj[u]:
+            if dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                prev[v] = u
+                if not in_queue[v]:
+                    q.append(v)
+                    in_queue[v] = True
+
+    return dist, prev
+
+
+# ============================================================
+# 路径还原
+# ============================================================
+def reconstruct_path(prev, src, dst):
+    """从 dst 沿 prev 回溯到 src，返回完整路径（不含 src 时返回空）。"""
+    path = []
+    cur = dst
+    while cur != -1:
+        path.append(cur)
+        if cur == src:
+            break
+        cur = prev[cur]
+    if not path or path[-1] != src:
+        return []
+    path.reverse()
+    return path
+
+
+# ============================================================
+# 演示
+# ============================================================
+if __name__ == '__main__':
+    # 与页面相同的图：7 个节点，10 条无向边
+    n = 7
+    edges = [
+        (0, 1, 4), (1, 2, 3),      # A-B, B-C
+        (0, 3, 2), (1, 4, 5),      # A-D, B-E
+        (2, 5, 4), (3, 4, 6),      # C-F, D-E
+        (4, 5, 2), (3, 6, 8),      # E-F, D-G
+        (4, 6, 1), (5, 6, 3),      # E-G, F-G
+    ]
+    # 邻接表（无向图双向加边）
+    adj = [[] for _ in range(n)]
+    for u, v, w in edges:
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+
+    src, dst = 0, 5
+    print(f'源点 = {src}，目标 = {dst}\n')
+
+    d1, p1 = dijkstra(n, adj, src)
+    print('Dijkstra  dist =', d1)
+    print('Dijkstra  path =', reconstruct_path(p1, src, dst))
+
+    d2, p2, neg = bellman_ford(n, edges, src)
+    print('Bellman   dist =', d2, ' has_neg_cycle =', neg)
+    print('Bellman   path =', reconstruct_path(p2, src, dst))
+
+    d3, p3 = spfa(n, adj, src)
+    print('SPFA      dist =', d3)
+    print('SPFA      path =', reconstruct_path(p3, src, dst))
+
+    # 三种算法结果一致
+    assert d1 == d2 == d3
+    print('\n✔ 三种算法结果一致')
+</script>
+
+<script>
+/* =========================================================
+   1. 图结构（7 节点，10 边，无交叉）
+   --------------------------------------------------------
+   布局：三行三列的网格状分层，避免任何边交叉
+        A(0)    B(1)    C(2)
+        D(3)    E(4)    F(5)
+                G(6)
+   ========================================================= */
+const NODES = [
+  { id: 0, label: 'A', x: 130, y: 90  },
+  { id: 1, label: 'B', x: 450, y: 90  },
+  { id: 2, label: 'C', x: 770, y: 90  },
+  { id: 3, label: 'D', x: 130, y: 260 },
+  { id: 4, label: 'E', x: 450, y: 260 },
+  { id: 5, label: 'F', x: 770, y: 260 },
+  { id: 6, label: 'G', x: 450, y: 430 },
+];
+
+/* 边：u < v 存储，保证下标唯一 */
+const EDGES = [
+  [0, 1, 4],   // A-B
+  [1, 2, 3],   // B-C
+  [0, 3, 2],   // A-D
+  [1, 4, 5],   // B-E
+  [2, 5, 4],   // C-F
+  [3, 4, 6],   // D-E
+  [4, 5, 2],   // E-F
+  [3, 6, 8],   // D-G
+  [4, 6, 1],   // E-G
+  [5, 6, 3],   // F-G
+];
+
+/* 邻接表 */
+const ADJ = Array.from({ length: NODES.length }, () => []);
+for (const [u, v, w] of EDGES) {
+  ADJ[u].push([v, w]);
+  ADJ[v].push([u, w]);
+}
+
+/* =========================================================
+   2. 状态
+   ========================================================= */
+let dist = [];
+let prev = [];
+let done = [];
+let inQueue = [];
+let srcNode = 0;
+let dstNode = 5;
+let busy = false;
+let inDemo = false;
+
+let nodeStates = [];
+let edgeStates = [];
+
+/* 优先队列 / 队列的显示数据 */
+let displayQueue = [];      // [{id, label}]
+let queueKind = 'pq';       // 'pq' 优先队列 | 'fifo' 队列 | 'round'
+
+/* =========================================================
+   3. SVG 搭建
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+const NODE_R = 32;
+
+function edgeMidpoint(u, v) {
+  const a = NODES[u], b = NODES[v];
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+function edgeEnds(u, v) {
+  const a = NODES[u], b = NODES[v];
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = Math.hypot(dx, dy) || 1;
+  const r = NODE_R + 2;
+  return {
+    x1: a.x + dx / len * r, y1: a.y + dy / len * r,
+    x2: b.x - dx / len * r, y2: b.y - dy / len * r,
+  };
+}
+
+function render() {
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+
+  /* ---------- 边 ---------- */
+  for (let i = 0; i < EDGES.length; i++) {
+    const [u, v, w] = EDGES[i];
+    const { x1, y1, x2, y2 } = edgeEnds(u, v);
+
+    /* 底线 */
+    const base = document.createElementNS(NS, 'line');
+    base.setAttribute('x1', x1); base.setAttribute('y1', y1);
+    base.setAttribute('x2', x2); base.setAttribute('y2', y2);
+    base.setAttribute('class', 'g-edge-base');
+    edgeLayer.appendChild(base);
+
+    /* 检查中（橙色流动虚线） */
+    if (edgeStates[i] === 'check') {
+      const c = document.createElementNS(NS, 'line');
+      c.setAttribute('x1', x1); c.setAttribute('y1', y1);
+      c.setAttribute('x2', x2); c.setAttribute('y2', y2);
+      c.setAttribute('class', 'g-edge-check');
+      c.setAttribute('opacity', '1');
+      edgeLayer.appendChild(c);
+    }
+
+    /* 最短路（绿色实线） */
+    if (edgeStates[i] === 'path') {
+      const p = document.createElementNS(NS, 'line');
+      p.setAttribute('x1', x1); p.setAttribute('y1', y1);
+      p.setAttribute('x2', x2); p.setAttribute('y2', y2);
+      p.setAttribute('class', 'g-edge-path show');
+      edgeLayer.appendChild(p);
+    }
+
+    /* 权重标签 */
+    const mid = edgeMidpoint(u, v);
+    const t = document.createElementNS(NS, 'text');
+    let labelCls = 'edge-w-label';
+    if (edgeStates[i] === 'check') labelCls += ' check';
+    if (edgeStates[i] === 'path')  labelCls += ' path';
+    t.setAttribute('class', labelCls);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('dominant-baseline', 'central');
+    t.setAttribute('x', mid.x);
+    t.setAttribute('y', mid.y);
+    t.textContent = w;
+    edgeLayer.appendChild(t);
+  }
+
+  /* ---------- 节点 ---------- */
+  for (let i = 0; i < NODES.length; i++) {
+    const n = NODES[i];
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'g-node';
+    if (nodeStates[i]) cls += ' ' + nodeStates[i];
+    if (dist[i] === undefined || dist[i] === Infinity) cls += ' unreached';
+    g.setAttribute('class', cls);
+    g.setAttribute('transform', `translate(${n.x}, ${n.y})`);
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('r', NODE_R);
+    c.setAttribute('class', 'node-bg');
+    g.appendChild(c);
+
+    const id = document.createElementNS(NS, 'text');
+    id.setAttribute('class', 'node-id');
+    id.setAttribute('text-anchor', 'middle');
+    id.setAttribute('dominant-baseline', 'central');
+    id.setAttribute('y', '-6');
+    id.textContent = n.label;
+    g.appendChild(id);
+
+    const distBg = document.createElementNS(NS, 'rect');
+    distBg.setAttribute('class', 'dist-bg');
+    distBg.setAttribute('x', '-26');
+    distBg.setAttribute('y', '8');
+    distBg.setAttribute('width', '52');
+    distBg.setAttribute('height', '18');
+    distBg.setAttribute('rx', '5');
+    g.appendChild(distBg);
+
+    const distTxt = document.createElementNS(NS, 'text');
+    distTxt.setAttribute('class', 'node-dist');
+    distTxt.setAttribute('text-anchor', 'middle');
+    distTxt.setAttribute('dominant-baseline', 'central');
+    distTxt.setAttribute('y', '17');
+    let shown = '∞';
+    if (dist[i] !== undefined && dist[i] !== Infinity) shown = String(dist[i]);
+    distTxt.textContent = 'd=' + shown;
+    g.appendChild(distTxt);
+
+    nodeLayer.appendChild(g);
+  }
+
+  updateDistTable();
+  updateQueueBar();
+}
+
+/* =========================================================
+   4. 距离表 + 队列显示
+   ========================================================= */
+function updateDistTable() {
+  const el = document.getElementById('distTable');
+  if (!el) return;
+  el.innerHTML = '<span class="title">距离表 dist[]</span>';
+  for (let i = 0; i < NODES.length; i++) {
+    const cell = document.createElement('span');
+    let cls = 'dist-cell';
+    if (done[i]) cls += ' done';
+    else if (nodeStates[i] === 'current' || nodeStates[i] === 'relaxing') cls += ' active';
+    else if (inQueue[i]) cls += ' inqueue';
+    cell.className = cls;
+    const val = (dist[i] === undefined || dist[i] === Infinity) ? '∞' : dist[i];
+    cell.innerHTML = `<span class="k">${NODES[i].label}</span>=<span class="v">${val}</span>`;
+    el.appendChild(cell);
+  }
+}
+
+function updateQueueBar() {
+  const el = document.getElementById('queueBar');
+  if (!el) return;
+  let title = '队列 / 优先队列';
+  if (queueKind === 'pq')    title = '优先队列（按 dist 排序）';
+  else if (queueKind === 'fifo') title = 'FIFO 队列';
+  else if (queueKind === 'round') title = '轮次遍历';
+  el.innerHTML = `<span class="title">${title}</span>`;
+  if (!displayQueue || displayQueue.length === 0) {
+    el.innerHTML += '<span class="queue-empty">（空）</span>';
+    return;
+  }
+  for (let i = 0; i < displayQueue.length; i++) {
+    const item = document.createElement('span');
+    item.className = 'queue-item' + (i === 0 ? ' front' : '');
+    item.textContent = item.label = item.textContent = '';
+
+    /* 兼容两种格式：{label} 或直接是字符串 */
+    if (typeof displayQueue[i] === 'string') {
+      item.textContent = displayQueue[i];
+    } else {
+      item.textContent = displayQueue[i].label;
+    }
+    el.appendChild(item);
+  }
+}
+
+/* =========================================================
+   5. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   6. 状态工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+function setButtonsDisabled(d) {
+  if (inDemo) d = true;
+  for (const id of ['btnReset', 'btnDemoStart']) {
+    document.getElementById(id).disabled = d;
+  }
+  document.getElementById('srcSel').disabled = d;
+  document.getElementById('dstSel').disabled = d;
+  document.getElementById('algoSel').disabled = d;
+}
+
+function resetState() {
+  dist = new Array(NODES.length).fill(Infinity);
+  prev = new Array(NODES.length).fill(-1);
+  done = new Array(NODES.length).fill(false);
+  inQueue = new Array(NODES.length).fill(false);
+  nodeStates = new Array(NODES.length).fill('');
+  edgeStates = new Array(EDGES.length).fill('');
+  displayQueue = [];
+  queueKind = (document.getElementById('algoSel').value === 'bellman') ? 'round' : 'pq';
+
+  if (srcNode >= 0) {
+    dist[srcNode] = 0;
+    nodeStates[srcNode] = 'source';
+  }
+  if (dstNode >= 0 && dstNode !== srcNode) {
+    nodeStates[dstNode] = 'target';
+  }
+  render();
+}
+
+function findEdgeIndex(u, v) {
+  for (let i = 0; i < EDGES.length; i++) {
+    const [a, b] = EDGES[i];
+    if ((a === u && b === v) || (a === v && b === u)) return i;
+  }
+  return -1;
+}
+
+/* =========================================================
+   7. 算法 1：Dijkstra 动画
+   ========================================================= */
+async function animatedDijkstra(src) {
+  queueKind = 'pq';
+  dist[src] = 0;
+  nodeStates[src] = 'source';
+  displayQueue = [{ label: `(${NODES[src].label}, 0)` }];
+  render();
+  setStatus(`【Dijkstra】初始化：dist[${NODES[src].label}] = 0，优先队列放入 (0, ${NODES[src].label})`);
+  await tick(750);
+
+  let pq = [[0, src]];
+
+  while (pq.length > 0) {
+    /* 优先队列按 dist 排序 */
+    pq.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const [d, u] = pq.shift();
+
+    /* 更新显示队列 */
+    displayQueue = pq.map(([dd, uu]) => ({
+      label: `(${NODES[uu].label}, ${dd === Infinity ? '∞' : dd})`
+    }));
+    if (displayQueue.length === 0) {
+      displayQueue = [{ label: '（空）' }];
+    }
+
+    if (done[u]) {
+      setStatus(`优先队列弹出 (${d}, ${NODES[u].label}) —— 该点已确定，跳过（堆中可能存旧版本）`);
+      render();
+      await tick(450);
+      continue;
+    }
+
+    /* 标记为当前节点 */
+    nodeStates[u] = 'current';
+    render();
+    setStatus(`优先队列弹出最小 (${d}, ${NODES[u].label}) → 确定 dist[${NODES[u].label}] = ${d}`);
+    await tick(800);
+
+    /* 松弛邻居 */
+    for (const [v, w] of ADJ[u]) {
+      const ei = findEdgeIndex(u, v);
+      if (ei >= 0) edgeStates[ei] = 'check';
+      if (nodeStates[v] !== 'source' && nodeStates[v] !== 'target' && !done[v]) {
+        nodeStates[v] = 'relaxing';
+      }
+      render();
+
+      const cand = d + w;
+      const cur = dist[v] === Infinity ? '∞' : String(dist[v]);
+
+      if (!done[v] && cand < dist[v]) {
+        dist[v] = cand;
+        prev[v] = u;
+        pq.push([cand, v]);
+        /* 更新显示队列 */
+        const sorted = pq.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+        displayQueue = sorted.map(([dd, uu]) => ({
+          label: `(${NODES[uu].label}, ${dd === Infinity ? '∞' : dd})`
+        }));
+        render();
+        setStatus(`  松弛 ${NODES[u].label}→${NODES[v].label} (w=${w})：${d} + ${w} = ${cand} < ${cur} → 更新 dist[${NODES[v].label}] = ${cand}，入队`);
+        await tick(850);
+      } else {
+        setStatus(`  检查 ${NODES[u].label}→${NODES[v].label} (w=${w})：${d} + ${w} = ${cand} ≥ ${cur} → 不更新`);
+        await tick(580);
+      }
+
+      if (ei >= 0) edgeStates[ei] = '';
+      if (nodeStates[v] === 'relaxing') nodeStates[v] = '';
+      render();
+    }
+
+    done[u] = true;
+    nodeStates[u] = 'done';
+    render();
+    setStatus(`✔ ${NODES[u].label} 已确定，dist = ${dist[u]}`);
+    await tick(650);
+  }
+
+  displayQueue = [{ label: '（空）' }];
+  render();
+}
+
+/* =========================================================
+   8. 算法 2：Bellman-Ford 动画
+   ========================================================= */
+async function animatedBellmanFord(src) {
+  queueKind = 'round';
+  dist[src] = 0;
+  nodeStates[src] = 'source';
+  render();
+  setStatus(`【Bellman-Ford】初始化：dist[${NODES[src].label}] = 0，其余为 ∞`);
+  await tick(750);
+
+  const V = NODES.length;
+
+  for (let round = 1; round <= V - 1; round++) {
+    displayQueue = [{ label: `第 ${round} 轮 / 最多 ${V - 1} 轮` }];
+    render();
+    setStatus(`【Bellman-Ford】第 ${round} 轮：遍历全部 ${EDGES.length} 条边`);
+    await tick(700);
+
+    let updated = false;
+
+    for (let ei = 0; ei < EDGES.length; ei++) {
+      const [u, v, w] = EDGES[ei];
+
+      /* 无向图双向松弛 */
+      for (const [a, b, dir] of [[u, v, `${NODES[u].label}→${NODES[v].label}`],
+                                  [v, u, `${NODES[v].label}→${NODES[u].label}`]]) {
+        edgeStates[ei] = 'check';
+        render();
+
+        if (dist[a] === Infinity) {
+          setStatus(`  检查边 ${dir} (w=${w})：dist[${NODES[a].label}] = ∞ → 跳过`);
+          await tick(260);
+        } else {
+          const cand = dist[a] + w;
+          const cur = dist[b] === Infinity ? '∞' : String(dist[b]);
+          if (cand < dist[b]) {
+            dist[b] = cand;
+            prev[b] = a;
+            updated = true;
+            render();
+            setStatus(`  ✔ 松弛 ${dir} (w=${w})：${dist[a]} + ${w} = ${cand} < ${cur} → 更新 dist[${NODES[b].label}] = ${cand}`);
+            await tick(420);
+          } else {
+            setStatus(`  检查 ${dir} (w=${w})：${dist[a]} + ${w} = ${cand} ≥ ${cur} → 不更新`);
+            await tick(260);
+          }
+        }
+        edgeStates[ei] = '';
+        render();
+      }
+    }
+
+    if (!updated) {
+      setStatus(`【Bellman-Ford】第 ${round} 轮没有任何更新 → 提前结束`);
+      await tick(900);
+      break;
+    }
+    setStatus(`【Bellman-Ford】第 ${round} 轮结束`);
+    await tick(500);
+  }
+
+  displayQueue = [{ label: '（结束）' }];
+  render();
+}
+
+/* =========================================================
+   9. 算法 3：SPFA 动画
+   ========================================================= */
+async function animatedSPFA(src) {
+  queueKind = 'fifo';
+  dist[src] = 0;
+  nodeStates[src] = 'source';
+  inQueue[src] = true;
+  displayQueue = [{ label: NODES[src].label }];
+  render();
+  setStatus(`【SPFA】初始化：dist[${NODES[src].label}] = 0，队列 = [${NODES[src].label}]`);
+  await tick(750);
+
+  const q = [src];
+
+  while (q.length > 0) {
+    const u = q.shift();
+    inQueue[u] = false;
+
+    /* 更新队列显示 */
+    displayQueue = q.map(id => ({ label: NODES[id].label }));
+    if (displayQueue.length === 0) {
+      displayQueue = [{ label: '（空）' }];
+    }
+
+    if (nodeStates[u] !== 'source' && nodeStates[u] !== 'target') {
+      nodeStates[u] = 'current';
+    }
+    render();
+    setStatus(`【SPFA】出队 ${NODES[u].label}（当前 dist = ${dist[u]}），准备松弛它的所有邻居`);
+    await tick(750);
+
+    for (const [v, w] of ADJ[u]) {
+      const ei = findEdgeIndex(u, v);
+      if (ei >= 0) edgeStates[ei] = 'check';
+      if (nodeStates[v] !== 'source' && nodeStates[v] !== 'target' && !inQueue[v]) {
+        nodeStates[v] = 'relaxing';
+      }
+      render();
+
+      const cand = dist[u] + w;
+      const cur = dist[v] === Infinity ? '∞' : String(dist[v]);
+
+      if (cand < dist[v]) {
+        dist[v] = cand;
+        prev[v] = u;
+        render();
+
+        if (!inQueue[v]) {
+          q.push(v);
+          inQueue[v] = true;
+          displayQueue = q.map(id => ({ label: NODES[id].label }));
+          setStatus(`  松弛 ${NODES[u].label}→${NODES[v].label} (w=${w})：${dist[u]} + ${w} = ${cand} < ${cur} → 更新 dist[${NODES[v].label}] = ${cand}，入队`);
+          await tick(850);
+        } else {
+          setStatus(`  松弛 ${NODES[u].label}→${NODES[v].label} (w=${w})：更新 dist[${NODES[v].label}] = ${cand}（已在队列中，不重复入队）`);
+          await tick(700);
+        }
+      } else {
+        setStatus(`  检查 ${NODES[u].label}→${NODES[v].label} (w=${w})：${dist[u]} + ${w} = ${cand} ≥ ${cur} → 不更新`);
+        await tick(500);
+      }
+
+      if (ei >= 0) edgeStates[ei] = '';
+      if (nodeStates[v] === 'relaxing') nodeStates[v] = '';
+      render();
+    }
+
+    if (nodeStates[u] === 'current') nodeStates[u] = '';
+    render();
+  }
+
+  displayQueue = [{ label: '（空）' }];
+  render();
+}
+
+/* =========================================================
+   10. 路径还原动画（三种算法共用）
+   ========================================================= */
+async function showShortestPath(src, dst) {
+  const path = [];
+  let cur = dst;
+  while (cur !== -1) {
+    path.push(cur);
+    if (cur === src) break;
+    cur = prev[cur];
+  }
+  if (!path.length || path[path.length - 1] !== src) {
+    setStatus(`✘ 从 ${NODES[src].label} 到 ${NODES[dst].label} 不可达`);
+    await tick(1200);
+    return;
+  }
+  path.reverse();
+
+  setStatus(`路径还原：从 ${NODES[dst].label} 沿 prev 回溯 → ${path.map(p => NODES[p].label).join(' → ')}`);
+  await tick(900);
+
+  for (let i = 0; i < path.length - 1; i++) {
+    const ei = findEdgeIndex(path[i], path[i + 1]);
+    if (ei >= 0) edgeStates[ei] = 'path';
+    render();
+    await tick(450);
+  }
+  for (const p of path) nodeStates[p] = 'on-path';
+  render();
+  setStatus(`✔ 最短路径：${path.map(p => NODES[p].label).join(' → ')}，总长度 = ${dist[dst]}`);
+  await tick(2000);
+}
+
+/* =========================================================
+   11. 统一入口
+   ========================================================= */
+async function runAlgorithm(algo, src, dst) {
+  resetState();
+  const algoName = { dijkstra: 'Dijkstra', bellman: 'Bellman-Ford', spfa: 'SPFA' }[algo];
+
+  setStatus(`▶ 开始 ${algoName}：源点 = ${NODES[src].label}` + (dst >= 0 && dst !== src ? `，目标 = ${NODES[dst].label}` : ''));
+  await tick(500);
+
+  if (algo === 'dijkstra') await animatedDijkstra(src);
+  else if (algo === 'bellman') await animatedBellmanFord(src);
+  else if (algo === 'spfa') await animatedSPFA(src);
+
+  if (dst >= 0 && dst !== src && dist[dst] !== Infinity) {
+    await showShortestPath(src, dst);
+  } else {
+    setStatus(`✔ ${algoName} 结束：dist = [${dist.map((x, i) => NODES[i].label + ':' + (x === Infinity ? '∞' : x)).join(', ')}]`);
+    await tick(1500);
+  }
+}
+
+/* =========================================================
+   12. 演示控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const demoModeGroup = document.getElementById('demoModeGroup');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  inDemo = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  setButtonsDisabled(true);
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  const algo = document.getElementById('algoSel').value;
+  const src = +document.getElementById('srcSel').value;
+  const dst = +document.getElementById('dstSel').value;
+  srcNode = src;
+  dstNode = dst;
+
+  try {
+    await runAlgorithm(algo, src, dst);
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  inDemo = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  busy = false;
+  setButtonsDisabled(false);
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+/* =========================================================
+   13. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: '三种算法共同点', key: true, lines: [
+    '都解决<b>单源最短路</b>：一个源点到其余所有点的最短距离',
+    '都依赖<b>松弛操作</b>：<code>dist[u] + w &lt; dist[v]</code> 就更新',
+    '都需要 <code>dist</code> 数组和 <code>prev</code> 数组（记录前驱）',
+    '<b>区别</b>：谁来发起松弛，按什么顺序发起',
+  ]},
+  { icon: '⚡', title: 'Dijkstra：贪心取最小', key: true, lines: [
+    '每次从优先队列取出 <b>dist 最小</b>的未确定节点 u',
+    'u 一旦取出，<code>dist[u]</code> 就是最终答案',
+    '然后用 u 松弛它的所有邻居',
+    '复杂度 <code>O((V+E) log V)</code>',
+    '<b>要求：所有边权 &gt;= 0</b>',
+  ]},
+  { icon: '🔄', title: 'Bellman-Ford：全局扫描', key: true, lines: [
+    '每轮遍历<b>所有边</b>，全部尝试松弛一次',
+    '重复 <code>V−1</code> 轮，最短路"边数"每轮最多 +1',
+    '若某轮完全没有更新 → <b>提前结束</b>',
+    '复杂度 <code>O(VE)</code>',
+    '<b>支持负权边</b>，可检测负环',
+  ]},
+  { icon: '📬', title: 'SPFA：队列优化', key: true, lines: [
+    '用一个 <b>FIFO 队列</b>存"刚被更新过的点"',
+    '每次取出队首 u，松弛它的邻居',
+    '若邻居 v 被更新 且 v 不在队列中 → v 入队',
+    '队列空 → 结束',
+    '平均 <code>O(kE)</code>，最坏 <code>O(VE)</code>',
+  ]},
+  { icon: '🚫', title: '为什么 Dijkstra 不能有负权边', key: true, lines: [
+    'Dijkstra 的核心假设：<b>取出即确定</b>',
+    '若存在负权边，一个已确定的节点可能被更短路径刷新',
+    '例：A-B=1，A-C=2，B-C=-5',
+    '确定 B(dist=1) 后经 B 到 C 得 -4 < 2',
+    '→ C 的 dist 被刷新，但 C 早就"确定"了',
+  ]},
+  { icon: '⏱️', title: '复杂度对比', key: false, lines: [
+    '<b>Dijkstra</b>（堆）：<code>O((V+E) log V)</code>，稀疏图最佳',
+    '<b>Dijkstra</b>（数组）：<code>O(V²)</code>，稠密图也不差',
+    '<b>Bellman-Ford</b>：<code>O(VE)</code>，慢但通用',
+    '<b>SPFA</b>：平均 <code>O(kE)</code>，最坏 <code>O(VE)</code>',
+  ]},
+  { icon: '🔍', title: '如何选择', key: false, lines: [
+    '边权非负 → <b>Dijkstra</b>（堆优化）',
+    '有负权边 → <b>Bellman-Ford / SPFA</b>',
+    '需要检测负环 → <b>Bellman-Ford</b>',
+    '网格图 / 游戏寻路 → <b>A*</b>（Dijkstra + 启发式）',
+    '多源最短路 → <b>Floyd</b>，<code>O(V³)</code>',
+  ]},
+  { icon: '🧩', title: '典型应用', key: false, lines: [
+    '<b>地图导航</b>：最短路径规划',
+    '<b>网络路由</b>：OSPF 用 Dijkstra，RIP 用 Bellman-Ford',
+    '<b>游戏 AI</b>：网格寻路 / 迷宫求解',
+    '<b>社交网络</b>：最短关系链',
+    '<b>货币套利</b>：用 Bellman-Ford 检测负环',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    el.className = 'k-card' + (card.key ? ' key-point' : '');
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   14. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue','assert'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','len','range','float','int','str','list','dict',
+    'set','tuple','sum','isinstance','math','heapq','deque'
+  ]);
+  let html = '', i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '#') {
+      let j = i; while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1;
+      while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_.]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+      if (word === 'self') html += '<span class="tok-self">self</span>';
+      else if (KEYWORDS.has(word)) html += '<span class="tok-keyword">' + word + '</span>';
+      else if (BUILTINS.has(word)) html += '<span class="tok-builtin">' + word + '</span>';
+      else if (code[j] === '(') html += '<span class="tok-func">' + word + '</span>';
+      else html += word;
+      i = j; continue;
+    }
+    if (/\d/.test(c)) {
+      let j = i; while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j; continue;
+    }
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+}
+
+/* =========================================================
+   15. 初始化 & 事件
+   ========================================================= */
+renderKnowledge();
+renderPythonCode();
+
+const srcSel = document.getElementById('srcSel');
+const dstSel = document.getElementById('dstSel');
+const algoSel = document.getElementById('algoSel');
+for (let i = 0; i < NODES.length; i++) {
+  srcSel.appendChild(new Option(`${NODES[i].label} (${i})`, i));
+  dstSel.appendChild(new Option(`${NODES[i].label} (${i})`, i));
+}
+srcSel.value = 0;   // A
+dstSel.value = 5;   // F
+
+srcSel.addEventListener('change', () => {
+  if (busy) return;
+  srcNode = +srcSel.value;
+  resetState();
+  setStatus(`源点已改为 ${NODES[srcNode].label}`);
+});
+dstSel.addEventListener('change', () => {
+  if (busy) return;
+  dstNode = +dstSel.value;
+  resetState();
+});
+algoSel.addEventListener('change', () => {
+  if (busy) return;
+  resetState();
+  const name = algoSel.options[algoSel.selectedIndex].text;
+  setStatus(`已切换到 ${name}，点击「开始演示」观看动画`);
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (busy) return;
+  resetState();
+  setStatus('已重置图，dist 全部为 ∞');
+});
+
+/* 初始化 */
+srcNode = 0;
+dstNode = 5;
+resetState();
+updateDemoUI();
+</script>
+</body>
+</html>

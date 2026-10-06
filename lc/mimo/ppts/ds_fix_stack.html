@@ -1,0 +1,1873 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>一条管子，两个口 · 栈与队列 · 30 分钟</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#F2EFE8; --elev:#FBF9F5; --night:#15171B;
+  --ink:#15171B; --ink-inv:#F2EFE8; --muted:#7A776E;
+  --volt:#FF4D1F; --blue:#1B4AE0; --green:#0B7A55; --red:#C22A1F;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+  --sans:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;border-radius:0}
+html,body{height:100%;background:#26282C;overflow:hidden;
+  font-family:var(--sans);-webkit-font-smoothing:antialiased}
+
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;
+  transform:translate(-50%,-50%) scale(var(--s,1));background:var(--canvas);
+  overflow:hidden;transition:background 500ms ease-in-out}
+#stage.night{background:var(--night)}
+
+/* ---------- slide frame ---------- */
+.slide{position:absolute;left:0;right:0;top:0;bottom:46px;display:none;
+  flex-direction:column;padding:28px 64px 18px 124px;color:var(--ink);overflow:hidden}
+.slide.on{display:flex}
+.slide.night{color:var(--ink-inv)}
+
+.eb{font:500 10px/1.2 var(--mono);letter-spacing:.22em;color:var(--muted);
+  text-transform:uppercase;margin-bottom:6px}
+.slide.night .eb{color:#8E887B}
+.h{font:700 34px/1.15 var(--sans);letter-spacing:-.012em}
+.h.big{font:900 44px/1.12 var(--sans);letter-spacing:-.022em;margin-left:-2px}
+.sb{font:400 15px/1.5 var(--sans);margin-top:5px}
+.slide.night .sb{color:#D9D3C6}
+.hd{margin-bottom:10px}
+.bd{flex:1;display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.two-75{display:grid;grid-template-columns:7fr 5fr;gap:20px;align-items:start}
+.two-57{display:grid;grid-template-columns:5fr 7fr;gap:20px;align-items:start}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+
+/* ---------- plates ---------- */
+.plate{background:var(--elev);border:2px solid var(--ink);padding:12px 14px}
+.slide.night .plate{background:#1C1F24;border-color:#3A3E45;color:var(--ink-inv)}
+.card-k{font:500 10px/1.2 var(--mono);letter-spacing:.16em;color:var(--muted);margin-bottom:5px}
+.slide.night .card-k{color:#A9A395}
+.p{font:400 13px/1.55 var(--sans)}
+.p.sm{font-size:13px}
+.p b{font-weight:700}
+.mono{font-family:var(--mono)}
+.tag{display:inline-block;font:500 10px/1 var(--mono);letter-spacing:.12em;
+  border:2px solid var(--ink);padding:5px 8px}
+.tag.blue{color:var(--blue);border-color:var(--blue)}
+.tag.green{color:var(--green);border-color:var(--green)}
+.tag.volt{color:var(--volt);border-color:var(--volt)}
+
+/* ---------- code ---------- */
+.codeplate{background:var(--elev);border:2px solid var(--ink);
+  border-right:4px solid var(--rule,var(--blue));padding:0}
+.slide.night .codeplate{background:#1C1F24;border-color:#3A3E45;border-right-color:var(--rule,var(--blue))}
+.state{min-height:34px;display:flex;align-items:center;gap:8px;padding:6px 11px;
+  border-bottom:2px solid var(--ink);flex-wrap:wrap}
+.slide.night .state{border-bottom-color:#3A3E45}
+.state .sl{font:500 10px/1 var(--mono);letter-spacing:.14em;color:var(--muted)}
+.state .sv{font:500 13px/1 var(--mono);color:var(--ink)}
+.slide.night .state .sv{color:var(--ink-inv)}
+pre{font:400 12px/1.45 var(--mono);padding:10px 13px;overflow:hidden;
+  white-space:pre;color:var(--ink)}
+.slide.night pre{color:#E6E1D6}
+pre .kw{color:var(--blue);font-weight:700}
+pre .cm{color:var(--muted)}
+pre .st{color:var(--green)}
+pre .nu{color:var(--volt)}
+.slide.night pre .cm{color:#8E887B}
+
+/* ---------- instruction + footer ---------- */
+.instr{border:2px solid var(--ink);padding:6px 12px;display:flex;gap:9px;
+  align-items:baseline;align-self:flex-start;margin-top:10px;max-width:940px}
+.slide.night .instr{border-color:#3A3E45}
+.instr span{font:500 10px/1.3 var(--mono);letter-spacing:.12em;color:var(--muted);white-space:nowrap}
+.instr p{font:400 13px/1.35 var(--sans)}
+.foot{margin-top:6px;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.foot a{font:500 10px/1 var(--mono);letter-spacing:.06em;color:var(--ink);
+  border:2px solid var(--ink);padding:4px 7px;text-decoration:none}
+.foot a:hover{background:var(--ink);color:var(--canvas)}
+.slide.night .foot a{color:var(--ink-inv);border-color:#4A4F57}
+.slide.night .foot a:hover{background:var(--ink-inv);color:var(--night)}
+.foot .note{font:400 11px/1.4 var(--mono);color:var(--muted)}
+
+/* ---------- rail ---------- */
+.rail{position:absolute;left:56px;top:28px;bottom:64px;width:56px;display:flex;
+  flex-direction:column;align-items:center;font-family:var(--mono);color:var(--muted);
+  pointer-events:none;transition:color 500ms ease-in-out}
+#stage.night .rail{color:#8E887B}
+.rail .ch{font:700 11px/1 var(--mono);letter-spacing:.14em;writing-mode:vertical-rl;
+  margin-bottom:10px;color:var(--ink)}
+#stage.night .rail .ch{color:var(--ink-inv)}
+.rail .q{font:500 10px/1 var(--mono);letter-spacing:.18em;writing-mode:vertical-rl;
+  max-height:150px;overflow:hidden}
+.rail .line{flex:1;width:2px;background:currentColor;opacity:.32;position:relative;margin:10px 0}
+.rail .tick{position:absolute;left:-3px;width:8px;height:2px;background:currentColor}
+.rail .sq{position:absolute;left:-3px;width:8px;height:8px;background:var(--volt);
+  transition:top 400ms cubic-bezier(.2,.8,.2,1);
+  transform:translateY(-50%)}
+.rail .sec{font:700 11px/1 var(--mono);letter-spacing:.18em;writing-mode:vertical-rl;margin-top:10px}
+
+/* ---------- control bar ---------- */
+.ctrl{position:absolute;left:0;right:0;bottom:0;height:46px;background:var(--canvas);
+  border-top:2px solid var(--ink);display:flex;align-items:center;gap:10px;
+  padding:0 20px 0 24px;transition:background 500ms ease-in-out,border-color 500ms}
+#stage.night .ctrl{background:var(--night);border-top-color:#3A3E45}
+.pline{position:absolute;left:0;top:0;height:3px;width:100%;background:rgba(21,23,27,.12)}
+#stage.night .pline{background:rgba(255,255,255,.12)}
+.pline i{display:block;height:100%;width:0;background:var(--volt);
+  transition:width 320ms cubic-bezier(.2,.8,.2,1)}
+.navbtn{font:500 11px/1 var(--mono);letter-spacing:.10em;color:var(--ink);
+  background:transparent;border:2px solid var(--ink);padding:6px 11px;cursor:pointer}
+#stage.night .navbtn{color:var(--ink-inv);border-color:#4A4F57}
+.navbtn:hover{background:var(--volt);border-color:var(--volt);color:#fff}
+.counter{font:700 13px/1 var(--mono);letter-spacing:.12em;color:var(--ink);
+  background:transparent;border:2px solid var(--ink);padding:5px 11px;cursor:pointer}
+#stage.night .counter{color:var(--ink-inv);border-color:#4A4F57}
+.counter:hover{background:var(--ink);color:var(--canvas)}
+#stage.night .counter:hover{background:var(--ink-inv);color:var(--night)}
+.ctrl-ch{font:500 11px/1 var(--mono);letter-spacing:.14em;color:var(--muted)}
+.hint{margin-left:auto;font:400 11px/1 var(--mono);color:var(--muted);letter-spacing:.04em}
+.edge{position:absolute;top:0;bottom:46px;width:92px;border:none;background:transparent;
+  color:var(--ink);opacity:.12;font:400 40px/1 var(--sans);cursor:pointer;pointer-events:none}
+#stage.night .edge{color:#fff}
+.edge.l{left:0}.edge.r{right:0}
+.edge.on{opacity:.42}
+#stage:hover .edge{opacity:.22}
+
+/* ---------- overview ---------- */
+.index{position:absolute;inset:0 0 46px 0;background:rgba(21,23,27,.96);
+  color:var(--ink-inv);display:none;flex-direction:column;padding:30px 46px;z-index:30}
+.index.on{display:flex}
+.index h3{font:700 22px var(--sans);margin-bottom:4px}
+.index .sub{font:400 11px var(--mono);color:#8E887B;letter-spacing:.12em;margin-bottom:16px}
+.igrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;flex:1;align-content:start}
+.icell{border:2px solid #3A3E45;padding:9px 10px;cursor:pointer;background:transparent;
+  text-align:left;color:var(--ink-inv);font-family:var(--sans)}
+.icell:hover{border-color:var(--volt)}
+.icell:focus-visible{outline:2px solid var(--volt);outline-offset:2px}
+.icell.cur{border-color:var(--volt);background:rgba(255,77,31,.16)}
+.icell .n{font:700 10px var(--mono);letter-spacing:.14em;color:#8E887B}
+.icell .t{font:500 12px/1.3 var(--sans);margin-top:4px}
+.icell .c{font:400 9px var(--mono);letter-spacing:.12em;color:var(--volt);margin-top:5px}
+
+/* ---------- svg ---------- */
+.tube{display:block;width:100%;height:auto;overflow:visible}
+.tube.tall{width:300px;height:auto;margin:0 auto}
+.tube .wall{stroke:var(--ink);stroke-width:3;fill:none;stroke-linejoin:round}
+.tube .seal{stroke:var(--ink);stroke-width:6;stroke-linecap:round}
+.tube .mouth-in{stroke:var(--blue);stroke-width:3;stroke-linecap:round}
+.tube .mouth-out{stroke:var(--green);stroke-width:3;stroke-linecap:round}
+.tube .arw-in{stroke:var(--blue);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tube .arw-out{stroke:var(--green);stroke-width:3;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.tube .lbl{font:500 12px var(--mono);fill:var(--muted)}
+.tube .lbl-ink{font:500 12px var(--mono);fill:var(--ink)}
+#stage.night .tube .wall,#stage.night .tube .seal{stroke:#F2EFE8}
+#stage.night .tube .lbl{fill:#8E887B}
+#stage.night .tube .lbl-ink{fill:#F2EFE8}
+.chip{transition:transform 400ms cubic-bezier(.2,.8,.2,1),opacity 220ms linear}
+.chip rect{fill:var(--elev);stroke:var(--ink);stroke-width:2}
+.chip text{font:500 14px var(--mono);fill:var(--ink);text-anchor:middle;dominant-baseline:middle}
+.chip.in rect{stroke:var(--blue)}
+.chip.out rect{stroke:var(--green)}
+.chip.hot rect{fill:var(--volt);stroke:var(--volt)}
+.chip.hot text{fill:#fff}
+#stage.night .chip rect{fill:#22262C;stroke:#F2EFE8}
+#stage.night .chip text{fill:#F2EFE8}
+#stage.night .chip.hot rect{fill:var(--volt);stroke:var(--volt)}
+.reveal{opacity:0;transform:translateY(8px)}
+.slide.on .reveal{animation:rv 360ms cubic-bezier(.16,1,.3,1) forwards}
+@keyframes rv{to{opacity:1;transform:translateY(0)}}
+
+/* ---------- boot fan ---------- */
+.fan{position:relative;height:240px}
+.fan .tube-box{position:absolute;left:0;right:0;
+  transition:transform 720ms cubic-bezier(.16,1,.3,1),opacity 520ms ease}
+.fan .t1,.fan .t2{opacity:0;transform:translateY(36px) rotate(0deg)}
+.slide.on .fan .t1{opacity:1;transform:translateY(0) rotate(-2deg);transition-delay:120ms}
+.slide.on .fan .t2{opacity:1;transform:translateY(118px) rotate(2deg);transition-delay:180ms}
+.fan .cap{font:700 11px var(--mono);letter-spacing:.14em}
+
+/* ---------- puzzle ---------- */
+.opt{position:relative;border:2px solid var(--ink);padding:9px 12px;display:flex;
+  align-items:center;gap:12px;background:var(--elev)}
+.opt .oi{font:700 12px var(--mono);color:var(--muted)}
+.opt .os{font:500 18px var(--mono);letter-spacing:.06em}
+.opt svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.opt svg line{stroke:var(--volt);stroke-width:2;stroke-dasharray:600;stroke-dashoffset:600}
+.slide.on .opt.cross:nth-of-type(1) svg line{animation:cut 220ms ease-out .5s forwards}
+.slide.on .opt.cross:nth-of-type(2) svg line{animation:cut 220ms ease-out .85s forwards}
+.slide.on .opt.cross:nth-of-type(3) svg line{animation:cut 220ms ease-out 1.2s forwards}
+@keyframes cut{to{stroke-dashoffset:0}}
+.opt.ans{border-color:var(--red);border-width:3px}
+.opt.ans .oi{color:var(--red)}
+.opt .why{margin-left:auto;font:500 11px var(--mono);color:var(--red);opacity:0}
+.slide.on .opt.ans .why{animation:rv 300ms ease-out 1.7s forwards}
+
+/* ---------- table ---------- */
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px}
+th,td{border-bottom:2px solid var(--ink);padding:5px 7px;text-align:left;vertical-align:top}
+.slide.night th,.slide.night td{border-bottom-color:#3A3E45}
+th{font:700 10px var(--mono);letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+td.zh{font-family:var(--sans);font-size:12px;line-height:1.4}
+
+/* ---------- misc ---------- */
+.cbar{height:11px;border:2px solid var(--ink);position:relative;background:var(--elev);margin:7px 0 5px}
+.cbar i{position:absolute;left:0;top:0;bottom:0;background:var(--volt)}
+.cbar.g i{background:var(--green)}
+.steps{display:flex;gap:0;align-items:stretch}
+.step{flex:1;border:2px solid var(--ink);border-left-width:0;padding:10px 11px}
+.step:first-child{border-left-width:2px}
+.step .n{font:700 10px var(--mono);letter-spacing:.16em;color:var(--volt)}
+.step .t{font:700 13px/1.3 var(--sans);margin:5px 0 4px}
+.step .d{font:400 11px/1.4 var(--sans);color:var(--muted)}
+.trace{background:#F7EDE9;border:2px solid var(--red);border-right:4px solid var(--red)}
+.slide.night .trace{background:#2A1D1A;border-color:var(--red)}
+.trace pre{color:var(--ink)}
+.slide.night .trace pre{color:#F0E4DF}
+.trace pre .er{color:var(--red);font-weight:700}
+.stackline{display:flex;flex-direction:column;gap:5px}
+.stackline div{border:2px solid var(--ink);padding:5px 9px;font:500 12px var(--mono);background:var(--elev)}
+.slide.night .stackline div{background:#22262C;border-color:#F2EFE8}
+.stackline div.top{border-color:var(--volt);color:var(--volt)}
+.legend{display:flex;gap:13px;flex-wrap:wrap;font:500 10px var(--mono);letter-spacing:.10em}
+.legend i{display:inline-block;width:8px;height:8px;margin-right:5px;vertical-align:middle}
+.qr{width:104px;height:104px;border:2px solid var(--ink);display:grid;
+  grid-template-columns:repeat(9,1fr);grid-template-rows:repeat(9,1fr);flex:0 0 auto}
+.qr i{background:var(--ink);margin:1px}
+.help{position:absolute;left:0;right:0;top:0;bottom:46px;background:rgba(21,23,27,.95);
+  color:var(--canvas);display:none;padding:56px 80px;z-index:40}
+.help.on{display:block}
+.help h3{font:700 24px var(--sans);margin-bottom:16px}
+.help table{font-size:13px}
+.help td{border-bottom-color:#3A3E45}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  .opt svg line{stroke-dashoffset:0 !important}
+  .opt .why,.reveal{opacity:1 !important;transform:none !important}
+  .fan .t1,.fan .t2{opacity:1 !important;transform:none !important}
+}
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- ================= 01 ================= -->
+<section class="slide" data-ch="序" data-sec="开场" data-q="两个口，先记住这个" data-title="一条管子，两个口">
+  <div class="eb">STACK &amp; QUEUE · 01 / 30</div>
+  <div class="two-75" style="flex:1">
+    <div class="col" style="justify-content:center">
+      <h2 class="h big">一条管子，<br>两个口</h2>
+      <div class="sb">栈与队列只回答一个问题：<b>下一个出去的是谁？</b></div>
+      <div class="instr reveal" style="margin-top:12px"><span>这一步 →</span><p>用一张图记住两种结构的全部差别。</p></div>
+    </div>
+    <div class="fan">
+      <div class="tube-box t1">
+        <div class="cap" style="color:var(--blue)">STACK · LIFO</div>
+        <svg class="tube" viewBox="0 0 430 100">
+          <path class="wall" d="M12,22 H418 M12,82 H418"/>
+          <path class="mouth-in" d="M12,22 V38 M12,66 V82"/>
+          <path class="seal" d="M418,22 V82"/>
+          <g class="chip in" transform="translate(48,24)"><rect width="52" height="52" rx="8"/><text x="26" y="27">A</text></g>
+          <g class="chip in" transform="translate(124,24)"><rect width="52" height="52" rx="8"/><text x="26" y="27">B</text></g>
+          <g class="chip in hot" transform="translate(200,24)"><rect width="52" height="52" rx="8"/><text x="26" y="27">C</text></g>
+        </svg>
+      </div>
+      <div class="tube-box t2">
+        <div class="cap" style="color:var(--green)">QUEUE · FIFO</div>
+        <svg class="tube" viewBox="0 0 430 100">
+          <path class="wall" d="M12,22 H418 M12,82 H418"/>
+          <path class="mouth-in" d="M12,22 V38 M12,66 V82"/>
+          <path class="mouth-out" d="M418,22 V38 M418,66 V82"/>
+          <g class="chip in" transform="translate(48,24)"><rect width="52" height="52" rx="8"/><text x="26" y="27">A</text></g>
+          <g class="chip in" transform="translate(124,24)"><rect width="52" height="52" rx="8"/><text x="26" y="27">B</text></g>
+          <g class="chip out hot" transform="translate(200,24)"><rect width="52" height="52" rx="8"/><text x="26" y="27">C</text></g>
+        </svg>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="note">30 分钟 · 从「排队」到「单调栈」 · Python 3 · 洛谷 &amp; LeetCode 真题</span></div>
+</section>
+
+<!-- ================= 02 ================= -->
+<section class="slide" data-ch="序" data-sec="开场" data-q="哪个序列不可能？" data-title="30 秒挑战">
+  <div class="eb">30 SECOND CHALLENGE · 02 / 30</div>
+  <div class="hd"><h2 class="h">30 秒挑战</h2>
+    <div class="sb">1、2、3 依次<b>入栈</b>，中途可以任意穿插出栈。哪个<b style="color:var(--red)">不可能</b>是出栈序列？</div></div>
+  <div class="two-75 bd">
+    <div class="col">
+      <div class="opt cross"><span class="oi">A</span><span class="os">3, 2, 1</span><svg><line x1="0" y1="100%" x2="100%" y2="0"/></svg></div>
+      <div class="opt cross"><span class="oi">B</span><span class="os">2, 1, 3</span><svg><line x1="0" y1="100%" x2="100%" y2="0"/></svg></div>
+      <div class="opt cross"><span class="oi">C</span><span class="os">1, 3, 2</span><svg><line x1="0" y1="100%" x2="100%" y2="0"/></svg></div>
+      <div class="opt ans"><span class="oi">D</span><span class="os">3, 1, 2</span><span class="why">← 不可能</span></div>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">WHY · 为什么</div>
+        <div class="p">要让 <b>3</b> 第一个出来，必须先把 1、2、3 全压进去。<br>
+        此时栈里是 <span class="mono">[1, 2, 3]</span>，<b>栈顶是 2</b>。<br>
+        所以下一个<b>只能是 2</b>，不可能是 1。<br><br>
+        规则只有一条 —— <b style="color:var(--volt)">只能从同一头进出</b>。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>先给「栈」一个可操作的规矩。</p></div>
+  <div class="foot"><a href="https://www.luogu.com.cn/problem/P1044" target="_blank">洛谷 P1044 栈 ↗</a>
+    <span class="note">这道题就是把上面的选择题推广到 n 个数</span></div>
+</section>
+
+<!-- ================= 03 ================= -->
+<section class="slide" data-ch="序" data-sec="开场" data-q="今天只走一条线" data-title="主线与节奏">
+  <div class="eb">ROADMAP · 03 / 30</div>
+  <div class="hd"><h2 class="h">一条主线，五段路</h2>
+    <div class="sb">整堂课只说一句话：<b>顺序决定结构，结构决定做法，做法决定复杂度。</b></div></div>
+  <div class="bd">
+    <div class="steps">
+      <div class="step"><div class="n">01 · 04–09</div><div class="t">栈：最近的先处理</div><div class="d">后进先出、四个动作、括号匹配、表达式、调用栈。</div></div>
+      <div class="step"><div class="n">02 · 10–13</div><div class="t">队列：最早的先处理</div><div class="d">先进先出、环形数组、deque、单调队列。</div></div>
+      <div class="step"><div class="n">03 · 14–15</div><div class="t">对照：下一个是谁</div><div class="d">优先队列与堆，五种结构一张对照表。</div></div>
+      <div class="step"><div class="n">04 · 16–22</div><div class="t">思想：淘汰没机会的</div><div class="d">单调栈、BFS 最短路，从结构升到算法。</div></div>
+      <div class="step"><div class="n">05 · 23–30</div><div class="t">落地：避坑与刷题</div><div class="d">三个陷阱、真题对照、五步流程、复习卡。</div></div>
+    </div>
+    <div class="three">
+      <div class="plate"><div class="card-k">每一节都这样讲</div><div class="p"><b>问题 → 转变 → 运作 → 代码</b><br>四拍之内讲完一个概念，不停顿、不绕圈。</div></div>
+      <div class="plate"><div class="card-k">贯穿全课的一个问题</div><div class="p"><b>下一个出去的是谁？</b><br>答案不同 → 结构不同 → 代码不同。</div></div>
+      <div class="plate"><div class="card-k">你会带走什么</div><div class="p">一套选结构的判断依据、一份真题清单、一张五步解题流程卡。</div></div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>让你随时知道自己走到主线的哪一段。</p></div>
+</section>
+
+<!-- ================= 04 ================= -->
+<section class="slide" data-ch="第 1 章" data-sec="栈" data-q="为什么撤销是最近的先回来？" data-title="后进先出 LIFO">
+  <div class="eb">STACK · LIFO · 04 / 30</div>
+  <div class="hd"><h2 class="h">后进先出 LIFO</h2><div class="sb">Last In, First Out —— 管子竖起来，底口封死。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">TUBE · 只有顶口能进出</div>
+      <div data-fx="stack4"></div>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">WHY · 转变</div>
+        <div class="p">「撤销」为什么总撤销<b>最近</b>那一步？<br>
+        因为每一笔都<b>压在上面</b>，只能从上面拿。<br><br>
+        <b style="color:var(--volt)">最近 = 最后进 = 栈顶</b></div>
+      </div>
+      <div class="plate">
+        <div class="card-k">LIFE · 生活里的栈</div>
+        <div class="p">Ctrl+Z 撤销 · 浏览器「后退」· 一摞盘子 · 函数返回地址</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>为什么「撤销」总是把最近一步先退回来。</p></div>
+  <div class="foot"><a href="https://www.luogu.com.cn/problem/P1044" target="_blank">洛谷 P1044 栈 ↗</a>
+    <a href="https://leetcode.cn/problems/asteroid-collision/" target="_blank">LC 735 行星碰撞 ↗</a></div>
+</section>
+
+<!-- ================= 05 ================= -->
+<section class="slide" data-ch="第 1 章" data-sec="栈" data-q="栈到底会哪几招？" data-title="四个动作 O(1)">
+  <div class="eb">API · 05 / 30</div>
+  <div class="hd"><h2 class="h">四个动作，全是 O(1)</h2>
+    <div class="sb">栈只是「只许从一头操作」的线性表，所以不需要记位置。</div></div>
+  <div class="two-57 bd">
+    <div class="col">
+      <table>
+        <tr><th>动作</th><th>Python</th><th>时间</th></tr>
+        <tr><td class="zh"><b>push</b> 放到栈顶</td><td>stack.append(x)</td><td>O(1)</td></tr>
+        <tr><td class="zh"><b>pop</b> 拿走栈顶</td><td>x = stack.pop()</td><td>O(1)</td></tr>
+        <tr><td class="zh"><b>peek</b> 只看不拿</td><td>x = stack[-1]</td><td>O(1)</td></tr>
+        <tr><td class="zh"><b>isEmpty</b> 判空</td><td>not stack</td><td>O(1)</td></tr>
+        <tr><td class="zh"><b>size</b> 大小</td><td>len(stack)</td><td>O(1)</td></tr>
+      </table>
+      <div class="legend">
+        <span><i style="background:var(--blue)"></i>蓝 = 进入</span>
+        <span><i style="background:var(--green)"></i>绿 = 出去</span>
+        <span><i style="background:var(--volt)"></i>橙 = 此刻在动</span>
+        <span><i style="background:var(--red)"></i>红 = 走不通</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--blue)">
+        <div class="state"><span class="sl">STACK →</span><span class="sv">[ ]</span><span class="sl">TOP →</span><span class="sv">—</span></div>
+<pre><span class="kw">stack</span> = []            <span class="cm"># 用 list 当栈</span>
+<span class="kw">stack</span>.append(<span class="nu">3</span>)       <span class="cm"># push → [3]</span>
+<span class="kw">stack</span>.append(<span class="nu">1</span>)       <span class="cm"># push → [3, 1]</span>
+top = <span class="kw">stack</span>[-<span class="nu">1</span>]     <span class="cm"># peek → 1</span>
+x   = <span class="kw">stack</span>.pop()    <span class="cm"># pop  → 1</span>
+<span class="kw">if</span> <span class="kw">not</span> <span class="kw">stack</span>:       <span class="cm"># isEmpty</span>
+    print(<span class="st">"空了"</span>)</pre>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>把「栈」变成你能立刻写出的 4 行代码。</p></div>
+  <div class="foot"><a href="https://leetcode.cn/problems/min-stack/" target="_blank">LC 155 最小栈 ↗</a>
+    <span class="note">进阶：O(1) 同时拿到最小值 —— 多维护一个「最小值的栈」</span></div>
+</section>
+
+<!-- ================= 06 ================= -->
+<section class="slide" data-ch="第 1 章" data-sec="栈" data-q="push 和 pop 到底发生了什么？" data-title="push / pop 演示">
+  <div class="eb">ANIMATION · 06 / 30</div>
+  <div class="hd"><h2 class="h">看一遍 push / pop</h2>
+    <div class="sb"><b style="color:var(--blue)">进</b>永远从上面进，<b style="color:var(--green)">出</b>永远从上面出，其它元素一动不动。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">TUBE · push 3, 1, 4, 1, 5 → pop, pop</div>
+      <div data-fx="stack6"></div>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--blue)">
+        <div class="state"><span class="sl">LIVE →</span><span class="sv" data-live="s6">[ ]</span><span class="sl">OUT →</span><span class="sv" data-live="o6">—</span></div>
+<pre><span class="kw">stack</span> = []
+<span class="kw">for</span> v <span class="kw">in</span> [<span class="nu">3</span>, <span class="nu">1</span>, <span class="nu">4</span>, <span class="nu">1</span>, <span class="nu">5</span>]:
+    <span class="kw">stack</span>.append(v)     <span class="cm"># 进：只压到栈顶</span>
+
+<span class="kw">while</span> <span class="kw">stack</span>:
+    print(<span class="kw">stack</span>.pop())  <span class="cm"># 出：5, 1, 4, 1, 3</span></pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p">永远只碰最后一个元素 → 这就是它 <b>O(1)</b> 的原因。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>看清元素只在一个口进出，代价与顺序。</p></div>
+  <div class="foot"><a href="https://leetcode.cn/problems/valid-parentheses/" target="_blank">LC 20 有效的括号 ↗</a>
+    <span class="note">按 R 重放这段动画</span></div>
+</section>
+
+<!-- ================= 07 ================= -->
+<section class="slide" data-ch="第 1 章" data-sec="栈" data-q="怎么判断括号是否合法？" data-title="括号匹配">
+  <div class="eb">PROBLEM · 07 / 30</div>
+  <div class="hd"><h2 class="h">括号匹配</h2>
+    <div class="sb">从「数一数有几个没配对」→「记住<b>最近一个</b>没配对的是谁」</div></div>
+  <div class="two-75 bd">
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">TRACE · { } ( [ ] )</div>
+        <svg class="tube" viewBox="0 0 580 104">
+          <path class="wall" d="M8,26 H572 M8,92 H572"/>
+          <path class="mouth-in" d="M8,26 V42 M8,76 V92"/>
+          <path class="seal" d="M572,26 V92"/>
+          <g class="chip in" transform="translate(34,32)"><rect width="52" height="52" rx="8"/><text x="26" y="27">{</text></g>
+          <g class="chip in" transform="translate(110,32)"><rect width="52" height="52" rx="8"/><text x="26" y="27">(</text></g>
+          <g class="chip in" transform="translate(186,32)"><rect width="52" height="52" rx="8"/><text x="26" y="27">[</text></g>
+          <path class="arw-out" d="M212,26 V8 M204,14 L212,4 L220,14"/>
+          <text class="lbl-ink" x="232" y="12">] 与栈顶 [ 配对 → pop</text>
+          <text class="lbl" x="330" y="66">栈底（老）</text>
+          <text class="lbl" x="470" y="66">栈顶（新）</text>
+        </svg>
+      </div>
+      <div class="codeplate" style="--rule:var(--green)">
+        <div class="state"><span class="sl">RETURN →</span><span class="sv">True</span></div>
+<pre><span class="kw">def</span> is_valid(s: str) -&gt; bool:
+    pair = {<span class="st">')'</span>: <span class="st">'('</span>, <span class="st">']'</span>: <span class="st">'['</span>, <span class="st">'}'</span>: <span class="st">'{'</span>}
+    st = []
+    <span class="kw">for</span> c <span class="kw">in</span> s:
+        <span class="kw">if</span> c <span class="kw">in</span> <span class="st">'([{'</span>:
+            st.append(c)              <span class="cm"># 左括号：等着被配对</span>
+        <span class="kw">else</span>:
+            <span class="kw">if</span> <span class="kw">not</span> st <span class="kw">or</span> st[-<span class="nu">1</span>] != pair[c]:
+                <span class="kw">return</span> <span class="kw">False</span>       <span class="cm"># 栈空 / 不匹配</span>
+            st.pop()                  <span class="cm"># 配上了</span>
+    <span class="kw">return</span> <span class="kw">not</span> st</pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">WHY · 转变</div>
+        <div class="p">要配对的永远是<b>最近一个</b>没配对的左括号，<br>
+        而「最近」就是「最后放进去的」——<br><br>
+        <b style="color:var(--volt)">最近 = 最后进 = 栈顶</b><br><br>
+        问题一换问法，就直接变成了栈的定义。</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">COMPLEXITY</div>
+        <div class="p">每个字符<b>只进一次、只出一次</b> → 时间 <span class="mono">O(n)</span>，空间 <span class="mono">O(n)</span>。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>学会把「最近的一个」翻译成「栈顶」。</p></div>
+  <div class="foot"><a href="https://www.luogu.com.cn/problem/P1739" target="_blank">洛谷 P1739 表达式括号匹配 ↗</a>
+    <a href="https://leetcode.cn/problems/longest-valid-parentheses/" target="_blank">LC 32 最长有效括号 ↗</a></div>
+</section>
+
+<!-- ================= 08 ================= -->
+<section class="slide" data-ch="第 1 章" data-sec="栈" data-q="算式里的优先级怎么处理？" data-title="表达式求值">
+  <div class="eb">PROBLEM · 08 / 30</div>
+  <div class="hd"><h2 class="h">表达式求值</h2>
+    <div class="sb">两个栈：<b>一个装数，一个装符号</b>。谁该先算，由符号栈说了算。</div></div>
+  <div class="two bd">
+    <div class="plate">
+      <div class="card-k">TRACE · 3 + 2 * 2</div>
+      <table>
+        <tr><th>读到</th><th>数字栈</th><th>符号栈</th><th>动作</th></tr>
+        <tr><td>3</td><td>[3]</td><td>[]</td><td class="zh">入数字栈</td></tr>
+        <tr><td>+</td><td>[3]</td><td>[+]</td><td class="zh">入符号栈</td></tr>
+        <tr><td>2</td><td>[3,2]</td><td>[+]</td><td class="zh">入数字栈</td></tr>
+        <tr><td>*</td><td>[3,2]</td><td>[+, *]</td><td class="zh">* 优先级更高，先压住</td></tr>
+        <tr><td>2</td><td>[3,2,2]</td><td>[+, *]</td><td class="zh">入数字栈</td></tr>
+        <tr><td>结束</td><td>[3,4]</td><td>[+]</td><td class="zh">先算 2*2=4</td></tr>
+        <tr><td>—</td><td><b>[7]</b></td><td>[]</td><td class="zh">再算 3+4=7</td></tr>
+      </table>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--blue)">
+        <div class="state"><span class="sl">ANS →</span><span class="sv">7</span><span class="sl">MODE →</span><span class="sv">逆波兰</span></div>
+<pre><span class="kw">def</span> evalRPN(tokens):
+    st = []
+    <span class="kw">for</span> t <span class="kw">in</span> tokens:
+        <span class="kw">if</span> t <span class="kw">in</span> <span class="st">'+-*/'</span>:
+            b, a = st.pop(), st.pop()
+            <span class="kw">if</span>   t == <span class="st">'+'</span>: st.append(a + b)
+            <span class="kw">elif</span> t == <span class="st">'-'</span>: st.append(a - b)
+            <span class="kw">elif</span> t == <span class="st">'*'</span>: st.append(a * b)
+            <span class="kw">else</span>:          st.append(int(a / b))
+        <span class="kw">else</span>:
+            st.append(int(t))
+    <span class="kw">return</span> st[-<span class="nu">1</span>]</pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p">「先算谁」是<b>优先级 + 顺序</b>问题，而<b>顺序</b>正是栈的强项。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>让「优先级」不再靠人脑判断，交给两个栈。</p></div>
+  <div class="foot"><a href="https://www.luogu.com.cn/problem/P1175" target="_blank">洛谷 P1175 表达式求值 ↗</a>
+    <a href="https://leetcode.cn/problems/basic-calculator-ii/" target="_blank">LC 227 基本计算器 II ↗</a>
+    <a href="https://leetcode.cn/problems/evaluate-reverse-polish-notation/" target="_blank">LC 150 逆波兰 ↗</a></div>
+</section>
+
+<!-- ================= 09 ================= -->
+<section class="slide" data-ch="第 1 章" data-sec="栈" data-q="递归为什么能自动返回？" data-title="调用栈">
+  <div class="eb">RECURSION · 09 / 30</div>
+  <div class="hd"><h2 class="h">调用栈：解释器替你写的栈</h2>
+    <div class="sb">你写递归的时候，一直在用栈 —— 只是没写出来。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">CALL STACK · fact(4)</div>
+      <div class="stackline" style="margin-top:6px">
+        <div class="top">return 4 * fact(3)　　← 栈顶（正在跑）</div>
+        <div>return 3 * fact(2)</div>
+        <div>return 2 * fact(1)</div>
+        <div>return 1　　　　　　← 栈底（最先调用）</div>
+      </div>
+      <div class="p" style="margin-top:8px;color:var(--muted)">函数返回 = 出栈；参数与返回地址存在栈帧里。</div>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--blue)">
+        <div class="state"><span class="sl">DEPTH →</span><span class="sv">4</span><span class="sl">RET →</span><span class="sv">24</span></div>
+<pre><span class="kw">def</span> fact(n):
+    <span class="kw">if</span> n &lt;= <span class="nu">1</span>:
+        <span class="kw">return</span> <span class="nu">1</span>
+    <span class="kw">return</span> n * fact(n - <span class="nu">1</span>)  <span class="cm"># 每次调用压一帧</span>
+
+<span class="cm"># 递归 = 用系统调用栈做 DFS</span>
+<span class="cm"># 显式写栈，就能改成迭代</span></pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">PITFALL · 预告</div>
+        <div class="p">调用栈<b>不是无限的</b>，Python 默认约 1000 层。详见第 24 页。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>说明「栈」不只是数据结构，还是程序运行的方式。</p></div>
+  <div class="foot"><a href="https://www.luogu.com.cn/problem/P1028" target="_blank">洛谷 P1028 数的计算 ↗</a>
+    <a href="https://leetcode.cn/problems/binary-tree-inorder-traversal/" target="_blank">LC 94 中序遍历 ↗</a></div>
+</section>
+
+<!-- ================= 10 ================= -->
+<section class="slide" data-ch="第 2 章" data-sec="队列" data-q="为什么排队不能插队？" data-title="先进先出 FIFO">
+  <div class="eb">QUEUE · FIFO · 10 / 30</div>
+  <div class="hd"><h2 class="h">先进先出 FIFO</h2>
+    <div class="sb">First In, First Out —— 把管子放倒，两头都打开。公平 = 不让任何人插队。</div></div>
+  <div class="bd">
+    <div class="plate">
+      <div class="card-k">TUBE · 左口进，右口出，谁也不许越过谁</div>
+      <div data-fx="queue10"></div>
+      <div class="legend" style="margin-top:2px;justify-content:space-between">
+        <span style="color:var(--blue)">左口＝队尾 rear · enqueue 进</span>
+        <span>同一根管子，只是换了一头打开</span>
+        <span style="color:var(--green)">右口＝队头 front · dequeue 出</span>
+      </div>
+    </div>
+    <div class="two">
+      <div class="plate"><div class="card-k">WHY · 转变</div><div class="p">栈回答「谁<b>最后</b>进来」，队列回答「谁<b>最早</b>进来」。</div></div>
+      <div class="plate"><div class="card-k">LIFE · 生活里的队列</div><div class="p">排队买票 · 打印任务 · 消息队列 · BFS 层序遍历 · 客服叫号</div></div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>用「同一根管子，换个开口」讲清 LIFO 与 FIFO 的关系。</p></div>
+  <div class="foot"><a href="https://leetcode.cn/problems/time-needed-to-buy-tickets/" target="_blank">LC 2073 买票时间 ↗</a>
+    <span class="note">这道题就是纯 FIFO 模拟</span></div>
+</section>
+
+<!-- ================= 11 ================= -->
+<section class="slide" data-ch="第 2 章" data-sec="队列" data-q="队列用数组怎么实现？" data-title="环形数组实现">
+  <div class="eb">IMPLEMENT · 11 / 30</div>
+  <div class="hd"><h2 class="h">队列四动作 · 环形数组</h2>
+    <div class="sb">head 与 tail 都只往右走 —— 走到头怎么办？<b>绕回来。</b></div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">RING BUFFER · capacity = 8</div>
+      <div data-fx="ring"></div>
+      <div class="p" style="margin-top:8px"><span class="mono">tail = (tail + 1) % capacity</span>，就像钟表指针绕圈。<br>
+      <b>不取模</b>就会越界，或者白白浪费前面的空位。</div>
+    </div>
+    <div class="codeplate" style="--rule:var(--green)">
+      <div class="state"><span class="sl">HEAD →</span><span class="sv" data-live="hd">0</span><span class="sl">TAIL →</span><span class="sv" data-live="tl">0</span><span class="sl">N →</span><span class="sv" data-live="nn">0</span></div>
+<pre><span class="kw">class</span> RingQueue:
+    <span class="kw">def</span> __init__(self, cap):
+        self.a = [<span class="kw">None</span>] * cap
+        self.head = self.tail = self.n = <span class="nu">0</span>
+
+    <span class="kw">def</span> push(self, x):            <span class="cm"># enqueue O(1)</span>
+        <span class="cm"># 满队：(self.n == len(self.a)) 时先判满/扩容</span>
+        self.a[self.tail] = x
+        self.tail = (self.tail + <span class="nu">1</span>) % len(self.a)
+        self.n += <span class="nu">1</span>
+
+    <span class="kw">def</span> pop(self):                <span class="cm"># dequeue O(1)</span>
+        x = self.a[self.head]
+        self.head = (self.head + <span class="nu">1</span>) % len(self.a)
+        self.n -= <span class="nu">1</span>
+        <span class="kw">return</span> x</pre>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>解释「为什么不能用数组一头进出」—— 因为会浪费或搬移。</p></div>
+  <div class="foot"><a href="https://leetcode.cn/problems/design-circular-queue/" target="_blank">LC 622 设计循环队列 ↗</a>
+    <a href="https://leetcode.cn/problems/design-circular-deque/" target="_blank">LC 641 设计循环双端队列 ↗</a></div>
+</section>
+
+<!-- ================= 12 ================= -->
+<section class="slide" data-ch="第 2 章" data-sec="队列" data-q="Python 里队列用什么？" data-title="collections.deque">
+  <div class="eb">PYTHON · 12 / 30</div>
+  <div class="hd"><h2 class="h">collections.deque</h2>
+    <div class="sb">别用 <span class="mono">list.pop(0)</span> 当队列 —— 它是 <b style="color:var(--red)">O(n)</b>。</div></div>
+  <div class="two bd">
+    <div class="codeplate" style="--rule:var(--green)">
+      <div class="state"><span class="sl">DEQUE →</span><span class="sv">[1, 2]</span><span class="sl">POPLEFT →</span><span class="sv">1</span></div>
+<pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+q = deque()
+q.append(<span class="nu">1</span>)        <span class="cm"># 队尾进   O(1)</span>
+q.append(<span class="nu">2</span>)        <span class="cm"># 队尾进   O(1)</span>
+q.popleft()        <span class="cm"># 队头出   O(1) → 1</span>
+
+q.appendleft(<span class="nu">0</span>)   <span class="cm"># 头插     O(1)</span>
+q.pop()            <span class="cm"># 尾出     O(1)</span>
+q.append(<span class="nu">3</span>)
+<span class="cm"># dq[0] 是队头，dq[-1] 是队尾</span>
+
+<span class="cm"># ❌ 不要这样：</span>
+lst = [<span class="nu">1</span>, <span class="nu">2</span>, <span class="nu">3</span>]
+lst.pop(<span class="nu">0</span>)        <span class="cm"># O(n)：后面全体前移一格</span></pre>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">COMPARE · 一次 10 万次出队</div>
+        <div class="p">deque.popleft()</div>
+        <div class="cbar g"><i style="width:3%"></i></div>
+        <div class="mono" style="font-size:12px;color:var(--green)">≈ 0.01 s</div>
+        <div class="p" style="margin-top:10px">list.pop(0)</div>
+        <div class="cbar"><i style="width:100%"></i></div>
+        <div class="mono" style="font-size:12px;color:var(--volt)">≈ 1.5 s（慢约 150 倍）</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p">list 的头是「重的」，deque 的两头都是「轻的」。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>避开新手最常见的一行慢代码。</p></div>
+  <div class="foot"><a href="https://leetcode.cn/problems/number-of-recent-calls/" target="_blank">LC 933 最近的请求次数 ↗</a>
+    <a href="https://leetcode.cn/problems/design-front-middle-back-queue/" target="_blank">LC 1670 设计前中后队列 ↗</a></div>
+</section>
+
+<!-- ================= 13 ================= -->
+<section class="slide" data-ch="第 2 章" data-sec="队列" data-q="窗口里最大的数怎么维护？" data-title="双端队列 · 单调队列">
+  <div class="eb">DEQUE · MONOTONIC · 13 / 30</div>
+  <div class="hd"><h2 class="h">双端队列：两端都能进出</h2>
+    <div class="sb">滑动窗口最大值 —— 「单调队列」让每次查询都是 O(1)。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">TRACE · [1, 3, -1, -3, 5, 3, 6, 7] · k = 3</div>
+      <div data-fx="dq"></div>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--green)">
+        <div class="state"><span class="sl">ANS →</span><span class="sv">[3, 3, 5, 5, 6, 7]</span></div>
+<pre><span class="kw">def</span> max_sliding_window(nums, k):
+    dq = deque()      <span class="cm"># 存下标，值单调递减</span>
+    ans = []
+    <span class="kw">for</span> i, v <span class="kw">in</span> enumerate(nums):
+        <span class="kw">while</span> dq <span class="kw">and</span> nums[dq[-<span class="nu">1</span>]] &lt;= v:
+            dq.pop()  <span class="cm"># 又矮又老，永无机会</span>
+        dq.append(i)
+        <span class="kw">if</span> dq[<span class="nu">0</span>] &lt;= i - k:
+            dq.popleft()      <span class="cm"># 滑出窗口</span>
+        <span class="kw">if</span> i &gt;= k - <span class="nu">1</span>:
+            ans.append(nums[dq[<span class="nu">0</span>]])
+    <span class="kw">return</span> ans</pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">WHY · 转变</div>
+        <div class="p">不维护「窗口里所有数」，只维护「<b>还有可能当最大值的数</b>」。<br>
+        每个元素只进一次出一次 → 总时间 <span class="mono">O(n)</span>。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>把「窗口最大值」从每次重扫 O(k) 降成 O(1)。</p></div>
+  <div class="foot"><a href="https://leetcode.cn/problems/sliding-window-maximum/" target="_blank">LC 239 滑动窗口最大值 ↗</a>
+    <a href="https://leetcode.cn/problems/shortest-subarray-with-sum-at-least-k/" target="_blank">LC 862 和至少为 K 的最短子数组 ↗</a></div>
+</section>
+
+<!-- ================= 14 ================= -->
+<section class="slide" data-ch="第 3 章" data-sec="对照" data-q="如果按大小排队呢？" data-title="优先队列与堆">
+  <div class="eb">PRIORITY QUEUE · 14 / 30</div>
+  <div class="hd"><h2 class="h">优先队列与堆</h2>
+    <div class="sb">不按先后，按<b>优先级</b>：谁大（或谁小）谁先走。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">HEAP · 小顶堆（完全二叉树 / 数组）</div>
+      <svg class="tube" viewBox="0 0 620 226">
+        <path class="wall" stroke-width="2" d="M216,58 L146,118 M300,58 L370,118 M300,58 L216,58 M146,118 L106,178 M146,118 L186,178 M370,118 L330,178 M370,118 L410,178"/>
+        <g class="chip hot" transform="translate(190,32)"><rect width="52" height="52" rx="8"/><text x="26" y="27">1</text></g>
+        <g class="chip" transform="translate(120,92)"><rect width="52" height="52" rx="8"/><text x="26" y="27">3</text></g>
+        <g class="chip" transform="translate(344,92)"><rect width="52" height="52" rx="8"/><text x="26" y="27">2</text></g>
+        <g class="chip" transform="translate(80,152)"><rect width="52" height="52" rx="8"/><text x="26" y="27">7</text></g>
+        <g class="chip" transform="translate(160,152)"><rect width="52" height="52" rx="8"/><text x="26" y="27">5</text></g>
+        <g class="chip" transform="translate(304,152)"><rect width="52" height="52" rx="8"/><text x="26" y="27">4</text></g>
+        <g class="chip" transform="translate(384,152)"><rect width="52" height="52" rx="8"/><text x="26" y="27">9</text></g>
+        <path class="arw-out" d="M216,24 V6 M208,12 L216,2 L224,12"/>
+        <text class="lbl-ink" x="238" y="18">堆顶永远最小 → O(1) 取，O(log n) 调整</text>
+        <text class="lbl" x="466" y="58">数组存：</text>
+        <text class="lbl" x="466" y="78">[1,3,2,7,5,4,9]</text>
+        <text class="lbl" x="466" y="108">i 的孩子</text>
+        <text class="lbl" x="466" y="128">2i+1 / 2i+2</text>
+      </svg>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--blue)">
+        <div class="state"><span class="sl">HEAP →</span><span class="sv">[1, 3, 2]</span><span class="sl">POP →</span><span class="sv">1</span></div>
+<pre><span class="kw">import</span> heapq
+h = []
+heapq.heappush(h, <span class="nu">5</span>)   <span class="cm"># O(log n)</span>
+heapq.heappush(h, <span class="nu">1</span>)
+heapq.heappush(h, <span class="nu">3</span>)
+heapq.heappop(h)       <span class="cm"># 最小先出 → 1</span>
+
+<span class="cm"># 第 k 大：维护大小为 k 的小顶堆</span>
+<span class="kw">def</span> kth_largest(nums, k):
+    h = []
+    <span class="kw">for</span> x <span class="kw">in</span> nums:
+        heapq.heappush(h, x)
+        <span class="kw">if</span> len(h) &gt; k:
+            heapq.heappop(h)
+    <span class="kw">return</span> h[<span class="nu">0</span>]</pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">USE · 用在哪</div>
+        <div class="p">Dijkstra · A* 搜索 · 哈夫曼编码 · 任务调度 · Top-K · 合并 K 个有序表</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>当「先后顺序」不够用时，换成「优先级顺序」。</p></div>
+  <div class="foot"><a href="https://www.luogu.com.cn/problem/P3378" target="_blank">洛谷 P3378 【模板】堆 ↗</a>
+    <a href="https://leetcode.cn/problems/kth-largest-element-in-an-array/" target="_blank">LC 215 第 K 个最大元素 ↗</a>
+    <a href="https://leetcode.cn/problems/top-k-frequent-elements/" target="_blank">LC 347 前 K 个高频元素 ↗</a></div>
+</section>
+
+<!-- ================= 15 ================= -->
+<section class="slide" data-ch="第 3 章" data-sec="对照" data-q="我该选哪一个？" data-title="五种结构对照表">
+  <div class="eb">COMPARISON · 15 / 30</div>
+  <div class="hd"><h2 class="h">五种结构，一张对照表</h2>
+    <div class="sb">选结构只看一句话：<b>下一个出去的是谁？</b></div></div>
+  <div class="bd">
+    <table>
+      <tr><th>结构</th><th>下一个出去的</th><th>插入 / 删除</th><th>典型问题</th><th>一句话</th></tr>
+      <tr><td class="zh"><b>栈 Stack</b></td><td>最后进来的</td><td>O(1) / O(1)</td><td class="zh">括号匹配、表达式、撤销、DFS</td><td class="zh">最近的事最要紧</td></tr>
+      <tr><td class="zh"><b>队列 Queue</b></td><td>最早进来的</td><td>O(1) / O(1)</td><td class="zh">排队、BFS、消息缓冲</td><td class="zh">先来后到</td></tr>
+      <tr><td class="zh"><b>双端队列 Deque</b></td><td>两头都可以</td><td>O(1) / O(1)</td><td class="zh">滑动窗口、回文、工作窃取</td><td class="zh">两头都不吃亏</td></tr>
+      <tr><td class="zh"><b>优先队列 Heap</b></td><td>优先级最高的</td><td>O(log n) / O(log n)</td><td class="zh">Dijkstra、Top-K、任务调度</td><td class="zh">不分先后，分轻重</td></tr>
+      <tr><td class="zh"><b>单调队列 / 栈</b></td><td>可能成为答案的</td><td>摊还 O(1)</td><td class="zh">下一个更大、最大矩形、窗口最值</td><td class="zh">没机会的直接扔</td></tr>
+    </table>
+    <div class="three">
+      <div class="plate"><div class="card-k">SELECT · 选结构三问</div><div class="p">① 顺序重要吗？② 是「最近」还是「最早」？③ 有优先级吗？</div></div>
+      <div class="plate"><div class="card-k">SPACE</div><div class="p">以上全部 <span class="mono">O(n)</span>，常驻的只有「还没轮到的那些」。</div></div>
+      <div class="plate"><div class="card-k">MEMORIZE</div><div class="p">栈 = 管子竖着；队列 = 管子放倒。<b>底口封不封</b>，就是全部差别。</div></div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>给出一个「看到题目就能选结构」的判断依据。</p></div>
+</section>
+
+<!-- ================= 16 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="思想" data-q="换个规则会怎样？" data-title="从结构到思想">
+  <div class="eb">FROM STRUCTURE TO IDEA · 16 / 30</div>
+  <div class="bd" style="justify-content:center">
+    <div style="font:500 10px var(--mono);letter-spacing:.22em;color:#8E887B">★ 夜场 · 把灯关掉，只看那一根管子</div>
+    <h2 class="h big" style="margin:10px 0">同一根管子，<br>只要换个规则。</h2>
+    <div class="sb" style="max-width:820px">如果规定 —— <b style="color:var(--volt)">新来的可以把前面的挤出去</b>，
+    它就不再是普通的栈，而是<b style="color:var(--volt)">单调栈</b>。</div>
+    <div class="plate reveal" style="margin-top:16px;max-width:820px">
+      <div class="card-k">SHIFT · 思想上的这一跳</div>
+      <div class="p">从「<b>谁</b>先出去」→「<b>谁还配</b>留着」。<br>
+      原来只关心顺序，现在开始<b>淘汰没希望的答案</b>。</div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>把「数据结构」升维成「算法思想」。</p></div>
+  <div class="foot"><span class="note">接下来 3 页：暴力为什么慢 → 单调栈怎么想 → 完整动画</span></div>
+</section>
+
+<!-- ================= 17 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="思想" data-q="O(n²) 慢在哪？" data-title="下一个更大的元素">
+  <div class="eb">PROBLEM · 17 / 30</div>
+  <div class="hd"><h2 class="h">下一个更大的元素</h2>
+    <div class="sb">对每个 i，找它<b>右边第一个比它大</b>的数。暴力为什么慢？</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">ARRAY · nums = [2, 1, 2, 4, 3]</div>
+      <svg class="tube" viewBox="0 0 580 140">
+        <g class="chip" transform="translate(14,26)"><rect width="52" height="52" rx="8"/><text x="26" y="27">2</text></g>
+        <g class="chip" transform="translate(114,26)"><rect width="52" height="52" rx="8"/><text x="26" y="27">1</text></g>
+        <g class="chip" transform="translate(214,26)"><rect width="52" height="52" rx="8"/><text x="26" y="27">2</text></g>
+        <g class="chip" transform="translate(314,26)"><rect width="52" height="52" rx="8"/><text x="26" y="27">4</text></g>
+        <g class="chip" transform="translate(414,26)"><rect width="52" height="52" rx="8"/><text x="26" y="27">3</text></g>
+        <text class="lbl" x="14" y="18">i=0</text><text class="lbl" x="114" y="18">i=1</text>
+        <text class="lbl" x="214" y="18">i=2</text><text class="lbl" x="314" y="18">i=3</text>
+        <text class="lbl" x="414" y="18">i=4</text>
+        <path class="arw-in" d="M40,94 H340 M340,94 L330,86 M340,94 L330,102"/>
+        <text class="lbl-ink" x="14" y="118">i=0 要一路向右扫，直到撞见 4</text>
+        <text class="lbl-ink" x="14" y="138">ans = [4, 2, 4, -1, -1]</text>
+      </svg>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">COST · 暴力</div>
+        <div class="mono" style="font-size:12px;line-height:1.6">for i in range(n):<br>&nbsp;&nbsp;&nbsp;&nbsp;for j in range(i+1, n):<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if nums[j] &gt; nums[i]: ...</div>
+        <div class="cbar"><i style="width:100%"></i></div>
+        <div class="mono" style="font-size:12px;color:var(--volt)">n = 10^5 → 10^10 次比较 → 超时</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">WHY · 转变</div>
+        <div class="p">别问「<b>我</b>右边第一个更大的是谁」，改问「<b>我</b>是<b>谁的答案</b>」。<br><br>
+        一个数一旦等到答案，就<b>再也不需要被问</b>了。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>说清 O(n²) 慢在「重复扫描同一批元素」。</p></div>
+  <div class="foot"><a href="https://leetcode.cn/problems/next-greater-element-i/" target="_blank">LC 496 下一个更大元素 I ↗</a></div>
+</section>
+
+<!-- ================= 18 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="思想" data-q="怎么做到 O(n)？" data-title="单调栈三规则">
+  <div class="eb">MONOTONIC STACK · 18 / 30</div>
+  <div class="hd"><h2 class="h">把「等答案的人」排成一列</h2>
+    <div class="sb">栈里存的不是数值，是<b>还没等到答案的下标</b>，从栈底到栈顶单调递减。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">RULE · 三条规则</div>
+      <div class="p" style="margin-top:4px">
+        ① 新元素 <b>v</b> 来了，看栈顶。<br>
+        ② 只要栈顶 <b>&lt; v</b>：栈顶等到答案 → <b style="color:var(--volt)">pop</b>，答案就是 v。<br>
+        ③ 把 v <b style="color:var(--blue)">push</b> 进栈，继续等。<br><br>
+        <b>为什么 O(n)？</b>每个下标<b>只进一次、只出一次</b>，总操作 ≤ 2n。</div>
+      <div class="cbar g"><i style="width:12%"></i></div>
+      <div class="mono" style="font-size:12px;color:var(--green)">单调栈：n = 10^5 → 2×10^5 次操作</div>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--volt)">
+        <div class="state"><span class="sl">ANS →</span><span class="sv">[4, 2, 4, -1, -1]</span><span class="sl">STACK →</span><span class="sv">[3, 4]</span></div>
+<pre><span class="kw">def</span> next_greater(nums):
+    n = len(nums)
+    ans = [-<span class="nu">1</span>] * n
+    st = []                    <span class="cm"># 存下标，值单调递减</span>
+    <span class="kw">for</span> i <span class="kw">in</span> range(n):
+        <span class="kw">while</span> st <span class="kw">and</span> nums[st[-<span class="nu">1</span>]] &lt; nums[i]:
+            ans[st.pop()] = nums[i]   <span class="cm"># i 就是它等的答案</span>
+        st.append(i)
+    <span class="kw">return</span> ans</pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p">栈里永远是「<b>还没等到答案，而且越来越没希望</b>」的人。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>把「淘汰没希望的」写成 8 行可运行的代码。</p></div>
+  <div class="foot"><a href="https://leetcode.cn/problems/next-greater-element-ii/" target="_blank">LC 503 下一个更大元素 II ↗</a>
+    <a href="https://leetcode.cn/problems/daily-temperatures/" target="_blank">LC 739 每日温度 ↗</a></div>
+</section>
+
+<!-- ================= 19 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="思想" data-q="跑一遍就懂了" data-title="8 天温度跑一遍">
+  <div class="eb">ANIMATION · 19 / 30</div>
+  <div class="hd"><h2 class="h">8 天温度，跑一遍</h2>
+    <div class="sb">temps = [23, 24, 25, 21, 19, 22, 26, 23]　→　还要等几天才更暖和？</div></div>
+  <div class="bd">
+    <div class="plate">
+      <div class="card-k">TRACE · 左：温度　中下：答案（等几天）　右：单调栈（存下标）</div>
+      <div data-fx="mono"></div>
+    </div>
+    <div class="two">
+      <div class="plate"><div class="card-k">NOTE · 当前这一步</div><div class="p" data-live="mnote">开始</div></div>
+      <div class="plate"><div class="card-k">TOTAL</div><div class="p">8 天温度，共 <span class="mono">8</span> 次入栈、<span class="mono">8</span> 次出栈 → 时间 <span class="mono">O(n)</span>。</div></div>
+    </div>
+  </div>
+  <div class="foot"><a href="https://leetcode.cn/problems/daily-temperatures/" target="_blank">LC 739 每日温度 ↗</a>
+    <a href="https://leetcode.cn/problems/online-stock-span/" target="_blank">LC 901 股票价格跨度 ↗</a>
+    <span class="note">按 R 重放</span></div>
+</section>
+
+<!-- ================= 20 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="思想" data-q="单调栈还有哪些用法？" data-title="单调栈三个家族">
+  <div class="eb">FAMILY · 20 / 30</div>
+  <div class="hd"><h2 class="h">单调栈的三个家族</h2>
+    <div class="sb">同一个思想，换一个比较方向、换一个「谁是答案」。</div></div>
+  <div class="bd">
+    <div class="three">
+      <div class="plate"><div class="card-k">A · 下一个更大</div><div class="p">栈<b>递减</b>，新元素更大就 pop。<br><span class="mono" style="font-size:11px">while st and a[st[-1]] &lt; x</span><br>温度、股票跨度。</div></div>
+      <div class="plate"><div class="card-k">B · 下一个更小</div><div class="p">栈<b>递增</b>，新元素更小就 pop。<br><span class="mono" style="font-size:11px">while st and a[st[-1]] &gt; x</span><br>找山谷、下跌区间。</div></div>
+      <div class="plate"><div class="card-k">C · 贡献法（区间）</div><div class="p">pop 时知道「它能管多宽」→<b>宽度 × 高度</b>算贡献。<br>最大矩形、接雨水。</div></div>
+    </div>
+    <div class="codeplate" style="--rule:var(--volt)">
+      <div class="state"><span class="sl">PROBLEM →</span><span class="sv">柱状图最大矩形</span><span class="sl">ANS →</span><span class="sv">10</span></div>
+<pre><span class="kw">def</span> largest_area(h):
+    h = h + [<span class="nu">0</span>]                <span class="cm"># 哨兵：逼出栈里剩下的</span>
+    st, best = [], <span class="nu">0</span>
+    <span class="kw">for</span> i, v <span class="kw">in</span> enumerate(h):
+        <span class="kw">while</span> st <span class="kw">and</span> h[st[-<span class="nu">1</span>]] &gt; v:
+            height = h[st.pop()]
+            left = st[-<span class="nu">1</span>] <span class="kw">if</span> st <span class="kw">else</span> -<span class="nu">1</span>
+            best = max(best, height * (i - left - <span class="nu">1</span>))
+        st.append(i)
+    <span class="kw">return</span> best</pre>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>从「一个题的技巧」上升成「一类题的模板」。</p></div>
+  <div class="foot"><a href="https://leetcode.cn/problems/largest-rectangle-in-histogram/" target="_blank">LC 84 柱状图中最大的矩形 ↗</a>
+    <a href="https://leetcode.cn/problems/trapping-rain-water/" target="_blank">LC 42 接雨水 ↗</a></div>
+</section>
+
+<!-- ================= 21 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="搜索" data-q="BFS 和 DFS 差在哪？" data-title="BFS 与 DFS">
+  <div class="eb">BFS &amp; DFS · 21 / 30</div>
+  <div class="hd"><h2 class="h">同一件事的两种走法</h2>
+    <div class="sb">BFS 用<b style="color:var(--green)">队列</b>（一层层扩），DFS 用<b style="color:var(--blue)">栈</b>（一路走到底）。</div></div>
+  <div class="two-75 bd">
+    <div class="plate">
+      <div class="card-k">MAZE · 从左上走到右下 · 实心块为墙</div>
+      <svg class="tube" viewBox="0 0 560 360">
+        <g id="maze"></g>
+        <text class="lbl" x="530" y="60">层 0</text>
+        <text class="lbl" x="530" y="120">层 1</text>
+        <text class="lbl" x="530" y="180">层 2</text>
+        <text class="lbl" x="530" y="240">层 3</text>
+        <text class="lbl-ink" x="530" y="300">E = 终点</text>
+      </svg>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">DIFF · 只差一个数据结构</div>
+        <div class="p"><b style="color:var(--green)">BFS</b>：队列 + 按层 → 最短路、最少步数<br>
+        <b style="color:var(--blue)">DFS</b>：栈 / 递归 + 走到底 → 全排列、连通块、回溯</div>
+      </div>
+      <div class="codeplate" style="--rule:var(--green)">
+        <div class="state"><span class="sl">QUEUE →</span><span class="sv">[(0,0)]</span><span class="sl">DIST →</span><span class="sv">0</span></div>
+<pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+q = deque([start]); dist = {start: <span class="nu">0</span>}
+<span class="kw">while</span> q:
+    x, y = q.popleft()          <span class="cm"># 队头出</span>
+    <span class="kw">for</span> nx, ny <span class="kw">in</span> move(x, y):
+        <span class="kw">if</span> (nx, ny) <span class="kw">not</span> <span class="kw">in</span> dist:
+            dist[(nx, ny)] = dist[(x, y)] + <span class="nu">1</span>
+            q.append((nx, ny))  <span class="cm"># 队尾进</span></pre>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>说明「搜索」不过是「谁先出去」的另一种问法。</p></div>
+  <div class="foot"><a href="https://www.luogu.com.cn/problem/P1443" target="_blank">洛谷 P1443 马的遍历 ↗</a>
+    <a href="https://leetcode.cn/problems/number-of-islands/" target="_blank">LC 200 岛屿数量 ↗</a></div>
+</section>
+
+<!-- ================= 22 ================= -->
+<section class="slide" data-ch="第 4 章" data-sec="搜索" data-q="为什么 BFS 天然最短？" data-title="BFS 为什么最短">
+  <div class="eb">SHORTEST PATH · 22 / 30</div>
+  <div class="hd"><h2 class="h">BFS 为什么天然最短</h2>
+    <div class="sb">它是<b>按层</b>扩张的：第 k 层的格子，一定是被第 k−1 层第一次到达的。</div></div>
+  <div class="two bd">
+    <div class="plate">
+      <div class="card-k">LAYERS · 每一环 = 距离为 d 的所有格子</div>
+      <svg class="tube" viewBox="0 0 520 222">
+        <rect x="16" y="18" width="70" height="70" fill="none" stroke="#1B4AE0" stroke-width="3"/>
+        <rect x="16" y="18" width="150" height="150" fill="none" stroke="#1B4AE0" stroke-width="2" stroke-dasharray="5 5"/>
+        <rect x="16" y="18" width="240" height="196" fill="none" stroke="#0B7A55" stroke-width="2" stroke-dasharray="5 5"/>
+        <text class="lbl-ink" x="30" y="58">d = 0</text>
+        <text class="lbl-ink" x="102" y="108">d = 1</text>
+        <text class="lbl-ink" x="192" y="158">d = 2</text>
+        <text class="lbl" x="286" y="66">第一次到达</text>
+        <text class="lbl" x="286" y="86">= 最短距离</text>
+        <text class="lbl" x="286" y="118">队列保证先来的</text>
+        <text class="lbl" x="286" y="138">先被处理</text>
+      </svg>
+    </div>
+    <div class="col">
+      <div class="codeplate" style="--rule:var(--green)">
+        <div class="state"><span class="sl">ANS →</span><span class="sv">4</span><span class="sl">STRUCT →</span><span class="sv">deque</span></div>
+<pre><span class="kw">def</span> shortest(grid):
+    n = len(grid)
+    <span class="kw">if</span> grid[<span class="nu">0</span>][<span class="nu">0</span>] == <span class="nu">1</span>: <span class="kw">return</span> -<span class="nu">1</span>
+    q = deque([( <span class="nu">0</span>, <span class="nu">0</span>, <span class="nu">1</span> )])   <span class="cm"># (x, y, 步数)</span>
+    seen = {(<span class="nu">0</span>, <span class="nu">0</span>)}
+    <span class="kw">while</span> q:
+        x, y, d = q.popleft()
+        <span class="kw">if</span> x == y == n - <span class="nu">1</span>: <span class="kw">return</span> d
+        <span class="kw">for</span> dx <span class="kw">in</span> (-<span class="nu">1</span>,<span class="nu">0</span>,<span class="nu">1</span>):
+            <span class="kw">for</span> dy <span class="kw">in</span> (-<span class="nu">1</span>,<span class="nu">0</span>,<span class="nu">1</span>):
+                nx, ny = x + dx, y + dy
+                <span class="kw">if</span> <span class="nu">0</span> &lt;= nx &lt; n <span class="kw">and</span> (nx,ny) <span class="kw">not</span> <span class="kw">in</span> seen:
+                    seen.add((nx, ny))
+                    q.append((nx, ny, d + <span class="nu">1</span>))
+    <span class="kw">return</span> -<span class="nu">1</span></pre>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>讲清「按层」与「最短」之间的因果关系。</p></div>
+  <div class="foot"><a href="https://www.luogu.com.cn/problem/P1141" target="_blank">洛谷 P1141 01迷宫 ↗</a>
+    <a href="https://leetcode.cn/problems/rotting-oranges/" target="_blank">LC 994 腐烂的橘子 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P3371" target="_blank">洛谷 P3371 单源最短路 ↗</a></div>
+</section>
+
+<!-- ================= 23 ================= -->
+<section class="slide" data-ch="第 5 章" data-sec="陷阱" data-q="空栈能 pop 吗？" data-title="陷阱一：pop 空栈">
+  <div class="eb">TRAP 01 · 23 / 30</div>
+  <div class="hd"><h2 class="h">陷阱一：pop 一个空栈</h2>
+    <div class="sb">运行时不报语法错，只会<b style="color:var(--red)">在最想不到的那行炸掉</b>。</div></div>
+  <div class="two bd">
+    <div class="col">
+      <div class="trace">
+<pre><span class="er">Traceback (most recent call last):</span>
+  File <span class="st">"main.py"</span>, line 3, in &lt;module&gt;
+    x = stack.pop()
+<span class="er">IndexError: pop from empty list</span></pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">FIX · 一行防御</div>
+<pre style="padding:4px 0 0">x = stack.pop() <span class="kw">if</span> stack <span class="kw">else</span> <span class="kw">None</span>
+<span class="cm"># 或者</span>
+<span class="kw">if</span> stack:
+    x = stack.pop()
+<span class="kw">else</span>:
+    <span class="cm"># 这才是你真正要处理的情况</span></pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">WHY · 根源</div>
+        <div class="p">「弹栈」类题的错误都发生在<b>边界</b>：<br>
+        · 输入为空　　· 只有一个元素<br>
+        · 全部相同　　· 全部配不上<br>
+        · 左右数量不等</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">HABIT · 好习惯</div>
+        <div class="p">每次写 <span class="mono">pop()</span> 前问一句：<b>它一定是非空的吗？</b><br>
+        栈的内容由输入决定，而输入你控制不了。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>让你在写 pop 前，先想清楚「空」这种情况。</p></div>
+  <div class="foot"><a href="https://leetcode.cn/problems/min-stack/" target="_blank">LC 155 最小栈 ↗</a>
+    <a href="https://leetcode.cn/problems/decode-string/" target="_blank">LC 394 字符串解码 ↗</a></div>
+</section>
+
+<!-- ================= 24 ================= -->
+<section class="slide" data-ch="第 5 章" data-sec="陷阱" data-q="递归会炸吗？" data-title="陷阱二：递归爆栈">
+  <div class="eb">TRAP 02 · 24 / 30</div>
+  <div class="hd"><h2 class="h">陷阱二：递归栈溢出</h2>
+    <div class="sb">Python 的调用栈<b>不是无限的</b>，默认约 1000 层。</div></div>
+  <div class="two bd">
+    <div class="col">
+      <div class="trace">
+<pre><span class="er">Traceback (most recent call last):</span>
+  File <span class="st">"main.py"</span>, line 2, in f
+    <span class="kw">return</span> f(n - <span class="nu">1</span>) + f(n - <span class="nu">2</span>)
+  File <span class="st">"main.py"</span>, line 2, in f
+    <span class="kw">return</span> f(n - <span class="nu">1</span>) + f(n - <span class="nu">2</span>)
+<span class="er">RecursionError: maximum recursion depth exceeded</span></pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">FIX · 两条路</div>
+<pre style="padding:4px 0 0"><span class="kw">import</span> sys
+sys.setrecursionlimit(<span class="nu">100000</span>)  <span class="cm"># 只是把栈做大</span>
+<span class="cm"># 更稳：递归 → 显式栈</span>
+st = [start]
+<span class="kw">while</span> st:
+    x = st.pop()
+    <span class="kw">for</span> y <span class="kw">in</span> next_of(x):
+        st.append(y)</pre>
+      </div>
+    </div>
+    <div class="col">
+      <div class="plate">
+        <div class="card-k">COMPARE · 递归 vs 显式栈</div>
+        <table>
+          <tr><th>写法</th><th>栈在哪</th><th>风险</th></tr>
+          <tr><td class="zh">递归</td><td class="zh">系统调用栈</td><td class="zh">深度受限、慢</td></tr>
+          <tr><td class="zh">显式栈</td><td class="zh">堆内存</td><td class="zh">可控、不炸</td></tr>
+        </table>
+      </div>
+      <div class="plate">
+        <div class="card-k">KEY · 一句话</div>
+        <div class="p"><b>递归 = 用系统栈做 DFS</b>。写成显式栈，你就能自己决定「谁先出去」—— 又回到今天这根管子。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>让你知道「爆栈」不是玄学，是深度超限。</p></div>
+  <div class="foot"><a href="https://www.luogu.com.cn/problem/P1255" target="_blank">洛谷 P1255 数楼梯 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1219" target="_blank">洛谷 P1219 八皇后 ↗</a>
+    <a href="https://leetcode.cn/problems/binary-tree-maximum-path-sum/" target="_blank">LC 124 二叉树最大路径和 ↗</a></div>
+</section>
+
+<!-- ================= 25 ================= -->
+<section class="slide" data-ch="第 5 章" data-sec="陷阱" data-q="结构选错了会怎样？" data-title="陷阱三：结构选错">
+  <div class="eb">TRAP 03 · 25 / 30</div>
+  <div class="hd"><h2 class="h">陷阱三：结构选错</h2>
+    <div class="sb">用 <span class="mono">list</span> 当队列、用 <span class="mono">deque</span> 当栈 —— 都能跑，但代价不同。</div></div>
+  <div class="bd">
+    <div class="two">
+      <div class="plate">
+        <div class="card-k">✗ LIST 当队列</div>
+        <div class="mono" style="font-size:12px;line-height:1.7">q = [1, 2, 3]<br>x = q.pop(0)&nbsp;&nbsp;<span style="color:var(--red)"># O(n)</span></div>
+        <div class="p" style="margin-top:6px">每次出队，后面<b>全体前移</b>一格。10 万次 → 退化到 10^10 量级。</div>
+      </div>
+      <div class="plate">
+        <div class="card-k">✓ DEQUE 当队列</div>
+        <div class="mono" style="font-size:12px;line-height:1.7">q = deque([1, 2, 3])<br>x = q.popleft()&nbsp;&nbsp;<span style="color:var(--green)"># O(1)</span></div>
+        <div class="p" style="margin-top:6px">两头都是 O(1)。若只用 <span class="mono">append / pop</span>，用 list 就够了。</div>
+      </div>
+    </div>
+    <table>
+      <tr><th>需求</th><th>该用</th><th>别用</th><th>原因</th></tr>
+      <tr><td class="zh">栈</td><td>list.append / list.pop</td><td class="zh">deque.pop</td><td class="zh">list 更简单，缓存更友好</td></tr>
+      <tr><td class="zh">队列</td><td>deque.append / popleft</td><td class="zh">list.pop(0)</td><td class="zh">后者是 O(n)</td></tr>
+      <tr><td class="zh">优先队列</td><td>heapq</td><td class="zh">每次 sorted</td><td class="zh">排序 O(n log n)，堆只需 O(log n)</td></tr>
+      <tr><td class="zh">滑动窗口最值</td><td>单调 deque</td><td class="zh">每窗口重扫</td><td class="zh">后者 O(nk)</td></tr>
+    </table>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>给出一张「需求 → 正确结构」的速查表。</p></div>
+  <div class="foot"><a href="https://leetcode.cn/problems/implement-queue-using-stacks/" target="_blank">LC 232 用栈实现队列 ↗</a>
+    <a href="https://leetcode.cn/problems/implement-stack-using-queues/" target="_blank">LC 225 用队列实现栈 ↗</a>
+    <a href="https://leetcode.cn/problems/backspace-string-compare/" target="_blank">LC 844 比较含退格的字符串 ↗</a></div>
+</section>
+
+<!-- ================= 26 ================= -->
+<section class="slide" data-ch="第 5 章" data-sec="运用" data-q="这些结构都能解什么题？" data-title="运用全景图">
+  <div class="eb">MAP · 26 / 30</div>
+  <div class="hd"><h2 class="h">运用全景图</h2>
+    <div class="sb">三个结构家族，十二类真题 —— 同一支上的题目，解法骨架几乎相同。</div></div>
+  <div class="bd">
+    <div class="plate">
+      <div class="card-k">STRUCTURE → PROBLEM</div>
+      <div data-fx="map"></div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>让你遇到新题时，先判断「它属于哪一支」。</p></div>
+</section>
+
+<!-- ================= 27 ================= -->
+<section class="slide" data-ch="第 5 章" data-sec="运用" data-q="我该从哪道题开始刷？" data-title="真题对照表">
+  <div class="eb">PROBLEM LIST · 27 / 30</div>
+  <div class="hd"><h2 class="h">真题对照：题号 → 结构</h2>
+    <div class="sb">按「先易后难」排好，前 6 道是今天的必做题。</div></div>
+  <div class="bd">
+    <div class="two" style="gap:24px">
+      <table>
+        <tr><th>题目</th><th>结构</th><th>难度</th></tr>
+        <tr><td class="zh">LC 20 有效的括号</td><td class="zh">栈</td><td>★</td></tr>
+        <tr><td class="zh">洛谷 P1739 表达式括号匹配</td><td class="zh">栈</td><td>★</td></tr>
+        <tr><td class="zh">洛谷 P1044 栈（出栈序列）</td><td class="zh">栈 / 卡特兰</td><td>★★</td></tr>
+        <tr><td class="zh">LC 155 最小栈</td><td class="zh">双栈</td><td>★★</td></tr>
+        <tr><td class="zh">LC 232 用栈实现队列</td><td class="zh">双栈</td><td>★★</td></tr>
+        <tr><td class="zh">LC 150 逆波兰表达式求值</td><td class="zh">栈</td><td>★★</td></tr>
+        <tr><td class="zh">洛谷 P1175 表达式求值</td><td class="zh">双栈</td><td>★★★</td></tr>
+      </table>
+      <table>
+        <tr><th>题目</th><th>结构</th><th>难度</th></tr>
+        <tr><td class="zh">LC 739 每日温度</td><td class="zh">单调栈</td><td>★★</td></tr>
+        <tr><td class="zh">LC 239 滑动窗口最大值</td><td class="zh">单调队列</td><td>★★★</td></tr>
+        <tr><td class="zh">LC 84 柱状图最大矩形</td><td class="zh">单调栈</td><td>★★★</td></tr>
+        <tr><td class="zh">LC 42 接雨水</td><td class="zh">单调栈 / 双指针</td><td>★★★</td></tr>
+        <tr><td class="zh">洛谷 P1443 马的遍历</td><td class="zh">BFS</td><td>★★</td></tr>
+        <tr><td class="zh">洛谷 P1141 01迷宫</td><td class="zh">BFS</td><td>★★</td></tr>
+        <tr><td class="zh">LC 994 腐烂的橘子</td><td class="zh">多源 BFS</td><td>★★</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>给出一份可以直接开刷的清单。</p></div>
+  <div class="foot">
+    <a href="https://leetcode.cn/problems/valid-parentheses/" target="_blank">LC 20 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1739" target="_blank">P1739 ↗</a>
+    <a href="https://www.luogu.com.cn/problem/P1044" target="_blank">P1044 ↗</a>
+    <a href="https://leetcode.cn/problems/daily-temperatures/" target="_blank">LC 739 ↗</a>
+    <a href="https://leetcode.cn/problems/sliding-window-maximum/" target="_blank">LC 239 ↗</a>
+    <a href="https://leetcode.cn/problems/largest-rectangle-in-histogram/" target="_blank">LC 84 ↗</a>
+  </div>
+</section>
+
+<!-- ================= 28 ================= -->
+<section class="slide" data-ch="第 5 章" data-sec="运用" data-q="拿到题目先做什么？" data-title="五步解题流程">
+  <div class="eb">METHOD · 28 / 30</div>
+  <div class="hd"><h2 class="h">五步解题流程</h2>
+    <div class="sb">从「读题」到「交卷」，每一步只回答一个问题。</div></div>
+  <div class="bd">
+    <div class="steps">
+      <div class="step"><div class="n">STEP 1</div><div class="t">看顺序</div><div class="d">问的是「最近的」「最早的」「最小的」，还是「一层层的」？</div></div>
+      <div class="step"><div class="n">STEP 2</div><div class="t">选结构</div><div class="d">最近→栈；最早→队列；最优→堆；没机会的→单调栈。</div></div>
+      <div class="step"><div class="n">STEP 3</div><div class="t">定状态</div><div class="d">栈 / 队列里存<b>值</b>还是<b>下标</b>？（多半是下标）</div></div>
+      <div class="step"><div class="n">STEP 4</div><div class="t">写模板</div><div class="d">先默写模板，再填比较符号（&lt; 还是 &gt;）。</div></div>
+      <div class="step"><div class="n">STEP 5</div><div class="t">测边界</div><div class="d">空输入、只有一个、全部相同、全部配不上。</div></div>
+    </div>
+    <div class="two">
+      <div class="codeplate" style="--rule:var(--volt)">
+        <div class="state"><span class="sl">TEMPLATE →</span><span class="sv">单调栈</span></div>
+<pre>st = []
+<span class="kw">for</span> i <span class="kw">in</span> range(n):
+    <span class="kw">while</span> st <span class="kw">and</span> <span class="cm">/* 比较条件 */</span>:
+        j = st.pop()
+        <span class="cm">/* 用 i 更新 j 的答案 */</span>
+    st.append(i)
+<span class="cm">/* 收尾：清空剩余元素的答案 */</span></pre>
+      </div>
+      <div class="plate">
+        <div class="card-k">CHECKLIST · 交卷前 30 秒</div>
+        <div class="p">□ pop 之前判断过空栈吗？<br>
+        □ 循环结束后栈里还有东西吗？它们的答案是什么？<br>
+        □ 比较符号写对了吗（&lt; 还是 &lt;=）？<br>
+        □ 存的是值还是下标？<br>
+        □ 复杂度是 O(n) 还是 O(n²)？</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>把今天的内容压缩成一套可重复的解题动作。</p></div>
+  <div class="foot"><span class="note">考试 / 比赛时，把这张清单写在草稿纸顶端。</span></div>
+</section>
+
+<!-- ================= 29 ================= -->
+<section class="slide" data-ch="复习" data-sec="复习" data-q="今天到底讲了什么？" data-title="一页复习卡">
+  <div class="eb">RECAP · 29 / 30</div>
+  <div class="hd"><h2 class="h">一页复习卡</h2>
+    <div class="sb">主线收在这里：<b>顺序决定结构，结构决定做法，做法决定复杂度。</b></div></div>
+  <div class="bd">
+    <div class="two" data-fx="close">
+      <div class="plate reveal" style="border-left:4px solid var(--blue);animation-delay:.05s">
+        <div class="card-k">CARD 1 · 栈 LIFO</div>
+        <div class="p">进出同一头（上）。<b>最近</b>的先处理。<br>
+        <span class="mono" style="font-size:11px">append / pop / [-1]　O(1)</span><br>
+        括号匹配、表达式、撤销、DFS、调用栈。</div>
+      </div>
+      <div class="plate reveal" style="border-left:4px solid var(--green);animation-delay:.13s">
+        <div class="card-k">CARD 2 · 队列 FIFO</div>
+        <div class="p">一头进一头出。<b>最早</b>的先处理。<br>
+        <span class="mono" style="font-size:11px">append / popleft　O(1)</span><br>
+        排队、BFS、层序、缓冲、最短路。</div>
+      </div>
+      <div class="plate reveal" style="border-left:4px solid var(--ink);animation-delay:.21s">
+        <div class="card-k">CARD 3 · 双端 / 堆</div>
+        <div class="p">两头都能动（deque）；按优先级出（heap）。<br>
+        <span class="mono" style="font-size:11px">deque O(1)　heapq O(log n)</span><br>
+        滑动窗口、Top-K、Dijkstra、调度。</div>
+      </div>
+      <div class="plate reveal" style="border-left:4px solid var(--volt);animation-delay:.29s">
+        <div class="card-k">CARD 4 · 单调栈 / 队列</div>
+        <div class="p">淘汰「<b>没机会</b>」的，留下候选者。<br>
+        <span class="mono" style="font-size:11px">摊还 O(1)，总共 O(n)</span><br>
+        下一个更大、最大矩形、窗口最值。</div>
+      </div>
+    </div>
+  </div>
+  <div class="instr"><span>这一步 →</span><p>用四句话把 30 页压成一屏。</p></div>
+  <div class="foot"><span class="note">核心一句话：栈与队列只回答「下一个出去的是谁」，其余全是这句话的变形。</span></div>
+</section>
+
+<!-- ================= 30 ================= -->
+<section class="slide" data-ch="结束" data-sec="结束" data-q="现在去做三道题" data-title="现在做三道题">
+  <div class="eb">THE END · 30 / 30</div>
+  <div class="two-75" style="flex:1">
+    <div class="col" style="justify-content:center">
+      <h2 class="h big">今天做<br>三道题</h2>
+      <div class="sb">做完这三道，今天讲的就<b>全用上了</b>。顺序别换。</div>
+      <div class="col" style="margin-top:12px;gap:8px">
+        <a href="https://www.luogu.com.cn/problem/P1044" target="_blank" class="tag blue" style="padding:10px 12px;font-size:11px">01 · 洛谷 P1044 栈（出栈序列计数）↗</a>
+        <a href="https://leetcode.cn/problems/valid-parentheses/" target="_blank" class="tag blue" style="padding:10px 12px;font-size:11px">02 · LeetCode 20 有效的括号 ↗</a>
+        <a href="https://leetcode.cn/problems/daily-temperatures/" target="_blank" class="tag volt" style="padding:10px 12px;font-size:11px">03 · LeetCode 739 每日温度（单调栈）↗</a>
+      </div>
+    </div>
+    <div class="col" style="justify-content:center">
+      <div class="plate">
+        <div class="card-k">ONE LINE · 一句话带走</div>
+        <div class="p">「栈与队列不是两个结构，是<b>同一根管子的两个开口</b>。」</div>
+      </div>
+      <div class="plate" style="display:flex;gap:14px;align-items:center">
+        <div class="qr" data-qr></div>
+        <div>
+          <div class="card-k">SUBMIT</div>
+          <div class="p">把三道题的 AC 截图发群里。<br>
+          <span class="mono" style="font-size:11px;color:var(--muted)">luogu.com.cn/problem/P1044</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span class="note">按 G 打开目录 · 按 R 重放当前页动画 · 谢谢。</span></div>
+</section>
+
+<!-- ================= rail ================= -->
+<div class="rail">
+  <div class="ch" data-r="ch">序</div>
+  <div class="q" data-r="q">两个口</div>
+  <div class="line"><div class="ticks"></div><div class="sq"></div></div>
+  <div class="sec" data-r="sec">开场</div>
+</div>
+
+<!-- ================= controls ================= -->
+<button class="edge l" data-act="prev" aria-label="上一页">‹</button>
+<button class="edge r" data-act="next" aria-label="下一页">›</button>
+
+<div class="ctrl">
+  <div class="pline"><i></i></div>
+  <button class="navbtn" data-act="prev">‹ 上一页</button>
+  <button class="navbtn" data-act="next">下一页 ›</button>
+  <button class="counter" data-act="index">01 / 30</button>
+  <div class="ctrl-ch" data-r="ctrlch">序 · 开场</div>
+  <div class="hint">← → 翻页 · G 目录 · R 重放 · ? 帮助</div>
+</div>
+
+<!-- ================= index ================= -->
+<div class="index">
+  <h3>目录 · 30 页</h3>
+  <div class="sub">ONE LINE — 顺序决定结构，结构决定做法，做法决定复杂度</div>
+  <div class="igrid"></div>
+</div>
+
+<!-- ================= help ================= -->
+<div class="help">
+  <h3>快捷键与操作</h3>
+  <table>
+    <tr><td>→ / Space / PageDown / 点击画面右侧</td><td>下一页</td></tr>
+    <tr><td>← / PageUp / 点击画面左侧</td><td>上一页</td></tr>
+    <tr><td>G 或点击页码</td><td>打开 / 关闭目录，直接跳转</td></tr>
+    <tr><td>Home / End</td><td>第一页 / 最后一页</td></tr>
+    <tr><td>R</td><td>重放当前页动画</td></tr>
+    <tr><td>?</td><td>显示 / 隐藏本帮助</td></tr>
+    <tr><td>Esc</td><td>关闭帮助 / 目录</td></tr>
+  </table>
+  <p style="margin-top:18px;font:400 13px var(--mono);color:#8E887B">
+    底部控制条常驻：上一页 / 下一页 / 页码 / 当前章节。左右边缘的 ‹ › 会随鼠标出现。</p>
+</div>
+</div>
+
+<script>
+/* ================= fit ================= */
+function fit(){
+  var s = Math.min((innerWidth-24)/1280, (innerHeight-24)/720);
+  document.getElementById('stage').style.setProperty('--s', s);
+}
+addEventListener('resize', fit); fit();
+
+/* ================= motion preference ================= */
+var REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= svg helpers ================= */
+var NS = 'http://www.w3.org/2000/svg';
+function el(t, a){
+  var e = document.createElementNS(NS, t);
+  for(var k in a) e.setAttribute(k, a[k]);
+  return e;
+}
+function chipG(x, y, label, cls, size){
+  size = size || 52;
+  return '<g class="chip '+(cls||'')+'" transform="translate('+x+','+y+')">'
+       + '<rect width="'+size+'" height="'+size+'" rx="8"></rect>'
+       + '<text x="'+(size/2)+'" y="'+(size/2+1)+'">'+label+'</text></g>';
+}
+
+/* ================= Tube ================= */
+function Tube(host, o){
+  this.o = o || {dir:'v'};
+  this.host = host; this.map = {};
+  host.innerHTML = this.shell();
+  this.svg = host.querySelector('svg');
+  this.layer = this.svg.querySelector('.layer');
+}
+Tube.prototype.shell = function(){
+  var s;
+  if(this.o.dir === 'v'){
+    var L = 140, R = 240, TOP = 22, BOT = 336;
+    s  = '<svg class="tube tall" viewBox="0 0 380 360">';
+    s += '<path class="wall" d="M'+L+','+TOP+' V'+BOT+' M'+R+','+TOP+' V'+BOT+'"/>';
+    s += '<path class="seal" d="M'+L+','+BOT+' H'+R+'"/>';
+    s += '<path class="mouth-in" d="M'+(L-14)+','+TOP+' H'+L+' M'+R+','+TOP+' H'+(R+14)+'"/>';
+    s += '<path class="arw-in" d="M190,-8 V8 M182,0 L190,10 L198,0"/>';
+    s += '<text class="lbl" x="258" y="32">push ↓</text>';
+    s += '<text class="lbl" x="258" y="56">pop ↑</text>';
+    s += '<text class="lbl" x="258" y="88">同一头</text>';
+    s += '<text class="lbl" x="122" y="332" text-anchor="end">封死</text>';
+    s += '<g class="layer"></g></svg>';
+    return s;
+  }
+  var Y1 = 52, Y2 = 148, X1 = 14, X2 = 1026;
+  s  = '<svg class="tube" viewBox="0 0 1040 176">';
+  s += '<path class="wall" d="M'+X1+','+Y1+' H'+X2+' M'+X1+','+Y2+' H'+X2+'"/>';
+  s += '<path class="mouth-in" d="M'+X1+','+Y1+' V'+(Y1+18)+' M'+X1+','+(Y2-18)+' V'+Y2+'"/>';
+  s += '<path class="mouth-out" d="M'+X2+','+Y1+' V'+(Y1+18)+' M'+X2+','+(Y2-18)+' V'+Y2+'"/>';
+  s += '<path class="arw-in" d="M-18,100 H10 M-4,92 L12,100 L-4,108"/>';
+  s += '<path class="arw-out" d="M1030,100 H1074 M1060,92 L1076,100 L1060,108"/>';
+  s += '<text class="lbl" x="30" y="34">enqueue ↑ 队尾 rear</text>';
+  s += '<text class="lbl" x="866" y="34">dequeue ↑ 队头 front</text>';
+  s += '<g class="layer"></g></svg>';
+  return s;
+};
+Tube.prototype.pos = function(i){
+  return this.o.dir === 'v' ? {x:164, y:268 - i*56} : {x:30 + i*76, y:74};
+};
+Tube.prototype.sync = function(items){
+  var self = this, seen = {};
+  items.forEach(function(it, i){
+    var p = self.pos(i);
+    seen[it.id] = 1;
+    var g = self.map[it.id];
+    if(!g){
+      g = el('g', {'data-id': it.id, class: 'chip ' + (it.cls || '')});
+      g.appendChild(el('rect', {width:52, height:52, rx:8}));
+      var t = el('text', {x:26, y:27});
+      t.setAttribute('text-anchor', 'middle');
+      t.textContent = it.label;
+      g.appendChild(t);
+      g.style.transform = 'translate(' + p.x + 'px,' + p.y + 'px)';
+      self.layer.appendChild(g);
+      self.map[it.id] = g;
+    } else {
+      g.style.transform = 'translate(' + p.x + 'px,' + p.y + 'px)';
+      g.querySelector('text').textContent = it.label;
+    }
+    g.setAttribute('class', 'chip ' + (it.cls || ''));
+    g.style.opacity = it.hidden ? '0' : '1';
+  });
+  for(var k in this.map){
+    if(!seen[k]){
+      this.layer.removeChild(this.map[k]);
+      delete this.map[k];
+    }
+  }
+};
+
+/* ================= frame player ================= */
+function playFrames(slide, frames, draw, ms){
+  clearInterval(slide._timer);
+  if(REDUCE){ draw(frames[frames.length - 1]); return; }
+  var t = 0;
+  draw(frames[0]);
+  slide._timer = setInterval(function(){
+    t++;
+    if(t >= frames.length){ clearInterval(slide._timer); return; }
+    draw(frames[t]);
+  }, ms || 900);
+}
+
+/* ================= FX ================= */
+var FX = {};
+
+FX.stack4 = function(s){
+  var host = s.querySelector('[data-fx="stack4"]');
+  if(!host._tube) host._tube = new Tube(host, {dir:'v'});
+  var t = host._tube, labels = ['A','B','C'], frames = [{items:[], hot:-1}];
+  labels.forEach(function(l, i){ frames.push({items: labels.slice(0, i+1), hot: i}); });
+  frames.push({items: ['A','B'], hot: -1});
+  frames.push({items: ['A'], hot: -1});
+  playFrames(s, frames, function(f){
+    t.sync(f.items.map(function(x, j){
+      return {id:x, label:x, cls:'in' + (j === f.hot ? ' hot' : '')};
+    }));
+  }, 950);
+};
+
+FX.stack6 = function(s){
+  var host = s.querySelector('[data-fx="stack6"]');
+  if(!host._tube) host._tube = new Tube(host, {dir:'v'});
+  var t = host._tube, vals = [3,1,4,1,5], st = [], frames = [{st:[], hot:-1, out:'—'}];
+  vals.forEach(function(v, i){ st.push(v); frames.push({st: st.slice(), hot: i, out:'—'}); });
+  for(var i = 0; i < vals.length; i++){
+    var outVal = st[st.length - 1];
+    st.pop();
+    frames.push({st: st.slice(), hot: -1, out: outVal});
+  }
+  playFrames(s, frames, function(f){
+    t.sync(f.st.map(function(v, j){
+      return {id:'c'+j, label:String(v), cls:'in' + (j === f.hot ? ' hot' : '')};
+    }));
+    var e1 = s.querySelector('[data-live="s6"]'), e2 = s.querySelector('[data-live="o6"]');
+    if(e1) e1.textContent = '[' + f.st.join(', ') + ']';
+    if(e2) e2.textContent = String(f.out);
+  }, 780);
+};
+
+FX.queue10 = function(s){
+  var host = s.querySelector('[data-fx="queue10"]');
+  if(!host._tube) host._tube = new Tube(host, {dir:'h'});
+  var t = host._tube, seq = ['A','B','C','D','E'], q = [], frames = [{q:[], hot:-1}];
+  // 入队：新元素出现在队尾（左端，索引 0）
+  seq.forEach(function(v){
+    q.unshift(v);
+    frames.push({q: q.slice(), hot: 0});
+  });
+  // 出队：先高亮队头（右端，索引 length-1），再移除
+  for(var i = 0; i < 3; i++){
+    frames.push({q: q.slice(), hot: q.length - 1}); // 高亮即将出队者
+    q.pop();                                        // 下一拍移除
+  }
+  playFrames(s, frames, function(f){
+    t.sync(f.q.map(function(v, j){
+      return {
+        id: v,
+        label: v,
+        cls: (j === f.hot ? 'hot ' : '') + (j === f.q.length - 1 ? 'out' : 'in')
+      };
+    }));
+  }, 820);
+};
+
+FX.ring = function(s){
+  var host = s.querySelector('[data-fx="ring"]');
+  // 修正：帧数据自洽；第 5 帧体现 tail 绕回 0（真正"环形"）
+  var frames = [
+    {cells:[1,2,3,null,null,null,null,null], head:0, tail:3, n:3},
+    {cells:[1,2,3,4,null,null,null,null],    head:0, tail:4, n:4},
+    {cells:[null,2,3,4,null,null,null,null], head:1, tail:4, n:3},
+    {cells:[null,2,3,4,5,6,7,null],          head:1, tail:7, n:6},
+    {cells:[null,2,3,4,5,6,7,8],             head:1, tail:0, n:7}, // ★ tail 绕回 0
+    {cells:[9,2,3,4,5,6,7,8],                head:1, tail:1, n:8}
+  ];
+  playFrames(s, frames, function(f){
+    var s2 = '<svg class="tube" viewBox="0 0 580 122">';
+    for(var i = 0; i < 8; i++){
+      var x = 10 + i*70, v = f.cells[i];
+      s2 += '<rect x="'+x+'" y="32" width="60" height="50" fill="'+(v === null ? 'none' : '#FBF9F5')+'" stroke="#15171B" stroke-width="2"/>';
+      if(v !== null) s2 += '<text x="'+(x+30)+'" y="63" text-anchor="middle" class="lbl-ink" style="font-size:17px">'+v+'</text>';
+      s2 += '<text x="'+(x+30)+'" y="98" text-anchor="middle" class="lbl">'+i+'</text>';
+      if(i === f.head) s2 += '<text x="'+(x+30)+'" y="26" text-anchor="middle" class="lbl-ink" style="fill:#0B7A55">head ↓</text>';
+      if(i === f.tail) s2 += '<text x="'+(x+30)+'" y="14" text-anchor="middle" class="lbl-ink" style="fill:#1B4AE0">tail ↓</text>';
+    }
+    s2 += '<text x="10" y="118" class="lbl">n = '+f.n+'　capacity = 8　tail = (tail + 1) % 8</text></svg>';
+    host.innerHTML = s2;
+    var a = s.querySelector('[data-live="hd"]'),
+        b = s.querySelector('[data-live="tl"]'),
+        c = s.querySelector('[data-live="nn"]');
+    if(a) a.textContent = f.head;
+    if(b) b.textContent = f.tail;
+    if(c) c.textContent = f.n;
+  }, 1050);
+};
+
+FX.dq = function(s){
+  var host = s.querySelector('[data-fx="dq"]');
+  var nums = [1,3,-1,-3,5,3,6,7], k = 3, ans = [], dq = [], frames = [];
+  frames.push({i:-1, dq:[], ans:[], win:[0,1,2]});
+  for(var i = 0; i < nums.length; i++){
+    while(dq.length && nums[dq[dq.length-1]] <= nums[i]) dq.pop();
+    dq.push(i);
+    while(dq.length && dq[0] <= i - k) dq.shift();
+    if(i >= k - 1) ans.push(nums[dq[0]]);
+    frames.push({i:i, dq:dq.slice(), ans:ans.slice(), win:[i-k+1, i-k+2, i-k+3]});
+  }
+  playFrames(s, frames, function(f){
+    var s2 = '<svg class="tube" viewBox="0 0 580 222">';
+    for(var i = 0; i < nums.length; i++){
+      var x = 10 + i*70, inWin = f.win.indexOf(i) >= 0, isI = (i === f.i);
+      s2 += '<rect x="'+x+'" y="16" width="52" height="50" fill="'+(inWin ? '#FBF9F5' : 'none')+'" stroke="'+(isI ? '#FF4D1F' : '#15171B')+'" stroke-width="'+(isI ? 3 : 2)+'"/>';
+      s2 += '<text x="'+(x+26)+'" y="48" text-anchor="middle" class="lbl-ink" style="font-size:16px;'+(isI ? 'fill:#FF4D1F' : '')+'">'+nums[i]+'</text>';
+      s2 += '<text x="'+(x+26)+'" y="82" text-anchor="middle" class="lbl">'+i+'</text>';
+    }
+    s2 += '<text x="10" y="112" class="lbl-ink">deque（存下标，值单调递减）</text>';
+    f.dq.forEach(function(d, j){
+      var x = 10 + j*118;
+      s2 += '<rect x="'+x+'" y="122" width="106" height="36" fill="none" stroke="#0B7A55" stroke-width="2"/>';
+      s2 += '<text x="'+(x+53)+'" y="146" text-anchor="middle" class="lbl-ink">'+d+' : '+nums[d]+'</text>';
+    });
+    s2 += '<text x="10" y="196" class="lbl-ink">ans →</text>';
+    f.ans.forEach(function(a, j){
+      s2 += '<text x="'+(70+j*52)+'" y="196" class="lbl-ink">'+a+'</text>';
+    });
+    s2 += '</svg>';
+    host.innerHTML = s2;
+  }, 1000);
+};
+
+FX.mono = function(s){
+  var host = s.querySelector('[data-fx="mono"]');
+  var temps = [23,24,25,21,19,22,26,23];
+  var st = [], ans = [0,0,0,0,0,0,0,0], frames = [];
+  frames.push({i:-1, st:[], ans:ans.slice(), note:'初始：栈空，答案全是 0'});
+  for(var i = 0; i < 8; i++){
+    var popped = [];
+    while(st.length && temps[st[st.length-1]] < temps[i]){
+      var j = st.pop(); ans[j] = i - j; popped.push(j);
+    }
+    st.push(i);
+    frames.push({
+      i:i, st:st.slice(), ans:ans.slice(), popped:popped,
+      note: popped.length
+        ? ('下标 '+i+' 更暖 → '+popped.length+' 个人等到答案，出栈')
+        : ('下标 '+i+' 不更暖 → 直接入栈，继续等')
+    });
+  }
+  playFrames(s, frames, function(f){
+    var s2 = '<svg class="tube" viewBox="0 0 1040 244">';
+    s2 += '<text x="0" y="14" class="lbl-ink">温度 temps</text>';
+    for(var i = 0; i < 8; i++){
+      var x = i*92, isI = (i === f.i);
+      s2 += '<rect x="'+x+'" y="24" width="62" height="50" fill="none" stroke="'+(isI ? '#FF4D1F' : '#F2EFE8')+'" stroke-width="'+(isI ? 3 : 2)+'"/>';
+      s2 += '<text x="'+(x+31)+'" y="55" text-anchor="middle" class="lbl-ink" style="font-size:17px;'+(isI ? 'fill:#FF4D1F' : '')+'">'+temps[i]+'</text>';
+      s2 += '<text x="'+(x+31)+'" y="90" text-anchor="middle" class="lbl">i = '+i+'</text>';
+    }
+    s2 += '<text x="0" y="122" class="lbl-ink">答案 ans（还要等几天）</text>';
+    for(var i = 0; i < 8; i++){
+      var x = i*92, v = f.ans[i];
+      s2 += '<rect x="'+x+'" y="132" width="62" height="46" fill="'+(v ? '#22262C' : 'none')+'" stroke="#F2EFE8" stroke-width="2"/>';
+      s2 += '<text x="'+(x+31)+'" y="161" text-anchor="middle" class="lbl-ink" style="font-size:17px;'+(v ? 'fill:#0B7A55' : '')+'">'+v+'</text>';
+    }
+    var L = 846, R = 946, TOP = 22, BOT = 228;
+    s2 += '<path class="wall" d="M'+L+','+TOP+' V'+BOT+' M'+R+','+TOP+' V'+BOT+'"/>';
+    s2 += '<path class="seal" d="M'+L+','+BOT+' H'+R+'"/>';
+    s2 += '<path class="mouth-in" d="M'+(L-12)+','+TOP+' H'+L+' M'+R+','+TOP+' H'+(R+12)+'"/>';
+    s2 += '<text class="lbl-ink" x="846" y="12">单调栈（存下标）</text>';
+    f.st.forEach(function(idx, j){
+      var y = 228 - 12 - 52 - j*52;
+      s2 += chipG(870, y, String(idx), (j === f.st.length - 1 ? 'in hot' : 'in'));
+    });
+    s2 += '<text x="962" y="238" class="lbl">栈底（老）</text>';
+    s2 += '</svg>';
+    host.innerHTML = s2;
+    var n = s.querySelector('[data-live="mnote"]');
+    if(n) n.textContent = f.note;
+  }, 1150);
+};
+
+FX.map = function(s){
+  var host = s.querySelector('[data-fx="map"]');
+  var groups = [
+    {t:'栈 LIFO', d:'最近的一个', c:'#1B4AE0', x:14, items:['LC 20 有效的括号','LC 150 逆波兰求值','LC 155 最小栈','洛谷 P1044 栈']},
+    {t:'队列 FIFO', d:'最早的一个', c:'#0B7A55', x:356, items:['LC 994 腐烂的橘子','洛谷 P1443 马的遍历','LC 102 层序遍历','LC 232 栈实现队列']},
+    {t:'单调栈 / 队列', d:'还有机会的', c:'#FF4D1F', x:698, items:['LC 739 每日温度','LC 239 滑动窗口最大','LC 84 最大矩形','LC 42 接雨水']}
+  ];
+  var s2 = '<svg class="tube" viewBox="0 0 1040 300">';
+  groups.forEach(function(g){
+    s2 += '<rect x="'+g.x+'" y="4" width="320" height="52" fill="none" stroke="'+g.c+'" stroke-width="2"/>';
+    s2 += '<text x="'+(g.x+14)+'" y="26" class="lbl-ink" style="font-size:16px">'+g.t+'</text>';
+    s2 += '<text x="'+(g.x+14)+'" y="44" class="lbl">'+g.d+'</text>';
+    g.items.forEach(function(it, i){
+      var y = 78 + i*54;
+      s2 += '<path d="M'+(g.x+30)+','+(y-26)+' V'+y+'" stroke="'+g.c+'" stroke-width="2" opacity="0.5" fill="none"/>';
+      s2 += '<rect x="'+g.x+'" y="'+y+'" width="320" height="40" fill="none" stroke="#15171B" stroke-width="2"/>';
+      s2 += '<text x="'+(g.x+14)+'" y="'+(y+25)+'" class="lbl-ink" style="font-size:13px">'+it+'</text>';
+    });
+  });
+  s2 += '</svg>';
+  host.innerHTML = s2;
+};
+
+/* ================= static figures ================= */
+(function buildMaze(){
+  var g = document.getElementById('maze');
+  if(!g) return;
+  var cols = 7, rows = 7, cw = 70, chh = 42, gap = 8, ox = 8, oy = 8;
+  var walls = [[1,1],[2,1],[4,1],[1,3],[3,3],[4,3],[2,4],[0,5],[2,5],[4,5],[1,6],[3,6]];
+  var layers = {0:[[0,0]], 1:[[1,0],[0,1]], 2:[[2,0],[1,2],[0,2]], 3:[[3,0],[2,2],[0,3],[0,4]]};
+  for(var r = 0; r < rows; r++){
+    for(var c = 0; c < cols; c++){
+      var x = ox + c*(cw+gap), y = oy + r*(chh+gap), isWall = false;
+      for(var i = 0; i < walls.length; i++){
+        if(walls[i][0] === c && walls[i][1] === r) isWall = true;
+      }
+      g.appendChild(el('rect', {x:x, y:y, width:cw, height:chh,
+        fill: isWall ? '#15171B' : 'none', stroke:'#7A776E', 'stroke-width':1}));
+    }
+  }
+  for(var k in layers){
+    layers[k].forEach(function(p){
+      g.appendChild(el('circle', {
+        cx: ox + p[0]*(cw+gap) + cw/2, cy: oy + p[1]*(chh+gap) + chh/2,
+        r: 12, fill:'none', stroke:'#1B4AE0', 'stroke-width':2, 'stroke-dasharray':'4 4'}));
+    });
+  }
+  var sChip = el('g', {class:'chip hot'});
+  sChip.setAttribute('transform', 'translate(' + (ox + 9) + ',' + (oy + 2) + ')');
+  sChip.appendChild(el('rect', {width:52, height:36, rx:8}));
+  var st = el('text', {x:26, y:19}); st.setAttribute('text-anchor','middle'); st.textContent = 'S';
+  sChip.appendChild(st);
+  g.appendChild(sChip);
+  var ex = ox + 6*(cw+gap) + cw/2, ey = oy + 6*(chh+gap) + chh/2;
+  g.appendChild(el('circle', {cx:ex, cy:ey, r:17, fill:'none', stroke:'#0B7A55', 'stroke-width':3, 'stroke-dasharray':'6 5'}));
+  var et = el('text', {x:ex, y:ey+5}); et.setAttribute('text-anchor','middle');
+  et.setAttribute('class','lbl-ink'); et.textContent = 'E';
+  g.appendChild(et);
+})();
+
+(function buildQR(){
+  var q = document.querySelector('[data-qr]');
+  if(!q) return;
+  var seed = [1,1,1,0,1,0,1,1,1, 1,0,1,1,0,1,1,0,1, 1,1,1,0,0,1,1,1,1,
+              0,1,0,1,1,0,0,1,0, 1,0,1,1,0,1,1,0,1, 0,1,1,0,1,0,1,1,0,
+              1,1,1,0,1,1,1,0,1, 1,0,1,1,0,1,0,1,1, 1,1,1,0,1,0,1,1,1];
+  var html = '';
+  for(var i = 0; i < 81; i++) html += (seed[i] ? '<i></i>' : '<span></span>');
+  q.innerHTML = html;
+})();
+
+/* ================= navigation ================= */
+var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+var stage = document.getElementById('stage');
+var pbar = document.querySelector('.pline i');
+var counter = document.querySelector('.counter');
+var ctrlCh = document.querySelector('[data-r="ctrlch"]');
+var rail = {
+  ch:  document.querySelector('[data-r="ch"]'),
+  q:   document.querySelector('[data-r="q"]'),
+  sec: document.querySelector('[data-r="sec"]'),
+  sq:  document.querySelector('.rail .sq')
+};
+var ticksBox = document.querySelector('.rail .ticks');
+for(var ti = 0; ti < 30; ti++){
+  var tk = document.createElement('div');
+  tk.className = 'tick';
+  tk.style.top = (ti / 29 * 100) + '%';
+  ticksBox.appendChild(tk);
+}
+
+/* index grid */
+var igrid = document.querySelector('.igrid');
+slides.forEach(function(s, i){
+  var b = document.createElement('button');
+  b.className = 'icell';
+  b.dataset.i = i;
+  b.setAttribute('aria-label', (i+1) + ' · ' + (s.dataset.title || ''));
+  b.innerHTML = '<div class="n">' + (i + 1 < 10 ? '0' : '') + (i + 1) + '</div>'
+              + '<div class="t">' + (s.dataset.title || '') + '</div>'
+              + '<div class="c">' + (s.dataset.sec || '') + '</div>';
+  b.addEventListener('click', function(ev){
+    ev.stopPropagation();
+    show(i); toggleIndex(false);
+  });
+  igrid.appendChild(b);
+});
+
+var cur = -1;
+
+function show(n){
+  n = Math.max(0, Math.min(slides.length - 1, n));
+  if(cur >= 0 && slides[cur]){
+    slides[cur].classList.remove('on');
+    clearInterval(slides[cur]._timer);
+  }
+  cur = n;
+  var s = slides[cur];
+  s.classList.remove('on');
+  void s.offsetWidth;
+  s.classList.add('on');
+
+  // 严格按当前页是否有 night 类切换整页主题
+  var isNight = s.classList.contains('night');
+  stage.classList.toggle('night', isNight);
+
+  rail.ch.textContent  = s.dataset.ch;
+  rail.q.textContent   = s.dataset.q;
+  rail.sec.textContent = s.dataset.sec;
+  rail.sq.style.top    = (cur / (slides.length - 1) * 100) + '%';
+
+  counter.textContent  = (cur + 1 < 10 ? '0' : '') + (cur + 1) + ' / ' + slides.length;
+  ctrlCh.textContent   = s.dataset.ch + ' · ' + s.dataset.sec;
+  pbar.style.width     = (cur / (slides.length - 1) * 100) + '%';
+
+  Array.prototype.forEach.call(igrid.children, function(c, i){
+    c.classList.toggle('cur', i === cur);
+  });
+
+  var fxD = s.querySelector('[data-fx]');
+  if(fxD){
+    var name = fxD.getAttribute('data-fx');
+    if(FX[name]){
+      setTimeout(function(){
+        if(slides[cur] !== s) return;   // 快速翻页守卫
+        try{ FX[name](s); }catch(e){}
+      }, 260);
+    }
+  }
+}
+function next(){ show(cur + 1); }
+function prev(){ show(cur - 1); }
+
+var indexPanel = document.querySelector('.index');
+var helpPanel  = document.querySelector('.help');
+function toggleIndex(force){
+  var on = (typeof force === 'boolean') ? force : !indexPanel.classList.contains('on');
+  indexPanel.classList.toggle('on', on);
+  if(on) helpPanel.classList.remove('on');
+}
+function toggleHelp(force){
+  var on = (typeof force === 'boolean') ? force : !helpPanel.classList.contains('on');
+  helpPanel.classList.toggle('on', on);
+  if(on) indexPanel.classList.remove('on');
+}
+
+document.addEventListener('click', function(e){
+  var btn = e.target.closest ? e.target.closest('[data-act]') : null;
+  if(btn){
+    e.stopPropagation();
+    var act = btn.dataset.act;
+    if(act === 'prev') prev();
+    else if(act === 'next') next();
+    else if(act === 'index') toggleIndex();
+    return;
+  }
+});
+
+addEventListener('keydown', function(e){
+  if(e.key === '?' || (e.key === '/' && e.shiftKey)){
+    e.preventDefault(); toggleHelp(); return;
+  }
+  if(helpPanel.classList.contains('on')){
+    if(e.key === 'Escape') toggleHelp(false);
+    return;
+  }
+  if(indexPanel.classList.contains('on')){
+    if(e.key === 'Escape' || e.key.toLowerCase() === 'g'){ toggleIndex(false); return; }
+    if(e.key === 'ArrowRight'){ show(cur + 1); return; }
+    if(e.key === 'ArrowLeft'){ show(cur - 1); return; }
+    return;
+  }
+  switch(e.key){
+    case 'ArrowRight': case ' ': case 'PageDown': e.preventDefault(); next(); break;
+    case 'ArrowLeft':  case 'PageUp':            e.preventDefault(); prev(); break;
+    case 'Home': show(0); break;
+    case 'End':  show(slides.length - 1); break;
+    case 'g': case 'G': toggleIndex(); break;
+    case 'r': case 'R': show(cur); break;
+    case 'Escape': toggleIndex(false); toggleHelp(false); break;
+  }
+});
+
+stage.addEventListener('click', function(e){
+  if(e.target.tagName === 'A') return;
+  if(e.target.closest('[data-act]')) return;
+  if(helpPanel.classList.contains('on')){ toggleHelp(false); return; }
+  if(indexPanel.classList.contains('on')){ toggleIndex(false); return; }
+  var r = stage.getBoundingClientRect();
+  if(e.clientX - r.left > r.width / 4) next(); else prev();
+});
+
+show(0);
+</script>
+</body>
+</html>

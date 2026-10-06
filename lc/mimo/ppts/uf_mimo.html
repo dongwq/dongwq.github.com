@@ -1,0 +1,2952 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>并查集 · 算法竞赛并查集 Primer</title>
+<style>
+:root{
+  --paper:#fffaf3; --card:#fffdf8;
+  --ink:#332519;   --ink2:#6b5544;  --muted:#a8927b;
+  --rule:#f0dcc4;  --rule2:#f7e9d6;
+  --accent:#e2622f; --accent2:#d99b2c; --accent3:#3f8f74; --accent4:#4a7fb5;
+  --hl:#fdeede;
+  --serif:"Songti SC","Noto Serif SC","Source Han Serif SC",serif;
+  --sans:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;
+  --mono:"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:#4a3f36;overflow:hidden;-webkit-font-smoothing:antialiased}
+
+#viewport{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#deck{position:relative;width:1280px;height:720px;background:var(--paper);overflow:hidden;
+  transform-origin:center center;will-change:transform;box-shadow:0 24px 80px rgba(0,0,0,.42)}
+
+.slide{position:absolute;left:0;top:0;width:1280px;min-height:720px;
+  padding:128px 0 0;display:flex;flex-direction:column;
+  opacity:0;pointer-events:none;transition:opacity .32s ease}
+.slide.on{opacity:1;pointer-events:auto}
+
+.s-title{position:absolute;left:80px;top:18px;width:800px;z-index:3;
+  font:600 24px/1.28 var(--serif);color:var(--ink);letter-spacing:.02em}
+.qdesc{position:absolute;left:80px;top:48px;width:1120px;z-index:3;
+  display:flex;align-items:baseline;gap:10px;
+  font:400 11px/1.45 var(--sans);color:var(--muted);letter-spacing:.02em}
+.qlabel{flex:0 0 44px;font:600 9.5px/1.45 var(--mono);color:var(--accent);
+  letter-spacing:.08em;text-transform:uppercase}
+.qtext{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pager{position:absolute;right:80px;top:22px;z-index:3;
+  font:500 15px/1 var(--mono);color:var(--ink);letter-spacing:.06em}
+.pager .tot{color:var(--muted);font-size:11px}
+.mnum{position:absolute;left:26px;top:80px;font:600 20px/1 var(--mono);color:var(--rule);z-index:3}
+.mlabel{position:absolute;left:32px;top:130px;writing-mode:vertical-rl;z-index:3;
+  font:500 10px/1 var(--mono);color:var(--muted);letter-spacing:.18em}
+
+.top-rule{position:absolute;left:80px;top:72px;width:1120px;height:1px;background:var(--rule);z-index:2}
+.top-rule::before{content:"";position:absolute;left:0;top:-1px;width:76px;height:3px;background:var(--accent)}
+.numrule{position:absolute;left:80px;top:116px;width:1120px;height:1px;z-index:2;
+  background-image:linear-gradient(to right,var(--rule2) 0 4px,transparent 4px 8px);
+  background-size:8px 1px;background-repeat:repeat-x}
+
+.numline{position:absolute;left:80px;top:80px;width:1120px;z-index:3;
+  font:500 19px/1.4 var(--mono);color:var(--ink2);letter-spacing:.01em}
+.numline b{color:var(--accent);font-weight:700}
+.numline i{color:var(--ink);font-style:normal;background:var(--hl);padding:1px 5px;border-radius:2px}
+
+.stage-inner{margin:0 80px;width:1120px;position:relative;z-index:5}
+
+.slide-foot{margin:auto 80px 0;padding-bottom:6px;position:relative;z-index:5}
+.bot-rule{width:1120px;height:1px;background:var(--rule)}
+.ruler{width:1120px;display:flex;gap:6px;margin-top:5px}
+.ruler button{flex:1 1 auto;min-width:150px;height:16px;border:0;border-radius:2px;cursor:pointer;
+  background:rgba(107,85,68,.13);display:flex;align-items:center;justify-content:center;
+  font:500 9.5px/1 var(--mono);color:var(--ink2);letter-spacing:.12em;
+  transition:background .22s ease,color .22s ease}
+.ruler button:hover{background:rgba(226,98,47,.22);color:var(--accent)}
+.ruler button.on{background:var(--accent);color:#fff}
+.botline{width:1120px;margin-top:5px;display:flex;align-items:baseline;justify-content:space-between}
+.eyebrow{font:500 10.5px/1.3 var(--mono);color:var(--muted);letter-spacing:.16em;text-transform:uppercase}
+.help{font:400 9.5px/1.3 var(--sans);color:var(--muted);letter-spacing:.06em}
+.bmark{font:600 10.5px/1.3 var(--mono);color:var(--ink2);letter-spacing:.2em}
+
+.watermark{position:absolute;right:-46px;top:108px;font:700 232px/1 var(--serif);
+  color:var(--ink);opacity:.055;user-select:none;pointer-events:none;
+  letter-spacing:-.04em;z-index:0}
+
+.grid{display:grid;grid-template-columns:repeat(12,64px);gap:32px;width:1120px}
+.c1-12{grid-column:1/13} .c1-7{grid-column:1/8} .c8-12{grid-column:8/13}
+.c1-5{grid-column:1/6}   .c6-12{grid-column:6/13} .c1-4{grid-column:1/5}
+.c5-12{grid-column:5/13} .c1-6{grid-column:1/7}  .c7-12{grid-column:7/13}
+.c1-8{grid-column:1/9}   .c9-12{grid-column:9/13} .c1-3{grid-column:1/4}
+.c4-12{grid-column:4/13} .c2-11{grid-column:2/12}
+
+.lead{font:400 20px/1.85 var(--sans);color:var(--ink2);letter-spacing:.015em}
+.body{font:400 16px/1.8 var(--sans);color:var(--ink2)}
+.cap{font:500 10px/1.4 var(--mono);color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+.disp{font:600 52px/1.22 var(--serif);color:var(--ink);letter-spacing:.03em}
+.disp .em{color:var(--accent)}
+.big{font:600 32px/1.35 var(--serif);color:var(--ink);letter-spacing:.02em}
+
+.panel{background:var(--card);border:1px solid var(--rule);border-radius:4px;
+  padding:20px 22px;position:relative}
+.panel.accent{border-left:3px solid var(--accent)}
+.panel.gold{border-left:3px solid var(--accent2)}
+.panel.green{border-left:3px solid var(--accent3)}
+.panel.blue{border-left:3px solid var(--accent4)}
+.panel.h{display:flex;flex-direction:column}
+.panel.grow{flex:1 1 auto}
+.panel h4{font:600 14px/1.5 var(--sans);color:var(--ink);margin-bottom:8px;letter-spacing:.02em}
+.panel p{font:400 14px/1.75 var(--sans);color:var(--ink2)}
+.panel p+p{margin-top:7px}
+
+.step{display:flex;gap:14px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--rule2)}
+.step:last-child{border-bottom:0}
+.step .n{flex:0 0 22px;height:22px;border-radius:50%;background:var(--ink2);color:var(--paper);
+  font:600 11px/22px var(--mono);text-align:center}
+.step.on .n{background:var(--accent)}
+.step .t{flex:1;font:400 15px/1.65 var(--sans);color:var(--ink2)}
+.step.on .t{color:var(--ink)}
+.step .t b{color:var(--ink);font-weight:600}
+.step .t code,.panel code{font:500 12.5px/1 var(--mono);background:var(--hl);
+  padding:2px 5px;border-radius:2px;color:#a8431c}
+
+.code{background:var(--card);border:1px solid var(--rule);border-radius:4px;
+  overflow:visible;display:flex;flex-direction:column}
+.cbar{flex:0 0 32px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;background:var(--ink);color:var(--paper);border-radius:3px 3px 0 0;
+  font:500 11px/1 var(--mono);letter-spacing:.1em}
+.cbar .lang{opacity:.55}
+ol.cl{list-style:none;counter-reset:l;padding:14px 0;overflow:visible;
+  font:400 13.5px/1.72 var(--mono);color:var(--ink2)}
+ol.cl li{counter-increment:l;display:flex;gap:12px;padding:0 14px 0 0;position:relative}
+ol.cl li::before{content:counter(l,decimal-leading-zero);flex:0 0 34px;text-align:right;
+  color:var(--rule);font-size:10.5px}
+ol.cl li.hi{background:var(--hl)}
+ol.cl li.hi::before{color:var(--accent)}
+ol.cl .kw{color:#c2451f;font-weight:700}
+ol.cl .fn{color:#a8741a;font-weight:700}
+ol.cl .cm{color:var(--muted);font-style:italic}
+ol.cl .st{color:#2f7d5e}
+
+table{width:100%;border-collapse:collapse;font:400 13.5px/1.5 var(--sans)}
+thead th{background:var(--ink);color:var(--paper);text-align:left;padding:11px;
+  font:600 11px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase}
+tbody td{padding:9px 11px;border-bottom:1px solid var(--rule2);color:var(--ink2);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:nth-child(even) td{background:rgba(255,255,255,.6)}
+td.k{font-weight:600;color:var(--ink)}
+.tag{display:inline-block;padding:1px 7px;border-radius:2px;
+  font:600 10px/1.5 var(--mono);letter-spacing:.06em}
+.tag.a{background:rgba(226,98,47,.13);color:#c2451f}
+.tag.b{background:rgba(63,143,116,.14);color:#2b6b56}
+.tag.c{background:rgba(217,155,44,.16);color:#9a6c12}
+.tag.d{background:rgba(74,127,181,.14);color:#34608d}
+
+.linklist{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.link{display:flex;align-items:center;gap:10px;text-decoration:none;padding:8px 10px;
+  border-radius:4px;background:rgba(255,255,255,.6);border:1px solid var(--rule2);
+  transition:background .18s ease,border-color .18s ease}
+.link:hover{background:var(--hl);border-color:var(--accent)}
+.link .lv{flex:0 0 44px;font:600 10px/1.6 var(--mono);text-align:center;border-radius:2px;letter-spacing:.04em}
+.lv.e{background:rgba(63,143,116,.16);color:#2b6b56}
+.lv.m{background:rgba(226,98,47,.14);color:#c2451f}
+.lv.h{background:rgba(160,60,60,.14);color:#a03c3c}
+.link .ln2{flex:1;font:500 13px/1.45 var(--sans);color:var(--ink)}
+.link .ln2 small{display:block;font:400 11px/1.4 var(--sans);color:var(--muted)}
+.link .lgo{flex:0 0 34px;font:600 11px/1.6 var(--mono);color:var(--accent)}
+
+.fig{width:100%;height:auto;display:block}
+.fig .ax{stroke:var(--rule);stroke-width:1}
+.fig .ln{fill:none;stroke:var(--ink2);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.fig .ln-a{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.fig .ln-b{fill:none;stroke:var(--accent3);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.fig .ln-c{fill:none;stroke:var(--accent2);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.fig .ln-d{fill:none;stroke:var(--accent4);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.fig .ln-thin{fill:none;stroke:var(--rule);stroke-width:1.2}
+.fig .bar{fill:rgba(107,85,68,.13)}
+.fig .bar-a{fill:rgba(226,98,47,.22);stroke:var(--accent);stroke-width:1.3}
+.fig .bar-b{fill:rgba(63,143,116,.2);stroke:var(--accent3);stroke-width:1.3}
+.fig .bar-c{fill:rgba(217,155,44,.22);stroke:var(--accent2);stroke-width:1.3}
+.fig .bar-d{fill:rgba(74,127,181,.2);stroke:var(--accent4);stroke-width:1.3}
+.fig .box{fill:var(--card);stroke:var(--rule);stroke-width:1.4}
+.fig .box-a{fill:rgba(226,98,47,.13);stroke:var(--accent);stroke-width:1.6}
+.fig .box-b{fill:rgba(63,143,116,.14);stroke:var(--accent3);stroke-width:1.6}
+.fig .box-c{fill:rgba(217,155,44,.16);stroke:var(--accent2);stroke-width:1.6}
+.fig .box-d{fill:rgba(74,127,181,.13);stroke:var(--accent4);stroke-width:1.6}
+.fig .dot{fill:var(--accent)}
+.fig .dot-b{fill:var(--accent3)}
+.fig .dot-c{fill:var(--accent2)}
+.fig .dot-w{fill:var(--card);stroke:var(--ink2);stroke-width:1.6}
+.fig .tx{font:500 11px var(--mono);fill:var(--muted)}
+.fig .tx-a{font:600 11px var(--mono);fill:var(--accent)}
+.fig .tx-b{font:600 11px var(--mono);fill:var(--accent3)}
+.fig .tx-c{font:600 11px var(--mono);fill:#9a6c12}
+.fig .tx-d{font:600 11px var(--mono);fill:#34608d}
+.fig .tx-i{font:600 15px var(--serif);fill:var(--ink)}
+.fig .tx-16{font:600 15px var(--mono);fill:var(--ink)}
+.fig .bo{font-weight:700}
+.fig .cc{font:500 11px var(--mono);fill:#a8431c}
+
+.hand{position:absolute;font:500 13px/1.5 "Kaiti SC","STKaiti",var(--serif);
+  color:var(--accent);opacity:0;transform:rotate(-2.2deg);
+  letter-spacing:.04em;z-index:8;pointer-events:none}
+.hand.show{opacity:.85;transition:opacity .5s ease}
+
+.anim{opacity:0;transform:translateY(8px)}
+.slide.play .anim{opacity:1;transform:none;
+  transition:opacity .5s ease,transform .5s cubic-bezier(.22,.8,.28,1)}
+.slide.play .anim.d1{transition-delay:.12s}
+.slide.play .anim.d2{transition-delay:.24s}
+.slide.play .anim.d3{transition-delay:.36s}
+.slide.play .anim.d4{transition-delay:.48s}
+.slide.play .anim.d5{transition-delay:.6s}
+
+.draw{stroke-dasharray:var(--L);stroke-dashoffset:var(--L)}
+.slide.play .draw{stroke-dashoffset:0;transition:stroke-dashoffset 1.1s cubic-bezier(.3,.7,.3,1)}
+.slide.play .draw.d1{transition-delay:.18s}
+.slide.play .draw.d2{transition-delay:.36s}
+.slide.play .draw.d3{transition-delay:.54s}
+
+@media(prefers-reduced-motion:reduce){
+  .anim,.slide.play .anim{opacity:1;transform:none;transition:none}
+  .draw,.slide.play .draw{stroke-dasharray:none;stroke-dashoffset:0;transition:none}
+  .hand.show{transition:none}
+}
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="deck">
+
+<!-- ═════════ 01 封面 ═════════ -->
+<section class="slide" data-ch="起点" data-num="01" data-ml="UNION-FIND" data-wm="并">
+  <div class="s-title">并查集</div>
+  <div class="qdesc"><span class="qlabel">定位</span><span class="qtext">算法竞赛基础课 · 60 分钟 · 面向已掌握数组、递归、DFS/BFS 的学习者</span></div>
+  <div class="numline anim">主线 = <i>「动态连通性」</i> → <b>用「一个代表」表示一个集合</b> → <b>几乎 O(1) 的合并与查询</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1" style="display:flex;flex-direction:column;justify-content:center;gap:26px">
+        <div>
+          <div class="cap" style="margin-bottom:14px">ALGORITHM PRIMER · UNION-FIND</div>
+          <div class="disp">并<span class="em">查</span>集</div>
+          <div class="big" style="margin-top:16px;color:var(--ink2);font-size:22px">「认亲」问题的终极武器</div>
+        </div>
+        <div class="panel accent">
+          <p>今天所有内容都来自<b>同一句抽象</b>：一个集合只用<b>一个代表元</b>表示。</p>
+          <p><b>合并 = 认一个祖先，查询 = 比祖先。</b>就这么简单。</p>
+        </div>
+        <div class="cap">60 MIN · 40 SLIDES · PYTHON · LEETCODE + 洛谷</div>
+      </div>
+      <div class="c8-12 anim d2">
+        <svg class="fig" viewBox="0 0 500 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="30">A FOREST OF SETS</text>
+
+          <circle class="dot" cx="130" cy="80" r="18"/>
+          <g class="dot-w"><circle cx="90" cy="170" r="13"/><circle cx="175" cy="170" r="13"/>
+            <circle cx="70" cy="255" r="11"/><circle cx="115" cy="255" r="11"/></g>
+          <path class="ln-thin" d="M130 98 L90 157 M130 98 L175 157 M90 183 L70 244 M90 183 L115 244"/>
+          <text class="tx-a" x="106" y="42">A</text>
+
+          <circle class="dot" cx="360" cy="120" r="18"/>
+          <g class="dot-w"><circle cx="320" cy="210" r="13"/><circle cx="405" cy="210" r="13"/></g>
+          <path class="ln-thin" d="M360 138 L320 197 M360 138 L405 197"/>
+          <text class="tx-a" x="336" y="82">B</text>
+
+          <circle class="dot-b" cx="250" cy="360" r="18"/>
+          <g class="dot-w"><circle cx="205" cy="450" r="13"/><circle cx="295" cy="450" r="13"/></g>
+          <path class="ln-thin" d="M250 378 L205 437 M250 378 L295 437"/>
+          <text class="tx-b" x="226" y="322">C</text>
+
+          <line class="ax" x1="20" y1="486" x2="480" y2="486"/>
+          <text class="tx-a" x="20" y="518">每个集合只记「代表」，别的都不重要</text>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" style="left:120px;top:472px" data-at="2600">↑ 「只记代表」是今天一切的起点</div>
+  </div>
+</section>
+
+<!-- ═════════ 02 路线图 ═════════ -->
+<section class="slide" data-ch="起点" data-num="02" data-ml="ROADMAP" data-wm="并">
+  <div class="s-title">60 分钟路线图：每一站解决一个具体问题</div>
+  <div class="qdesc"><span class="qlabel">路线</span><span class="qtext">先搞清「为什么慢」，再学「怎么变快」，最后落到「怎么用」</span></div>
+  <div class="numline anim">学习路径 = <i>痛点</i> → <b>朴素实现</b> → <b>两大优化</b> → <b>应用</b> → <b>扩展</b>，<b>六步一循环</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 196" preserveAspectRatio="xMidYMid meet">
+          <path class="ln draw" d="M60 92 L1060 92" style="--L:1000"/>
+          <g><circle class="dot" cx="60" cy="92" r="9"/><text class="tx-a" x="42" y="68">00</text>
+            <text class="tx-i" x="30" y="128">痛点</text><text class="tx" x="8" y="152">动态连通性</text></g>
+          <g><circle class="dot" cx="230" cy="92" r="9"/><text class="tx-a" x="212" y="68">01</text>
+            <text class="tx-i" x="200" y="128">朴素</text><text class="tx" x="168" y="152">parent[] + find</text></g>
+          <g><circle class="dot" cx="400" cy="92" r="9"/><text class="tx-a" x="382" y="68">02</text>
+            <text class="tx-i" x="368" y="128">优化</text><text class="tx" x="332" y="152">路径压缩 / 按秩</text></g>
+          <g><circle class="dot" cx="570" cy="92" r="9"/><text class="tx-a" x="552" y="68">03</text>
+            <text class="tx-i" x="542" y="128">应用</text><text class="tx" x="500" y="152">连通 / 判环 / MST</text></g>
+          <g><circle class="dot" cx="740" cy="92" r="9"/><text class="tx-a" x="722" y="68">04</text>
+            <text class="tx-i" x="708" y="128">扩展</text><text class="tx" x="672" y="152">带权 / 种类 / 回滚</text></g>
+          <g><circle class="dot" cx="910" cy="92" r="9"/><text class="tx-a" x="892" y="68">05</text>
+            <text class="tx-i" x="882" y="128">对比</text><text class="tx" x="852" y="152">DFS / 树 / 图</text></g>
+          <g><circle class="dot" cx="1060" cy="92" r="9"/><text class="tx-a" x="1030" y="68">06</text>
+            <text class="tx-i" x="1012" y="128">题单</text><text class="tx" x="998" y="152">刷题路径</text></g>
+        </svg>
+      </div>
+      <div class="c1-4 anim d2">
+        <div class="panel h grow accent">
+          <h4>今天解决的 5 个问题</h4>
+          <div class="step on"><div class="n">1</div><div class="t">连通性问题<b>怎么问</b>？</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">朴素实现<b>为什么慢</b>？</div></div>
+          <div class="step on"><div class="n">3</div><div class="t">两个优化<b>怎么用</b>？</div></div>
+          <div class="step"><div class="n">4</div><div class="t">怎么维护<b>额外信息</b>？</div></div>
+          <div class="step"><div class="n">5</div><div class="t">什么时候<b>不该用</b>并查集？</div></div>
+        </div>
+      </div>
+      <div class="c5-12 anim d3">
+        <div class="panel h grow">
+          <h4>时间分配（60 分钟）</h4>
+          <table>
+            <thead><tr><th style="width:112px">时长</th><th style="width:160px">内容</th><th>核心产出</th></tr></thead>
+            <tbody>
+              <tr><td>0 – 6 min</td><td class="k">痛点与抽象</td><td>「代表元」的思想</td></tr>
+              <tr><td>6 – 18 min</td><td class="k">朴素实现</td><td>parent[]、find、union、退化</td></tr>
+              <tr><td>18 – 30 min</td><td class="k">两大优化</td><td>路径压缩、按大小合并、α(n)</td></tr>
+              <tr><td>30 – 42 min</td><td class="k">应用</td><td>判连通、判环、MST、冗余边</td></tr>
+              <tr><td>42 – 54 min</td><td class="k">扩展</td><td>带权、种类、回滚、离线</td></tr>
+              <tr><td>54 – 60 min</td><td class="k">题单</td><td>决策树 + 刷题清单</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:820px;top:404px" data-at="2600">← 12 分钟「扩展」是今天的重头戏</div>
+  </div>
+</section>
+
+<!-- ═════════ 03 痛点 ═════════ -->
+<section class="slide" data-ch="起点" data-num="03" data-ml="THE PAIN" data-wm="并">
+  <div class="s-title">痛点：动态连通性——「现在 a 和 b 通了吗」</div>
+  <div class="qdesc"><span class="qlabel">问题</span><span class="qtext">n 个点，不断加入边，每次问「a 和 b 在不在同一个连通块」——每次跑 DFS 太慢</span></div>
+  <div class="numline anim">根因 = <i>每次都重新扫一遍</i>；<b>并查集把「连通块」维护成状态</b>，<b>查询 O(1)</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-6 anim d1">
+        <div class="panel h grow accent">
+          <h4>三类「连通性」问题</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><b>动态加边</b>：加边时维护连通</div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><b>静态判连通</b>：一次判断即可（用 DFS）</div></div>
+          <div class="step on"><div class="n">3</div><div class="t"><b>只问不改</b>：可以预处理，也可以并查集</div></div>
+          <div class="step"><div class="n">→</div><div class="t">并查集<b>只为第 1 类而生</b></div></div>
+        </div>
+        <div class="panel gold anim d2" style="margin-top:22px">
+          <h4>为什么 DFS 不行</h4>
+          <p>每次查询都要<b>重扫 O(n)</b>，10⁵ 查询 × 10⁵ 点 = 10¹⁰，<b>必超时</b>。</p>
+          <p><b>并查集把「查」变成「比两个根」。</b></p>
+        </div>
+      </div>
+      <div class="c7-12 anim d2">
+        <svg class="fig" viewBox="0 0 544 560" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">GRAPH VS UNION-FIND</text>
+
+          <rect class="box" x="20" y="44" width="500" height="128" rx="4"/>
+          <text class="tx-a" x="42" y="74">每次查询跑 DFS</text>
+          <rect class="bar-a" x="42" y="92" width="130" height="44" rx="3"/><text class="tx" x="66" y="120">query 1</text>
+          <rect class="bar-a" x="188" y="92" width="130" height="44" rx="3"/><text class="tx" x="212" y="120">query 2</text>
+          <rect class="bar-a" x="334" y="92" width="130" height="44" rx="3"/><text class="tx" x="358" y="120">query 3</text>
+          <text class="tx" x="42" y="162">每次 O(n)，互相不复用</text>
+
+          <rect class="box-b" x="20" y="196" width="500" height="128" rx="4"/>
+          <text class="tx-b" x="42" y="226">并查集 · 一次预处理</text>
+          <rect class="bar-b" x="42" y="244" width="270" height="44" rx="3"/><text class="tx" x="66" y="272">union 1..n</text>
+          <rect class="bar-b" x="328" y="244" width="130" height="44" rx="3"/><text class="tx" x="352" y="272">query</text>
+          <text class="tx" x="42" y="312">查询 O(α(n))，几乎 O(1)</text>
+
+          <line class="ax" x1="20" y1="356" x2="524" y2="356"/>
+          <text class="tx-b" x="20" y="392">THE KEY IDEA</text>
+          <text class="tx-i" x="20" y="428">集合 = <tspan class="bo">一棵树</tspan></text>
+          <text class="tx-i" x="20" y="462">查询 = <tspan class="bo">比两个根</tspan></text>
+          <text class="tx-i" x="20" y="496">合并 = <tspan class="bo">挂一个根到另一个根</tspan></text>
+          <text class="tx-a" x="20" y="534">⇒ 只需维护「父」这一维</text>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" style="left:700px;top:352px" data-at="2500">← 「比两个根」是全部</div>
+  </div>
+</section>
+
+<!-- ═════════ 04 三个操作 ═════════ -->
+<section class="slide" data-ch="起点" data-num="04" data-ml="3 OPERATIONS" data-wm="并">
+  <div class="s-title">并查集只有三个操作：Make / Find / Union</div>
+  <div class="qdesc"><span class="qlabel">概念</span><span class="qtext">不要被名字吓到——它就是「认祖宗」的三个动作</span></div>
+  <div class="numline anim">三操作 = <i>Make：各自为政</i> · <b>Find：找祖宗</b> · <b>Union：改祖宗</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 236" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">MAKE · FIND · UNION</text>
+
+          <rect class="box-a" x="20" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-a" x="42" y="78">① Make(x) · 初始化</text>
+          <circle class="dot" cx="90" cy="132" r="13"/><circle class="dot" cx="180" cy="132" r="13"/><circle class="dot" cx="270" cy="132" r="13"/>
+          <text class="tx" x="42" y="176">每个点自成一个集合</text>
+          <text class="tx" x="42" y="202">par[x] = x</text>
+
+          <rect class="box-b" x="390" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-b" x="412" y="78">② Find(x) · 找祖宗</text>
+          <circle class="dot" cx="560" cy="122" r="15"/>
+          <circle class="dot-w" cx="500" cy="180" r="12"/><circle class="dot-w" cx="620" cy="180" r="12"/>
+          <path class="ln-thin" d="M560 137 L500 168 M560 137 L620 168"/>
+          <text class="tx" x="412" y="176">沿 par 一路向上</text>
+          <text class="tx" x="412" y="202">par[x] == x ⇒ 就是根</text>
+
+          <rect class="box-c" x="760" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-c" x="782" y="78">③ Union(a, b) · 合并</text>
+          <circle class="dot" cx="830" cy="132" r="15"/><circle class="dot" cx="980" cy="132" r="15"/>
+          <path class="ln-a draw" d="M845 132 L965 132" style="--L:120"/>
+          <path class="ln-a draw" d="M947 116 L965 132 L947 148" style="--L:52"/>
+          <text class="tx" x="782" y="176">让一个根认另一个为父</text>
+          <text class="tx" x="782" y="202">par[rootA] = rootB</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>three_ops.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="cm"># ① 初始化</span></li>
+            <li class="hi">par = <span class="fn">list</span>(<span class="fn">range</span>(n))&nbsp;&nbsp;<span class="cm"># 每个点是自己的根</span></li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># ② 找祖宗（朴素版）</span></li>
+            <li class="hi"><span class="kw">def</span> <span class="fn">find</span>(x):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> par[x] != x:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x = par[x]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> x</li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># ③ 合并</span></li>
+            <li class="hi"><span class="kw">def</span> <span class="fn">union</span>(a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;ra, rb = <span class="fn">find</span>(a), <span class="fn">find</span>(b)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> ra != rb:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;par[ra] = rb</li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># ④ 判同集合</span></li>
+            <li class="hi"><span class="kw">def</span> <span class="fn">same</span>(a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="fn">find</span>(a) == <span class="fn">find</span>(b)</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>为什么「以谁为根」不重要</h4>
+          <p>因为我们<b>只关心两个点是否同根</b>，<b>不关心谁是老大</b>。</p>
+          <p>这给了后面的<b>「按大小合并」</b>留出自由度。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>练习</h4>
+          <div class="linklist">
+            <a class="link" href="https://www.luogu.com.cn/problem/P3367" target="_blank"><span class="lv e">★2</span><span class="ln2">P3367 · 【模板】并查集<small>本页原型</small></span><span class="lgo">LG ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/friend-circles/" target="_blank"><span class="lv m">M</span><span class="ln2">547 · 省份数量<small>连通块计数</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/redundant-connection/" target="_blank"><span class="lv m">M</span><span class="ln2">684 · 冗余连接<small>判环</small></span><span class="lgo">LC ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「谁是老大不重要」给了优化空间</div>
+  </div>
+</section>
+
+<!-- ═════════ 05 代表元思想 ═════════ -->
+<section class="slide" data-ch="起点" data-num="05" data-ml="REPRESENTATIVE" data-wm="查">
+  <div class="s-title">代表元思想：这是今天最值钱的一句话</div>
+  <div class="qdesc"><span class="qlabel">抽象</span><span class="qtext">一个集合可以有很多种表示法——为什么偏偏选「一个代表」？</span></div>
+  <div class="numline anim">思想 = <i>「集合的信息」压缩成「一个点」</i>；<b>三个好处：快、省、可合并</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 236" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">SET → ONE REPRESENTATIVE</text>
+
+          <rect class="box-a" x="20" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-a" x="42" y="78">① 暴力：存整个集合</text>
+          <rect class="bar" x="42" y="98" width="46" height="36" rx="3"/><rect class="bar" x="96" y="98" width="46" height="36" rx="3"/>
+          <rect class="bar" x="150" y="98" width="46" height="36" rx="3"/><rect class="bar" x="204" y="98" width="46" height="36" rx="3"/>
+          <text class="tx" x="42" y="176">查询 O(n)、合并 O(n)、空间 O(n²)</text>
+
+          <rect class="box-b" x="390" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-b" x="412" y="78">② 代表元：只存「谁是头」</text>
+          <rect class="bar-b" x="412" y="98" width="300" height="36" rx="3"/><text class="tx-b" x="442" y="122">par[x] = 一个数</text>
+          <text class="tx" x="412" y="176">查询 O(1)、合并 O(1)、空间 O(n)</text>
+
+          <rect class="box-c" x="760" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-c" x="782" y="78">③ 代价</text>
+          <text class="tx" x="782" y="112">只能回答「同不同集合」</text>
+          <text class="tx" x="782" y="142">不能遍历集合的所有元素</text>
+          <text class="tx" x="782" y="172">（要「列举」就得另想办法）</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>representative.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="cm"># 一切复杂的并查集都是这个思想</span></li>
+            <li><span class="cm"># 的「加维度」</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">par = <span class="fn">list</span>(<span class="fn">range</span>(n))&nbsp;&nbsp;<span class="cm"># 谁是代表</span></li>
+            <li class="hi">size = [<span class="st">1</span>] * n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 附加：集合大小</span></li>
+            <li class="hi">value = [<span class="st">0</span>] * n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 附加：权值</span></li>
+            <li class="hi">kind = <span class="fn">list</span>(<span class="fn">range</span>(n))&nbsp;<span class="cm"># 附加：种类</span></li>
+            <li>&nbsp;</li>
+            <li class="cm"># 后面所有「带权并查集」「种类并查集」</li>
+            <li class="cm"># 都只是「多存一维」，find/union 不变</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 这就是并查集「可扩展」的原因</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>为什么这个抽象能撑起这么多算法</h4>
+          <p>因为它把<b>「关系」</b>变成了<b>「指针」</b>。</p>
+          <p>指针可以<b>改</b>、可以<b>比较</b>、可以<b>附加信息</b>——三件事一组合，就能解一大类题。</p>
+        </div>
+        <div class="panel gold anim d4" style="flex:1">
+          <h4>它和「树」的关系</h4>
+          <p>并查集的每个集合<b>就是一棵树</b>，par[x] 就是树上的父。</p>
+          <p>区别：<b>不关心形状</b>（所以可以随便压缩），<b>只关心根</b>。</p>
+          <p><b>这是「上一讲树」的极简版。</b></p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「关系变指针」是核心抽象</div>
+  </div>
+</section>
+
+<!-- ═════════ 06 朴素实现 ═════════ -->
+<section class="slide" data-ch="基础" data-num="06" data-ml="NAIVE IMPL" data-wm="查">
+  <div class="s-title">朴素实现：写出第一版，能跑就行</div>
+  <div class="qdesc"><span class="qlabel">实现</span><span class="qtext">怎么用 Python 实现最简单的并查集？——一个数组 + 两个函数</span></div>
+  <div class="numline anim">最简版 = <i>par[x] 记父</i>；<b>find 一路向上</b>，<b>union 改一个指针</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">THE ARRAY IS THE WHOLE THING</text>
+          <text class="tx-a" x="20" y="62">index</text>
+          <rect class="bar" x="20" y="72" width="76" height="36" rx="3"/><text class="tx" x="48" y="96">0</text>
+          <rect class="bar" x="102" y="72" width="76" height="36" rx="3"/><text class="tx" x="130" y="96">1</text>
+          <rect class="bar" x="184" y="72" width="76" height="36" rx="3"/><text class="tx" x="212" y="96">2</text>
+          <rect class="bar" x="266" y="72" width="76" height="36" rx="3"/><text class="tx" x="294" y="96">3</text>
+          <rect class="bar" x="348" y="72" width="76" height="36" rx="3"/><text class="tx" x="376" y="96">4</text>
+
+          <text class="tx-a" x="20" y="140">par[x]</text>
+          <rect class="bar-a" x="20" y="150" width="76" height="36" rx="3"/><text class="tx-a" x="48" y="174">0</text>
+          <rect class="bar-a" x="102" y="150" width="76" height="36" rx="3"/><text class="tx-a" x="130" y="174">0</text>
+          <rect class="bar-b" x="184" y="150" width="76" height="36" rx="3"/><text class="tx-b" x="212" y="174">4</text>
+          <rect class="bar-b" x="266" y="150" width="76" height="36" rx="3"/><text class="tx-b" x="294" y="174">2</text>
+          <rect class="bar-b" x="348" y="150" width="76" height="36" rx="3"/><text class="tx-b" x="376" y="174">4</text>
+
+          <text class="tx" x="20" y="212">两个集合：{0,1} 与 {2,3,4}</text>
+
+          <line class="ax" x1="20" y1="248" x2="524" y2="248"/>
+          <text class="tx-a" x="20" y="286">HOW IT LOOKS AS A FOREST</text>
+          <circle class="dot" cx="110" cy="340" r="15"/><text class="tx-i" x="102" y="346">0</text>
+          <circle class="dot-w" cx="60" cy="410" r="12"/><text class="tx-i" x="52" y="416">1</text>
+          <path class="ln-thin" d="M110 355 L62 398"/>
+
+          <circle class="dot-b" cx="360" cy="340" r="15"/><text class="tx-i" x="352" y="346">4</text>
+          <circle class="dot-w" cx="300" cy="410" r="12"/><text class="tx-i" x="292" y="416">2</text>
+          <circle class="dot-w" cx="420" cy="410" r="12"/><text class="tx-i" x="412" y="416">3</text>
+          <path class="ln-thin" d="M360 355 L302 398 M360 355 L418 398"/>
+
+          <text class="tx-a" x="20" y="486">par[x] == x ⇒ 根 ⇒ 集合的「代表」</text>
+        </svg>
+      </div>
+      <div class="c8-12 anim d2">
+        <div class="code">
+          <div class="cbar"><span>naive_dsu.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">class</span> <span class="fn">DSU</span>:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span>(self, n):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p = <span class="fn">list</span>(<span class="fn">range</span>(n))</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.cnt = n&nbsp;&nbsp;<span class="cm"># 集合个数</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">find</span>(self, x):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> self.p[x] != x:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x = self.p[x]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> x</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">union</span>(self, a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ra, rb = self.<span class="fn">find</span>(a), self.<span class="fn">find</span>(b)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> ra == rb: <span class="kw">return</span> <span class="kw">False</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p[ra] = rb</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.cnt -= <span class="st">1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">True</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">same</span>(self, a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> self.<span class="fn">find</span>(a) == self.<span class="fn">find</span>(b)</li>
+            <li>&nbsp;</li>
+            <li class="cm"># self.cnt 维护「还剩几个集合」</li>
+            <li class="cm"># 判「全部连通」⇔ cnt == 1</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「一个数组 + 两个函数」就是朴素版</div>
+  </div>
+</section>
+
+<!-- ═════════ 07 union 以谁为根 ═════════ -->
+<section class="slide" data-ch="基础" data-num="07" data-ml="UNION CHOICE" data-wm="查">
+  <div class="s-title">Union 时「以谁为根」——这个选择值一个复杂度</div>
+  <div class="qdesc"><span class="qlabel">决策</span><span class="qtext">par[A]=B 还是 par[B]=A？随手写会怎样？——决定了树会不会退化</span></div>
+  <div class="numline anim">差别 = <i>随手写 → 可能退化成链</i>；<b>按大小写 → 高度最多 log n</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 236" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">RANDOM ROOT vs SIZE-BASED ROOT</text>
+
+          <rect class="box-a" x="20" y="46" width="500" height="164" rx="4"/>
+          <text class="tx-a" x="42" y="78">① 随手写：par[ra] = rb</text>
+          <circle class="dot" cx="80" cy="122" r="14"/><circle class="dot-w" cx="150" cy="122" r="13"/>
+          <circle class="dot-w" cx="220" cy="122" r="13"/><circle class="dot-w" cx="290" cy="122" r="13"/>
+          <circle class="dot-w" cx="360" cy="122" r="13"/><circle class="dot-w" cx="430" cy="122" r="13"/>
+          <path class="ln-thin" d="M430 122 L360 122 M360 122 L290 122 M290 122 L220 122 M220 122 L150 122 M150 122 L80 122"/>
+          <text class="tx" x="42" y="176">可能退化成链，find O(n)</text>
+          <text class="tx" x="42" y="202">数据一多就爆</text>
+
+          <rect class="box-b" x="560" y="46" width="540" height="164" rx="4"/>
+          <text class="tx-b" x="582" y="78">② 按大小：小的挂到大的</text>
+          <circle class="dot" cx="740" cy="122" r="16"/>
+          <circle class="dot-b" cx="690" cy="180" r="11"/><circle class="dot-b" cx="740" cy="180" r="11"/>
+          <circle class="dot-b" cx="790" cy="180" r="11"/>
+          <path class="ln-thin" d="M740 138 L690 169 M740 138 L740 169 M740 138 L790 169"/>
+          <text class="tx" x="582" y="176">高度最多 log₂n</text>
+          <text class="tx" x="582" y="202">n=10⁶ 时高度 ≤ 20</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>union_choice.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="cm"># ❌ 随手写</span></li>
+            <li><span class="kw">def</span> <span class="fn">union_bad</span>(a, b):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;par[<span class="fn">find</span>(a)] = <span class="fn">find</span>(b)</li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># ✅ 按大小</span></li>
+            <li class="hi"><span class="kw">def</span> <span class="fn">union_size</span>(a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;ra, rb = <span class="fn">find</span>(a), <span class="fn">find</span>(b)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> ra == rb: <span class="kw">return</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> size[ra] &lt; size[rb]:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ra, rb = rb, ra</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;par[rb] = ra</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;size[ra] += size[rb]</li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># ✅ 也可以按秩（rank = 树高）</span></li>
+            <li class="hi"><span class="kw">def</span> <span class="fn">union_rank</span>(a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;ra, rb = <span class="fn">find</span>(a), <span class="fn">find</span>(b)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> ra == rb: <span class="kw">return</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> rank[ra] &lt; rank[rb]: ra, rb = rb, ra</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;par[rb] = ra</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> rank[ra] == rank[rb]: rank[ra] += <span class="st">1</span></li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>按大小 vs 按秩，选哪个</h4>
+          <p>· <b>按大小</b>：还能顺手维护 <code>size[]</code>，更实用<br>
+             · <b>按秩</b>：严格证明更干净，但少一个附加信息</p>
+          <p><b>竞赛里一般写「按大小」。</b></p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>「为什么 log n」一句话解释</h4>
+          <p>小的挂到大的 ⇒ <b>每次被挂的那棵树，size 至少翻倍</b>。</p>
+          <p>一个点最多被「翻倍」log n 次，<b>高度 ≤ log n</b>。</p>
+          <div class="linklist" style="margin-top:8px">
+            <a class="link" href="https://www.luogu.com.cn/problem/P3367" target="_blank"><span class="lv e">★2</span><span class="ln2">P3367 · 【模板】并查集<small>自己实现一版</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「小挂大」是今天第二个关键</div>
+  </div>
+</section>
+
+<!-- ═════════ 08 退化 ═════════ -->
+<section class="slide" data-ch="优化" data-num="08" data-ml="DEGENERATION" data-wm="集">
+  <div class="s-title">退化灾难：没有优化的并查集能有多慢</div>
+  <div class="qdesc"><span class="qlabel">问题</span><span class="qtext">如果合并顺序很不幸，朴素并查集会退化成什么样？——链，find O(n)</span></div>
+  <div class="numline anim">根因 = <i>每次 union 都把「根」挂到另一个根</i>；<b>树可能一直长高</b>，<b>find 就一直爬</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 236" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">A CHAIN OF n NODES · FIND TAKES O(n)</text>
+
+          <circle class="dot" cx="60" cy="120" r="14"/><circle class="dot-w" cx="150" cy="120" r="13"/>
+          <circle class="dot-w" cx="240" cy="120" r="13"/><circle class="dot-w" cx="330" cy="120" r="13"/>
+          <circle class="dot-w" cx="420" cy="120" r="13"/><circle class="dot-w" cx="510" cy="120" r="13"/>
+          <circle class="dot-w" cx="600" cy="120" r="13"/><circle class="dot-w" cx="690" cy="120" r="13"/>
+          <path class="ln-thin" d="M690 120 L600 120 M600 120 L510 120 M510 120 L420 120
+            M420 120 L330 120 M330 120 L240 120 M240 120 L150 120 M150 120 L60 120"/>
+          <text class="tx-a" x="20" y="80">找最左边的点要跳 7 步</text>
+
+          <rect class="box-a" x="760" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-a" x="782" y="78">WORST CASE</text>
+          <text class="tx-16" x="782" y="116">find = O(n)</text>
+          <text class="tx-16" x="782" y="146">m 次操作 = O(m·n)</text>
+          <text class="tx-a" x="782" y="182">10⁵ × 10⁵ = 10¹⁰ 超时</text>
+
+          <text class="tx" x="20" y="182">⚠ 只要有一次「按顺序」的合并就会这样</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>degenerate.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="cm"># 最坏数据：按顺序合并</span></li>
+            <li class="hi">n = <span class="st">100000</span></li>
+            <li class="hi">par = <span class="fn">list</span>(<span class="fn">range</span>(n))</li>
+            <li class="hi"><span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="st">1</span>, n):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;par[i] = i - <span class="st">1</span>&nbsp;&nbsp;<span class="cm"># 全挂成链</span></li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># 每次 find(n-1) 都要跳 n 次</span></li>
+            <li><span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(<span class="st">100000</span>):</li>
+            <li>&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">find</span>(n - <span class="st">1</span>)&nbsp;&nbsp;<span class="cm"># O(n)</span></li>
+            <li>&nbsp;</li>
+            <li class="cm"># 结论：必须优化</li>
+            <li class="cm"># 优化方向有两个：</li>
+            <li class="cm">#   ① 让树「变矮」→ 按大小合并</li>
+            <li class="cm">#   ② 让 find「顺手改形」→ 路径压缩</li>
+            <li class="cm"># 两者一起用 = 反阿克曼 α(n)</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>「退化」是所有树结构的共同敌人</h4>
+          <p>BST 会退化成链，堆不会（因为是完全树），并查集<b>也会</b>。</p>
+          <p><b>解决思路都一样：让树「平衡」。</b></p>
+        </div>
+        <div class="panel gold anim d4" style="flex:1">
+          <h4>为什么数据可以「故意」造出来</h4>
+          <p>竞赛里 <b>出题人专门会卡</b>没有优化的并查集。</p>
+          <p><b>一定要写优化版</b>，不要赌运气。</p>
+          <div class="linklist" style="margin-top:8px">
+            <a class="link" href="https://www.luogu.com.cn/problem/P3367" target="_blank"><span class="lv e">★2</span><span class="ln2">P3367 · 【模板】并查集<small>用朴素版会 TLE</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「链」是所有树结构的敌人</div>
+  </div>
+</section>
+
+<!-- ═════════ 09 路径压缩 ═════════ -->
+<section class="slide" data-ch="优化" data-num="09" data-ml="PATH COMPRESS" data-wm="集">
+  <div class="s-title">优化一：路径压缩——find 顺手把树拍平</div>
+  <div class="qdesc"><span class="qlabel">技巧</span><span class="qtext">find 的时候既然已经爬到根了，为什么不让路上的点都直接指向根？</span></div>
+  <div class="numline anim">技巧 = <i>find 返回时「顺手改父」</i>；<b>一行递归，下一次查询 O(1)</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">PATH COMPRESSION</text>
+
+          <text class="tx-a" x="20" y="62">BEFORE</text>
+          <circle class="dot" cx="272" cy="100" r="15"/><text class="tx-i" x="264" y="106">R</text>
+          <circle class="dot-w" cx="222" cy="160" r="13"/>
+          <circle class="dot-w" cx="172" cy="220" r="13"/>
+          <circle class="dot-w" cx="122" cy="280" r="13"/><text class="tx-i" x="106" y="286">x</text>
+          <path class="ln-thin" d="M272 115 L222 147 M222 173 L172 207 M172 233 L122 267"/>
+          <text class="tx" x="300" y="220">find(x) 跳 3 步</text>
+
+          <path class="ln-a draw d1" d="M272 330 L272 372" style="--L:42"/>
+          <path class="ln-a draw d1" d="M254 356 L272 372 L290 356" style="--L:50"/>
+
+          <text class="tx-b" x="20" y="412">AFTER · 全部指向 R</text>
+          <circle class="dot" cx="272" cy="450" r="15"/><text class="tx-i" x="264" y="456">R</text>
+          <g class="dot-w"><circle cx="200" cy="512" r="11"/><circle cx="245" cy="512" r="11"/>
+            <circle cx="290" cy="512" r="11"/><circle cx="335" cy="512" r="11"/></g>
+          <path class="ln-b" d="M272 465 L200 501 M272 465 L245 501 M272 465 L290 501 M272 465 L335 501"/>
+          <text class="tx-b" x="20" y="496">下次 find(x) = 1 步</text>
+        </svg>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="code anim d2">
+          <div class="cbar"><span>compress.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="cm"># ① 递归版（好写）</span></li>
+            <li class="hi"><span class="kw">def</span> <span class="fn">find</span>(x):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> par[x] != x:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;par[x] = <span class="fn">find</span>(par[x])&nbsp;&nbsp;<span class="cm"># 关键一行</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> par[x]</li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># ② 迭代版（不爆栈）</span></li>
+            <li class="hi"><span class="kw">def</span> <span class="fn">find_iter</span>(x):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;root = x</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> par[root] != root:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;root = par[root]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 第二遍：把路上所有点挂到 root</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> par[x] != root:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nxt = par[x]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;par[x] = root</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x = nxt</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> root</li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># ③ 路径减半（折中）</span></li>
+            <li><span class="cm"># par[x] = par[par[x]]  每次跳两格</span></li>
+          </ol>
+        </div>
+        <div class="panel gold anim d3">
+          <h4>⚠ 递归版可能爆栈</h4>
+          <p>n 很大时 <code>find</code> 递归深度可能上万。</p>
+          <p>Python 用 <code>sys.setrecursionlimit</code> 或<b>直接写迭代版</b>。</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「关键一行」是并查集的精华</div>
+  </div>
+</section>
+
+<!-- ═════════ 10 按大小 ═════════ -->
+<section class="slide" data-ch="优化" data-num="10" data-ml="UNION BY SIZE" data-wm="集">
+  <div class="s-title">优化二：按大小合并——让树天然矮</div>
+  <div class="qdesc"><span class="qlabel">技巧</span><span class="qtext">压缩是「事后补救」，有没有「事前预防」？——合并时挑个好方向</span></div>
+  <div class="numline anim">技巧 = <i>小的挂到大的</i>；<b>被挂的 size 至少翻倍</b>，<b>高度 ≤ log n</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">SMALL-TO-LARGE</text>
+
+          <rect class="box" x="20" y="46" width="200" height="62" rx="4"/>
+          <text class="tx" x="42" y="78">A · size 3</text>
+          <rect class="box-a" x="300" y="46" width="200" height="62" rx="4"/>
+          <text class="tx-a" x="322" y="78">B · size 1</text>
+
+          <path class="ln-a draw" d="M220 77 L300 77" style="--L:80"/>
+          <path class="ln-a draw" d="M282 61 L300 77 L282 93" style="--L:52"/>
+          <text class="tx" x="222" y="42">小挂大</text>
+
+          <rect class="box-b" x="120" y="150" width="320" height="72" rx="4"/>
+          <text class="tx-b" x="142" y="182">A · size 4</text>
+          <text class="tx" x="142" y="208">高度仍然 ≤ log n</text>
+
+          <line class="ax" x1="20" y1="262" x2="524" y2="262"/>
+          <text class="tx-a" x="20" y="300">WHY LOG n</text>
+          <text class="tx-i" x="20" y="338">小树被挂 → <tspan class="bo">size 至少翻倍</tspan></text>
+          <text class="tx-i" x="20" y="372">一个点最多被翻倍 <tspan class="bo">log n</tspan> 次</text>
+          <text class="tx-a" x="20" y="416">⇒ 高度 ≤ log n</text>
+
+          <text class="tx-b" x="20" y="462">BONUS</text>
+          <text class="tx-i" x="20" y="500">顺手维护 <tspan class="bo">size[]</tspan>，还能回答「集合有几个元素」</text>
+        </svg>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="code anim d2">
+          <div class="cbar"><span>by_size.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="kw">class</span> <span class="fn">DSU</span>:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span>(self, n):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p = <span class="fn">list</span>(<span class="fn">range</span>(n))</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.sz = [<span class="st">1</span>] * n</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">find</span>(self, x):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> self.p[x] != x:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p[x] = self.p[self.p[x]]&nbsp;&nbsp;<span class="cm"># 减半</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x = self.p[x]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> x</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">union</span>(self, a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a, b = self.<span class="fn">find</span>(a), self.<span class="fn">find</span>(b)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> a == b: <span class="kw">return</span> <span class="kw">False</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> self.sz[a] &lt; self.sz[b]: a, b = b, a</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p[b] = a</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.sz[a] += self.sz[b]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">True</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">size</span>(self, x):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> self.sz[self.<span class="fn">find</span>(x)]</li>
+          </ol>
+        </div>
+        <div class="panel green anim d3">
+          <h4>练习</h4>
+          <div class="linklist">
+            <a class="link" href="https://leetcode.cn/problems/number-of-provinces/" target="_blank"><span class="lv m">M</span><span class="ln2">547 · 省份数量<small>计数</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/largest-component-size-by-common-factor/" target="_blank"><span class="lv h">H</span><span class="ln2">952 · 按公因数计算最大组件大小<small>size 维护</small></span><span class="lgo">LC ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「小挂大 + 顺手维护 size」一举两得</div>
+  </div>
+</section>
+
+<!-- ═════════ 11 α(n) ═════════ -->
+<section class="slide" data-ch="优化" data-num="11" data-ml="α(n)" data-wm="集">
+  <div class="s-title">两大优化合体：反阿克曼 α(n)</div>
+  <div class="qdesc"><span class="qlabel">结论</span><span class="qtext">只用路径压缩是多少？只用按秩是多少？两个一起呢？——结论吓人</span></div>
+  <div class="numline anim">结论 = <i>单用任一 → O(log n)</i>；<b>两个一起 → O(α(n))</b>，<b>实际当常数看</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 236" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">COMPLEXITY OF UNION-FIND</text>
+
+          <rect class="box-a" x="20" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-a" x="42" y="78">① 只按秩</text>
+          <text class="tx-16" x="42" y="116">find = O(log n)</text>
+          <text class="tx" x="42" y="152">树高被控制住</text>
+          <text class="tx" x="42" y="182">但不拍平，还是跳</text>
+
+          <rect class="box-b" x="390" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-b" x="412" y="78">② 只路径压缩</text>
+          <text class="tx-16" x="412" y="116">均摊 O(log n)</text>
+          <text class="tx" x="412" y="152">一次 find 后变矮</text>
+          <text class="tx" x="412" y="182">但合并仍可能长高</text>
+
+          <rect class="box-c" x="760" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-c" x="782" y="78">③ 两个一起</text>
+          <text class="tx-16" x="782" y="116">O(α(n))</text>
+          <text class="tx" x="782" y="152">α 是反阿克曼函数</text>
+          <text class="tx-c" x="782" y="182">n = 10⁶⁰⁰ 时 α ≤ 5</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>alpha.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="cm"># 反阿克曼函数到底有多小</span></li>
+            <li class="hi"><span class="kw">def</span> <span class="fn">alpha</span>(n):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;k = <span class="st">0</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> n &gt; <span class="st">0</span>:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;n = <span class="fn">log2</span>(n + <span class="st">1</span>)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;k += <span class="st">1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> k</li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># 常见 n 对应的 α(n)</span></li>
+            <li class="cm">#   n = 10      → α = 3</li>
+            <li class="cm">#   n = 10⁶     → α = 4</li>
+            <li class="cm">#   n = 10¹²    → α = 4</li>
+            <li class="cm">#   n = 10⁶⁰⁰   → α = 5</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 实战结论：当 O(1) 看</li>
+            <li class="cm"># 并查集几乎「免费」</li>
+            <li class="cm"># 这是它在竞赛中被大量使用的原因</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>「α(n)」这个名字要认识</h4>
+          <p>读作「反阿克曼」，<b>增长极慢</b>，比 log n 还慢得多。</p>
+          <p>竞赛中<b>不要试图证</b>，直接记住结论：<b>两个一起用 = α(n)</b>。</p>
+        </div>
+        <div class="panel gold anim d4" style="flex:1">
+          <h4>实战写法（直接抄）</h4>
+          <p>· find 用<b>递归压缩</b>或<b>迭代减半</b><br>
+             · union 用<b>按大小</b><br>
+             · <b>两者一定要同时写</b></p>
+          <p>这一版从下一节开始就叫「完整版 DSU」。</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「两个一起」才有 α(n)，只用一个没用</div>
+  </div>
+</section>
+
+<!-- ═════════ 12 对比 ═════════ -->
+<section class="slide" data-ch="优化" data-num="12" data-ml="BENCHMARK" data-wm="集">
+  <div class="s-title">实测：三种实现跑同样数据，差多少</div>
+  <div class="qdesc"><span class="qlabel">对比</span><span class="qtext">口说无凭——把三种实现放在同一组数据上跑，看时间</span></div>
+  <div class="numline anim">实测 = <i>朴素 3.2s</i> → <b>压缩 0.11s</b> → <b>双优化 0.08s</b>；<b>量级差异</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 240" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">RUNTIME · n = 2×10⁵, m = 2×10⁵ OPS</text>
+          <line class="ax" x1="200" y1="46" x2="200" y2="216"/>
+          <line class="ax" x1="200" y1="216" x2="1080" y2="216"/>
+
+          <rect class="bar-a" x="200" y="56" width="800" height="38" rx="3"/>
+          <text class="tx-a" x="30" y="80">朴素</text>
+          <text class="tx-a" x="1012" y="80">3.2 s</text>
+
+          <rect class="bar-b" x="200" y="112" width="30" height="38" rx="3"/>
+          <text class="tx-b" x="30" y="136">压缩</text>
+          <text class="tx-b" x="242" y="136">0.11 s</text>
+
+          <rect class="bar-c" x="200" y="168" width="22" height="38" rx="3"/>
+          <text class="tx-c" x="30" y="192">双优化</text>
+          <text class="tx-c" x="234" y="192">0.08 s</text>
+
+          <text class="tx" x="200" y="236">朴素比双优化慢 40 倍</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>bench.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">import</span> random, time</li>
+            <li class="hi">n = <span class="st">200000</span>; m = <span class="st">200000</span></li>
+            <li class="hi">ops = [(random.<span class="fn">randrange</span>(n),</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;random.<span class="fn">randrange</span>(n)) <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(m)]</li>
+            <li>&nbsp;</li>
+            <li><span class="kw">def</span> <span class="fn">run</span>(dsu):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;t0 = time.<span class="fn">time</span>()</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> a, b <span class="kw">in</span> ops:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(a, b)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">same</span>(a, b)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> time.<span class="fn">time</span>() - t0</li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># 朴素      ≈ 3.2 s</span></li>
+            <li><span class="cm"># 压缩      ≈ 0.11 s</span></li>
+            <li><span class="cm"># 压缩+按秩 ≈ 0.08 s</span></li>
+            <li>&nbsp;</li>
+            <li class="cm"># 结论：朴素一定 TLE</li>
+            <li class="cm"># 完整版几乎免费</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>结论</h4>
+          <p>· 朴素版<b>只能本地测</b>，不能交<br>
+             · 双优化<b>几乎免费</b>，放心用<br>
+             · <b>不写优化就是给对手机会</b></p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>自己跑一遍更有说服力</h4>
+          <p>把上一页的三段代码贴进本地跑一跑，<b>亲眼看数字</b>比看论文有用。</p>
+          <p>这也是<b>竞赛训练的一环</b>：学会估复杂度、也学会实测。</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:820px;top:352px" data-at="2500">← 40 倍的差距，不是「微优化」</div>
+  </div>
+</section>
+
+<!-- ═════════ 13 判连通 ═════════ -->
+<section class="slide" data-ch="应用" data-num="13" data-ml="CONNECTIVITY" data-wm="连">
+  <div class="s-title">应用一：判连通与连通块计数</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">给定 n 个人与 m 对朋友关系，问「a 和 b 是不是朋友（间接也算）」，以及一共几个朋友圈</span></div>
+  <div class="numline anim">转化 = <i>每人一个点</i>，<b>朋友关系 = 合并</b>；<b>查询 = 比根，计数 = 数根</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">FRIEND CIRCLES</text>
+
+          <circle class="dot" cx="110" cy="90" r="16"/><text class="tx-i" x="102" y="96">A</text>
+          <circle class="dot-w" cx="220" cy="90" r="14"/><text class="tx-i" x="212" y="96">B</text>
+          <circle class="dot-w" cx="330" cy="90" r="14"/><text class="tx-i" x="322" y="96">C</text>
+          <circle class="dot" cx="110" cy="200" r="16"/><text class="tx-i" x="102" y="206">D</text>
+          <circle class="dot-w" cx="220" cy="200" r="14"/><text class="tx-i" x="212" y="206">E</text>
+
+          <path class="ln-a draw" d="M110 90 L220 90" style="--L:110"/>
+          <path class="ln-b draw d1" d="M110 90 L330 90" style="--L:220"/>
+          <path class="ln-c draw d2" d="M110 200 L220 200" style="--L:110"/>
+
+          <text class="tx" x="20" y="252">3 条边 → 2 个连通块</text>
+
+          <line class="ax" x1="20" y1="288" x2="524" y2="288"/>
+          <text class="tx-a" x="20" y="324">AFTER UNION</text>
+          <text class="tx-16" x="20" y="362">find(A)=find(B)=find(C)</text>
+          <text class="tx-16" x="20" y="398">find(D)=find(E)</text>
+          <text class="tx-i" x="20" y="436">连通块数 = <tspan class="bo">par[x]==x 的个数</tspan></text>
+          <text class="tx-a" x="20" y="478">也可维护 cnt 变量，union 成功 cnt−1</text>
+          <text class="tx-a" x="20" y="514">cnt == 1 ⇒ 全部连通</text>
+        </svg>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="code anim d2">
+          <div class="cbar"><span>connectivity.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">solve</span>(n, edges, queries):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu = <span class="fn">DSU</span>(n)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> u, v <span class="kw">in</span> edges:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(u, v)</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># ① 两点是否连通</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> a, b <span class="kw">in</span> queries:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">print</span>(<span class="st">"Yes"</span> <span class="kw">if</span> dsu.<span class="fn">same</span>(a, b) <span class="kw">else</span> <span class="st">"No"</span>)</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># ② 连通块个数</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;blocks = <span class="fn">sum</span>(<span class="st">1</span> <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> dsu.p[i] == i)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">print</span>(blocks)</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># ③ 最大连通块大小</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">print</span>(<span class="fn">max</span>(dsu.sz[i] <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> dsu.p[i] == i))</li>
+          </ol>
+        </div>
+        <div class="panel gold anim d3" style="margin-top:18px">
+          <h4>注意点</h4>
+          <p>统计「根的个数」时，一定要<b>只统计 <code>p[i]==i</code> 的</b>，否则会重复。</p>
+          <p>更稳的做法：<b>维护 cnt 变量</b>，union 成功就减一。</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「计数 = 数根」是最常用的两个统计之一</div>
+  </div>
+</section>
+
+<!-- ═════════ 14 判环 ═════════ -->
+<section class="slide" data-ch="应用" data-num="14" data-ml="CYCLE DETECT" data-wm="连">
+  <div class="s-title">应用二：判环——加边前先问一句</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">依次加边，问第一条「让图出现环」的边是哪一条？——就是「冗余连接」</span></div>
+  <div class="numline anim">技巧 = <i>加边前 find 一下</i>；<b>同根 ⇒ 加了会有环</b>，<b>不同根 ⇒ 安全</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">CYCLE DETECTION</text>
+
+          <circle class="dot" cx="110" cy="100" r="15"/><text class="tx-i" x="102" y="106">1</text>
+          <circle class="dot-w" cx="220" cy="100" r="13"/><text class="tx-i" x="212" y="106">2</text>
+          <circle class="dot-w" cx="330" cy="100" r="13"/><text class="tx-i" x="322" y="106">3</text>
+          <circle class="dot-w" cx="440" cy="100" r="13"/><text class="tx-i" x="432" y="106">4</text>
+          <path class="ln-a draw" d="M110 100 L220 100" style="--L:110"/>
+          <path class="ln-b draw d1" d="M220 100 L330 100" style="--L:110"/>
+          <path class="ln-c draw d2" d="M330 100 L440 100" style="--L:110"/>
+
+          <text class="tx" x="20" y="152">加边 (1,2) (2,3) (3,4) 都安全</text>
+
+          <path class="ln-a draw d3" d="M440 100 L110 100" style="--L:330"/>
+          <text class="tx-a" x="180" y="182">加边 (4,1) → 同根 → 有环！</text>
+
+          <line class="ax" x1="20" y1="228" x2="524" y2="228"/>
+          <text class="tx-a" x="20" y="264">THE CHECK</text>
+          <text class="tx-16" x="20" y="302">if find(u) == find(v):</text>
+          <text class="tx-16" x="20" y="334">&nbsp;&nbsp;&nbsp;&nbsp;有环 → 输出这条边</text>
+          <text class="tx-16" x="20" y="366">else:</text>
+          <text class="tx-16" x="20" y="398">&nbsp;&nbsp;&nbsp;&nbsp;union(u, v)</text>
+
+          <text class="tx-b" x="20" y="444">WHY IT WORKS</text>
+          <text class="tx-i" x="20" y="482">同根 = <tspan class="bo">本来就连通</tspan></text>
+          <text class="tx-i" x="20" y="516">再加一条 = <tspan class="bo">形成环</tspan></text>
+        </svg>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="code anim d2">
+          <div class="cbar"><span>cycle.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">findRedundant</span>(edges):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;n = <span class="fn">len</span>(edges) + <span class="st">1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu = <span class="fn">DSU</span>(n)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> u, v <span class="kw">in</span> edges:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> dsu.<span class="fn">same</span>(u, v):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> [u, v]&nbsp;&nbsp;<span class="cm"># 这条多余</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(u, v)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> []</li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># 变体：n 点 n 边（一定有且仅有一个环）</span></li>
+            <li><span class="cm"># → 输出环上的「最后加的那条」</span></li>
+            <li><span class="cm"># LC 685 是这个的加强版</span></li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># 变体：有向图判环 → 用拓扑排序</span></li>
+            <li><span class="cm"># 并查集只适合「无向」判环</span></li>
+          </ol>
+        </div>
+        <div class="panel green anim d3" style="margin-top:18px">
+          <h4>练习</h4>
+          <div class="linklist">
+            <a class="link" href="https://leetcode.cn/problems/redundant-connection/" target="_blank"><span class="lv m">M</span><span class="ln2">684 · 冗余连接<small>本页原型</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/redundant-connection-ii/" target="_blank"><span class="lv h">H</span><span class="ln2">685 · 冗余连接 II<small>有向图</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P3367" target="_blank"><span class="lv e">★2</span><span class="ln2">P3367 · 【模板】并查集<small>判同集合</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「加边前先问一句」是判环的全部</div>
+  </div>
+</section>
+
+<!-- ═════════ 15 MST ═════════ -->
+<section class="slide" data-ch="应用" data-num="15" data-ml="MST" data-wm="连">
+  <div class="s-title">应用三：最小生成树 Kruskal——并查集的最佳拍档</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">带权无向图，求边权和最小的生成树——为什么 Kruskal 必须配并查集？</span></div>
+  <div class="numline anim">配合 = <i>排序挑边</i> + <b>并查集判环</b>；<b>O(E log E)</b>，<b>这是并查集最经典的用法</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">KRUSKAL + UNION-FIND</text>
+          <circle class="dot" cx="80" cy="90" r="15"/><text class="tx-i" x="72" y="96">A</text>
+          <circle class="dot-w" cx="240" cy="70" r="14"/><text class="tx-i" x="232" y="76">B</text>
+          <circle class="dot-w" cx="180" cy="190" r="14"/><text class="tx-i" x="172" y="196">C</text>
+          <circle class="dot-w" cx="360" cy="170" r="14"/><text class="tx-i" x="352" y="176">D</text>
+
+          <path class="ln-a draw" d="M80 90 L240 70" style="--L:162"/>
+          <path class="ln-b draw d1" d="M80 90 L180 190" style="--L:142"/>
+          <path class="ln-c draw d2" d="M180 190 L360 170" style="--L:182"/>
+          <path class="ln-thin" d="M240 70 L360 170 M80 90 L360 170"/>
+
+          <text class="tx-a" x="130" y="72">1</text>
+          <text class="tx-b" x="106" y="148">2</text>
+          <text class="tx-c" x="262" y="172">3</text>
+          <text class="tx" x="300" y="122">5</text>
+          <text class="tx" x="200" y="142">7</text>
+
+          <line class="ax" x1="20" y1="236" x2="524" y2="236"/>
+          <text class="tx-a" x="20" y="272">STEPS</text>
+          <text class="tx-i" x="20" y="310">① 所有边按权<tspan class="bo">排序</tspan></text>
+          <text class="tx-i" x="20" y="346">② 从小到大：<tspan class="bo">同根就跳过</tspan></text>
+          <text class="tx-i" x="20" y="382">③ 不同根 → <tspan class="bo">收下这条边 + 合并</tspan></text>
+          <text class="tx-a" x="20" y="424">收满 n−1 条边即可停</text>
+
+          <text class="tx-b" x="20" y="470">COMPLEXITY</text>
+          <text class="tx-16" x="20" y="508">排序 O(E log E) + 并查集 O(E·α)</text>
+        </svg>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="code anim d2">
+          <div class="cbar"><span>kruskal.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">kruskal</span>(n, edges):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># edges: (w, u, v)</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;edges.<span class="fn">sort</span>()</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu = <span class="fn">DSU</span>(n)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;total = <span class="st">0</span>; cnt = <span class="st">0</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> w, u, v <span class="kw">in</span> edges:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> dsu.<span class="fn">union</span>(u, v):&nbsp;&nbsp;<span class="cm"># 判环 + 合并</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;total += w</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cnt += <span class="st">1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> cnt == n - <span class="st">1</span>: <span class="kw">break</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> total <span class="kw">if</span> cnt == n - <span class="st">1</span> <span class="kw">else</span> -<span class="st">1</span></li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># 关键：union 返回 True/False</span></li>
+            <li><span class="cm"># 直接判断「这条边有没有用」</span></li>
+            <li><span class="cm"># 这是 DSU 接口设计的小技巧</span></li>
+          </ol>
+        </div>
+        <div class="panel accent anim d3" style="margin-top:18px">
+          <h4>为什么一定要并查集</h4>
+          <p>因为 Kruskal 的核心操作是<b>「这条边会不会形成环」</b>，而并查集<b>就是为判环而生</b>。</p>
+          <p><b>两者是天然一对</b>。</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「union 返回 True/False」是个好接口</div>
+  </div>
+</section>
+
+<!-- ═════════ 16 冗余连接 ═════════ -->
+<section class="slide" data-ch="应用" data-num="16" data-ml="REDUNDANT EDGE" data-wm="连">
+  <div class="s-title">应用四：冗余连接——把判环说清楚</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">一棵树加了一条边，找出这条多余的边——「最后一条形成环的边」</span></div>
+  <div class="numline anim">思路 = <i>按顺序加边</i>；<b>第一次「同根」的那条就是答案</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 224" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">REDUNDANT CONNECTION · 找多余边</text>
+
+          <rect class="box" x="20" y="46" width="320" height="152" rx="4"/>
+          <text class="tx-a" x="42" y="76">输入</text>
+          <text class="tx-16" x="42" y="112">(1,2) (2,3) (3,4)</text>
+          <text class="tx-16" x="42" y="140">(1,4) (1,5)</text>
+          <text class="tx" x="42" y="176">5 点 5 边 → 一定有一个环</text>
+
+          <path class="ln-a draw" d="M340 122 L400 122" style="--L:60"/>
+          <path class="ln-a draw" d="M382 106 L400 122 L382 138" style="--L:52"/>
+
+          <rect class="box-b" x="430" y="46" width="320" height="152" rx="4"/>
+          <text class="tx-b" x="452" y="76">过程</text>
+          <text class="tx" x="452" y="112">(1,2) 不同根 → union</text>
+          <text class="tx" x="452" y="140">(2,3) 不同根 → union</text>
+          <text class="tx-a" x="452" y="168">(3,4) 不同根 → union</text>
+
+          <rect class="box-c" x="780" y="46" width="320" height="152" rx="4"/>
+          <text class="tx-c" x="802" y="76">答案</text>
+          <text class="tx-16" x="802" y="112">(1,4) 同根 → 有环</text>
+          <text class="tx-c" x="802" y="148">答案 = (1,4)</text>
+          <text class="tx" x="802" y="176">后续边不再处理</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>redundant.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">findRedundantConnection</span>(edges):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;n = <span class="fn">len</span>(edges)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu = <span class="fn">DSU</span>(n + <span class="st">1</span>)&nbsp;&nbsp;<span class="cm"># 点是 1..n</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> u, v <span class="kw">in</span> edges:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> dsu.<span class="fn">same</span>(u, v):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> [u, v]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(u, v)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> []</li>
+            <li>&nbsp;</li>
+            <li class="cm"># ⚠ 点的编号可能从 1 开始</li>
+            <li class="cm"># → DSU(n+1)，或者统一减 1</li>
+            <li class="cm"># 这是这类题最大的坑</li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># 685 版：有向边，可能 0 个 / 2 个候选</span></li>
+            <li><span class="cm"># 需要「分情况讨论」</span></li>
+            <li><span class="cm"># 比 684 难一个量级</span></li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>684 与 685 的区别</h4>
+          <p>· <b>684</b>：无向，答案<b>唯一</b>，直接找第一条同根<br>
+             · <b>685</b>：有向，答案可能<b>不唯一</b>，要先找「入度 2」的点</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>练习</h4>
+          <div class="linklist">
+            <a class="link" href="https://leetcode.cn/problems/redundant-connection/" target="_blank"><span class="lv m">M</span><span class="ln2">684 · 冗余连接<small>本页原型</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/redundant-connection-ii/" target="_blank"><span class="lv h">H</span><span class="ln2">685 · 冗余连接 II<small>有向图，难</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/similar-string-groups/" target="_blank"><span class="lv h">H</span><span class="ln2">839 · 相似字符串组<small>连通块计数</small></span><span class="lgo">LC ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:418px" data-at="2600">← 「点从 1 开始」是这类题最大的坑</div>
+  </div>
+</section>
+
+<!-- ═════════ 17 带权并查集 思想 ═════════ -->
+<section class="slide" data-ch="扩展" data-num="17" data-ml="WEIGHTED DSU" data-wm="集">
+  <div class="s-title">带权并查集：不只问「同不同」，还问「差多少」</div>
+  <div class="qdesc"><span class="qlabel">转化</span><span class="qtext">已知「a 比 b 高 3」「b 比 c 高 2」，问「a 比 c 高多少」——还是并查集吗？</span></div>
+  <div class="numline anim">转化 = <i>再存一个 d[x]：x 到根的「差值」</i>；<b>find 时顺手更新 d</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">WEIGHTED UNION-FIND</text>
+
+          <circle class="dot" cx="272" cy="80" r="17"/><text class="tx-i" x="264" y="86">R</text>
+          <circle class="dot-w" cx="180" cy="180" r="14"/><text class="tx-i" x="172" y="186">A</text>
+          <circle class="dot-w" cx="364" cy="180" r="14"/><text class="tx-i" x="356" y="186">B</text>
+          <circle class="dot-w" cx="120" cy="280" r="13"/><text class="tx-i" x="112" y="286">C</text>
+          <path class="ln-thin" d="M272 97 L180 166 M272 97 L364 166 M180 194 L120 267"/>
+          <text class="tx-a" x="196" y="132">3</text>
+          <text class="tx-b" x="312" y="132">5</text>
+          <text class="tx-c" x="122" y="238">2</text>
+
+          <text class="tx" x="20" y="332">d[x] = x 到 par[x] 的差值</text>
+
+          <line class="ax" x1="20" y1="366" x2="524" y2="366"/>
+          <text class="tx-a" x="20" y="402">THE THREE EQUATIONS</text>
+          <text class="tx-i" x="20" y="440">find 时：<tspan class="bo">d[x] += d[par[x]]</tspan></text>
+          <text class="tx-i" x="20" y="474">union 时：<tspan class="bo">d[ra] = ...</tspan>（按关系式）</text>
+          <text class="tx-a" x="20" y="514">查询时：d[a] − d[b] 即为关系</text>
+        </svg>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d2">
+          <h4>「带权」的真正含义</h4>
+          <p>不是点权也不是边权，而是<b>「点与根之间的关系量」</b>。</p>
+          <p>可以是<b>数值差</b>（高低、距离）、<b>类别差</b>（天敌/猎物）、<b>奇偶</b>（两性关系）。</p>
+        </div>
+        <div class="panel gold anim d3">
+          <h4>为什么需要「更新 d」</h4>
+          <p>路径压缩会<b>改变父指针</b>，如果不更新 d，<b>关系就断了</b>。</p>
+          <p><b>压缩和权值必须一起维护</b>——这是带权并查集的核心。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>三类典型</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><b>数值</b>：差值可加</div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><b>种类</b>：模 3 / 模 2</div></div>
+          <div class="step"><div class="n">3</div><div class="t"><b>二元</b>：敌 / 友</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:700px;top:352px" data-at="2500">← 「压缩和权值一起维护」是核心</div>
+  </div>
+</section>
+
+<!-- ═════════ 18 带权代码 ═════════ -->
+<section class="slide" data-ch="扩展" data-num="18" data-ml="WEIGHTED CODE" data-wm="集">
+  <div class="s-title">带权并查集模板：一次 find，三个改动</div>
+  <div class="qdesc"><span class="qlabel">实现</span><span class="qtext">怎么把「朴素 DSU」升级成「带权 DSU」？——就改 find 与 union 两处</span></div>
+  <div class="numline anim">改动 = <i>find 返回 d[x]</i>；<b>union 时算 d[ra]</b>；<b>其他照抄</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-6 anim d1">
+        <div class="code">
+          <div class="cbar"><span>weighted_dsu.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">class</span> <span class="fn">WDSU</span>:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span>(self, n):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p = <span class="fn">list</span>(<span class="fn">range</span>(n))</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.d = [<span class="st">0</span>] * n&nbsp;&nbsp;<span class="cm"># 到根的差</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">find</span>(self, x):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> self.p[x] != x:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;root = self.<span class="fn">find</span>(self.p[x])</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.d[x] += self.d[self.p[x]]&nbsp;&nbsp;<span class="cm"># 先累</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p[x] = root</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> self.p[x]</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">union</span>(self, a, b, w):&nbsp;&nbsp;<span class="cm"># a 到 b 的差 = w</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ra, rb = self.<span class="fn">find</span>(a), self.<span class="fn">find</span>(b)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> ra == rb: <span class="kw">return</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p[ra] = rb</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># 推 ra 到 rb 的差</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.d[ra] = self.d[b] - self.d[a] + w</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">query</span>(self, a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> self.<span class="fn">find</span>(a) != self.<span class="fn">find</span>(b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">None</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> self.d[a] - self.d[b]</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d2">
+          <h4>三个改动</h4>
+          <div class="step on"><div class="n">1</div><div class="t">多一个 <code>d[]</code> 数组</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">find 时<b>先递归，再累加 d</b>（顺序别反）</div></div>
+          <div class="step on"><div class="n">3</div><div class="t">union 时<b>用「关系式」反推 d[ra]</b></div></div>
+        </div>
+        <div class="panel gold anim d3">
+          <h4>「关系式反推」怎么算</h4>
+          <p>画个小图：<code>a → ra</code>、<code>b → rb</code>、<code>ra → rb</code>。</p>
+          <p>要求 <code>d[a] + w = d[b] + d[ra]</code>，<b>解出 d[ra]</b>。</p>
+          <p><b>画图比背公式稳。</b></p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>练习</h4>
+          <div class="linklist">
+            <a class="link" href="https://leetcode.cn/problems/evaluate-division/" target="_blank"><span class="lv m">M</span><span class="ln2">399 · 除法求值<small>带权经典</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P2024" target="_blank"><span class="lv h">★4</span><span class="ln2">P2024 · 食物链<small>种类 + 带权</small></span><span class="lgo">LG ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1525" target="_blank"><span class="lv h">★4</span><span class="ln2">P1525 · 关押罪犯<small>敌友关系</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:418px" data-at="2600">← 「画图反推」比背公式稳</div>
+  </div>
+</section>
+
+<!-- ═════════ 19 食物链 ═════════ -->
+<section class="slide" data-ch="扩展" data-num="19" data-ml="FOOD CHAIN" data-wm="集">
+  <div class="s-title">经典题：食物链——三种关系怎么维护</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">n 个动物，A 吃 B、B 吃 C、C 吃 A。给定若干「x 与 y 同类 / x 吃 y」的话，问有几句是假的</span></div>
+  <div class="numline anim">转化 = <i>每点记「与根的种类差 mod 3」</i>；<b>矛盾 = 差值对不上</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">MOD 3 RELATION</text>
+
+          <circle class="dot" cx="130" cy="110" r="17"/><text class="tx-i" x="118" y="116">A</text>
+          <circle class="dot-w" cx="280" cy="80" r="15"/><text class="tx-i" x="270" y="86">B</text>
+          <circle class="dot-w" cx="280" cy="150" r="15"/><text class="tx-i" x="270" y="156">C</text>
+          <path class="ln-a draw" d="M147 105 L265 82" style="--L:122"/>
+          <path class="ln-b draw d1" d="M147 118 L265 145" style="--L:122"/>
+          <text class="tx-a" x="182" y="76">吃</text>
+          <text class="tx-b" x="182" y="158">被吃</text>
+
+          <text class="tx" x="20" y="216">同种 ⇒ d 差 0</text>
+          <text class="tx-a" x="20" y="250">A 吃 B ⇒ d 差 1 (mod 3)</text>
+          <text class="tx-b" x="20" y="284">A 被 B 吃 ⇒ d 差 2 (mod 3)</text>
+
+          <line class="ax" x1="20" y1="318" x2="524" y2="318"/>
+          <text class="tx-a" x="20" y="354">CONSISTENCY CHECK</text>
+          <text class="tx-16" x="20" y="392">若 x,y 同根：</text>
+          <text class="tx-16" x="20" y="424">&nbsp;&nbsp;看 (d[x] − d[y]) mod 3</text>
+          <text class="tx-i" x="20" y="462">等于陈述的差 ⇒ <tspan class="bo">真话</tspan></text>
+          <text class="tx-i" x="20" y="496">不等 ⇒ <tspan class="bo">假话，计数 +1</tspan></text>
+          <text class="tx-a" x="20" y="528">若不同根 ⇒ 直接 union</text>
+        </svg>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="code anim d2">
+          <div class="cbar"><span>food_chain.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">food_chain</span>(n, statements):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu = <span class="fn">WDSU</span>(n + <span class="st">1</span>)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;ans = <span class="st">0</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> op, x, y <span class="kw">in</span> statements:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> x &gt; n <span class="kw">or</span> y &gt; n:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ans += <span class="st">1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">continue</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;w = <span class="st">0</span> <span class="kw">if</span> op == <span class="st">1</span> <span class="kw">else</span> <span class="st">1</span>&nbsp;&nbsp;<span class="cm"># 差值</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> dsu.<span class="fn">find</span>(x) != dsu.<span class="fn">find</span>(y):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(x, y, w)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">else</span>:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;diff = (dsu.d[x] - dsu.d[y]) % <span class="st">3</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> diff != w:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ans += <span class="st">1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> ans</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 「op=1 同类」⇒ 差 0</li>
+            <li class="cm"># 「op=2 x 吃 y」⇒ 差 1</li>
+            <li class="cm"># 都按 mod 3 处理</li>
+          </ol>
+        </div>
+        <div class="panel gold anim d3" style="margin-top:18px">
+          <h4>两个坑</h4>
+          <p>· 越界要<b>单独判假</b><br>
+             · <b>mod 3</b> 别忘，负数取模 Python 会自动加 3，但语言不同要注意</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「差值 mod 3」是食物链的钥匙</div>
+  </div>
+</section>
+
+<!-- ═════════ 20 种类并查集 ═════════ -->
+<section class="slide" data-ch="扩展" data-num="20" data-ml="SPECIES DSU" data-wm="集">
+  <div class="s-title">种类并查集：把「关系」摊成多个点</div>
+  <div class="qdesc"><span class="qlabel">技巧</span><span class="qtext">同一个点有 k 种身份（敌人 / 猎物 / 同类）——怎么在一个并查集里表达？</span></div>
+  <div class="numline anim">技巧 = <i>复制成 k 份</i>；<b>x 表示「同类」，x+n 表示「敌人」</b>，<b>查根就行</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 236" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">SPECIES UNION-FIND · 把关系摊成点</text>
+
+          <rect class="box-a" x="20" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-a" x="42" y="78">① 原始：n 个点</text>
+          <circle class="dot" cx="90" cy="132" r="14"/><circle class="dot" cx="180" cy="132" r="14"/><circle class="dot" cx="270" cy="132" r="14"/>
+          <text class="tx" x="42" y="176">只能表示「同不同集合」</text>
+
+          <rect class="box-b" x="390" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-b" x="412" y="78">② 摊开：2n 个点</text>
+          <circle class="dot-b" cx="460" cy="132" r="12"/><circle class="dot-b" cx="540" cy="132" r="12"/><circle class="dot-b" cx="620" cy="132" r="12"/>
+          <circle class="dot-c" cx="460" cy="182" r="12"/><circle class="dot-c" cx="540" cy="182" r="12"/><circle class="dot-c" cx="620" cy="182" r="12"/>
+          <text class="tx" x="412" y="116">同类区</text>
+          <text class="tx" x="412" y="212">敌对区</text>
+
+          <rect class="box-c" x="760" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-c" x="782" y="78">③ 摊开：kn 个点</text>
+          <text class="tx" x="782" y="112">种类数 k（如 3 种）</text>
+          <text class="tx" x="782" y="142">「x 与 y 是关系 r」</text>
+          <text class="tx" x="782" y="172">⇒ union(x + i·n, y + j·n)</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>species_dsu.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="cm"># 关押罪犯：敌 / 友</span></li>
+            <li class="hi">N = n</li>
+            <li class="hi">dsu = <span class="fn">DSU</span>(<span class="st">2</span> * N + <span class="st">1</span>)</li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># x 与 y 是敌人</span></li>
+            <li class="hi"><span class="kw">def</span> <span class="fn">enemies</span>(x, y):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(x, y + N)&nbsp;&nbsp;<span class="cm"># x 同 y 的敌人</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(y, x + N)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> dsu.<span class="fn">same</span>(x, y):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">False</span>&nbsp;&nbsp;<span class="cm"># 矛盾</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">True</span></li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># x 与 y 是朋友</span></li>
+            <li class="hi"><span class="kw">def</span> <span class="fn">friends</span>(x, y):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> dsu.<span class="fn">same</span>(x, y + N):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">False</span>&nbsp;&nbsp;<span class="cm"># 矛盾</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(x, y)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(x + N, y + N)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">True</span></li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>「摊开」的思想有多好用</h4>
+          <p>只要关系是<b>有限种</b>，就能摊成<b>有限个副本</b>，然后用<b>普通并查集</b>处理。</p>
+          <p>这把「关系题」<b>降维成「连通题」</b>。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>练习</h4>
+          <div class="linklist">
+            <a class="link" href="https://www.luogu.com.cn/problem/P1525" target="_blank"><span class="lv h">★4</span><span class="ln2">P1525 · 关押罪犯<small>本页原型</small></span><span class="lgo">LG ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P2024" target="_blank"><span class="lv h">★4</span><span class="ln2">P2024 · 食物链<small>3 副本</small></span><span class="lgo">LG ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/satisfiability-of-equality-equations/" target="_blank"><span class="lv m">M</span><span class="ln2">990 · 等式方程的可满足性<small>等价关系</small></span><span class="lgo">LC ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「摊开成副本」是降维神器</div>
+  </div>
+</section>
+
+<!-- ═════════ 21 维护额外信息 ═════════ -->
+<section class="slide" data-ch="扩展" data-num="21" data-ml="EXTRA INFO" data-wm="集">
+  <div class="s-title">维护额外信息：集合的 max / min / 积</div>
+  <div class="qdesc"><span class="qlabel">扩展</span><span class="qtext">除了「同不同」，还想问「这个集合里最大的元素是谁」——怎么一起维护？</span></div>
+  <div class="numline anim">技巧 = <i>把信息存在「根」上</i>；<b>union 时更新根</b>，<b>查询只看根</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 216" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">KEEP INFO ON THE ROOT</text>
+
+          <circle class="dot" cx="120" cy="80" r="17"/><text class="tx-i" x="112" y="86">R</text>
+          <circle class="dot-w" cx="60" cy="160" r="13"/><circle class="dot-w" cx="180" cy="160" r="13"/>
+          <path class="ln-thin" d="M120 97 L60 147 M120 97 L180 147"/>
+          <text class="tx-a" x="20" y="196">mx[R] = 9, mn[R] = 1, sz[R] = 3</text>
+
+          <rect class="box-a" x="300" y="34" width="340" height="152" rx="4"/>
+          <text class="tx-a" x="322" y="66">UNION 时更新</text>
+          <text class="tx-16" x="322" y="104">mx[ra] = max(mx[ra], mx[rb])</text>
+          <text class="tx-16" x="322" y="136">sz[ra] += sz[rb]</text>
+          <text class="tx" x="322" y="168">新根 = 合并后的代表</text>
+
+          <rect class="box-b" x="680" y="34" width="420" height="152" rx="4"/>
+          <text class="tx-b" x="702" y="66">QUERY 时只看根</text>
+          <text class="tx-16" x="702" y="104">mx[ find(x) ]</text>
+          <text class="tx" x="702" y="136">路径压缩会改父，但根不变</text>
+          <text class="tx-b" x="702" y="168">⇒ 信息一定要放根上</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>extra_info.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="kw">class</span> <span class="fn">DSU</span>:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span>(self, vals):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.n = <span class="fn">len</span>(vals)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p = <span class="fn">list</span>(<span class="fn">range</span>(self.n))</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.sz = [<span class="st">1</span>] * self.n</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.mx = <span class="fn">list</span>(vals)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.mn = <span class="fn">list</span>(vals)</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">find</span>(self, x):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> self.p[x] != x:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p[x] = self.p[self.p[x]]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x = self.p[x]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> x</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">union</span>(self, a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a, b = self.<span class="fn">find</span>(a), self.<span class="fn">find</span>(b)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> a == b: <span class="kw">return</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> self.sz[a] &lt; self.sz[b]: a, b = b, a</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p[b] = a</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.sz[a] += self.sz[b]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.mx[a] = <span class="fn">max</span>(self.mx[a], self.mx[b])</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.mn[a] = <span class="fn">min</span>(self.mn[a], self.mn[b])</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>「信息放根上」是通用原则</h4>
+          <p>因为<b>只有根不会变</b>。子节点会被压缩改父，<b>把信息放子上会乱</b>。</p>
+          <p>所有附加信息<b>都要跟着根走</b>。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>能维护什么</h4>
+          <p>· <b>可合并</b>的：max / min / sum / xor<br>
+             · <b>可合并</b>的计数：种类数（配合 set）<br>
+             · <b>不可合并</b>的：比如「中位数」→ 换结构</p>
+          <div class="linklist" style="margin-top:8px">
+            <a class="link" href="https://leetcode.cn/problems/largest-component-size-by-common-factor/" target="_blank"><span class="lv h">H</span><span class="ln2">952 · 按公因数计算最大组件大小<small>size + 枚举因子</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/smallest-string-with-swaps/" target="_blank"><span class="lv h">H</span><span class="ln2">1202 · 交换字符串中的元素<small>集合内排序</small></span><span class="lgo">LC ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「信息放根上」是通用原则</div>
+  </div>
+</section>
+
+<!-- ═════════ 22 回滚并查集 ═════════ -->
+<section class="slide" data-ch="扩展" data-num="22" data-ml="ROLLBACK DSU" data-wm="集">
+  <div class="s-title">回滚并查集：能「撤销」的并查集</div>
+  <div class="qdesc"><span class="qlabel">技巧</span><span class="qtext">有时候做完一步要撤回——普通并查集能撤吗？不行，那怎么改？</span></div>
+  <div class="numline anim">思路 = <i>「不压缩 + 记录改动」</i>；<b>要撤就按栈反向改回</b>，<b>只有「挂父」这一步可撤</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 216" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">ROLLBACK · 只改「挂父」，所以可撤</text>
+
+          <rect class="box" x="20" y="46" width="320" height="152" rx="4"/>
+          <text class="tx-a" x="42" y="76">① 不要路径压缩</text>
+          <text class="tx" x="42" y="112">压缩会改很多父</text>
+          <text class="tx" x="42" y="142">撤销要记很多</text>
+          <text class="tx-a" x="42" y="176">保留按秩合并即可</text>
+
+          <rect class="box-b" x="400" y="46" width="320" height="152" rx="4"/>
+          <text class="tx-b" x="422" y="76">② 记录「哪一步改了哪」</text>
+          <text class="tx-16" x="422" y="112">stack.push((rb, sz[ra]))</text>
+          <text class="tx" x="422" y="142">撤销时弹出，改回去</text>
+          <text class="tx-b" x="422" y="176">一次 O(1)</text>
+
+          <rect class="box-c" x="780" y="46" width="320" height="152" rx="4"/>
+          <text class="tx-c" x="802" y="76">③ 用途</text>
+          <text class="tx" x="802" y="112">时间轴分治</text>
+          <text class="tx" x="802" y="142">「只撤销最近若干次」</text>
+          <text class="tx-c" x="802" y="176">与「可持久化」不同</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>rollback_dsu.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">class</span> <span class="fn">RollbackDSU</span>:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span>(self, n):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p = <span class="fn">list</span>(<span class="fn">range</span>(n))</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.sz = [<span class="st">1</span>] * n</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hist = []&nbsp;&nbsp;<span class="cm"># 改动栈</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">find</span>(self, x):&nbsp;&nbsp;<span class="cm"># 不压缩</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> self.p[x] != x: x = self.p[x]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> x</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">union</span>(self, a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a, b = self.<span class="fn">find</span>(a), self.<span class="fn">find</span>(b)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> a == b: <span class="kw">return</span> <span class="kw">False</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> self.sz[a] &lt; self.sz[b]: a, b = b, a</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.hist.<span class="fn">append</span>((b, self.p[b], self.sz[a]))</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p[b] = a</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.sz[a] += self.sz[b]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">True</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">snapshot</span>(self):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="fn">len</span>(self.hist)</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">rollback</span>(self, mark):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> <span class="fn">len</span>(self.hist) &gt; mark:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;b, oldp, oldsz = self.hist.<span class="fn">pop</span>()</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.sz[self.p[b]] = oldsz</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p[b] = oldp</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>为什么不能压缩</h4>
+          <p>压缩一次会改<b>很多父指针</b>，撤销要记很多，<b>得不偿失</b>。</p>
+          <p>回滚版<b>只保留按秩</b>，高度仍然 O(log n)。</p>
+        </div>
+        <div class="panel gold anim d4" style="flex:1">
+          <h4>什么时候需要回滚</h4>
+          <p>· <b>分治</b>：递归完左子树要退回去<br>
+             · <b>时间轴</b>：在某一时刻的状态<br>
+             · <b>枚举</b>：试完一个要重来</p>
+          <p>和「可持久化并查集」<b>不是一回事</b>，回滚只能撤<b>最近</b>的。</p>
+          <div class="linklist" style="margin-top:8px">
+            <a class="link" href="https://www.luogu.com.cn/problem/P3402" target="_blank"><span class="lv h">★5</span><span class="ln2">P3402 · 可持久化并查集<small>进阶：可持久化</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「不压缩」是回滚版的代价</div>
+  </div>
+</section>
+
+<!-- ═════════ 23 离线处理 ═════════ -->
+<section class="slide" data-ch="扩展" data-num="23" data-ml="OFFLINE" data-wm="集">
+  <div class="s-title">离线处理：倒着来，删边变加边</div>
+  <div class="qdesc"><span class="qlabel">技巧</span><span class="qtext">「删边 + 问连通」很难，「加边 + 问连通」很简单——能不能倒过来？</span></div>
+  <div class="numline anim">技巧 = <i>时间倒流</i>；<b>删边 ⇒ 变加边</b>，<b>再用并查集一次性处理</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 236" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">REVERSE TIME · 删边 → 加边</text>
+
+          <rect class="box-a" x="20" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-a" x="42" y="78">① 正向：删边</text>
+          <text class="tx-16" x="42" y="116">t1: 删边 (1,2)</text>
+          <text class="tx-16" x="42" y="146">t2: 删边 (2,3)</text>
+          <text class="tx" x="42" y="182">删边要「分裂」集合，很难</text>
+
+          <path class="ln-a draw d1" d="M370 128 L430 128" style="--L:60"/>
+          <path class="ln-a draw d1" d="M412 112 L430 128 L412 144" style="--L:52"/>
+
+          <rect class="box-b" x="470" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-b" x="492" y="78">② 倒向：加边</text>
+          <text class="tx-16" x="492" y="116">t2: 加边 (2,3)</text>
+          <text class="tx-16" x="492" y="146">t1: 加边 (1,2)</text>
+          <text class="tx" x="492" y="182">加边用并查集，O(α)</text>
+
+          <rect class="box-c" x="840" y="46" width="260" height="164" rx="4"/>
+          <text class="tx-c" x="862" y="78">③ 最后倒回</text>
+          <text class="tx" x="862" y="112">按时间反向</text>
+          <text class="tx" x="862" y="142">记录每个时刻答案</text>
+          <text class="tx-c" x="862" y="172">再倒序输出</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>offline.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">offline</span>(n, edges, ops):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># ops: ('del', i) 或 ('ask', a, b)</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;alive = [<span class="kw">True</span>] * <span class="fn">len</span>(edges)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> op <span class="kw">in</span> ops:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> op[<span class="st">0</span>] == <span class="st">'del'</span>: alive[op[<span class="st">1</span>]] = <span class="kw">False</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu = <span class="fn">DSU</span>(n)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> i, (u, v) <span class="kw">in</span> <span class="fn">enumerate</span>(edges):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> alive[i]: dsu.<span class="fn">union</span>(u, v)</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;ans = []</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> op <span class="kw">in</span> <span class="fn">reversed</span>(ops):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> op[<span class="st">0</span>] == <span class="st">'ask'</span>:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ans.<span class="fn">append</span>(dsu.<span class="fn">same</span>(op[<span class="st">1</span>], op[<span class="st">2</span>]))</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">else</span>:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;u, v = edges[op[<span class="st">1</span>]]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(u, v)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="fn">reversed</span>(ans)</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 关键：先算出「最终存活的边」</li>
+            <li class="cm"># 倒着处理 ops，删边变加边</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>这个思想有多强</h4>
+          <p>它把<b>「不可逆操作」</b>（删边）变成<b>「可逆操作」</b>（加边）。</p>
+          <p><b>离线处理 = 时间倒流</b>，是竞赛里最漂亮的技巧之一。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>练习</h4>
+          <div class="linklist">
+            <a class="link" href="https://leetcode.cn/problems/number-of-islands-ii/" target="_blank"><span class="lv h">H</span><span class="ln2">305 · 岛屿数量 II<small>动态加点</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1197" target="_blank"><span class="lv h">★4</span><span class="ln2">P1197 · 星球大战<small>倒序并查集</small></span><span class="lgo">LG ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P2170" target="_blank"><span class="lv h">★5</span><span class="ln2">P2170 · 旅行计划<small>离线</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「时间倒流」是竞赛最漂亮的技巧之一</div>
+  </div>
+</section>
+
+<!-- ═════════ 24 岛屿 II ═════════ -->
+<section class="slide" data-ch="扩展" data-num="24" data-ml="ISLANDS II" data-wm="集">
+  <div class="s-title">典型应用：岛屿数量 II——动态加点</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">m×n 网格，每次「把一个格子变成陆地」，问每次之后有几个岛屿</span></div>
+  <div class="numline anim">转化 = <i>新陆地与四邻陆地合并</i>；<b>岛屿数 = 新增 1 − 合并数</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">ISLANDS II · 每步更新</text>
+
+          <rect class="bar" x="60" y="52" width="60" height="60" rx="3"/>
+          <rect class="bar-a" x="124" y="52" width="60" height="60" rx="3"/>
+          <rect class="bar" x="188" y="52" width="60" height="60" rx="3"/>
+          <rect class="bar" x="252" y="52" width="60" height="60" rx="3"/>
+
+          <rect class="bar" x="60" y="116" width="60" height="60" rx="3"/>
+          <rect class="bar-b" x="124" y="116" width="60" height="60" rx="3"/>
+          <rect class="bar-b" x="188" y="116" width="60" height="60" rx="3"/>
+          <rect class="bar" x="252" y="116" width="60" height="60" rx="3"/>
+
+          <rect class="bar" x="60" y="180" width="60" height="60" rx="3"/>
+          <rect class="bar" x="124" y="180" width="60" height="60" rx="3"/>
+          <rect class="bar-c" x="188" y="180" width="60" height="60" rx="3"/>
+          <rect class="bar" x="252" y="180" width="60" height="60" rx="3"/>
+
+          <text class="tx" x="330" y="88">3 个连通块</text>
+          <text class="tx" x="330" y="124">新加一格后</text>
+          <text class="tx-a" x="330" y="160">可能合并 0/1/2 个</text>
+          <text class="tx-a" x="330" y="196">块数 = 1 − 合并数</text>
+
+          <line class="ax" x1="20" y1="272" x2="524" y2="272"/>
+          <text class="tx-a" x="20" y="308">PER STEP</text>
+          <text class="tx-i" x="20" y="346">① 把新格子<tspan class="bo">标记为陆地</tspan></text>
+          <text class="tx-i" x="20" y="382">② 看四邻：<tspan class="bo">不同根就 union</tspan></text>
+          <text class="tx-i" x="20" y="418">③ 每 union 一次 <tspan class="bo">cnt −= 1</tspan></text>
+          <text class="tx-a" x="20" y="460">最后记录 cnt</text>
+          <text class="tx-a" x="20" y="498">时间 O(k·α)  k = 查询次数</text>
+        </svg>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="code anim d2">
+          <div class="cbar"><span>islands2.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">numIslands2</span>(m, n, positions):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu = <span class="fn">DSU</span>(m * n)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;land = <span class="fn">set</span>()</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;ans = []</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> r, c <span class="kw">in</span> positions:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;i = r * n + c</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> i <span class="kw">in</span> land:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ans.<span class="fn">append</span>(ans[-<span class="st">1</span>]); <span class="kw">continue</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;land.<span class="fn">add</span>(i)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> dr, dc <span class="kw">in</span> ((<span class="st">1</span>,<span class="st">0</span>),(-<span class="st">1</span>,<span class="st">0</span>),(<span class="st">0</span>,<span class="st">1</span>),(<span class="st">0</span>,-<span class="st">1</span>)):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nr, nc = r + dr, c + dc</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> <span class="st">0</span> &lt;= nr &lt; m <span class="kw">and</span> <span class="st">0</span> &lt;= nc &lt; n:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;j = nr * n + nc</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> j <span class="kw">in</span> land <span class="kw">and</span> dsu.<span class="fn">union</span>(i, j):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.cnt -= <span class="st">1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.cnt += <span class="st">1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ans.<span class="fn">append</span>(dsu.cnt)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> ans</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 注意：重复位置要特判</li>
+            <li class="cm"># 边界检查 0 &lt;= nr &lt; m</li>
+          </ol>
+        </div>
+        <div class="panel gold anim d3" style="margin-top:18px">
+          <h4>两个坑</h4>
+          <p>· <b>重复加同一格</b>要跳过<br>
+             · <b>合并后 cnt 的加减</b>要配对（加 1 表示新增，减 1 表示合并）</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「cnt 的加减要配对」是这类题的细节</div>
+  </div>
+</section>
+
+<!-- ═════════ 25 与 DFS 对比 ═════════ -->
+<section class="slide" data-ch="对比" data-num="25" data-ml="VS DFS" data-wm="通">
+  <div class="s-title">并查集 vs DFS/BFS：什么时候用谁</div>
+  <div class="qdesc"><span class="qlabel">对比</span><span class="qtext">连通性问题两个都能解，为什么还要并查集？——不是「更好」，是「更合适」</span></div>
+  <div class="numline anim">区别 = <i>DFS 适合「静态、要遍历」</i>；<b>并查集适合「动态、只问连通」</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <div class="panel h grow">
+          <table>
+            <thead><tr><th style="width:150px">维度</th><th style="width:300px">DFS / BFS</th><th>并查集</th></tr></thead>
+            <tbody>
+              <tr><td class="k">数据形态</td><td>静态图</td><td>动态加边 / 删边（离线）</td></tr>
+              <tr><td class="k">查询类型</td><td>遍历所有点、路径</td><td>只问「同不同集合」</td></tr>
+              <tr><td class="k">单次查询</td><td>O(n + m)</td><td>O(α(n)) ≈ O(1)</td></tr>
+              <tr><td class="k">实现难度</td><td>中（要处理 visited）</td><td>低（10 行）</td></tr>
+              <tr><td class="k">能否输出路径</td><td>可以</td><td>不行</td></tr>
+              <tr><td class="k">能否动态加边</td><td>每次重跑</td><td>O(α) 合并</td></tr>
+              <tr><td class="k">附加信息</td><td>难（每次重算）</td><td>易（挂在根上）</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="c1-6 anim d2" style="margin-top:20px">
+        <div class="panel h grow accent">
+          <h4>用并查集</h4>
+          <div class="step on"><div class="n">1</div><div class="t">动态加边 + 问连通</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">判环 / MST / 连通块计数</div></div>
+          <div class="step on"><div class="n">3</div><div class="t">需要<b>可合并的附加信息</b></div></div>
+          <div class="step"><div class="n">4</div><div class="t">数据范围大，多次查询</div></div>
+        </div>
+      </div>
+      <div class="c7-12 anim d3" style="margin-top:20px">
+        <div class="panel h grow green">
+          <h4>用 DFS / BFS</h4>
+          <div class="step on"><div class="n">1</div><div class="t">需要<b>遍历所有点</b>、枚举路径</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">需要<b>记录父亲、深度</b></div></div>
+          <div class="step on"><div class="n">3</div><div class="t">有<b>方向</b>（有向图）</div></div>
+          <div class="step"><div class="n">4</div><div class="t">只要<b>一次性</b>判断，不用多次</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:820px;top:440px" data-at="2500">← 不是「哪个更好」，是「哪个合适」</div>
+  </div>
+</section>
+
+<!-- ═════════ 26 与树的关系 ═════════ -->
+<section class="slide" data-ch="对比" data-num="26" data-ml="VS TREE" data-wm="通">
+  <div class="s-title">并查集与「树」的关系：一片可变的森林</div>
+  <div class="qdesc"><span class="qlabel">回顾</span><span class="qtext">上一讲学的树，跟并查集有什么关系？——就是同一棵树的两种「用法」</span></div>
+  <div class="numline anim">联系 = <i>并查集的每个集合就是一棵树</i>；<b>区别是「不关心形状，只关心根」</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 236" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">SAME STRUCTURE, DIFFERENT USE</text>
+
+          <rect class="box-a" x="20" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-a" x="42" y="78">树（上一讲）</text>
+          <circle class="dot" cx="190" cy="122" r="15"/>
+          <circle class="dot-w" cx="140" cy="180" r="12"/><circle class="dot-w" cx="240" cy="180" r="12"/>
+          <path class="ln-thin" d="M190 137 L140 168 M190 137 L240 168"/>
+          <text class="tx" x="42" y="200">形状固定，关心深度 / 路径</text>
+
+          <rect class="box-b" x="390" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-b" x="412" y="78">并查集森林</text>
+          <circle class="dot" cx="480" cy="122" r="15"/>
+          <circle class="dot-w" cx="440" cy="180" r="12"/><circle class="dot-w" cx="530" cy="180" r="12"/>
+          <path class="ln-thin" d="M480 137 L440 168 M480 137 L530 168"/>
+          <text class="tx" x="412" y="200">形状可变，只关心根</text>
+
+          <rect class="box-c" x="760" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-c" x="782" y="78">THE KEY DIFFERENCE</text>
+          <text class="tx-i" x="782" y="112">树：<tspan class="bo">结构是答案</tspan></text>
+          <text class="tx-i" x="782" y="146">并查集：<tspan class="bo">结构是手段</tspan></text>
+          <text class="tx-c" x="782" y="180">所以并查集可以「压扁」</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>forest.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="cm"># 同一份数组，两种解释</span></li>
+            <li class="hi">par = [<span class="st">0</span>, <span class="st">0</span>, <span class="st">4</span>, <span class="st">2</span>, <span class="st">4</span>]</li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># 解释 A：一棵树（有根 0）</span></li>
+            <li><span class="cm">#   0 的孩子 {1}</span></li>
+            <li><span class="cm">#   1 的孩子 {}</span></li>
+            <li><span class="cm">#   …关心深度、LCA、遍历</span></li>
+            <li>&nbsp;</li>
+            <li><span class="cm"># 解释 B：一片森林（并查集）</span></li>
+            <li><span class="cm">#   集合 {0,1} 根 0</span></li>
+            <li><span class="cm">#   集合 {2,3,4} 根 4</span></li>
+            <li><span class="cm">#   …只关心「同不同根」</span></li>
+            <li>&nbsp;</li>
+            <li class="cm"># 同一份数据，视角不同，用法不同</li>
+            <li class="cm"># 这就是「抽象」的价值</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>「结构是答案」vs「结构是手段」</h4>
+          <p>树题里<b>树本身就是题目</b>，形状、深度、路径都要关心。</p>
+          <p>并查集里<b>树只是存储方式</b>，可以随便变形。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>这是「抽象」的力量</h4>
+          <p>同一份 <code>par[]</code> 数组，<b>换个视角</b>就是不同结构。</p>
+          <p>学算法不只是学<b>代码</b>，更是学<b>视角</b>。</p>
+          <p><b>能看穿「这个是什么」比记住「怎么写」更重要。</b></p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「结构是手段」是并查集与树的根本区别</div>
+  </div>
+</section>
+
+<!-- ═════════ 27 常见错误 ═════════ -->
+<section class="slide" data-ch="题单" data-num="27" data-ml="PITFALLS" data-wm="题">
+  <div class="s-title">常见错误清单：这些坑我都踩过</div>
+  <div class="qdesc"><span class="qlabel">避坑</span><span class="qtext">算法会了但代码过不了？八成是这一页里的某一条</span></div>
+  <div class="numline anim">检查清单 = <i>初始化</i> · <b>find</b> · <b>union</b>，<b>三类占 90% 的 WA</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-6 anim d1">
+        <div class="panel h grow accent">
+          <h4>⚠ 初始化</h4>
+          <div class="step on"><div class="n">1</div><div class="t">点从 <b>1 开始</b>，数组开小了</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">多组数据<b>忘重置</b> par / cnt</div></div>
+          <div class="step on"><div class="n">3</div><div class="t">把 <code>size</code> 初始化成 <b>0</b> 而不是 1</div></div>
+          <div class="step"><div class="n">4</div><div class="t">把 <code>par</code> 初始化成 <b>0</b> 而不是 <code>range(n)</code></div></div>
+          <div class="step"><div class="n">5</div><div class="t">点编号很大 → <b>离散化</b>没做</div></div>
+        </div>
+      </div>
+      <div class="c7-12 anim d2">
+        <div class="panel h grow green">
+          <h4>⚠ find / union</h4>
+          <div class="step on"><div class="n">1</div><div class="t">find <b>没压缩</b>，被卡常</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">带权并查集 <b>d[] 更新顺序反了</b></div></div>
+          <div class="step on"><div class="n">3</div><div class="t">union 时<b>忘了判 ra==rb</b>，cnt 错</div></div>
+          <div class="step"><div class="n">4</div><div class="t">递归 find <b>爆栈</b>（n 很大）</div></div>
+          <div class="step"><div class="n">5</div><div class="t">union 返回值没用上，判断写重</div></div>
+          <div class="step"><div class="n">6</div><div class="t">带权版<b>忘了 mod</b>，负数出错</div></div>
+        </div>
+      </div>
+      <div class="c1-6 anim d3" style="margin-top:22px">
+        <div class="panel h grow gold">
+          <h4>⚠ 语义</h4>
+          <div class="step"><div class="n">1</div><div class="t">把<b>有向图</b>题当成无向做</div></div>
+          <div class="step"><div class="n">2</div><div class="t">统计根个数<b>没过滤 p[i]==i</b></div></div>
+          <div class="step"><div class="n">3</div><div class="t">带权查询<b>没先判同根</b></div></div>
+        </div>
+      </div>
+      <div class="c7-12 anim d4" style="margin-top:22px">
+        <div class="panel h grow accent">
+          <h4>调试三板斧</h4>
+          <p><b>① 打印每步的 par</b>：看形状对不对</p>
+          <p><b>② 极小数据</b>：n=1、n=2、全是孤立点、全连</p>
+          <p><b>③ 对拍暴力</b>：n ≤ 20 时用 DFS 判连通</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:820px;top:440px" data-at="2500">← 「d[] 更新顺序反了」是带权题最大的坑</div>
+  </div>
+</section>
+
+<!-- ═════════ 28 决策树 ═════════ -->
+<section class="slide" data-ch="题单" data-num="28" data-ml="DECISION TREE" data-wm="题">
+  <div class="s-title">决策树：30 秒决定要不要用并查集</div>
+  <div class="qdesc"><span class="qlabel">决策</span><span class="qtext">考场上时间宝贵——靠的就是这张图</span></div>
+  <div class="numline anim">流程 = <i>看「问什么」</i> → <b>看「动不动」</b> → <b>看「有没有关系」</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 340" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">DECISION FLOW</text>
+          <rect class="box-a" x="420" y="44" width="280" height="52" rx="4"/><text class="tx-a" x="500" y="76">看题 → 问什么？</text>
+          <path class="ln draw" d="M560 96 L560 132" style="--L:36"/>
+          <path class="ln draw" d="M200 132 L920 132" style="--L:720"/>
+          <path class="ln draw" d="M200 132 L200 168" style="--L:36"/>
+          <path class="ln draw" d="M560 132 L560 168" style="--L:36"/>
+          <path class="ln draw" d="M920 132 L920 168" style="--L:36"/>
+
+          <rect class="box-b" x="80" y="168" width="240" height="52" rx="4"/><text class="tx-b" x="122" y="200">同不同集合</text>
+          <rect class="box-c" x="440" y="168" width="240" height="52" rx="4"/><text class="tx-c" x="482" y="200">关系 / 差值 / 种类</text>
+          <rect class="box" x="800" y="168" width="240" height="52" rx="4" style="stroke:var(--accent)"/>
+          <text class="tx-a" x="842" y="200">要遍历 / 要路径</text>
+
+          <path class="ln draw" d="M200 220 L200 252" style="--L:32"/>
+          <path class="ln draw" d="M560 220 L560 252" style="--L:32"/>
+          <path class="ln draw" d="M920 220 L920 252" style="--L:32"/>
+
+          <rect class="box-b" x="80" y="252" width="240" height="52" rx="4"/><text class="tx-b" x="112" y="284">→ 并查集</text>
+          <rect class="box-c" x="440" y="252" width="240" height="52" rx="4"/><text class="tx-c" x="462" y="284">→ 带权 / 种类并查集</text>
+          <rect class="box" x="800" y="252" width="240" height="52" rx="4" style="stroke:var(--accent)"/>
+          <text class="tx-a" x="826" y="284">→ DFS / BFS</text>
+
+          <text class="tx" x="80" y="332">「动态加边」→ 并查集 ｜ 「删边」→ 离线倒序 ｜ 「求和/最值」→ 树状数组</text>
+        </svg>
+      </div>
+      <div class="c1-4 anim d2">
+        <div class="panel h grow accent">
+          <h4>常见误判</h4>
+          <div class="step on"><div class="n">1</div><div class="t">有向图题<b>硬套</b>并查集</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">要<b>枚举集合内元素</b>，却用并查集</div></div>
+          <div class="step"><div class="n">3</div><div class="t">带权题<b>忘了 mod</b>，错一堆</div></div>
+        </div>
+      </div>
+      <div class="anim d3" style="grid-column:5/9">
+        <div class="panel h grow gold">
+          <h4>30 秒自检</h4>
+          <div class="step on"><div class="n">1</div><div class="t">数据<b>有删边吗</b>？要不要倒序？</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">关系是<b>有限种</b>吗？可以摊开吗？</div></div>
+          <div class="step"><div class="n">3</div><div class="t">要<b>输出路径</b>吗？（不能）</div></div>
+          <div class="step"><div class="n">4</div><div class="t">n、m 各多大？要不要离散化？</div></div>
+        </div>
+      </div>
+      <div class="c9-12 anim d4">
+        <div class="panel h grow green">
+          <h4>经验法则</h4>
+          <p>· <b>能摊开就摊开</b>，比讨论关系快<br>
+             · <b>能倒序就倒序</b>，删变加<br>
+             · <b>union 返回值</b>要善用<br>
+             · <b>写完一定对拍</b></p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:640px;top:262px" data-at="2500">← 「动不动」是第二问</div>
+  </div>
+</section>
+
+<!-- ═════════ 29 复杂度直觉 ═════════ -->
+<section class="slide" data-ch="题单" data-num="29" data-ml="INTUITION" data-wm="题">
+  <div class="s-title">复杂度直觉：为什么能说「几乎 O(1)」</div>
+  <div class="qdesc"><span class="qlabel">直觉</span><span class="qtext">不用严格证明，也能「感觉到」为什么这么快——看一眼这个图</span></div>
+  <div class="numline anim">直觉 = <i>每次 find 都在「变矮」</i>；<b>做 m 次的总代价远小于 m·log n</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">HEIGHT OVER TIME</text>
+
+          <line class="ax" x1="60" y1="380" x2="520" y2="380"/>
+          <line class="ax" x1="60" y1="380" x2="60" y2="60"/>
+          <text class="tx" x="20" y="70">高</text>
+          <text class="tx" x="500" y="410">操作次数</text>
+
+          <rect class="bar-a" x="90" y="90" width="60" height="290" rx="3"/>
+          <rect class="bar-b" x="190" y="200" width="60" height="180" rx="3"/>
+          <rect class="bar-c" x="290" y="290" width="60" height="90" rx="3"/>
+          <rect class="bar-d" x="390" y="340" width="60" height="40" rx="3"/>
+
+          <text class="tx-a" x="90" y="80">朴素</text>
+          <text class="tx-b" x="190" y="190">压缩</text>
+          <text class="tx-c" x="290" y="280">双优化</text>
+          <text class="tx-d" x="390" y="330">实际</text>
+
+          <line class="ax" x1="20" y1="428" x2="524" y2="428"/>
+          <text class="tx-a" x="20" y="464">THE INTUITION</text>
+          <text class="tx-i" x="20" y="500">每次 find 都把树<tspan class="bo">拍平一些</tspan></text>
+          <text class="tx-i" x="20" y="532">越用越快，<tspan class="bo">均摊</tspan>才是关键</text>
+        </svg>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d2">
+          <h4>均摊是什么意思</h4>
+          <p>不是<b>每次</b>都 O(1)，是<b>很多次的平均</b>。</p>
+          <p>个别 find 可能很贵，但<b>它让后面的都变快</b>。</p>
+        </div>
+        <div class="panel gold anim d3">
+          <h4>为什么「树高」不是关键</h4>
+          <p>路径压缩后，<b>实际访问的点数</b>远小于树高。</p>
+          <p>所以<b>看树高会低估性能</b>。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>竞赛里怎么记</h4>
+          <p>· 写<b>双优化版</b>就够了<br>
+             · <b>复杂度当 O(1) 看</b>，不要纠结证明<br>
+             · 题解说 <code>O(m·α(n))</code> 就当 <code>O(m)</code></p>
+          <p style="margin-top:8px"><b>记结论，不背证明</b>，竞赛里这叫「务实」。</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「均摊」才是关键，看单次会误导</div>
+  </div>
+</section>
+
+<!-- ═════════ 30 完整模板 ═════════ -->
+<section class="slide" data-ch="题单" data-num="30" data-ml="FULL TEMPLATE" data-wm="题">
+  <div class="s-title">完整模板：竞赛里直接抄这一份</div>
+  <div class="qdesc"><span class="qlabel">模板</span><span class="qtext">把今天所有优化整合成一份「万能 DSU」，本地存一份，比赛直接用</span></div>
+  <div class="numline anim">模板 = <i>find（减半压缩）</i> + <b>union（按大小）</b> + <b>size / cnt / 路径</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <div class="code">
+          <div class="cbar"><span>dsu_template.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">class</span> <span class="fn">DSU</span>:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="st">__slots__</span> = (<span class="st">'p'</span>, <span class="st">'sz'</span>, <span class="st">'cnt'</span>)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span>(self, n):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p = <span class="fn">list</span>(<span class="fn">range</span>(n))</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.sz = [<span class="st">1</span>] * n</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.cnt = n</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">find</span>(self, x):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p = self.p</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">while</span> p[x] != x:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;p[x] = p[p[x]]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x = p[x]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> x</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">union</span>(self, a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;a, b = self.<span class="fn">find</span>(a), self.<span class="fn">find</span>(b)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> a == b: <span class="kw">return</span> <span class="kw">False</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> self.sz[a] &lt; self.sz[b]: a, b = b, a</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.p[b] = a</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.sz[a] += self.sz[b]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;self.cnt -= <span class="st">1</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">True</span></li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">same</span>(self, a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> self.<span class="fn">find</span>(a) == self.<span class="fn">find</span>(b)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">size</span>(self, x):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> self.sz[self.<span class="fn">find</span>(x)]</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d2">
+          <h4>这份模板的特点</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><b>路径减半</b>，不递归，不爆栈</div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><b>按大小</b>合并，还能查 size</div></div>
+          <div class="step on"><div class="n">3</div><div class="t"><b>union 返回 bool</b>，判环方便</div></div>
+          <div class="step"><div class="n">4</div><div class="t"><b>cnt</b> 顺手维护集合个数</div></div>
+        </div>
+        <div class="panel gold anim d3">
+          <h4>怎么「背」</h4>
+          <p><b>不是背</b>，是<b>理解三个改动</b>：压缩、按大小、返回值。</p>
+          <p>理解了<b>3 分钟就能默写</b>。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>本地存一份</h4>
+          <p>建一个 <code>templates/</code> 目录，<b>放几份自己的模板</b>：DSU、树状数组、线段树、LCA。</p>
+          <p><b>比背别人的快得多</b>，也更放心。</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 这一份建议直接存进你的 templates/</div>
+  </div>
+</section>
+
+<!-- ═════════ 31 LeetCode 题单 ═════════ -->
+<section class="slide" data-ch="题单" data-num="31" data-ml="LEETCODE" data-wm="题">
+  <div class="s-title">LeetCode 题单：按今天的主线排好序</div>
+  <div class="qdesc"><span class="qlabel">刷题</span><span class="qtext">按「基础 → 判环 → 带权 → 种类 → 综合」的顺序刷，不要乱跳</span></div>
+  <div class="numline anim">刷题法 = <i>先做模板题</i> → <b>再做变体</b> → <b>最后做综合</b>，<b>每个阶段写反思</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-6 anim d1">
+        <div class="panel h grow accent">
+          <h4>基础 + 应用 · 8 题</h4>
+          <div class="linklist">
+            <a class="link" href="https://leetcode.cn/problems/friend-circles/" target="_blank"><span class="lv m">M</span><span class="ln2">547 · 省份数量<small>连通块计数</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/number-of-islands/" target="_blank"><span class="lv m">M</span><span class="ln2">200 · 岛屿数量<small>对照 DFS</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/redundant-connection/" target="_blank"><span class="lv m">M</span><span class="ln2">684 · 冗余连接<small>判环</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/satisfiability-of-equality-equations/" target="_blank"><span class="lv m">M</span><span class="ln2">990 · 等式方程的可满足性<small>等价关系</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/accounts-merge/" target="_blank"><span class="lv h">H</span><span class="ln2">721 · 账户合并<small>连通 + 排序</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/similar-string-groups/" target="_blank"><span class="lv h">H</span><span class="ln2">839 · 相似字符串组<small>判定关系</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/min-cost-to-connect-all-points/" target="_blank"><span class="lv m">M</span><span class="ln2">1584 · 连接所有点的最小费用<small>MST</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/largest-component-size-by-common-factor/" target="_blank"><span class="lv h">H</span><span class="ln2">952 · 按公因数计算最大组件大小<small>枚举因子</small></span><span class="lgo">↗</span></a>
+          </div>
+        </div>
+      </div>
+      <div class="c7-12 anim d2">
+        <div class="panel h grow green">
+          <h4>扩展 + 综合 · 8 题</h4>
+          <div class="linklist">
+            <a class="link" href="https://leetcode.cn/problems/evaluate-division/" target="_blank"><span class="lv m">M</span><span class="ln2">399 · 除法求值<small>带权并查集</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/number-of-islands-ii/" target="_blank"><span class="lv h">H</span><span class="ln2">305 · 岛屿数量 II<small>动态加点</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/smallest-string-with-swaps/" target="_blank"><span class="lv h">H</span><span class="ln2">1202 · 交换字符串中的元素<small>集合内排序</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/redundant-connection-ii/" target="_blank"><span class="lv h">H</span><span class="ln2">685 · 冗余连接 II<small>有向图</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/bricks-falling-when-hit/" target="_blank"><span class="lv h">H</span><span class="ln2">803 · 打砖块<small>倒序并查集</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/couples-holding-hands/" target="_blank"><span class="lv h">H</span><span class="ln2">765 · 情侣牵手<small>连通块结论</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/lexicographically-smallest-equivalent-string/" target="_blank"><span class="lv m">M</span><span class="ln2">1061 · 按字典序排列最小的等价字符串<small>维护最小</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/longest-path-with-different-adjacent-characters/" target="_blank"><span class="lv h">H</span><span class="ln2">2246 · 相邻字符不同的最长路径<small>树形 + 邻接</small></span><span class="lgo">↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ 32 洛谷题单 ═════════ -->
+<section class="slide" data-ch="题单" data-num="32" data-ml="LUOGU" data-wm="题">
+  <div class="s-title">洛谷题单 + 21 天学习路径</div>
+  <div class="qdesc"><span class="qlabel">刷题</span><span class="qtext">洛谷的题更贴合 OI 风格，输入输出和边界更严格，适合练手感</span></div>
+  <div class="numline anim">洛谷 = <i>练 IO 与边界</i>；LeetCode = <b>练思路与模板</b>，<b>两边都要做</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-6 anim d1">
+        <div class="panel h grow gold">
+          <h4>洛谷 · 8 题（★2 → ★5）</h4>
+          <div class="linklist">
+            <a class="link" href="https://www.luogu.com.cn/problem/P3367" target="_blank"><span class="lv e">★2</span><span class="ln2">P3367 · 【模板】并查集<small>入门必做</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P3366" target="_blank"><span class="lv m">★3</span><span class="ln2">P3366 · 【模板】最小生成树<small>Kruskal</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1525" target="_blank"><span class="lv h">★4</span><span class="ln2">P1525 · 关押罪犯<small>种类并查集</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P2024" target="_blank"><span class="lv h">★4</span><span class="ln2">P2024 · 食物链<small>带权 mod 3</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1197" target="_blank"><span class="lv h">★4</span><span class="ln2">P1197 · 星球大战<small>倒序并查集</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P1536" target="_blank"><span class="lv m">★3</span><span class="ln2">P1536 · 找连通块<small>计数</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P3402" target="_blank"><span class="lv h">★5</span><span class="ln2">P3402 · 可持久化并查集<small>进阶</small></span><span class="lgo">↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P4185" target="_blank"><span class="lv h">★5</span><span class="ln2">P4185 · 牛棚<small>离线 + 并查集</small></span><span class="lgo">↗</span></a>
+          </div>
+        </div>
+      </div>
+      <div class="c7-12 anim d2">
+        <div class="panel h grow accent">
+          <h4>21 天学习路径</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><b>第 1–7 天</b>：默写完整模板，做 P3367 / LC 547 / 684</div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><b>第 8–14 天</b>：做种类 / 带权，做 P1525 / P2024 / LC 399</div></div>
+          <div class="step on"><div class="n">3</div><div class="t"><b>第 15–21 天</b>：做离线 / 倒序，做 P1197 / LC 305 / 803</div></div>
+          <div class="step"><div class="n">4</div><div class="t"><b>每 7 天</b>：限时做 3 题 + 写一份<b>自己的模板</b></div></div>
+          <p style="margin-top:12px"><b>验收</b>：21 天后闭卷能默写「基础版 + 带权版」两套模板。</p>
+        </div>
+        <div class="panel green anim d3" style="margin-top:18px">
+          <h4>每天的复盘模板</h4>
+          <p>① 今天学的<b>核心转变</b>是什么？② 我<b>写错在哪</b>？③ 这类题<b>下次怎么 30 秒定位</b>？</p>
+          <p><b>写三行，不写超过三行。</b></p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:820px;top:440px" data-at="2500">← 21 天后，模板长在手上</div>
+  </div>
+</section>
+
+<!-- ═════════ 33 应用全景 ═════════ -->
+<section class="slide" data-ch="题单" data-num="33" data-ml="LANDSCAPE" data-wm="题">
+  <div class="s-title">并查集的应用全景：一张图记住所有</div>
+  <div class="qdesc"><span class="qlabel">全景</span><span class="qtext">把今天讲过的所有用法，按「复杂度」排一遍</span></div>
+  <div class="numline anim">全景 = <i>基础</i> → <b>扩展</b> → <b>进阶</b>；<b>越往右越需要「多存一维」</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 380" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">LANDSCAPE</text>
+
+          <text class="tx-a" x="20" y="70">基础 · 只需 find/union</text>
+          <rect class="box-a" x="20" y="82" width="340" height="52" rx="4"/><text class="tx-a" x="42" y="114">判连通 / 计数</text>
+          <rect class="box-a" x="20" y="142" width="340" height="52" rx="4"/><text class="tx-a" x="42" y="174">判环 / MST</text>
+          <rect class="box-a" x="20" y="202" width="340" height="52" rx="4"/><text class="tx-a" x="42" y="234">连通块 + 排序</text>
+
+          <text class="tx-b" x="400" y="70">扩展 · 多存一维</text>
+          <rect class="box-b" x="400" y="82" width="340" height="52" rx="4"/><text class="tx-b" x="422" y="114">带权并查集</text>
+          <rect class="box-b" x="400" y="142" width="340" height="52" rx="4"/><text class="tx-b" x="422" y="174">种类并查集</text>
+          <rect class="box-b" x="400" y="202" width="340" height="52" rx="4"/><text class="tx-b" x="422" y="234">维护 max/min/size</text>
+
+          <text class="tx-c" x="780" y="70">进阶 · 换思路</text>
+          <rect class="box-c" x="780" y="82" width="320" height="52" rx="4"/><text class="tx-c" x="802" y="114">离线倒序</text>
+          <rect class="box-c" x="780" y="142" width="320" height="52" rx="4"/><text class="tx-c" x="802" y="174">回滚并查集</text>
+          <rect class="box-c" x="780" y="202" width="320" height="52" rx="4"/><text class="tx-c" x="802" y="234">可持久化并查集</text>
+
+          <line class="ax" x1="20" y1="292" x2="1100" y2="292"/>
+          <text class="tx-a" x="20" y="328">THE ONE LINE</text>
+          <text class="tx-i" x="20" y="366">所有变体都只是<tspan class="bo">「多存一维」或「换个时间方向」</tspan>，核心 find/union 不变</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="panel h grow accent">
+          <h4>「多存一维」的清单</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><code>sz[]</code>：集合大小</div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><code>d[]</code>：到根的差值（带权）</div></div>
+          <div class="step on"><div class="n">3</div><div class="t"><code>mx[] / mn[]</code>：集合最值</div></div>
+          <div class="step"><div class="n">4</div><div class="t"><code>k*n</code> 个副本（种类）</div></div>
+        </div>
+      </div>
+      <div class="c7-12 anim d3">
+        <div class="panel h grow green">
+          <h4>「换个时间方向」的清单</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><b>离线倒序</b>：删边 → 加边</div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><b>回滚</b>：只撤最近若干次</div></div>
+          <div class="step"><div class="n">3</div><div class="t"><b>可持久化</b>：任意历史版本</div></div>
+          <p style="margin-top:12px"><b>这三招是「处理不可逆操作」的通用武器。</b></p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:640px;top:262px" data-at="2500">← 「多存一维」是所有变体的来源</div>
+  </div>
+</section>
+
+<!-- ═════════ 34 与图论的交叉 ═════════ -->
+<section class="slide" data-ch="题单" data-num="34" data-ml="GRAPH INTERPLAY" data-wm="题">
+  <div class="s-title">并查集与图论：它在图算法里的位置</div>
+  <div class="qdesc"><span class="qlabel">交叉</span><span class="qtext">图论里那么多算法，哪些「内部用了并查集」？——看一眼就知道</span></div>
+  <div class="numline anim">交叉 = <i>MST</i> · <b>连通性</b> · <b>最近公共祖先</b> · <b>2-SAT</b>，<b>并查集是「底层零件」</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 236" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">UNION-FIND AS A COMPONENT</text>
+
+          <rect class="box-a" x="20" y="46" width="240" height="164" rx="4"/>
+          <text class="tx-a" x="42" y="78">① MST</text>
+          <text class="tx" x="42" y="112">Kruskal 必备</text>
+          <text class="tx" x="42" y="142">判环</text>
+          <text class="tx" x="42" y="172">O(E·α)</text>
+
+          <rect class="box-b" x="290" y="46" width="240" height="164" rx="4"/>
+          <text class="tx-b" x="312" y="78">② 连通性</text>
+          <text class="tx" x="312" y="112">桥 / 割点</text>
+          <text class="tx" x="312" y="142">双连通分量</text>
+          <text class="tx" x="312" y="172">离线常配</text>
+
+          <rect class="box-c" x="560" y="46" width="240" height="164" rx="4"/>
+          <text class="tx-c" x="582" y="78">③ Tarjan LCA</text>
+          <text class="tx" x="582" y="112">离线求 LCA</text>
+          <text class="tx" x="582" y="142">并查集找祖先</text>
+          <text class="tx" x="582" y="172">O(n + q·α)</text>
+
+          <rect class="box-d" x="830" y="46" width="270" height="164" rx="4"/>
+          <text class="tx-d" x="852" y="78">④ 其他</text>
+          <text class="tx" x="852" y="112">2-SAT 判矛盾</text>
+          <text class="tx" x="852" y="142">图着色 / 二分图</text>
+          <text class="tx" x="852" y="172">差分约束</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>tarjan_lca.py</span><span class="lang">PY</span></div>
+          <ol class="cl">
+            <li><span class="cm"># Tarjan 离线 LCA：并查集找祖先</span></li>
+            <li class="hi"><span class="kw">def</span> <span class="fn">tarjan_lca</span>(n, g, queries):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu = <span class="fn">DSU</span>(n)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;seen = [<span class="kw">False</span>] * n</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;ans = {}</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">def</span> <span class="fn">dfs</span>(u):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;seen[u] = <span class="kw">True</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> v <span class="kw">in</span> g[u]:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if not</span> seen[v]:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">dfs</span>(v)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(v, u)&nbsp;&nbsp;<span class="cm"># 回溯时合并</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> v <span class="kw">in</span> queries[u]:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> seen[v]:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ans[(u, v)] = dsu.<span class="fn">find</span>(v)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="fn">dfs</span>(<span class="st">0</span>)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> ans</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 核心：DFS 回溯时「认父」</li>
+            <li class="cm"># 这就是并查集在树上的妙用</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>并查集是「底层零件」</h4>
+          <p>很多图算法<b>内部悄悄用了并查集</b>，只是不写在名字里。</p>
+          <p>学好并查集，<b>图论题会顺很多</b>。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>练习</h4>
+          <div class="linklist">
+            <a class="link" href="https://leetcode.cn/problems/critical-connections-in-a-network/" target="_blank"><span class="lv h">H</span><span class="ln2">1192 · 查找集群内的关键连接<small>桥</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P3379" target="_blank"><span class="lv m">★3</span><span class="ln2">P3379 · 【模板】LCA<small>对照倍增</small></span><span class="lgo">LG ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P2607" target="_blank"><span class="lv h">★5</span><span class="ln2">P2607 · 骑士<small>基环树 + DP</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「并查集是底层零件」是这一页的结论</div>
+  </div>
+</section>
+
+<!-- ═════════ 35 学习路径 ═════════ -->
+<section class="slide" data-ch="题单" data-num="35" data-ml="LEARNING PATH" data-wm="题">
+  <div class="s-title">从「会写」到「会用」：三段式进阶</div>
+  <div class="qdesc"><span class="qlabel">方法</span><span class="qtext">很多人会写并查集，但比赛时想不起来用——怎么破？</span></div>
+  <div class="numline anim">进阶 = <i>会写</i> → <b>会识别</b> → <b>会变通</b>；<b>三段各有一个练习法</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 240" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">THREE STAGES</text>
+
+          <rect class="box-a" x="20" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-a" x="42" y="80">① 会写</text>
+          <text class="tx-i" x="42" y="118">默写<tspan class="bo">完整模板</tspan></text>
+          <text class="tx" x="42" y="152">限时 5 分钟</text>
+          <text class="tx" x="42" y="182">目标：不看笔记</text>
+
+          <rect class="box-b" x="390" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-b" x="412" y="80">② 会识别</text>
+          <text class="tx-i" x="412" y="118">看题<tspan class="bo">30 秒</tspan>定位</text>
+          <text class="tx" x="412" y="152">刷 30 题</text>
+          <text class="tx" x="412" y="182">目标：看到关键词就想到</text>
+
+          <rect class="box-c" x="760" y="46" width="340" height="164" rx="4"/>
+          <text class="tx-c" x="782" y="80">③ 会变通</text>
+          <text class="tx-i" x="782" y="118">自己<tspan class="bo">改出新模板</tspan></text>
+          <text class="tx" x="782" y="152">带权 / 回滚 / 离线</text>
+          <text class="tx" x="782" y="182">目标：能讲给别人听</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="panel h grow accent">
+          <h4>① 会写：怎么练</h4>
+          <div class="step on"><div class="n">1</div><div class="t">每天<b>默写一遍</b>完整模板</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">写完<b>自己跑测试</b>，看对不对</div></div>
+          <div class="step"><div class="n">3</div><div class="t">一周后<b>闭卷默写</b>，看花了多久</div></div>
+        </div>
+      </div>
+      <div class="anim d3" style="grid-column:5/9">
+        <div class="panel h grow gold">
+          <h4>② 会识别：怎么练</h4>
+          <div class="step on"><div class="n">1</div><div class="t">做题时<b>先写「题型判断」</b>再写代码</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">看到<b>「连通 / 同类 / 集合」</b>就警觉</div></div>
+          <div class="step"><div class="n">3</div><div class="t">做完<b>总结关键词</b>，写进笔记</div></div>
+        </div>
+      </div>
+      <div class="c9-12 anim d4">
+        <div class="panel h grow green">
+          <h4>③ 会变通：怎么练</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><b>改模板</b>：加权、加回滚</div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><b>给同学讲</b>一遍</div></div>
+          <div class="step"><div class="n">3</div><div class="t"><b>写题解</b>，输出倒逼输入</div></div>
+        </div>
+      </div>
+      <div class="c1-12 anim d5" style="margin-top:22px">
+        <div class="panel accent" style="padding:18px 22px">
+          <p style="font:500 16px/1.75 var(--sans);color:var(--ink)">
+            <b>关键的一句</b>：并查集不是一个「算法」，<b>它是一个「数据结构 + 三个操作」</b>。
+            学它的重点不是背模板，<b>是记住「用一个代表表示一个集合」这个抽象</b>——能抽象，才能变通。
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:640px;top:262px" data-at="2500">← 「会识别」是最难的一段</div>
+  </div>
+</section>
+
+<!-- ═════════ 36 经典题精讲 1 ═════════ -->
+<section class="slide" data-ch="题单" data-num="36" data-ml="CASE 1" data-wm="题">
+  <div class="s-title">经典题精讲：P1525 关押罪犯</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">n 个罪犯，m 对仇恨关系（有仇恨值）。要把他们分到两个监狱，同监狱内仇恨值最大者尽量小</span></div>
+  <div class="numline anim">思路 = <i>按仇恨值从大到小排序</i>；<b>尽量让「仇恨大的」分开</b>，<b>矛盾时输出答案</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">P1525 · 关押罪犯</text>
+
+          <circle class="dot" cx="110" cy="100" r="15"/><text class="tx-i" x="102" y="106">1</text>
+          <circle class="dot-w" cx="230" cy="100" r="13"/><text class="tx-i" x="222" y="106">2</text>
+          <circle class="dot-w" cx="350" cy="100" r="13"/><text class="tx-i" x="342" y="106">3</text>
+          <circle class="dot-w" cx="110" cy="210" r="13"/><text class="tx-i" x="102" y="216">4</text>
+
+          <path class="ln-a draw" d="M110 100 L230 100" style="--L:120"/>
+          <text class="tx-a" x="152" y="86">5</text>
+          <path class="ln-b draw d1" d="M230 100 L350 100" style="--L:120"/>
+          <text class="tx-b" x="272" y="86">3</text>
+          <path class="ln-c draw d2" d="M110 100 L110 210" style="--L:110"/>
+          <text class="tx-c" x="72" y="162">2</text>
+
+          <text class="tx" x="20" y="256">按仇恨值降序：(1,2,5) → (2,3,3) → (1,4,2)</text>
+
+          <line class="ax" x1="20" y1="292" x2="524" y2="292"/>
+          <text class="tx-a" x="20" y="328">GREEDY + SPECIES DSU</text>
+          <text class="tx-i" x="20" y="366">① <tspan class="bo">按仇恨值降序</tspan>处理</text>
+          <text class="tx-i" x="20" y="400">② 让有仇的<tspan class="bo">进不同集合</tspan></text>
+          <text class="tx-i" x="20" y="434">③ 若发现<tspan class="bo">矛盾</tspan>（已有仇却同集合）</text>
+          <text class="tx-a" x="20" y="472">⇒ 当前仇恨值就是答案</text>
+          <text class="tx-a" x="20" y="510">「尽量」变成「贪心」</text>
+        </svg>
+      </div>
+      <div class="c8-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="code anim d2">
+          <div class="cbar"><span>p1525.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">solve</span>(n, hates):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># hates: (w, a, b)</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;hates.<span class="fn">sort</span>(reverse=<span class="kw">True</span>)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu = <span class="fn">DSU</span>(<span class="st">2</span> * n + <span class="st">1</span>)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> w, a, b <span class="kw">in</span> hates:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> dsu.<span class="fn">same</span>(a, b):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> w&nbsp;&nbsp;<span class="cm"># 不得不同监，答案</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(a, b + n)&nbsp;&nbsp;<span class="cm"># a 与 b 的敌人同</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(b, a + n)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="st">0</span></li>
+            <li>&nbsp;</li>
+            <li class="cm"># 关键：降序处理 + 「敌人」副本</li>
+            <li class="cm"># 用 2n 表示「a 与 a+n 是敌人」</li>
+            <li class="cm"># 矛盾 = 同集合但本应是敌人</li>
+          </ol>
+        </div>
+        <div class="panel gold anim d3" style="margin-top:18px">
+          <h4>为什么「降序」</h4>
+          <p>要<b>最大化</b>「同监内仇恨值的最小」，等价于<b>降序贪心</b>：能分开就分开，分不开就停下。</p>
+          <p><b>贪心 + 并查集</b>是这类题的标准组合。</p>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:332px" data-at="2600">↑ 「贪心 + 并查集」是标准组合</div>
+  </div>
+</section>
+
+<!-- ═════════ 37 经典题精讲 2 ═════════ -->
+<section class="slide" data-ch="题单" data-num="37" data-ml="CASE 2" data-wm="题">
+  <div class="s-title">经典题精讲：P1197 星球大战</div>
+  <div class="qdesc"><span class="qlabel">题意</span><span class="qtext">n 个星球 m 条通道，依次摧毁 k 个星球。每次摧毁后问剩几个连通块</span></div>
+  <div class="numline anim">思路 = <i>倒序：从「全毁」开始，逐步「重建」</i>；<b>删边变加边，用并查集</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-12 anim d1">
+        <svg class="fig" viewBox="0 0 1120 224" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="26">P1197 · 倒序重建</text>
+
+          <rect class="box-a" x="20" y="46" width="320" height="152" rx="4"/>
+          <text class="tx-a" x="42" y="76">正向：摧毁</text>
+          <text class="tx-16" x="42" y="112">毁 3 → 毁 5 → 毁 1</text>
+          <text class="tx" x="42" y="148">每次要「分裂」集合</text>
+          <text class="tx-a" x="42" y="180">很难，无法直接做</text>
+
+          <path class="ln-a draw d1" d="M350 122 L410 122" style="--L:60"/>
+          <path class="ln-a draw d1" d="M392 106 L410 122 L392 138" style="--L:52"/>
+
+          <rect class="box-b" x="440" y="46" width="320" height="152" rx="4"/>
+          <text class="tx-b" x="462" y="76">倒向：重建</text>
+          <text class="tx-16" x="462" y="112">建 1 → 建 5 → 建 3</text>
+          <text class="tx" x="462" y="148">每次「加入」一个点</text>
+          <text class="tx-b" x="462" y="180">用并查集 O(α)</text>
+
+          <rect class="box-c" x="790" y="46" width="310" height="152" rx="4"/>
+          <text class="tx-c" x="812" y="76">最后倒回答案</text>
+          <text class="tx" x="812" y="112">记录每一步 cnt</text>
+          <text class="tx" x="812" y="142">按时间倒序输出</text>
+          <text class="tx-c" x="812" y="172">O((n+m)·α)</text>
+        </svg>
+      </div>
+      <div class="c1-6 anim d2">
+        <div class="code">
+          <div class="cbar"><span>p1197.py</span><span class="lang">PYTHON</span></div>
+          <ol class="cl">
+            <li><span class="kw">def</span> <span class="fn">solve</span>(n, edges, kills):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;g = [[] <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> u, v <span class="kw">in</span> edges:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;g[u].<span class="fn">append</span>(v)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;g[v].<span class="fn">append</span>(u)</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;destroyed = <span class="fn">set</span>(kills)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;dsu = <span class="fn">DSU</span>(n + <span class="st">1</span>)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># ① 先把「没被毁」的边都加上</span></li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> u, v <span class="kw">in</span> edges:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> u <span class="kw">not in</span> destroyed <span class="kw">and</span> v <span class="kw">not in</span> destroyed:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(u, v)</li>
+            <li>&nbsp;</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;ans = []</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> x <span class="kw">in</span> <span class="fn">reversed</span>(kills):</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ans.<span class="fn">append</span>(dsu.cnt - <span class="fn">len</span>(destroyed))</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;destroyed.<span class="fn">discard</span>(x)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">for</span> v <span class="kw">in</span> g[x]:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">if</span> v <span class="kw">not in</span> destroyed:</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;dsu.<span class="fn">union</span>(x, v)</li>
+            <li class="hi">&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="fn">reversed</span>(ans)</li>
+            <li>&nbsp;</li>
+            <li class="cm"># 关键：cnt 减去「还毁着的点数」</li>
+          </ol>
+        </div>
+      </div>
+      <div class="c7-12" style="display:flex;flex-direction:column;gap:18px">
+        <div class="panel accent anim d3">
+          <h4>「正向难、倒向易」的信号</h4>
+          <p>题面说<b>「依次删除 / 摧毁 / 移除」</b>，就要<b>本能想到倒序</b>。</p>
+          <p>这是<b>竞赛里的一条强信号</b>。</p>
+        </div>
+        <div class="panel green anim d4" style="flex:1">
+          <h4>练习</h4>
+          <div class="linklist">
+            <a class="link" href="https://www.luogu.com.cn/problem/P1197" target="_blank"><span class="lv h">★4</span><span class="ln2">P1197 · 星球大战<small>本页原型</small></span><span class="lgo">LG ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/bricks-falling-when-hit/" target="_blank"><span class="lv h">H</span><span class="ln2">803 · 打砖块<small>同型</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/number-of-islands-ii/" target="_blank"><span class="lv h">H</span><span class="ln2">305 · 岛屿数量 II<small>动态加点</small></span><span class="lgo">LC ↗</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:130px;top:418px" data-at="2600">← 「依次删除」是倒序的强信号</div>
+  </div>
+</section>
+
+<!-- ═════════ 38 进阶题单 ═════════ -->
+<section class="slide" data-ch="题单" data-num="38" data-ml="ADVANCED" data-wm="题">
+  <div class="s-title">进阶挑战：想再进一步，做这几道</div>
+  <div class="qdesc"><span class="qlabel">挑战</span><span class="qtext">做完上面的题单后，这些题能把并查集用到「出神入化」</span></div>
+  <div class="numline anim">挑战 = <i>与树 / 图 / DP 结合</i>；<b>并查集只是其中一个零件</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-6 anim d1">
+        <div class="panel h grow accent">
+          <h4>综合应用</h4>
+          <div class="linklist">
+            <a class="link" href="https://www.luogu.com.cn/problem/P4185" target="_blank"><span class="lv h">★5</span><span class="ln2">P4185 · 牛棚<small>离线 + 并查集</small></span><span class="lgo">LG ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P2607" target="_blank"><span class="lv h">★5</span><span class="ln2">P2607 · 骑士<small>基环树 + DP</small></span><span class="lgo">LG ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P3402" target="_blank"><span class="lv h">★5</span><span class="ln2">P3402 · 可持久化并查集<small>主席树</small></span><span class="lgo">LG ↗</span></a>
+            <a class="link" href="https://www.luogu.com.cn/problem/P4195" target="_blank"><span class="lv h">★5</span><span class="ln2">P4195 · 【模板】扩展 BS<small>数论 + 并查集</small></span><span class="lgo">LG ↗</span></a>
+          </div>
+        </div>
+      </div>
+      <div class="c7-12 anim d2">
+        <div class="panel h grow green">
+          <h4>工程与竞赛双修</h4>
+          <div class="linklist">
+            <a class="link" href="https://leetcode.cn/problems/couples-holding-hands/" target="_blank"><span class="lv h">H</span><span class="ln2">765 · 情侣牵手<small>连通块结论</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/bricks-falling-when-hit/" target="_blank"><span class="lv h">H</span><span class="ln2">803 · 打砖块<small>倒序</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/longest-path-with-different-adjacent-characters/" target="_blank"><span class="lv h">H</span><span class="ln2">2246 · 相邻字符不同的最长路径<small>树形 DP</small></span><span class="lgo">LC ↗</span></a>
+            <a class="link" href="https://leetcode.cn/problems/lexicographically-smallest-equivalent-string/" target="_blank"><span class="lv m">M</span><span class="ln2">1061 · 最小等价字符串<small>维护最小</small></span><span class="lgo">LC ↗</span></a>
+          </div>
+        </div>
+      </div>
+      <div class="c1-12 anim d3" style="margin-top:22px">
+        <div class="panel gold" style="padding:18px 22px">
+          <h4 style="margin-bottom:10px">做进阶题的三个提醒</h4>
+          <div class="step on"><div class="n">1</div><div class="t"><b>先把「朴素做法」写对</b>，再想优化——不要一步到位</div></div>
+          <div class="step on"><div class="n">2</div><div class="t"><b>画图</b>：把集合的状态画出来，比空想快 10 倍</div></div>
+          <div class="step"><div class="n">3</div><div class="t"><b>对拍</b>：n ≤ 20 时写暴力 DFS，跟并查集结果对比</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" style="left:820px;top:440px" data-at="2500">← 「画图」是并查集题最重要的技巧</div>
+  </div>
+</section>
+
+<!-- ═════════ 39 全景 ═════════ -->
+<section class="slide" data-ch="题单" data-num="39" data-ml="RECAP" data-wm="题">
+  <div class="s-title">60 分钟回望：从一个痛点，走到一片森林</div>
+  <div class="qdesc"><span class="qlabel">回望</span><span class="qtext">从「动态连通性」出发，走到「可持久化并查集」，最后落到刷题路径</span></div>
+  <div class="numline anim">回望 = <i>一个问题</i>（动态连通）→ <b>一个抽象</b>（代表元）→ <b>一套方法</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-7 anim d1">
+        <svg class="fig" viewBox="0 0 544 528" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="30">THE LADDER</text>
+          <rect class="box-a" x="20" y="52" width="504" height="86" rx="4"/>
+          <text class="tx-a" x="42" y="84">BEFORE</text>
+          <text class="tx-i" x="42" y="116">看到「连通」→ <tspan class="cc">写 DFS，然后超时</tspan></text>
+
+          <path class="ln-a draw" d="M272 152 L272 196" style="--L:44"/>
+          <path class="ln-a draw" d="M254 178 L272 196 L290 178" style="--L:50"/>
+
+          <rect class="box-b" x="20" y="216" width="504" height="86" rx="4"/>
+          <text class="tx-b" x="42" y="248">AFTER</text>
+          <text class="tx-i" x="42" y="280">看到「连通」→ <tspan class="cc">找根就行，几乎 O(1)</tspan></text>
+
+          <rect class="box" x="20" y="342" width="504" height="164" rx="4"/>
+          <text class="tx" x="42" y="378">FOUR LINES TO REMEMBER</text>
+          <text class="tx-i" x="42" y="418">集合 = <tspan class="bo">一个代表</tspan></text>
+          <text class="tx-i" x="42" y="452">优化 = <tspan class="bo">压缩 + 小挂大</tspan></text>
+          <text class="tx-i" x="42" y="486">关系 = <tspan class="bo">多存一维</tspan></text>
+          <text class="tx-a" x="42" y="518">删除 = <tspan class="bo">倒序变加</tspan></text>
+        </svg>
+      </div>
+      <div class="c8-12 anim d2" style="display:flex;flex-direction:column;justify-content:center;gap:26px">
+        <div>
+          <div class="cap" style="margin-bottom:14px">RECAP · 39 / 40</div>
+          <div class="disp">并<span class="em">查</span>集</div>
+          <div class="big" style="margin-top:14px;color:var(--ink2);font-size:19px">现在你看到「认祖宗」这个词，<br>应该在 <span style="color:var(--accent)">3 秒内</span>想到「并查集」。</div>
+        </div>
+        <div class="panel accent">
+          <h4>今天最值钱的三个「转变」</h4>
+          <div class="step on"><div class="n">1</div><div class="t">关系 → <b>指针</b>（代表元抽象）</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">遍历 → <b>比根</b>（O(n) → O(1)）</div></div>
+          <div class="step"><div class="n">3</div><div class="t">删除 → <b>倒序加</b>（不可逆变可逆）</div></div>
+        </div>
+        <div class="cap">ALGORITHM PRIMER · UNION-FIND · 2025</div>
+      </div>
+    </div>
+    <div class="hand" style="left:120px;top:492px" data-at="2400">谢谢，开始刷题吧</div>
+  </div>
+</section>
+
+<!-- ═════════ 40 结语 ═════════ -->
+<section class="slide" data-ch="题单" data-num="40" data-ml="FIN" data-wm="题">
+  <div class="s-title">结语：抽象是算法最锋利的刀</div>
+  <div class="qdesc"><span class="qlabel">收尾</span><span class="qtext">今天这一讲真正想给你的，不是并查集本身</span></div>
+  <div class="numline anim">收尾 = <i>并查集只是例子</i>；<b>「抽象」才是要带走的东西</b></div>
+  <div class="stage-inner">
+    <div class="grid">
+      <div class="c1-6 anim d1" style="display:flex;flex-direction:column;justify-content:center;gap:28px">
+        <div>
+          <div class="cap" style="margin-bottom:16px">THE END · 40 / 40</div>
+          <div class="disp">抽象是<span class="em">刀</span></div>
+          <div class="big" style="margin-top:18px;color:var(--ink2);font-size:20px">
+            把「关系」看成「指针」，<br>把「删除」看成「倒序加」，<br>把「种类」看成「副本」。
+          </div>
+        </div>
+        <div class="panel accent">
+          <h4>接下来三件事</h4>
+          <div class="step on"><div class="n">1</div><div class="t">把<b>完整模板</b>存进你的 templates/</div></div>
+          <div class="step on"><div class="n">2</div><div class="t">按<b>21 天路径</b>刷完今天的题单</div></div>
+          <div class="step"><div class="n">3</div><div class="t">把今天这一页<b>讲给一个同学</b>听</div></div>
+        </div>
+        <div class="cap">ALGORITHM PRIMER · UNION-FIND · 2025</div>
+      </div>
+      <div class="c7-12 anim d2">
+        <svg class="fig" viewBox="0 0 544 560" preserveAspectRatio="xMidYMid meet">
+          <text class="tx" x="20" y="30">THE ABSTRACTION LADDER</text>
+
+          <rect class="box-a" x="20" y="52" width="504" height="72" rx="4"/>
+          <text class="tx-a" x="42" y="84">① 数据</text>
+          <text class="tx-i" x="42" y="110">一堆点，一堆边</text>
+
+          <rect class="box-b" x="20" y="138" width="504" height="72" rx="4"/>
+          <text class="tx-b" x="42" y="170">② 结构</text>
+          <text class="tx-i" x="42" y="196">集合 / 森林</text>
+
+          <rect class="box-c" x="20" y="224" width="504" height="72" rx="4"/>
+          <text class="tx-c" x="42" y="256">③ 抽象</text>
+          <text class="tx-i" x="42" y="282">用「代表」表示集合</text>
+
+          <rect class="box" x="20" y="310" width="504" height="72" rx="4" style="stroke:var(--accent)"/>
+          <text class="tx-a" x="42" y="342">④ 算法</text>
+          <text class="tx-i" x="42" y="368">find / union / 压缩</text>
+
+          <line class="ax" x1="20" y1="416" x2="524" y2="416"/>
+          <text class="tx-a" x="20" y="452">THE PROMISE</text>
+          <text class="tx-i" x="20" y="490">学算法学的<tspan class="bo">不是代码</tspan></text>
+          <text class="tx-i" x="20" y="524">是<tspan class="bo">看穿问题本质的能力</tspan></text>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" style="left:120px;top:492px" data-at="2400">谢谢，去刷题吧</div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<script>
+(function(){
+  const deck   = document.getElementById('deck');
+  const slides = [...document.querySelectorAll('.slide')];
+  const CHAPTERS = ['起点','基础','优化','应用','扩展','对比','题单'];
+  const TOTAL = slides.length;
+  let cur = 0, playing = false;
+
+  /* ---------- 注入公共框架 ---------- */
+  slides.forEach((s,i)=>{
+    const ch = s.dataset.ch || '';
+    const ml = s.dataset.ml || '';
+    const wm = s.dataset.wm || '';
+    const nm = s.dataset.num || String(i+1).padStart(2,'0');
+    s.insertAdjacentHTML('beforeend', `
+      <div class="pager"><span class="cur">${String(i+1).padStart(2,'0')}</span><span class="tot"> / ${TOTAL}</span></div>
+      <div class="mnum">${nm}</div>
+      <div class="mlabel">${ml}</div>
+      <div class="top-rule"></div>
+      <div class="numrule"></div>
+      <div class="watermark">${wm}</div>
+      <div class="slide-foot">
+        <div class="bot-rule"></div>
+        <div class="ruler"></div>
+        <div class="botline">
+          <div class="eyebrow">${ch}</div>
+          <div class="help">← → 或空格翻页 ｜ R 重放动画 ｜ G 跳页 ｜ Esc 目录</div>
+          <div class="bmark">UNION-FIND</div>
+        </div>
+      </div>`);
+    const r = s.querySelector('.ruler');
+    CHAPTERS.forEach(c=>{
+      const b = document.createElement('button');
+      b.type='button'; b.textContent=c; b.dataset.ch=c;
+      b.addEventListener('click',()=>goToChapter(c));
+      r.appendChild(b);
+    });
+  });
+
+  /* ---------- 缩放：高度随内容自动延伸 ---------- */
+  function fit(){
+    const el = slides[cur];
+    const h  = Math.max(720, el ? el.offsetHeight : 720);
+    deck.style.height = h + 'px';
+    const s = Math.min(innerWidth / 1280, innerHeight / h);
+    deck.style.transform = 'scale(' + (Math.round(s * 1000) / 1000) + ')';
+  }
+  addEventListener('resize', fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  addEventListener('load', fit);
+
+  /* ---------- 动画 ---------- */
+  function play(i){
+    const s = slides[i];
+    s.classList.remove('play');
+    s.querySelectorAll('.hand.show').forEach(h=>h.classList.remove('show'));
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      s.classList.add('play');
+      s.querySelectorAll('.hand').forEach(h=>{
+        setTimeout(()=>h.classList.add('show'), +h.dataset.at || 2500);
+      });
+      fit();
+    }));
+  }
+
+  /* ---------- 切换 ---------- */
+  function show(i){
+    if(i<0||i>=slides.length||playing) return;
+    playing = true;
+    slides[cur].classList.remove('on');
+    cur = i;
+    const s = slides[cur];
+    s.classList.add('on');
+    const ch = s.dataset.ch;
+    deck.querySelectorAll('.ruler button').forEach(b=>b.classList.toggle('on', b.dataset.ch===ch));
+    fit();
+    play(cur);
+    setTimeout(()=>playing=false, 340);
+  }
+  const next = ()=>show(Math.min(cur+1, slides.length-1));
+  const prev = ()=>show(Math.max(cur-1, 0));
+  function goToChapter(c){
+    const idx = slides.findIndex(s=>s.dataset.ch===c);
+    if(idx>=0) show(idx);
+  }
+
+  /* ---------- 键盘控制（唯一翻页方式） ---------- */
+  addEventListener('keydown', e=>{
+    if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){ e.preventDefault(); next(); }
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){ e.preventDefault(); prev(); }
+    else if(e.key==='r'||e.key==='R'){ play(cur); }
+    else if(e.key==='g'||e.key==='G'){
+      const n = prompt(`跳转到第几页（1 – ${slides.length}）`);
+      const v = parseInt(n,10); if(v>=1&&v<=slides.length) show(v-1);
+    }
+    else if(e.key==='Escape'){ goToChapter(CHAPTERS[0]); }
+    else if(e.key==='Home'){ show(0); }
+    else if(e.key==='End'){ show(slides.length-1); }
+  });
+
+  /* ---------- 触屏滑动（非鼠标，保留） ---------- */
+  let tx=null;
+  deck.addEventListener('touchstart', e=>tx=e.touches[0].clientX, {passive:true});
+  deck.addEventListener('touchend', e=>{
+    if(tx===null) return;
+    const dx=e.changedTouches[0].clientX-tx;
+    if(Math.abs(dx)>50) dx<0?next():prev();
+    tx=null;
+  }, {passive:true});
+
+  /* ---------- SVG 路径长度 ---------- */
+  document.querySelectorAll('.draw').forEach(p=>{
+    if(!p.style.getPropertyValue('--L')){
+      try{ p.style.setProperty('--L', p.getTotalLength()); }catch(_){}
+    }
+  });
+
+  show(0);
+})();
+</script>
+</body>
+</html>

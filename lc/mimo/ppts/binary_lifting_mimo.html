@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>倍增 · 用二进制拆掉 k — ALGO PRIMER / DP-04</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;700;900&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#FFFBF3;--panel:#FFFFFF;--ink:#2A2018;--ink2:#5A4636;--muted:#A18768;
+  --line:#EEDDC2;--line2:#F7EEDF;--accent:#E2542A;--amber:#F3A33C;--amber-soft:#FDEECC;
+  --green:#3E7B4E;--red:#B53B2C;
+  --serif:'Noto Serif SC','Songti SC',serif;
+  --sans:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  --hand:'Zhi Mang Xing','STKaiti','KaiTi',cursive;
+}
+html,body{height:100%;overflow:hidden;background:#F1E3CB;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;display:grid;place-items:center}
+#deck{position:relative;width:1280px;height:720px;overflow:hidden;
+  background:radial-gradient(1600px 980px at 18% -14%,#FFFDF9 0%,#FFF7EA 48%,#FDEBD3 100%)}
+.slide{position:absolute;inset:0;display:none}
+.slide.active{display:block}
+
+/* ---------- frame（无 wordmark，单行页脚） ---------- */
+.top{position:absolute;left:0;top:0;width:1280px;height:100px}
+.s-title{position:absolute;left:80px;top:24px;font:700 28px/1.3 var(--serif);color:var(--ink)}
+.qdesc{position:absolute;left:80px;top:66px;width:1010px;font:400 13px/1.5 var(--sans);color:var(--ink2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qlabel{display:inline-block;background:var(--amber-soft);color:#9A6420;font:500 10px/1.2 var(--mono);
+  letter-spacing:.16em;padding:3px 7px;border-radius:3px;margin-right:10px;vertical-align:1px}
+.top-rule{position:absolute;left:80px;top:98px;width:1120px;height:1px;background:var(--line)}
+.top-accent{position:absolute;left:80px;top:96px;width:76px;height:3px;background:var(--accent)}
+.numline{position:absolute;left:80px;top:112px;font:700 21px/1.4 var(--mono)}
+.pager{position:absolute;right:80px;top:115px;text-align:right}
+.pg{font:700 15px/1 var(--serif);color:var(--accent);letter-spacing:.06em}
+.numrule{position:absolute;left:80px;top:152px;width:1120px;height:0;border-top:1px solid var(--line2)}
+.mnum{position:absolute;left:26px;top:110px;font:700 22px/1 var(--mono);color:var(--accent)}
+.mlabel{position:absolute;left:32px;top:166px;writing-mode:vertical-rl;font:500 11px/1 var(--mono);letter-spacing:.24em;color:var(--muted)}
+.stage-inner{position:absolute;left:80px;top:170px;width:1120px;height:460px}
+
+/* ---------- bottom band ---------- */
+.bottom{position:absolute;left:0;top:646px;width:1280px;height:74px}
+.bot-rule{position:absolute;left:80px;top:4px;width:1120px;height:1px;background:var(--line)}
+.ruler{position:absolute;left:80px;top:14px;width:1120px;display:flex;gap:8px}
+.ruler a{flex:1;display:block;cursor:pointer;text-decoration:none}
+.ruler .bar{height:22px;border-radius:5px;background:#F3E4CC;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.ruler .lbl{font:500 10px/1 var(--mono);color:#8A6E52;letter-spacing:.12em;transition:color .2s}
+.ruler a.on .bar{background:var(--accent)}
+.ruler a.on .lbl{color:#FFF8EF}
+.botline{position:absolute;left:80px;bottom:8px;width:1120px;display:flex;align-items:center;gap:16px;
+  white-space:nowrap;overflow:hidden}
+.eyebrow{font:500 11px/1.3 var(--mono);letter-spacing:.13em;color:var(--muted)}
+.bsep{width:1px;height:11px;background:var(--line);flex:none}
+.help{font:500 10px/1.3 var(--mono);letter-spacing:.085em;color:rgba(161,135,104,.85)}
+.bmark{margin-left:auto;font:500 10px/1.3 var(--mono);letter-spacing:.16em;color:rgba(161,135,104,.62);flex:none}
+
+/* ---------- type ---------- */
+.meta{font:500 11px/1.3 var(--mono);letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+.hero{font:900 92px/1.02 var(--serif);letter-spacing:-.01em}
+.disp{font:700 42px/1.22 var(--serif)}
+.h2{font:700 24px/1.35 var(--serif)}
+.h3{font:700 18px/1.4 var(--mono)}
+.lead{font:400 19px/1.8 var(--sans)}
+.p{font:400 16px/1.82 var(--sans)}
+.sm{font:400 14px/1.75 var(--sans);color:var(--ink2)}
+.mono{font-family:var(--mono)}
+.v{color:var(--accent)}
+.mu{color:var(--muted)}
+.g{color:var(--green)}
+.l{color:var(--red)}
+.big{font:700 30px/1.2 var(--mono)}
+
+/* ---------- layout ---------- */
+.g12{display:grid;grid-template-columns:repeat(12,64px);gap:32px;align-items:start;height:100%}
+.c1-4{grid-column:1/span 4}.c1-5{grid-column:1/span 5}.c1-6{grid-column:1/span 6}
+.c1-7{grid-column:1/span 7}.c1-12{grid-column:1/span 12}
+.c7-12{grid-column:7/span 6}.c8-12{grid-column:8/span 5}.c9-12{grid-column:9/span 4}
+.row{display:flex;gap:24px;align-items:flex-start}
+.hrule{height:1px;background:var(--line);margin:16px 0}
+.hrule.dot{background:var(--line2)}
+.keyline{width:52px;height:3px;background:var(--accent);margin:14px 0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px}
+.note\boxed{border-left:3px solid var(--accent);padding:2px 0 2px 14px}
+.warm\boxed{background:var(--amber-soft);border-radius:6px;padding:14px 18px}
+
+/* ---------- annotation ---------- */
+.hand{position:absolute;font:400 21px/1.42 var(--hand);color:var(--accent);transform:rotate(-1.5deg);max-width:300px;z-index:5}
+.hand[data-at]{opacity:1;clip-path:inset(0 100% 0 0);transition:clip-path .38s ease-out}
+.hand[data-at].on{clip-path:inset(0 -20% 0 0)}
+.hand:before{content:'';display:block;width:26px;height:2px;background:var(--accent);margin-bottom:8px}
+
+/* ---------- motion ---------- */
+[data-seq]:not(.dpcell):not(.path):not(td.dp),[data-at]:not(.hand){opacity:0;transition:opacity .32s cubic-bezier(.22,1,.36,1),transform .32s cubic-bezier(.22,1,.36,1)}
+[data-seq].on:not(.dpcell):not(.path):not(td.dp),[data-at].on:not(.hand){opacity:1}
+.rise{transform:translateY(10px)}.rise.on{transform:none}
+.path{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:miter;
+  stroke-dasharray:var(--len);stroke-dashoffset:var(--len);transition:stroke-dashoffset .7s cubic-bezier(.16,1,.3,1)}
+.path.on{stroke-dashoffset:0}
+.arw{fill:none;stroke:#8A6E52;stroke-width:1.5}
+.arw.hot{stroke:#E2542A;stroke-width:2.5}
+.svgtxt{font:500 12px var(--mono);fill:var(--ink)}
+.svgtxtb{font:700 13px var(--mono);fill:var(--ink)}
+.svgtxtv{font:700 14px var(--mono);fill:var(--accent)}
+.svgm{font:500 10px var(--mono);fill:var(--muted);letter-spacing:.12em}
+.node{fill:#FDEECC;stroke:#E2542A;stroke-width:1.5}
+.node.hot{fill:#F9D3C4;stroke-width:2.5}
+.node.plain{fill:#FFFFFF;stroke:#EEDDC2}
+.edge{stroke:#C9AF8C;stroke-width:2}
+
+/* ---------- dp cells ---------- */
+.seq{display:flex;gap:4px;align-items:flex-end}
+.dpcell{width:44px;height:42px;border-radius:4px;background:var(--panel);border:1px solid var(--line);
+  display:grid;place-items:center;font:600 15px/1 var(--mono);color:var(--ink);
+  transition:background .22s ease-out,color .22s ease-out,border-color .22s ease-out}
+.dpcell i{font-style:normal;opacity:0;transition:opacity .12s ease-out}
+.dpcell.on{background:var(--amber-soft);border-color:var(--amber)}
+.dpcell.on i{opacity:1}
+.dpcell.on.cur{animation:flash .9s ease-out}
+@keyframes flash{0%,42%{background:var(--accent);color:#FFF8EF;border-color:var(--accent)}
+  100%{background:var(--amber-soft);color:var(--ink);border-color:var(--amber)}}
+.seq-lbl{font:500 11px/1 var(--mono);color:var(--muted);margin-right:14px;width:82px;text-align:right;padding-bottom:13px}
+
+/* ---------- tables ---------- */
+table.t{border-collapse:collapse;width:100%}
+table.t th{font:500 10px/1.2 var(--mono);letter-spacing:.16em;color:var(--muted);text-align:left;
+  padding:8px 10px;border-bottom:1.5px solid var(--accent);text-transform:uppercase}
+table.t td{padding:8px 10px;border-bottom:1px solid var(--line2);font-size:14px;line-height:1.62;vertical-align:top}
+table.t tr:last-child td{border-bottom:none}
+table.t td.k{font-family:var(--mono);font-size:13px;font-weight:600;white-space:nowrap}
+table.m{border-collapse:collapse}
+table.m th{font:500 10px/1.2 var(--mono);letter-spacing:.12em;color:var(--muted);padding:6px 4px;text-transform:uppercase}
+table.m th.rl{text-align:right;padding-right:12px;letter-spacing:.04em;font-size:11px;color:var(--ink);white-space:nowrap}
+table.m td.dp{width:52px;height:36px;text-align:center;font:600 14px/1 var(--mono);color:var(--ink);
+  border-radius:3px;border:1px solid var(--line2);opacity:.13;transition:opacity .12s ease-out,background-color .24s ease-out}
+table.m td.dp.on{opacity:1;background:var(--amber-soft);border-color:var(--amber)}
+table.m td.dp.on.cur{animation:flash .9s ease-out}
+table.m td.hd{font:500 10px var(--mono);color:var(--muted)}
+table.m td.void{border:none}
+
+/* ---------- code ---------- */
+.code{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.cbar{height:32px;background:#3B2B1E;color:#FFF8EF;display:flex;align-items:center;gap:10px;padding:0 12px}
+.cf{flex:1;font:500 11px/1 var(--mono);letter-spacing:.12em}
+.mini{background:none;border:1px solid rgba(255,248,239,.34);color:#FFF8EF;font:500 10px/1 var(--mono);
+  padding:5px 8px;border-radius:3px;cursor:pointer;letter-spacing:.08em;transition:background .18s,border-color .18s}
+.mini:hover{background:var(--accent);border-color:var(--accent)}
+ol.cl{position:relative;list-style:none;counter-reset:l;padding:10px 0 12px}
+ol.cl li{counter-increment:l;position:relative;padding:1px 14px 1px 56px;font:400 14px/1.68 var(--mono);white-space:pre}
+ol.cl li:before{content:counter(l,decimal-leading-zero);position:absolute;left:0;top:1px;width:38px;
+  text-align:right;color:var(--muted);font:500 11px/2.2 var(--mono)}
+ol.cl li.hl{background:rgba(226,84,42,.08);box-shadow:inset 3px 0 0 var(--accent)}
+ol.cl li.hl[data-note]:after{content:attr(data-note);display:block;white-space:normal;
+  font:400 12px/1.55 var(--sans);color:var(--accent);margin:3px 0 6px}
+.k{color:#C0472B;font-weight:700}.fn{color:var(--ink);font-weight:700}
+.n{color:#96662A}.s{color:#6B7A3A}.cm{color:#AF9676;font-style:italic}
+
+/* ---------- misc ---------- */
+.chip{display:inline-block;border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:3px 9px;
+  font:500 11px/1.2 var(--mono);letter-spacing:.1em;color:var(--ink2)}
+.num\boxed{width:36px;height:36px;border-radius:6px;background:var(--accent);color:#FFF8EF;display:grid;place-items:center;
+  font:700 15px/1 var(--mono);flex:none}
+.numbox.alt{background:var(--panel);color:var(--accent);border:1px solid var(--accent)}
+.q{font:500 17px/1.78 var(--sans)}
+.term{font:500 13px/1.5 var(--mono)}
+.link{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(226,84,42,.32)}
+.link:hover{border-color:var(--accent)}
+.watermark{position:absolute;right:-50px;top:110px;font:900 230px/1 var(--serif);color:var(--accent);
+  opacity:.07;pointer-events:none;user-select:none}
+.ans{display:inline-block;background:var(--accent);color:#FFF8EF;padding:3px 10px;border-radius:4px;
+  font:700 13px/1.3 var(--mono)}
+
+/* ---------- jump panel ---------- */
+#panel{position:fixed;inset:0;background:rgba(42,32,24,.94);display:none;z-index:50;padding:44px 52px;overflow:auto}
+#panel.open{display:block}
+#panel h4{font:500 11px/1 var(--mono);letter-spacing:.24em;color:#F0D2A6;margin-bottom:22px}
+#plist{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(238,221,194,.25)}
+#plist button{background:#3B2B1E;border:none;color:#FFF8EF;text-align:left;padding:11px 13px;cursor:pointer;
+  font:400 12.5px/1.5 var(--sans)}
+#plist button span{display:block;font:500 10px/1 var(--mono);letter-spacing:.16em;color:#D2B28C;margin-bottom:5px}
+#plist button:hover{background:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="deck">
+
+<!-- ============ 01 封面 ============ -->
+<section class="slide" data-ch="0" data-stagger="250"
+  data-title="封面 · 倍增"
+  data-rec="up[u][j] = up[ up[u][j-1] ][j-1]"
+  data-eyebrow="ALGO PRIMER / DP-04 · 倍增思想与运用 · 32 页">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-7">
+        <div class="meta rise" data-at="0">从零开始 · 算法入门系列 · 第 04 讲</div>
+        <h2 class="hero rise" data-at="120" style="margin-top:16px">倍 增</h2>
+        <h3 class="disp rise" data-at="250" style="margin-top:12px;color:var(--ink2)">用二进制拆掉 k</h3>
+        <div class="keyline" data-at="380"></div>
+        <p class="lead rise" data-at="440">
+          跳 <b class="v mono">k</b> 步，本来要<b>k 次</b>。<br>
+          把 k 拆成 <b class="v mono">2^a + 2^b + 2^c …</b>，
+          只要 <b class="v mono">log k</b> 次。
+        </p>
+      </div>
+      <div class="c8-12">
+        <svg viewBox="0 0 400 280" width="400" height="280">
+          <defs><marker id="ah0" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-at="700">
+            <circle class="node hot" cx="46" cy="232" r="22"/>
+            <text class="svgtxtv" x="36" y="237">u</text>
+            <path class="edge" d="M68 220 L124 182"/><path class="edge" d="M146 170 L202 132"/>
+            <path class="edge" d="M224 120 L280 82"/><path class="edge" d="M302 70 L358 32"/>
+            <circle class="node plain" cx="135" cy="176" r="18"/>
+            <circle class="node plain" cx="213" cy="126" r="18"/>
+            <circle class="node plain" cx="291" cy="76" r="18"/>
+            <circle class="node plain" cx="358" cy="32" r="18"/>
+          </g>
+          <g data-at="1400">
+            <path class="arw hot" marker-end="url(#ah0)" d="M46 258 Q135 268 135 198"/>
+            <text class="svgtxtv" x="66" y="278">2⁰</text>
+            <path class="arw hot" marker-end="url(#ah0)" d="M46 258 Q213 246 213 148"/>
+            <text class="svgtxtv" x="140" y="262">2¹</text>
+            <path class="arw hot" marker-end="url(#ah0)" d="M46 258 Q291 212 291 98"/>
+            <text class="svgtxtv" x="212" y="238">2²</text>
+            <path class="arw hot" marker-end="url(#ah0)" d="M46 258 Q358 172 358 54"/>
+            <text class="svgtxtv" x="284" y="204">2³</text>
+          </g>
+          <text class="svgm" x="228" y="200">预处理好这些「跳板」</text>
+          <text class="svgm" x="228" y="220">就能跳任意步</text>
+        </svg>
+      </div>
+    </div>
+    <div class="watermark">LIFT</div>
+    <div class="hand" data-at="2800" style="left:110px;top:340px">倍增 = 用「指数级」的跳板拼出任意步</div>
+  </div>
+</section>
+
+<!-- ============ 02 路线图 ============ -->
+<section class="slide" data-ch="1" data-stagger="180"
+  data-title="今天要解决的三个问题"
+  data-rec="为什么慢 → 怎么拆 → 怎么用"
+  data-eyebrow="第一章 · 起点 · 目标：先看全局路线">
+  <div class="stage-inner">
+    <div class="row" style="align-items:stretch">
+      <div data-seq="0" style="width:350px">
+        <div class="numbox">Q1</div>
+        <h4 class="h2" style="margin-top:12px">朴素跳 k 步，慢在哪？</h4>
+        <div class="keyline"></div>
+        <p class="sm">一步一步往上走，一次是 <b class="mono">O(k)</b>。<br>
+          k 和 n 同量级时就是 <b class="mono l">O(n)</b>，<br>
+          做 n 次询问就变 <b class="mono l">O(n²)</b>。<br><br>
+          <b class="v">→ 每一步都重新走，浪费</b></p>
+      </div>
+      <svg width="34" height="110" data-seq="1"><path class="arw" d="M2 10 H24"/><path class="arw" d="M18 6 L27 10 L18 14"/></svg>
+      <div data-seq="1" style="width:350px">
+        <div class="numbox">Q2</div>
+        <h4 class="h2" style="margin-top:12px">怎么把 k 次压成 log k 次？</h4>
+        <div class="keyline"></div>
+        <p class="sm">任何整数都能写成 <b>若干个 2 的幂之和</b>。<br>
+          跳 k 步 = 跳 <b>2^a</b> 步 + 跳 <b>2^b</b> 步 + …<br><br>
+          <b class="v">→ 二进制拆分</b></p>
+      </div>
+      <svg width="34" height="110" data-seq="2"><path class="arw" d="M2 10 H24"/><path class="arw" d="M18 6 L27 10 L18 14"/></svg>
+      <div data-seq="2" style="width:350px">
+        <div class="numbox">Q3</div>
+        <h4 class="h2" style="margin-top:12px">倍增能用在哪？</h4>
+        <div class="keyline"></div>
+        <p class="sm">树上第 k 级祖先、<b>LCA</b>、<br>
+          路径最值、<b>ST 表</b>、序列迭代。<br>
+          只要能预处理「跳 2^j 步」就能用。<br><br>
+          <b class="v">→ 四大场景</b></p>
+      </div>
+    </div>
+    <div class="hrule dot" data-seq="3" style="margin-top:22px"></div>
+    <div class="row" data-seq="4">
+      <div class="chip">一句话</div>
+      <div class="p" style="flex:1">
+        倍增<b>不是一种题型</b>，而是一种<b class="v">加速手段</b>：
+        把「线性枚举」换成「二进制枚举」，再用<b>预处理</b>把每一步变成 O(1)。
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:880px;top:340px">它是「手段」不是「题型」，先认清</div>
+  </div>
+</section>
+
+<!-- ============ 03 朴素跳 k 步 ============ -->
+<section class="slide" data-ch="1" data-stagger="180"
+  data-title="先看朴素做法：一步一步跳"
+  data-rec="for _ in range(k): u = parent(u)"
+  data-eyebrow="第一章 · 起点 · 目标：看清问题本身">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:500px">
+        <h4 class="q">问题：树上第 k 级祖先是谁？</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          给定一棵树和节点 <span class="mono">u</span>，<br>
+          问 <span class="mono">u</span> 往上数第 <span class="mono">k</span> 个祖先是谁。
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>朴素做法</b><br>
+            <span class="mono">for _ in range(k): u = parent[u]</span><br>
+            时间 <b class="mono l">O(k)</b>，最坏 <b class="mono l">O(n)</b>。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>慢在哪？</b><br>
+            跳 10 步 = 走 10 次 <span class="mono">parent</span>。<br>
+            但中间每一步的<b>结果都没被记住</b>，下次还得从头走。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term">时间 <b class="l mono">O(nq)</b></div>
+          <div class="term">空间 <b class="g mono">O(n)</b></div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 560 300" width="560" height="300">
+          <defs><marker id="ah1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#8A6E52"/></marker></defs>
+          <g data-seq="0">
+            <circle class="node hot" cx="42" cy="170" r="20"/><text class="svgtxtv" x="34" y="175">u</text>
+            <g class="node plain">
+              <circle cx="110" cy="170" r="17"/><circle cx="178" cy="170" r="17"/><circle cx="246" cy="170" r="17"/>
+              <circle cx="314" cy="170" r="17"/><circle cx="382" cy="170" r="17"/><circle cx="450" cy="170" r="17"/>
+              <circle cx="518" cy="170" r="17"/>
+            </g>
+            <g class="arw" marker-end="url(#ah1)">
+              <path d="M64 170 H92"/><path d="M132 170 H160"/><path d="M200 170 H228"/><path d="M268 170 H296"/>
+              <path d="M336 170 H364"/><path d="M404 170 H432"/><path d="M472 170 H500"/>
+            </g>
+          </g>
+          <g data-seq="1">
+            <text class="svgm" x="36" y="146">1</text><text class="svgm" x="104" y="146">2</text>
+            <text class="svgm" x="172" y="146">3</text><text class="svgm" x="240" y="146">4</text>
+            <text class="svgm" x="308" y="146">5</text><text class="svgm" x="376" y="146">6</text>
+            <text class="svgm" x="444" y="146">7</text>
+            <text class="svgtxtv" x="222" y="228">跳 7 步 = 走 7 次 parent</text>
+          </g>
+          <g data-seq="2">
+            <path class="arw" stroke="#E2542A" stroke-width="2.5" marker-end="url(#ah1)" d="M42 258 V208"/>
+            <text class="svgtxtv" x="62" y="262">能不能记下来？</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">每步的结果都扔掉了，太可惜</div>
+  </div>
+</section>
+
+<!-- ============ 04 二进制拆分 ============ -->
+<section class="slide" data-ch="1" data-stagger="170"
+  data-title="关键转变：把 k 拆成二进制"
+  data-rec="k = 2^a + 2^b + 2^c"
+  data-eyebrow="第一章 · 起点 · 目标：看懂「为何要转变」">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <h4 class="q">任意整数都是 2 的幂之和</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:17px;line-height:2">
+            13 = <b class="v">8 + 4 + 1</b><br>
+            &nbsp;&nbsp;&nbsp;= <b class="v">2³ + 2² + 2⁰</b><br>
+            &nbsp;&nbsp;&nbsp;= 1101<sub>(2)</sub>
+          </div>
+        </div>
+        <p class="sm" style="margin-top:16px">
+          <b>所以：</b>跳 13 步<br>
+          = 跳 <b>8</b> 步 → 再跳 <b>4</b> 步 → 再跳 <b>1</b> 步。
+        </p>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>效果：</b>13 次操作 → <b>3 次</b>。<br>
+            一般来说，<span class="mono">k</span> 的二进制位数就是
+            <b class="mono">⌊log₂ k⌋ + 1</b>，
+            所以最多 <b class="mono v">log k</b> 次。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 330" width="620" height="330">
+          <defs><marker id="ah2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-seq="0">
+            <circle class="node hot" cx="50" cy="240" r="22"/><text class="svgtxtv" x="42" y="245">u</text>
+            <circle class="node plain" cx="250" cy="240" r="20"/>
+            <circle class="node plain" cx="450" cy="240" r="20"/>
+            <circle class="node plain" cx="580" cy="240" r="20"/><text class="svgtxtv" x="568" y="245">目标</text>
+          </g>
+          <g data-seq="1">
+            <path class="arw hot" marker-end="url(#ah2)" d="M50 212 Q150 138 250 212"/>
+            <text class="svgtxtv" x="128" y="152">跳 2³ = 8</text>
+          </g>
+          <g data-seq="2">
+            <path class="arw hot" marker-end="url(#ah2)" d="M250 212 Q350 168 450 212"/>
+            <text class="svgtxtv" x="328" y="178">跳 2² = 4</text>
+          </g>
+          <g data-seq="3">
+            <path class="arw hot" marker-end="url(#ah2)" d="M450 212 Q515 196 580 212"/>
+            <text class="svgtxtv" x="482" y="202">2⁰ = 1</text>
+          </g>
+          <g data-seq="4">
+            <rect x="30" y="288" width="560" height="36" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxt" x="50" y="312">13 次 → 3 次　　10⁵ 次 → 17 次</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">k 越大，省得越多</div>
+  </div>
+</section>
+
+<!-- ============ 05 核心图像 ============ -->
+<section class="slide" data-ch="1" data-stagger="180"
+  data-title="核心图像：2^j 层「跳板」"
+  data-rec="up[u][j] = 向上 2^j 步到达的点"
+  data-eyebrow="第一章 · 起点 · 目标：建立正确的心智图像">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:470px">
+        <h4 class="q">每个节点，预存 log n 个「跳板」</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:15px;line-height:2">
+            <b>up[u][j]</b> = 从 u 往上走 2<sup>j</sup> 步<br>
+            到达的祖先节点
+          </div>
+        </div>
+        <p class="sm" style="margin-top:16px">
+          <b>j = 0</b> → 走 1 步（就是父亲）<br>
+          <b>j = 1</b> → 走 2 步（祖父）<br>
+          <b>j = 2</b> → 走 4 步<br>
+          <b>j = 3</b> → 走 8 步，…
+        </p>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>一共要存几层？</b><br>
+            n 个节点最多跳 <span class="mono">n-1</span> 步，
+            所以 <b class="mono v">LOG = ⌈log₂ n⌉</b>。<br>
+            n = 10⁵ → LOG ≈ 17；n = 10⁶ → LOG ≈ 20。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term">空间 <b class="v mono">O(n log n)</b></div>
+          <div class="term">n = 10⁵ 约 170 万格</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 600 340" width="600" height="340">
+          <defs><marker id="ah3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-seq="0">
+            <path class="edge" d="M80 260 L180 212"/><path class="edge" d="M180 212 L280 164"/>
+            <path class="edge" d="M280 164 L380 116"/><path class="edge" d="M380 116 L480 68"/>
+            <circle class="node hot" cx="80" cy="282" r="24"/><text class="svgtxtv" x="72" y="287">u</text>
+            <circle class="node" cx="180" cy="212" r="20"/><text class="svgtxtb" x="172" y="217">p</text>
+            <circle class="node" cx="280" cy="164" r="20"/><text class="svgtxtb" x="272" y="169">pp</text>
+            <circle class="node" cx="380" cy="116" r="20"/><text class="svgtxtb" x="370" y="121">×4</text>
+            <circle class="node" cx="480" cy="68" r="20"/><text class="svgtxtb" x="470" y="73">×8</text>
+          </g>
+          <g data-seq="1">
+            <path class="arw hot" marker-end="url(#ah3)" d="M80 262 Q130 240 180 232"/>
+            <text class="svgtxtv" x="106" y="252">j=0</text>
+            <path class="arw hot" marker-end="url(#ah3)" d="M80 262 Q180 246 280 184"/>
+            <text class="svgtxtv" x="160" y="266">j=1</text>
+            <path class="arw hot" marker-end="url(#ah3)" d="M80 262 Q230 236 380 136"/>
+            <text class="svgtxtv" x="222" y="282">j=2</text>
+            <path class="arw hot" marker-end="url(#ah3)" d="M80 262 Q280 218 480 88"/>
+            <text class="svgtxtv" x="286" y="302">j=3</text>
+          </g>
+          <text class="svgm" x="20" y="332">跳板一层比一层长一倍，正好覆盖所有步数</text>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">「一倍一倍往上长」，这就是倍增的名字</div>
+  </div>
+</section>
+
+<!-- ============ 06 状态与转移 ============ -->
+<section class="slide" data-ch="1" data-stagger="180"
+  data-title="状态与转移：两行搞定"
+  data-rec="up[u][j] = up[ up[u][j-1] ][j-1]"
+  data-eyebrow="第一章 · 起点 · 目标：写出转移式">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <div class="meta">第 1 步 · 定状态</div>
+        <h4 class="h2" style="margin-top:12px">up[u][j] 是什么？</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:15px;line-height:2">
+            up[u][j] = 从 u 往上<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;走 2<sup>j</sup> 步<br>
+            到达的祖先
+          </div>
+        </div>
+        <div class="meta" style="margin-top:22px">第 2 步 · 定边界</div>
+        <div class="notebox" style="margin-top:10px">
+          <div class="sm"><b>j = 0</b>：走 1 步，就是<u>父亲</u>。<br>
+            所以 <span class="mono v">up[u][0] = parent(u)</span>。<br><br>
+            <b>往上没有了</b>：设为 <span class="mono">-1</span>，
+            后面用它当哨兵。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <div class="meta">第 3 步 · 定转移</div>
+        <h4 class="h2" style="margin-top:12px">为什么要「跳两次一半」？</h4>
+        <div class="keyline"></div>
+        <svg viewBox="0 0 620 220" width="620" height="220">
+          <defs><marker id="ah4" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-seq="0">
+            <circle class="node hot" cx="60" cy="150" r="22"/><text class="svgtxtv" x="50" y="155">u</text>
+            <circle class="node plain" cx="310" cy="150" r="20"/><text class="svgtxtb" x="296" y="155">mid</text>
+            <circle class="node plain" cx="560" cy="150" r="20"/><text class="svgtxtv" x="548" y="155">2ʲ</text>
+          </g>
+          <g data-seq="1">
+            <path class="arw hot" marker-end="url(#ah4)" d="M60 122 Q185 72 310 122"/>
+            <text class="svgtxtv" x="150" y="86">2^(j-1)</text>
+            <path class="arw hot" marker-end="url(#ah4)" d="M310 122 Q435 72 560 122"/>
+            <text class="svgtxtv" x="400" y="86">2^(j-1)</text>
+          </g>
+          <g data-seq="2">
+            <path class="arw hot" marker-end="url(#ah4)" d="M60 178 Q310 218 560 178"/>
+            <text class="svgtxtv" x="272" y="212">2^j = 2^(j-1) + 2^(j-1)</text>
+          </g>
+        </svg>
+        <div class="warmbox" style="margin-top:12px">
+          <div class="mono" style="font-size:16px;line-height:1.9">
+            up[u][j] = up[ <b class="v">up[u][j-1]</b> ][<b class="v">j-1</b>]
+          </div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>一句话记忆：</b>
+            <b>先跳一半到 mid，再从 mid 跳一半。</b><br>
+            中间点就是 <span class="mono">up[u][j-1]</span>。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">转移式天然「自下而上」填表</div>
+  </div>
+</section>
+
+<!-- ============ 07 手推 up 表 ============ -->
+<section class="slide" data-ch="2" data-stagger="110"
+  data-title="手推：给一棵树填 up 表"
+  data-rec="up[u][j] = up[ up[u][j-1] ][j-1]"
+  data-eyebrow="第二章 · 首例 · 目标：亲手填一次表">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:480px">
+        <svg viewBox="0 0 460 320" width="460" height="320">
+          <path class="edge" d="M230 44 L130 108"/><path class="edge" d="M230 44 L330 108"/>
+          <path class="edge" d="M130 108 L86 178"/><path class="edge" d="M130 108 L174 178"/>
+          <path class="edge" d="M330 108 L330 178"/><path class="edge" d="M174 178 L174 248"/>
+          <circle class="node hot" cx="230" cy="24" r="22"/><circle class="node" cx="130" cy="128" r="22"/>
+          <circle class="node" cx="330" cy="128" r="22"/><circle class="node" cx="86" cy="198" r="20"/>
+          <circle class="node" cx="174" cy="198" r="20"/><circle class="node" cx="330" cy="198" r="20"/>
+          <circle class="node" cx="174" cy="268" r="20"/>
+          <g class="svgtxtb"><text x="222" y="29">1</text><text x="122" y="133">2</text>
+            <text x="322" y="133">3</text><text x="78" y="203">4</text><text x="166" y="203">5</text>
+            <text x="322" y="203">6</text><text x="166" y="273">7</text></g>
+          <text class="svgm" x="10" y="312">n = 7，LOG = 3（2² = 4 ≤ 7 &lt; 8 = 2³）</text>
+        </svg>
+      </div>
+      <div style="flex:1">
+        <div class="meta">up 表 · −1 表示「没有了」</div>
+        <table class="m" style="margin-top:12px">
+          <tr><th class="rl">u \ j</th><th>2⁰ = 1</th><th>2¹ = 2</th><th>2² = 4</th></tr>
+          <tr data-seq="0"><td class="hd" style="text-align:right;padding-right:12px">1 (root)</td>
+            <td class="dp">-1</td><td class="dp">-1</td><td class="dp">-1</td></tr>
+          <tr data-seq="1"><td class="hd" style="text-align:right;padding-right:12px">2</td>
+            <td class="dp">1</td><td class="dp">-1</td><td class="dp">-1</td></tr>
+          <tr data-seq="2"><td class="hd" style="text-align:right;padding-right:12px">3</td>
+            <td class="dp">1</td><td class="dp">-1</td><td class="dp">-1</td></tr>
+          <tr data-seq="3"><td class="hd" style="text-align:right;padding-right:12px">4</td>
+            <td class="dp">2</td><td class="dp">1</td><td class="dp">-1</td></tr>
+          <tr data-seq="4"><td class="hd" style="text-align:right;padding-right:12px">5</td>
+            <td class="dp">2</td><td class="dp">1</td><td class="dp">-1</td></tr>
+          <tr data-seq="5"><td class="hd" style="text-align:right;padding-right:12px">6</td>
+            <td class="dp">3</td><td class="dp">1</td><td class="dp">-1</td></tr>
+          <tr data-seq="6"><td class="hd" style="text-align:right;padding-right:12px">7</td>
+            <td class="dp">5</td><td class="dp">2</td><td class="dp">1</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>验证第 7 行：</b><br>
+            <span class="mono">up[7][0] = 5</span>（父亲）<br>
+            <span class="mono">up[7][1] = up[ up[7][0] ][0] = up[5][0] = 2</span><br>
+            <span class="mono">up[7][2] = up[ up[7][1] ][1] = up[2][1] = 1</span> ✓</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">第 7 行：5 → 2 → 1，正好 4 步到根</div>
+  </div>
+</section>
+
+<!-- ============ 08 模板代码 ============ -->
+<section class="slide" data-ch="2" data-stagger="150"
+  data-title="倍增模板代码（Python）"
+  data-rec="LOG = n.bit_length()"
+  data-eyebrow="第二章 · 首例 · 目标：拿到可复用的模板">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.3">
+        <div class="cbar"><span class="cf">build_lifting.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>import sys</li>
+<li>sys.setrecursionlimit(10 ** 6)</li>
+<li>input = sys.stdin.readline</li>
+<li>&nbsp;</li>
+<li>n = int(input())</li>
+<li>g = [[] for _ in range(n + 1)]</li>
+<li>for _ in range(n - 1):</li>
+<li>    a, b = map(int, input().split())</li>
+<li>    g[a].append(b); g[b].append(a)</li>
+<li>&nbsp;</li>
+<li class="hl" data-note="n.bit_length() = ⌈log2(n+1)⌉，比手写 log 稳，不会取小">LOG = (n + 1).bit_length()</li>
+<li>up = [[0] * LOG for _ in range(n + 1)]</li>
+<li>depth = [0] * (n + 1)</li>
+<li>&nbsp;</li>
+<li class="hl" data-note="BFS 建树：先确定父节点，再填 up 表">from collections import deque</li>
+<li>q = deque([1])          # 1 号当根</li>
+<li>depth[1] = 0</li>
+<li>up[1][0] = 0            # 0 表示「没有祖先」</li>
+<li>while q:</li>
+<li>    u = q.popleft()</li>
+<li class="hl" data-note="转移：先跳一半到 up[u][j-1]，再从那儿跳一半">    for j in range(1, LOG):</li>
+<li>        up[u][j] = up[up[u][j - 1]][j - 1]</li>
+<li>    for v in g[u]:</li>
+<li>        if v == up[u][0]: continue</li>
+<li>        depth[v] = depth[u] + 1</li>
+<li>        up[v][0] = u</li>
+<li>        q.append(v)</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">四步法 · 模板的骨架</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:130px">步骤</th><th>做什么</th></tr>
+          <tr><td class="k">① 定状态</td><td><span class="mono">up[u][j]</span> = 往上 2<sup>j</sup> 步的祖先</td></tr>
+          <tr><td class="k">② 定边界</td><td><span class="mono">up[u][0] = parent</span>，根设 0 / −1</td></tr>
+          <tr><td class="k">③ 定转移</td><td><span class="mono">up[u][j] = up[up[u][j-1]][j-1]</span></td></tr>
+          <tr><td class="k">④ 定顺序</td><td>j 从小到大（<b>层序</b>填）</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>为什么 j 要从小到大？</b><br>
+            因为 <span class="mono">up[u][j]</span> 依赖
+            <span class="mono">up[u][j-1]</span> 和
+            <span class="mono">up[mid][j-1]</span>，
+            都是「<b>更小的 j</b>」。<br>
+            这就是「<b>层序填表</b>」，和区间 DP 的「按长度」是同一件事。</div>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>用 <span class="mono">0</span> 还是 <span class="mono">-1</span> 当哨兵？</b><br>
+            Python 里 <span class="mono">up[0][j]</span> 必须先建好（全 0），
+            否则会 <span class="mono l">IndexError</span>。<br>
+            建议 <b>0 行全填 0</b>，最省事。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">用 bit_length，绝不会把 LOG 取小</div>
+  </div>
+</section>
+
+<!-- ============ 09 应用一：k 级祖先 ============ -->
+<section class="slide" data-ch="2" data-stagger="170"
+  data-desc="n 个节点组成一棵树（节点编号 0..n-1）；每次查询(k, node) 返回 node 的第 k 级祖先，不存在返回 -1。"
+  data-title="应用一：树上第 k 级祖先"
+  data-rec="for j: if k>>j & 1: u = up[u][j]"
+  data-eyebrow="第二章 · 首例 · 目标：把倍增用起来">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">LeetCode 1483 · Kth Ancestor of a Tree Node</div>
+        <h4 class="q" style="margin-top:10px">查询：<span class="mono">k = 5, node = 7</span></h4>
+        <svg viewBox="0 0 500 280" width="500" height="280" style="margin-top:8px">
+          <defs><marker id="ah5" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#E2542A"/></marker></defs>
+          <path class="edge" d="M250 42 L130 100"/><path class="edge" d="M250 42 L370 100"/>
+          <path class="edge" d="M130 100 L80 158"/><path class="edge" d="M130 100 L180 158"/>
+          <path class="edge" d="M370 100 L330 158"/><path class="edge" d="M370 100 L430 158"/>
+          <path class="edge" d="M330 158 L330 216"/>
+          <circle class="node hot" cx="250" cy="22" r="22"/><circle class="node" cx="130" cy="120" r="20"/>
+          <circle class="node" cx="370" cy="120" r="20"/><circle class="node plain" cx="80" cy="178" r="18"/>
+          <circle class="node plain" cx="180" cy="178" r="18"/><circle class="node" cx="330" cy="178" r="20"/>
+          <circle class="node plain" cx="430" cy="178" r="18"/><circle class="node hot" cx="330" cy="236" r="20"/>
+          <g class="svgtxtb"><text x="242" y="27">0</text><text x="122" y="125">1</text>
+            <text x="362" y="125">2</text><text x="72" y="183">3</text><text x="172" y="183">4</text>
+            <text x="322" y="183">5</text><text x="422" y="183">6</text><text x="322" y="241">7</text></g>
+          <g data-seq="0">
+            <path class="arw hot" marker-end="url(#ah5)" d="M330 214 V196"/>
+            <text class="svgtxtv" x="268" y="212">2⁰</text>
+            <path class="arw hot" marker-end="url(#ah5)" d="M348 236 Q386 216 386 132"/>
+            <text class="svgtxtv" x="392" y="196">2¹</text>
+          </g>
+          <text class="svgtxtv" x="10" y="272">5 = 4 + 1，跳两次就到祖先 2</text>
+        </svg>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">跳法：按二进制位走</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:15px;line-height:2">
+            k = 5 = 101<sub>(2)</sub><br><br>
+            j=0：k 的第 0 位 = 1 → <b class="v">跳 1 步</b><br>
+            j=1：k 的第 1 位 = 0 → 跳过<br>
+            j=2：k 的第 2 位 = 1 → <b class="v">跳 4 步</b>
+          </div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>关键点：</b>每一位单独看，<b>互不干扰</b>。<br>
+            因为 2 的幂之和<b>不会重复也不会遗漏</b>，
+            所以顺序（高位→低位 / 低位→高位）<b>都对</b>，结果一样。</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="term">时间 <b class="g mono">O(log k)</b></div>
+          <div class="term">预处理 <b class="g mono">O(n log n)</b></div>
+          <div class="term">空间 <b class="g mono">O(n log n)</b></div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/kth-ancestor-of-a-tree-node/" target="_blank">LC 1483</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">看 k 的二进制位，为 1 才跳</div>
+  </div>
+</section>
+
+<!-- ============ 10 代码与手推 ============ -->
+<section class="slide" data-ch="2" data-stagger="150"
+  data-desc="n 个节点组成一棵树；查询(k, node) 返回 node 的第 k 级祖先，不存在返回 -1。"
+  data-title="代码与手推：第 k 级祖先"
+  data-rec="if k >> j & 1: u = up[u][j]"
+  data-eyebrow="第二章 · 首例 · 目标：写出可提交的代码">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.3">
+        <div class="cbar"><span class="cf">kth_ancestor.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>class TreeAncestor:</li>
+<li>    def __init__(self, n, parent):</li>
+<li>        self.LOG = (n + 1).bit_length()</li>
+<li>        up = [[0] * self.LOG for _ in range(n)]</li>
+<li>        for i in range(n):</li>
+<li>            up[i][0] = parent[i] if parent[i] != -1 else 0</li>
+<li>        for j in range(1, self.LOG):</li>
+<li class="hl" data-note="和树上一样：先跳一半，再跳一半">            for i in range(n):</li>
+<li>                up[i][j] = up[up[i][j - 1]][j - 1]</li>
+<li>        self.up = up</li>
+<li>&nbsp;</li>
+<li>    def getKthAncestor(self, node, k):</li>
+<li class="hl" data-note="按位判断：k 的第 j 位为 1，就跳 2^j 步">        u = node</li>
+<li>        for j in range(self.LOG):</li>
+<li>            if (k >> j) & 1:</li>
+<li class="hl" data-note="跳到 0（哨兵）说明没祖先了，提前退出">                u = self.up[u][j]</li>
+<li>                if u == 0:</li>
+<li>                    return -1</li>
+<li>        return u</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">手推 · node = 7, k = 5</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:60px">j</th><th style="width:110px">k 的第 j 位</th><th>动作</th><th>当前 u</th></tr>
+          <tr data-seq="0"><td class="k">0</td><td class="k">1</td><td class="mono">u = up[7][0]</td><td class="mono v">5</td></tr>
+          <tr data-seq="1"><td class="k">1</td><td class="k">0</td><td>跳过</td><td class="mono v">5</td></tr>
+          <tr data-seq="2"><td class="k">2</td><td class="k">1</td><td class="mono">u = up[5][2]</td><td class="mono v">1</td></tr>
+          <tr data-seq="3"><td class="k">3+</td><td class="k">0</td><td>跳过</td><td class="mono v">1</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>结果：</b><span class="mono v">1</span> ——
+            7 往上数第 5 个就是节点 1。<br>
+            <b>核对：</b>7 → 5 → 2 → 1，一共 4 步？不对，看下一行。</div>
+        </div>
+        <div class="notebox" style="margin-top:14px">
+          <div class="sm">7 的第 1 级 = 5，第 2 级 = 2，第 3 级 = 1，
+            <b>第 4、5 级都不存在</b>。<br>
+            所以这题样例里 <span class="mono">k = 5</span> 应返回
+            <b class="mono l">-1</b>。<br>
+            <b>把这行留给听众当练习</b>：改成 k = 3 再推一次。
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">边推边核对，别信直觉</div>
+  </div>
+</section>
+
+<!-- ============ 11 为什么需要 LCA ============ -->
+<section class="slide" data-ch="3" data-stagger="180"
+  data-title="为什么人人都需要 LCA？"
+  data-rec="path(u,v) = path(u,lca) + path(lca,v)"
+  data-eyebrow="第三章 · 经典 · 目标：看懂 LCA 的价值">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">树上「两点之间的路径」怎么描述？</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          树上任意两点之间<b>只有一条</b>路径。<br>
+          而这条路径一定<b>经过它们的最近公共祖先</b>（LCA）。
+        </p>
+        <svg viewBox="0 0 500 290" width="500" height="290" style="margin-top:6px">
+          <defs><marker id="ah6" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#E2542A"/></marker></defs>
+          <path class="edge" d="M250 46 L130 108"/><path class="edge" d="M250 46 L370 108"/>
+          <path class="edge" d="M130 108 L86 168"/><path class="edge" d="M130 108 L180 168"/>
+          <path class="edge" d="M370 108 L326 168"/><path class="edge" d="M370 108 L414 168"/>
+          <path class="edge" d="M86 168 L86 228"/><path class="edge" d="M414 168 L414 228"/>
+          <circle class="node plain" cx="250" cy="26" r="20"/><circle class="node" cx="130" cy="128" r="20"/>
+          <circle class="node hot" cx="370" cy="128" r="22"/><circle class="node plain" cx="86" cy="188" r="18"/>
+          <circle class="node plain" cx="180" cy="188" r="18"/><circle class="node plain" cx="326" cy="188" r="18"/>
+          <circle class="node plain" cx="414" cy="188" r="18"/>
+          <circle class="node hot" cx="86" cy="248" r="20"/><circle class="node hot" cx="414" cy="248" r="20"/>
+          <path class="path" data-draw="1300" d="M86 248 L86 188 L130 128 L250 26 L370 128 L414 188 L414 248"/>
+          <text class="svgtxtv" x="372" y="112">LCA</text>
+          <text class="svgtxtv" x="10" y="282">u = 86 上的叶子，v = 414 上的叶子</text>
+        </svg>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">有了 LCA，能干一堆事</h4>
+        <div class="keyline"></div>
+        <table class="t">
+          <tr><th style="width:150px">想求的东西</th><th>怎么用 LCA</th></tr>
+          <tr><td class="k">路径长度</td><td class="mono">depth[u] + depth[v] − 2·depth[lca]</td></tr>
+          <tr><td class="k">路径最值</td><td>u → lca 与 v → lca 两段合并</td></tr>
+          <tr><td class="k">路径和</td><td>前缀和相减</td></tr>
+          <tr><td class="k">路径异或</td><td>异或前缀和相减</td></tr>
+          <tr><td class="k">第 k 级祖先</td><td>倍增模板直接用</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>为什么说 LCA 是树上问题的「万能钥匙」？</b><br>
+            因为树上两点路径的问题，几乎<b>都能拆成「两段向上的路径」</b>。<br>
+            而「向上走」正是倍增最擅长的事。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm">所以这一讲的主线是：<br>
+            <b>倍增 → 第 k 级祖先 → LCA → 路径问题</b>，一条链走到底。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">树上路径 = 两段「向上走」</div>
+  </div>
+</section>
+
+<!-- ============ 12 朴素 LCA 的问题 ============ -->
+<section class="slide" data-ch="3" data-stagger="170"
+  data-desc="给定一棵树和多组 (u, v) 查询，求 u 和 v 的最近公共祖先。"
+  data-title="朴素 LCA：能用，但会超时"
+  data-rec="while u != v: 把深的往上跳"
+  data-eyebrow="第三章 · 经典 · 目标：看清朴素做法的缺陷">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:500px">
+        <h4 class="q">朴素思路：让它们「会合」</h4>
+        <div class="keyline"></div>
+        <div class="mono" style="font-size:14px;line-height:2">
+          # 1. 把更深的那个抬上来<br>
+          while depth[u] &gt; depth[v]: u = parent(u)<br>
+          while depth[v] &gt; depth[u]: v = parent(v)<br><br>
+          # 2. 一起往上走，直到相遇<br>
+          while u != v:<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;u = parent(u)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;v = parent(v)<br>
+          return u
+        </div>
+      </div>
+      <div style="flex:1">
+        <h4 class="q">它对，但太慢</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="sm">
+            最坏情况：树退化成<b>一条链</b>。<br>
+            u 在链尾，v 在链头 → 要走 <b class="mono l">O(n)</b> 步。<br><br>
+            做 <b class="mono">q</b> 次查询 → <b class="mono l">O(nq)</b>。<br>
+            n = q = 10⁵ 时是 10¹⁰ 次操作，<b>必然超时</b>。
+          </div>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>问题的根源：</b><br>
+            「<b>一步一步往上跳</b>」这件事本身太慢。<br><br>
+            <b>怎么办？</b>用倍增：<br>
+            · 第 1 步的「抬升深度」→ <b>二进制拆分</b>，O(log)<br>
+            · 第 2 步的「一起走」→ <b>从高到低试跳</b>，O(log)</div>
+        </div>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>朴素做法也有用武之地：</b><br>
+            树小（n ≤ 2000）、查询少（q ≤ 2000）时，<br>
+            朴素写法<b>更快写完</b>，先拿部分分。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">卡住的永远是「一步一步跳」</div>
+  </div>
+</section>
+
+<!-- ============ 13 LCA 倍增：对齐深度 ============ -->
+<section class="slide" data-ch="3" data-stagger="180"
+  data-desc="给定一棵树和多组 (u, v) 查询，求 u 和 v 的最近公共祖先。"
+  data-title="第一步：把深度对齐"
+  data-rec="diff = depth[u] − depth[v]"
+  data-eyebrow="第三章 · 经典 · 目标：看懂「先抬升」">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <h4 class="q">目标：把 u 抬到和 v 同一深度</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          设 <span class="mono">u</span> 更深。<br>
+          需要往上走 <span class="mono">diff = depth[u] − depth[v]</span> 步。
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>倍增抬升</b>（和第 k 级祖先<b>完全一样</b>）<br>
+            <span class="mono">u = kth_ancestor(u, diff)</span></div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>抬起之后：</b><br>
+            · 如果 <span class="mono">u == v</span>，那 v 本来就是 u 的祖先，<b>直接返回</b>。<br>
+            · 否则，u 和 v 现在在<b>同一层</b>，但还不是同一个点。</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="term">对齐 <b class="g mono">O(log n)</b></div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 340" width="620" height="340">
+          <defs><marker id="ah7" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-seq="0">
+            <circle class="node plain" cx="310" cy="30" r="20"/><text class="svgtxtb" x="302" y="35">L</text>
+            <circle class="node plain" cx="180" cy="110" r="20"/>
+            <circle class="node plain" cx="440" cy="110" r="20"/>
+            <circle class="node plain" cx="440" cy="190" r="20"/>
+            <circle class="node hot" cx="120" cy="190" r="20"/><text class="svgtxtv" x="112" y="195">u</text>
+            <circle class="node hot" cx="440" cy="270" r="20"/><text class="svgtxtv" x="432" y="275">v</text>
+            <path class="edge" d="M310 50 L180 90"/><path class="edge" d="M310 50 L440 90"/>
+            <path class="edge" d="M180 130 L120 170"/><path class="edge" d="M440 130 L440 170"/>
+            <path class="edge" d="M440 210 L440 250"/>
+            <text class="svgm" x="20" y="308">depth[u] = 3，depth[v] = 2　→　diff = 1</text>
+          </g>
+          <g data-seq="1">
+            <path class="arw hot" marker-end="url(#ah7)" d="M120 168 Q150 140 180 128"/>
+            <text class="svgtxtv" x="60" y="152">u 上抬 diff = 1</text>
+          </g>
+          <g data-seq="2">
+            <circle class="node hot" cx="180" cy="110" r="22" fill="#F9D3C4"/>
+            <text class="svgtxtv" x="196" y="106">u 抬到同层</text>
+            <text class="svgm" x="196" y="126">u 和 v 不同，继续</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">抬升这一步，就是第 k 级祖先</div>
+  </div>
+</section>
+
+<!-- ============ 14 LCA 倍增：一起跳 ============ -->
+<section class="slide" data-ch="3" data-stagger="170"
+  data-desc="给定一棵树和多组 (u, v) 查询，求 u 和 v 的最近公共祖先。"
+  data-title="第二步：从高到低，一起往上跳"
+  data-rec="if up[u][j] != up[v][j]: u = up[u][j]; v = up[v][j]"
+  data-eyebrow="第三章 · 经典 · 目标：看懂「二分跳」">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">核心想法：从大跳板开始试</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="sm">
+            从 <b class="mono">j = LOG-1</b> 到 <b class="mono">0</b>，<b>从高到低</b>：<br><br>
+            如果 <span class="mono">up[u][j] != up[v][j]</span><br>
+            → 说明跳 2<sup>j</sup> 步<b>还不会碰到一起</b>，那就<b>放心跳</b>：<br>
+            &nbsp;&nbsp;<span class="mono">u = up[u][j]; v = up[v][j]</span><br><br>
+            否则，<b>不敢跳</b>，换小一点的跳板。
+          </div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>为什么不直接跳到 LCA？</b><br>
+            因为跳过头就<u>丢答案</u>了。<br>
+            我们只是<b>逼近</b>——跳到 LCA <b>下面一层</b>就停。</div>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>最后一步：</b><br>
+            循环结束后 <span class="mono">u</span> 和 <span class="mono">v</span>
+            是 <b>LCA 的两个孩子</b>。<br>
+            所以 <b class="mono v">LCA = up[u][0]</b>（它们的父亲）。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 340" width="620" height="340">
+          <defs><marker id="ah8" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-seq="0">
+            <circle class="node hot" cx="310" cy="30" r="22"/><text class="svgtxtv" x="296" y="35">LCA</text>
+            <circle class="node plain" cx="150" cy="130" r="20"/><circle class="node plain" cx="470" cy="130" r="20"/>
+            <circle class="node plain" cx="150" cy="230" r="20"/><circle class="node plain" cx="470" cy="230" r="20"/>
+            <circle class="node hot" cx="150" cy="310" r="20"/><text class="svgtxtv" x="136" y="315">u</text>
+            <circle class="node hot" cx="470" cy="310" r="20"/><text class="svgtxtv" x="456" y="315">v</text>
+            <path class="edge" d="M310 52 L150 110"/><path class="edge" d="M310 52 L470 110"/>
+            <path class="edge" d="M150 150 L150 210"/><path class="edge" d="M470 150 L470 210"/>
+            <path class="edge" d="M150 250 L150 290"/><path class="edge" d="M470 250 L470 290"/>
+          </g>
+          <g data-seq="1">
+            <path class="arw" stroke="#F3A33C" stroke-width="3" d="M150 290 V152"/>
+            <path class="arw" stroke="#F3A33C" stroke-width="3" d="M470 290 V152"/>
+            <text class="svgm" x="222" y="196">试 2¹：up 不同 → 跳</text>
+          </g>
+          <g data-seq="2">
+            <path class="arw" stroke="#E2542A" stroke-width="3" d="M150 152 V52"/>
+            <path class="arw" stroke="#E2542A" stroke-width="3" d="M470 152 V52"/>
+            <text class="svgm" x="222" y="102">试 2¹：up 相同 → 不跳</text>
+          </g>
+          <g data-seq="3">
+            <path class="arw hot" marker-end="url(#ah8)" d="M150 132 L292 34"/>
+            <path class="arw hot" marker-end="url(#ah8)" d="M470 132 L328 34"/>
+            <text class="svgtxtv" x="222" y="262">答案 = up[u][0]</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">大跳板先试，跳不过去就换小的</div>
+  </div>
+</section>
+
+<!-- ============ 15 LCA 代码 ============ -->
+<section class="slide" data-ch="3" data-stagger="150"
+  data-desc="给定一棵树和多组 (u, v) 查询，求 u 和 v 的最近公共祖先。"
+  data-title="代码：倍增求 LCA"
+  data-rec="return up[u][0]"
+  data-eyebrow="第三章 · 经典 · 目标：写出可提交的代码">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.3">
+        <div class="cbar"><span class="cf">lca.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>def lca(u, v):</li>
+<li>    if depth[u] &lt; depth[v]: u, v = v, u</li>
+<li class="hl" data-note="① 对齐深度：把 u 抬上来">    diff = depth[u] - depth[v]</li>
+<li>    j = 0</li>
+<li>    while diff:</li>
+<li>        if diff &amp; 1:</li>
+<li>            u = up[u][j]</li>
+<li>        diff &gt;&gt;= 1</li>
+<li>        j += 1</li>
+<li>&nbsp;</li>
+<li>    if u == v: return u</li>
+<li>&nbsp;</li>
+<li class="hl" data-note="② 从高到低试跳：跳了还是不相等就跳">    for j in range(LOG - 1, -1, -1):</li>
+<li>        if up[u][j] != up[v][j]:</li>
+<li>            u = up[u][j]</li>
+<li>            v = up[v][j]</li>
+<li>&nbsp;</li>
+<li class="hl" data-note="③ 最后一步：u、v 是 LCA 的孩子">    return up[u][0]</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">三个细节</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:130px">细节</th><th>说明</th></tr>
+          <tr><td class="k">先抬升</td><td>深度不同时 <b>必须</b> 先对齐，否则跳板方向不对</td></tr>
+          <tr><td class="k">j 从高到低</td><td>「二分逼近」的<b>标准姿势</b>，越先跳大的越省</td></tr>
+          <tr><td class="k">最后返 up[u][0]</td><td>循环结束时 u、v 是 <b>LCA 的两个孩子</b></td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>一个常见错：</b>
+            把 <span class="mono">up[u][j] != up[v][j]</span>
+            写成 <span class="mono">depth[u] != depth[v]</span>。<br>
+            那样跳过去后又得重新对齐深度，<b>而且会跳过头</b>。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>复杂度：</b>
+            预处理 <b class="mono g">O(n log n)</b>，
+            每次查询 <b class="mono g">O(log n)</b>。<br>
+            n = q = 10⁵ 时约 <b class="mono">1.7×10⁶</b> 次操作，非常快。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P3379" target="_blank">P3379 模板 LCA</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/kth-ancestor-of-a-tree-node/" target="_blank">LC 1483</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">三段：对齐 → 逼近 → 收尾</div>
+  </div>
+</section>
+
+<!-- ============ 16 距离 ============ -->
+<section class="slide" data-ch="3" data-stagger="170"
+  data-desc="给定一棵 n 个节点的树，多组查询 (u, v)，求 u 到 v 的距离（经过的边数）。"
+  data-title="推论：树上两点距离"
+  data-rec="dist = depth[u] + depth[v] − 2·depth[lca]"
+  data-eyebrow="第三章 · 经典 · 目标：把 LCA 变成工具">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">公式只要一行</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:17px;line-height:2">
+            dist(u, v) =<br>
+            &nbsp;&nbsp;depth[u] + depth[v]<br>
+            &nbsp;&nbsp;− 2 × depth[lca(u, v)]
+          </div>
+        </div>
+        <p class="sm" style="margin-top:16px">
+          <b>为什么？</b><br>
+          · u 到 LCA：<span class="mono">depth[u] − depth[lca]</span><br>
+          · v 到 LCA：<span class="mono">depth[v] − depth[lca]</span><br>
+          · 两段相加，<span class="mono">depth[lca]</span> 被减了两次。
+        </p>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>要记住：</b>深度<b>是节点数还是边数</b>？<br>
+            本讲用「<b>边数</b>」：<span class="mono">depth[root] = 0</span>。<br>
+            如果题目要「节点数」，答案再 <b>+1</b>。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 320" width="620" height="320">
+          <g data-seq="0">
+            <circle class="node hot" cx="310" cy="34" r="22"/><text class="svgtxtv" x="292" y="39">lca</text>
+            <circle class="node plain" cx="170" cy="120" r="20"/><circle class="node plain" cx="450" cy="120" r="20"/>
+            <circle class="node plain" cx="110" cy="216" r="20"/><circle class="node plain" cx="450" cy="216" r="20"/>
+            <circle class="node hot" cx="60" cy="282" r="20"/><text class="svgtxtv" x="48" y="287">u</text>
+            <circle class="node hot" cx="520" cy="282" r="20"/><text class="svgtxtv" x="508" y="287">v</text>
+            <path class="edge" d="M310 56 L170 100"/><path class="edge" d="M310 56 L450 100"/>
+            <path class="edge" d="M170 140 L110 196"/><path class="edge" d="M450 140 L450 196"/>
+            <path class="edge" d="M110 236 L62 262"/><path class="edge" d="M450 236 L518 262"/>
+          </g>
+          <g data-seq="1">
+            <path class="path" data-draw="1200" d="M60 282 L110 216 L170 120 L310 34"/>
+            <text class="svgtxtv" x="20" y="182">u → lca</text>
+          </g>
+          <g data-seq="2">
+            <path class="path" data-draw="1900" d="M520 282 L450 216 L450 120 L310 34"/>
+            <text class="svgtxtv" x="482" y="182">v → lca</text>
+          </g>
+          <g data-seq="3">
+            <rect x="20" y="284" width="580" height="32" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxt" x="40" y="305">depth[u] + depth[v] − 2·depth[lca] = 3 + 3 − 2·1 = 4</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">有了 LCA，距离就一行公式</div>
+  </div>
+</section>
+
+<!-- ============ 17 应用二：路径最值 ============ -->
+<section class="slide" data-ch="4" data-stagger="170"
+  data-desc="给定一棵带边权的树，多组查询 (u, v)，求 u 到 v 路径上边权的最大值（或最小值）。"
+  data-title="应用二：路径上的最值"
+  data-rec="mx[u][j] = max(mx[u][j-1], mx[mid][j-1])"
+  data-eyebrow="第四章 · 进阶 · 目标：让跳板带上信息">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:500px">
+        <h4 class="q">升级：跳板不只是「到哪」，还有「路上看到什么」</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:14px;line-height:2">
+            <b>up[u][j]</b> = 往上 2<sup>j</sup> 步到的点<br>
+            <b class="v">mx[u][j]</b> = 这段路上<b>边权的最大值</b>
+          </div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>边界：</b><br>
+            <span class="mono">mx[u][0] = weight(u, parent(u))</span><br>
+            ——就是 u 到父亲那条边的权。</div>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>转移：</b>两半取 max<br>
+            <span class="mono">mx[u][j] = max(mx[u][j-1], mx[mid][j-1])</span><br>
+            其中 <span class="mono">mid = up[u][j-1]</span>。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>套路：</b>只要合并规则是<b>可结合的</b>
+            （max / min / sum / xor …），
+            都能这样带上。<br>
+            <b>不可结合的</b>（比如「乘积取模」）就要小心。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 580 330" width="580" height="330">
+          <defs><marker id="ah9" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-seq="0">
+            <path class="edge" d="M100 250 L200 180"/><path class="edge" d="M200 180 L300 110"/>
+            <path class="edge" d="M300 110 L400 40"/>
+            <circle class="node hot" cx="100" cy="272" r="22"/><text class="svgtxtv" x="92" y="277">u</text>
+            <circle class="node" cx="200" cy="180" r="18"/><circle class="node" cx="300" cy="110" r="18"/>
+            <circle class="node" cx="400" cy="40" r="18"/>
+            <text class="svgtxtb" x="122" y="222">7</text><text class="svgtxtb" x="222" y="152">3</text>
+            <text class="svgtxtb" x="322" y="82">5</text>
+          </g>
+          <g data-seq="1">
+            <text class="svgtxtv" x="20" y="316">mx[u][0] = 7</text>
+            <text class="svgtxtv" x="180" y="316">mx[u][1] = max(7,3) = 7</text>
+            <text class="svgtxtv" x="400" y="316">mx[u][2] = max(7,5) = 7</text>
+          </g>
+          <g data-seq="2">
+            <path class="arw hot" marker-end="url(#ah9)" d="M100 248 Q150 222 200 198"/>
+            <path class="arw hot" marker-end="url(#ah9)" d="M100 248 Q200 216 300 128"/>
+            <path class="arw hot" marker-end="url(#ah9)" d="M100 248 Q250 196 400 58"/>
+            <text class="svgtxtv" x="248" y="196">跳板一长，带上的是整段的最值</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">跳板带信息，就能答「路径最值」</div>
+  </div>
+</section>
+
+<!-- ============ 18 路径最值：查询 ============ -->
+<section class="slide" data-ch="4" data-stagger="170"
+  data-desc="给定一棵带边权的树，多组查询 (u, v)，求 u 到 v 路径上边权的最大值。"
+  data-title="路径最值：怎么查询？"
+  data-rec="ans = max(ans, mx[u][j], mx[v][j])"
+  data-eyebrow="第四章 · 进阶 · 目标：把查询写对">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <h4 class="q">思路：和 LCA 一样，只是「顺便」更新答案</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="sm">
+            <b>① 抬升 u</b> 到同深度时，<br>
+            &nbsp;&nbsp;每跳一次就 <span class="mono">ans = max(ans, mx[u][j])</span><br><br>
+            <b>② 一起跳</b>时，<br>
+            &nbsp;&nbsp;u 侧和 v 侧的跳板<b>都</b>更新答案<br><br>
+            <b>③ 最后</b>，u、v 到 LCA 还差一条边，<br>
+            &nbsp;&nbsp;用 <span class="mono">mx[u][0]</span>、<span class="mono">mx[v][0]</span> 收尾。
+          </div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>共性：</b>「<b>在跳的过程中顺手合并</b>」。<br>
+            只要合并是可结合的，这一招都管用。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <div class="code">
+          <div class="cbar"><span class="cf">path_max.py</span>
+            <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>def path_max(u, v):</li>
+<li>    ans = -10 ** 9</li>
+<li>    if depth[u] &lt; depth[v]: u, v = v, u</li>
+<li>    diff = depth[u] - depth[v]</li>
+<li>    j = 0</li>
+<li class="hl" data-note="① 抬升时顺手更新">    while diff:</li>
+<li>        if diff &amp; 1:</li>
+<li>            ans = max(ans, mx[u][j])</li>
+<li>            u = up[u][j]</li>
+<li>        diff &gt;&gt;= 1</li>
+<li>        j += 1</li>
+<li>    if u == v: return ans</li>
+<li class="hl" data-note="② 一起跳：两侧都更新">    for j in range(LOG - 1, -1, -1):</li>
+<li>        if up[u][j] != up[v][j]:</li>
+<li>            ans = max(ans, mx[u][j], mx[v][j])</li>
+<li>            u = up[u][j]; v = up[v][j]</li>
+<li class="hl" data-note="③ 最后差一条边">    ans = max(ans, mx[u][0], mx[v][0])</li>
+<li>    return ans</li>
+          </ol>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term">查询 <b class="g mono">O(log n)</b></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1967" target="_blank">P1967 货车运输</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">跳的过程，顺手合并答案</div>
+  </div>
+</section>
+
+<!-- ============ 19 P1967 货车运输 ============ -->
+<section class="slide" data-ch="4" data-stagger="170"
+  data-desc="给定一张带边权的无向图和多组查询 (a, b)，求从 a 到 b 的所有路径中，最小边权最大的那条路径的最小边权；不可达输出 -1。"
+  data-title="例题：P1967 货车运输"
+  data-rec="最大生成树 + 路径最小边权"
+  data-eyebrow="第四章 · 进阶 · 目标：看懂综合运用">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">洛谷 P1967 · 货车运输</div>
+        <h4 class="q" style="margin-top:10px">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · 一张<b>无向图</b>，每条路有限重。<br>
+          · 问：从 a 到 b，能<b>通行的最大限重</b>是多少？<br>
+          · 也就是说，<b>所有路径里</b>，取「<b>最小边权最大</b>」的那条。
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>三步走</b><br>
+            ① <b>最大生成树</b>：Kruskal，边按权<b>从大到小</b><br>
+            ② <b>倍增</b>：预处理 <span class="mono">up</span> 与
+            <span class="mono">mn[u][j]</span>（<b>最小</b>边权）<br>
+            ③ <b>查询</b>：LCA 风格，跳的时候
+            <span class="mono">ans = min(ans, mn[…])</span></div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">为什么必须是「最大生成树」？</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          因为我们的目标是让「<b>路径上最小的那条边尽量大</b>」。<br>
+          树上两点路径<b>唯一</b>，所以只要在树上答即可。
+        </p>
+        <div class="notebox" style="margin-top:14px">
+          <div class="sm"><b>核心洞察：</b><br>
+            图上问题 → <b>最大生成树</b> → <b>树上问题</b> → <b>倍增</b>。<br>
+            这条转化链本身比倍增本身更值得学。</div>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>和上一页的差别：</b><br>
+            这里是 <b>min</b> 不是 <b>max</b>；<br>
+            起点是<b>图</b>不是<b>树</b>；<br>
+            其余代码<b>一行都不用改</b>，只换合并函数。</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1967" target="_blank">P1967 货车运输</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P2680" target="_blank">P2680 运输计划</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">图 → 树 → 倍增，这链子很值钱</div>
+  </div>
+</section>
+
+<!-- ============ 20 应用三：ST 表 ============ -->
+<section class="slide" data-ch="5" data-stagger="170"
+  data-desc="给定一个静态数组 arr 和多组查询 (l, r)，求区间 [l, r] 内的最小值（或最大值）。"
+  data-title="应用三：ST 表（静态区间最值）"
+  data-rec="st[i][j] = min(st[i][j-1], st[i+2^(j-1)][j-1])"
+  data-eyebrow="第五章 · 扩展 · 目标：看到倍增的另一张脸">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">同样是「跳板」，只是跳的是<b>区间长度</b></h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:15px;line-height:2">
+            <b>st[i][j]</b> = 从 i 开始、长度 2<sup>j</sup><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;的区间最值<br>
+            例：<span class="mono">st[2][3]</span> = 区间 [2, 9] 的最值
+          </div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>转移：</b>两半合并<br>
+            <span class="mono">st[i][j] = min(st[i][j-1], st[i + 2^(j-1)][j-1])</span><br><br>
+            和树上的 <span class="mono">up[u][j] = up[up[u][j-1]][j-1]</span>
+            <b>是同一件事</b>：<b>跳两段一半的</b>。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 320" width="620" height="320">
+          <g data-seq="0">
+            <text class="svgm" x="10" y="20">arr</text>
+            <g class="svgtxtb">
+              <rect x="30" y="34" width="56" height="34" rx="3" fill="#FFF" stroke="#EEDDC2"/>
+              <rect x="94" y="34" width="56" height="34" rx="3" fill="#FFF" stroke="#EEDDC2"/>
+              <rect x="158" y="34" width="56" height="34" rx="3" fill="#FFF" stroke="#EEDDC2"/>
+              <rect x="222" y="34" width="56" height="34" rx="3" fill="#FFF" stroke="#EEDDC2"/>
+              <rect x="286" y="34" width="56" height="34" rx="3" fill="#FFF" stroke="#EEDDC2"/>
+              <rect x="350" y="34" width="56" height="34" rx="3" fill="#FFF" stroke="#EEDDC2"/>
+              <rect x="414" y="34" width="56" height="34" rx="3" fill="#FFF" stroke="#EEDDC2"/>
+              <rect x="478" y="34" width="56" height="34" rx="3" fill="#FFF" stroke="#EEDDC2"/>
+            </g>
+            <g class="svgtxtb">
+              <text x="50" y="56">5</text><text x="114" y="56">2</text><text x="178" y="56">4</text>
+              <text x="242" y="56">7</text><text x="306" y="56">6</text><text x="370" y="56">3</text>
+              <text x="434" y="56">1</text><text x="498" y="56">5</text>
+            </g>
+          </g>
+          <g data-seq="1">
+            <path class="arw hot" stroke-width="2" d="M30 90 H222"/><path class="arw hot" stroke-width="2" d="M30 84 V96"/>
+            <path class="arw hot" stroke-width="2" d="M222 84 V96"/>
+            <text class="svgtxtv" x="52" y="112">j=2，长度 2²=4，i=0</text>
+          </g>
+          <g data-seq="2">
+            <path class="arw hot" stroke-width="2" d="M286 90 H478"/><path class="arw hot" stroke-width="2" d="M286 84 V96"/>
+            <path class="arw hot" stroke-width="2" d="M478 84 V96"/>
+            <text class="svgtxtv" x="308" y="112">i=4，同一长度</text>
+          </g>
+          <g data-seq="3">
+            <rect x="30" y="138" width="504" height="46" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxt" x="52" y="168">st[0][2] = min(st[0][1], st[2][1]) = min(2, 4) = 2</text>
+          </g>
+          <g data-seq="4">
+            <text class="svgtxtv" x="30" y="220">查询 [1, 5]：长度 5 → k = ⌊log₂5⌋ = 2</text>
+            <text class="svgtxt" x="30" y="250">min(st[1][2], st[2][2]) = min(2, 3) = 2</text>
+            <text class="svgm" x="30" y="284">两个「长度 2²」的区间刚好盖住 [1,5]，允许重叠</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">重叠没关系，最值不怕重复算</div>
+  </div>
+</section>
+
+<!-- ============ 21 ST 表代码 ============ -->
+<section class="slide" data-ch="5" data-stagger="150"
+  data-desc="给定一个静态数组 arr 和多组查询 (l, r)，求区间 [l, r] 内的最小值。"
+  data-title="代码：ST 表"
+  data-rec="O(n log n) 建，O(1) 查询"
+  data-eyebrow="第五章 · 扩展 · 目标：写出 ST 表模板">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.3">
+        <div class="cbar"><span class="cf">sparse_table.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>def build(arr, f=min):</li>
+<li>    n = len(arr)</li>
+<li>    LOG = n.bit_length()</li>
+<li>    st = [arr[:]]                 # j = 0：长度 1</li>
+<li>    for j in range(1, LOG):</li>
+<li>        prev = st[-1]</li>
+<li>        m = n - (1 &lt;&lt; j) + 1</li>
+<li>        if m &lt;= 0: break</li>
+<li class="hl" data-note="转移：两半合并，长度翻倍">        st.append([f(prev[i], prev[i + (1 &lt;&lt; (j - 1))])</li>
+<li>                  for i in range(m)])</li>
+<li>    return st</li>
+<li>&nbsp;</li>
+<li>def query(st, l, r):            # 闭区间 [l, r]</li>
+<li>    k = (r - l + 1).bit_length() - 1</li>
+<li class="hl" data-note="两个长度 2^k 的区间盖住 [l,r]，重叠没问题">    return min(st[k][l], st[k][r - (1 &lt;&lt; k) + 1])</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">ST 表的三个细节</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:130px">细节</th><th>说明</th></tr>
+          <tr><td class="k">k 怎么算</td><td><span class="mono">bit_length()-1</span> = ⌊log₂(len)⌋，比 <span class="mono">log2</span> 快</td></tr>
+          <tr><td class="k">允许重叠</td><td>最值<b>不怕重复</b>；求 gcd、and、or 也一样</td></tr>
+          <tr><td class="k">只适合静态</td><td>数组一改就得<b>重建</b>，O(n log n)</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>能用 ST 表的运算：</b><br>
+            <span class="mono">min / max / gcd / and / or / xor</span><br>
+            ——只要<b>幂等</b>（重复算不亏）或<b>可结合</b>。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>不能用的：</b>
+            <span class="mono">sum</span>（重叠会多算）、<span class="mono">乘积</span>。<br>
+            这些要用<b>前缀和</b>或<b>线段树</b>。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P3865" target="_blank">P3865 ST 表模板</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P2880" target="_blank">P2880 Balanced Lineup</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">和 up[u][j] 是同一个套路</div>
+  </div>
+</section>
+
+<!-- ============ 22 三种工具对比 ============ -->
+<section class="slide" data-ch="5" data-stagger="140"
+  data-title="三种「区间/路径」工具，怎么选"
+  data-rec="静态 → ST ｜ 单点改 → 线段树 ｜ 树上 → 倍增"
+  data-eyebrow="第五章 · 扩展 · 目标：不再选错工具">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:150px">工具</th><th style="width:190px">擅长</th><th style="width:130px">建表</th>
+        <th style="width:120px">查询</th><th style="width:150px">能否修改</th><th>典型题目</th></tr>
+      <tr><td class="k v">ST 表</td>
+        <td data-seq="0">静态数组区间最值</td>
+        <td data-seq="1" class="mono">O(n log n)</td>
+        <td data-seq="1" class="mono g">O(1)</td>
+        <td data-seq="2">不能</td>
+        <td data-seq="2">P3865、P2880、P2251</td></tr>
+      <tr><td class="k v">线段树</td>
+        <td data-seq="1">区间查询 + 区间修改</td>
+        <td data-seq="2" class="mono">O(n)</td>
+        <td data-seq="2" class="mono">O(log n)</td>
+        <td data-seq="3">能</td>
+        <td data-seq="3">P3372、P3373</td></tr>
+      <tr><td class="k v">树上倍增</td>
+        <td data-seq="2">树上路径、祖先、LCA</td>
+        <td data-seq="3" class="mono">O(n log n)</td>
+        <td data-seq="3" class="mono">O(log n)</td>
+        <td data-seq="4">不能</td>
+        <td data-seq="4">P3379、P1967、LC 1483</td></tr>
+      <tr><td class="k v">树链剖分</td>
+        <td data-seq="3">树上路径 + 修改</td>
+        <td data-seq="4" class="mono">O(n)</td>
+        <td data-seq="4" class="mono">O(log² n)</td>
+        <td data-seq="5">能</td>
+        <td data-seq="5">P3384、P2146</td></tr>
+    </table>
+    <div class="hrule dot" data-seq="6" style="margin-top:24px"></div>
+    <div class="row" data-seq="7">
+      <div class="numbox">?</div>
+      <div class="p" style="flex:1">
+        <b>选型口诀：</b>先问<b>数据是数组还是树</b>；<br>
+        再问<b>要不要改</b>；<br>
+        最后问<b>要不要路径信息</b>。<br>
+        三个问题问完，工具基本就定了。
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:880px;top:340px">先问数据结构，再问修改，最后问路径</div>
+  </div>
+</section>
+
+<!-- ============ 23 应用四：序列倍增 ============ -->
+<section class="slide" data-ch="5" data-stagger="170"
+  data-desc="给定一个序列 next[i]，表示从位置 i 走一步到哪里；多次询问「从 i 出发走 k 步到哪里、走了多远」。"
+  data-title="应用四：序列上的倍增（函数迭代）"
+  data-rec="f[i][j] = f[ f[i][j-1] ][j-1]"
+  data-eyebrow="第五章 · 扩展 · 目标：把倍增用到序列">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">树换成了「函数」，套路照搬</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:14px;line-height:2">
+            <b>f[i][j]</b> = 从 i 走 2<sup>j</sup> 步到的位置<br>
+            <b class="v">d[i][j]</b> = 走这 2<sup>j</sup> 步<b>累计的代价</b><br><br>
+            f[i][0] = next[i]<br>
+            d[i][0] = cost[i]<br>
+            f[i][j] = f[ <b class="v">f[i][j-1]</b> ][j-1]<br>
+            d[i][j] = d[i][j-1] + d[ <b class="v">f[i][j-1]</b> ][j-1]
+          </div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>和 up[u][j] 对比：</b><br>
+            「<b>父亲</b>」→「<b>下一步</b>」；<br>
+            「<b>树</b>」→「<b>任意函数 f</b>」。<br>
+            只要「<b>下一步</b>」是确定的，就能倍增。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 300" width="620" height="300">
+          <defs><marker id="ah10" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#8A6E52"/></marker></defs>
+          <g data-seq="0">
+            <g class="node plain">
+              <circle cx="50" cy="120" r="22"/><circle cx="150" cy="120" r="22"/><circle cx="250" cy="120" r="22"/>
+              <circle cx="350" cy="120" r="22"/><circle cx="450" cy="120" r="22"/><circle cx="550" cy="120" r="22"/>
+            </g>
+            <g class="arw" marker-end="url(#ah10)">
+              <path d="M74 120 H124"/><path d="M174 120 H224"/><path d="M274 120 H324"/>
+              <path d="M374 120 H424"/><path d="M474 120 H524"/>
+            </g>
+            <text class="svgm" x="20" y="176">next[i]：每个位置走一步到哪</text>
+          </g>
+          <g data-seq="1">
+            <path class="arw hot" marker-end="url(#ah10)" d="M50 84 Q250 20 450 84"/>
+            <text class="svgtxtv" x="182" y="42">f[i][2]：走 2² = 4 步</text>
+          </g>
+          <g data-seq="2">
+            <text class="svgtxtv" x="20" y="228">例题：P1081 开车旅行</text>
+            <text class="svgm" x="20" y="256">每次走「向右最近的、比自己高/矮」的城市</text>
+            <text class="svgm" x="20" y="278">问走 x 公里后两车在哪</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">把「父亲」换成「下一步」，套路不变</div>
+  </div>
+</section>
+
+<!-- ============ 24 倍增 + 贪心/二分 ============ -->
+<section class="slide" data-ch="5" data-stagger="170"
+  data-title="倍增 + 贪心 / 二分：什么时候用"
+  data-rec="贪心拼「尽量大的跳板」"
+  data-eyebrow="第五章 · 扩展 · 目标：认出倍增的变形">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:500px">
+        <h4 class="q">倍增常和「贪心」「二分」连用</h4>
+        <div class="keyline"></div>
+        <table class="t">
+          <tr><th style="width:140px">组合</th><th>长什么样</th></tr>
+          <tr><td class="k">倍增 + 贪心</td>
+            <td>从大跳板往小试，能跳就跳（<b>凑出最小步数</b>）</td></tr>
+          <tr><td class="k">倍增 + 二分</td>
+            <td>问「<b>最少几次</b>能到达」，先倍增预处理，再二分答案</td></tr>
+          <tr><td class="k">倍增 + 差分</td>
+            <td>路径上的信息叠加（P2680 运输计划）</td></tr>
+          <tr><td class="k">倍增 + 哈希</td>
+            <td>字符串 <b>2^j</b> 长度的哈希（Rabin-Karp 倍增）</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>判断标准：</b><br>
+            如果一个答案可以写成
+            <b class="mono">k = 2^a + 2^b + …</b>，
+            或者「<b>跳 k 步</b>」这个动作能被拆成幂次，
+            <b>就能用倍增</b>。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <h4 class="q">贪心拼法（最小步数）</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="sm"><b>目标：</b>用<b>最少</b>的跳板次数凑出 k。<br><br>
+            <b>做法：</b>从 <span class="mono">j = LOG-1</span> 往下试：<br>
+            如果「<b>跳 2^j 步之后还 ≤ 目标</b>」就跳。<br><br>
+            这正是 LCA 里「<b>从高到低试跳</b>」的同一个动作。</div>
+        </div>
+        <svg viewBox="0 0 560 190" width="560" height="190" style="margin-top:12px">
+          <defs><marker id="ah11" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-seq="0">
+            <circle class="node hot" cx="40" cy="140" r="20"/><text class="svgtxtv" x="32" y="145">0</text>
+            <circle class="node plain" cx="520" cy="140" r="20"/><text class="svgtxtv" x="508" y="145">13</text>
+          </g>
+          <g data-seq="1">
+            <path class="arw hot" marker-end="url(#ah11)" d="M40 112 Q160 32 280 112"/>
+            <text class="svgtxtv" x="132" y="48">跳 8</text>
+            <path class="arw hot" marker-end="url(#ah11)" d="M280 112 Q380 62 480 112"/>
+            <text class="svgtxtv" x="342" y="78">跳 4</text>
+            <path class="arw hot" marker-end="url(#ah11)" d="M480 112 Q510 96 520 112"/>
+            <text class="svgtxtv" x="478" y="104">跳 1</text>
+          </g>
+          <text class="svgm" x="20" y="182">3 次 = 二进制里 1 的个数 = popcount(13) = 3</text>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">「从大到小试」是倍增的标志性动作</div>
+  </div>
+</section>
+
+<!-- ============ 25 什么时候用倍增 ============ -->
+<section class="slide" data-ch="5" data-stagger="180"
+  data-title="倍增适合什么题？识别信号"
+  data-rec="关键词：跳 k 步 / 2 的幂 / 询问多次"
+  data-eyebrow="第五章 · 扩展 · 目标：拿到识别工具">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-4">
+        <div class="numbox" data-seq="0">✓</div>
+        <h4 class="h2" data-seq="1" style="margin-top:14px">适用</h4>
+        <div class="keyline" data-seq="1"></div>
+        <p class="p" data-seq="2">
+          ① <b>「跳 k 步 / 第 k 个」</b><br>
+          ② <b>静态</b>的结构，反复询问<br>
+          ③ 跳转规则<b>固定</b>（next / parent）<br>
+          ④ 合并规则<b>可结合</b>
+        </p>
+        <p class="sm" data-seq="3" style="margin-top:12px">
+          典型：第 k 级祖先、LCA、<br>
+          路径最值、ST 表、序列迭代。
+        </p>
+      </div>
+      <div style="grid-column:5/span 4">
+        <div class="numbox alt" data-seq="1">✗</div>
+        <h4 class="h2" data-seq="2" style="margin-top:14px">不适用</h4>
+        <div class="keyline" data-seq="2"></div>
+        <p class="p" data-seq="3">
+          ① 要<b>修改</b>数据<br>
+          ② <b>答案在最差路径上</b>（要路径条数）<br>
+          ③ <b>跳转规则会变</b><br>
+          ④ 合并<b>不可结合</b>（比如求平均）
+        </p>
+        <p class="sm" data-seq="4" style="margin-top:12px">
+          这些改用<b>线段树</b>、<b>树链剖分</b>、<b>树形 DP</b>。
+        </p>
+      </div>
+      <div class="c9-12">
+        <div class="numbox" data-seq="2">!</div>
+        <h4 class="h2" data-seq="3" style="margin-top:14px">判断三问</h4>
+        <div class="keyline" data-seq="3"></div>
+        <p class="p" data-seq="4">
+          ① 能不能预处理<br>
+          &nbsp;&nbsp;<b>「跳 2^j 步」</b>？<br>
+          ② 能不能<b>从大到小试跳</b>？<br>
+          ③ 是不是<b>只需要 log 次</b>？
+        </p>
+        <div class="notebox" data-seq="5" style="margin-top:16px">
+          <div class="sm">三问都是「是」，就上倍增。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2500" style="left:880px;top:340px">静态 + 可结合 + 有「跳转」，就是倍增</div>
+  </div>
+</section>
+
+<!-- ============ 26 常见错误 ============ -->
+<section class="slide" data-ch="6" data-stagger="150"
+  data-title="常见错误与对策"
+  data-rec="LOG 取小 · 哨兵越界 · 顺序反"
+  data-eyebrow="第六章 · 方法题单 · 目标：避开六个大坑">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:150px">错误</th><th style="width:380px">症状</th><th style="width:320px">对策</th><th>检验</th></tr>
+      <tr><td class="k v">① LOG 取小了</td>
+        <td data-seq="0">n = 10⁵ 却写 <span class="mono">LOG = 16</span>，最深的链跳不完。</td>
+        <td data-seq="1">用 <b class="mono">n.bit_length()</b>，宁大勿小。</td>
+        <td data-seq="2">造一条 n = 2¹⁶ 的链。</td></tr>
+      <tr><td class="k v">② 哨兵越界</td>
+        <td data-seq="3"><span class="mono">up[0][j]</span> 报 <span class="mono l">IndexError</span>。</td>
+        <td data-seq="4">0 号行<b>先填好</b>，或用 <span class="mono">-1</span> 并检查。</td>
+        <td data-seq="5">输入 <span class="mono">n = 1</span>。</td></tr>
+      <tr><td class="k v">③ j 的循环顺序错</td>
+        <td data-seq="6">填表时 <span class="mono">j</span> 从大到小，结果全是 0。</td>
+        <td data-seq="7">建表 <b>小→大</b>；查询 <b>大→小</b>。</td>
+        <td data-seq="8">打印 up 表逐行核对。</td></tr>
+      <tr><td class="k v">④ LCA 最后一步</td>
+        <td data-seq="9">返回 <span class="mono">u</span> 而不是 <span class="mono">up[u][0]</span>。</td>
+        <td data-seq="10">循环结束 u、v 是 <b>LCA 的孩子</b>，再上一层。</td>
+        <td data-seq="11">手推 u = v 的孩子。</td></tr>
+      <tr><td class="k v">⑤ 深度没对齐</td>
+        <td data-seq="12">u、v 深度不同却直接一起跳，跳到错的点。</td>
+        <td data-seq="13">先<b>抬升</b>再<b>同时跳</b>。</td>
+        <td data-seq="14">造 u 深 v 浅的查询。</td></tr>
+      <tr><td class="k v">⑥ 混淆「边数/节点数」</td>
+        <td data-seq="15">距离答案差 1。</td>
+        <td data-seq="16">看清题目，统一 <b class="mono">depth[root]=0</b>。</td>
+        <td data-seq="17">单边两节点手算。</td></tr>
+    </table>
+    <div class="row" style="margin-top:22px">
+      <div class="numbox">!</div>
+      <div class="p" style="flex:1">
+        倍增的 bug 多数出在<b class="v">「边界与顺序」</b>，不是转移式。<br>
+        最有效的一招：<b>拿 n = 1、n = 2、链、星形各测一遍。</b></div>
+    </div>
+    <div class="hand" data-at="2600" style="left:880px;top:340px">小数据四种，一测一个准</div>
+  </div>
+</section>
+
+<!-- ============ 27 实现要点 ============ -->
+<section class="slide" data-ch="6" data-stagger="130"
+  data-title="实现要点与复杂度"
+  data-rec="O(n log n) 预处理 · O(log n) 查询"
+  data-eyebrow="第六章 · 方法题单 · 目标：把代码写稳">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="h2">复杂度一览</h4>
+        <div class="keyline"></div>
+        <table class="t">
+          <tr><th style="width:180px">任务</th><th>时间</th><th>空间</th></tr>
+          <tr><td class="k">建 up 表</td><td class="k g">O(n log n)</td><td class="k g">O(n log n)</td></tr>
+          <tr><td class="k">第 k 级祖先</td><td class="k g">O(log k)</td><td class="k g">O(1)</td></tr>
+          <tr><td class="k">LCA</td><td class="k g">O(log n)</td><td class="k g">O(1)</td></tr>
+          <tr><td class="k">路径最值</td><td class="k g">O(log n)</td><td class="k g">O(1)</td></tr>
+          <tr><td class="k">ST 表</td><td class="k g">O(n log n) 建</td><td class="k g">O(n log n)</td></tr>
+          <tr><td class="k">ST 表查询</td><td class="k g">O(1)</td><td class="k g">O(1)</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:20px">
+          <div class="sm"><b>Python 三件套</b><br>
+            ① <span class="mono">sys.setrecursionlimit(10**6)</span>（DFS 建树用）<br>
+            ② <span class="mono">sys.stdin.buffer.read()</span> 解析大输入<br>
+            ③ 建表用 <b>BFS</b> 更稳，避免递归爆栈</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <h4 class="h2">写代码前的四问</h4>
+        <div class="keyline"></div>
+        <div class="row" style="margin-top:8px">
+          <div class="numbox">①</div>
+          <div class="sm" style="flex:1"><b>状态存什么？</b>
+            <br><span class="mono">up[u][j]</span> 还是 <span class="mono">f[i][j]</span>？
+            还要带上什么<span class="mono">值</span>？</div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="numbox">②</div>
+          <div class="sm" style="flex:1"><b>边界是什么？</b>
+            <br><span class="mono">j = 0</span> 是什么？哨兵设 0 还是 −1？</div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="numbox">③</div>
+          <div class="sm" style="flex:1"><b>转移怎么合并？</b>
+            <br>max / min / sum / xor？可结合吗？</div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="numbox">④</div>
+          <div class="sm" style="flex:1"><b>填表顺序？</b>
+            <br>建表 <b>j 从小到大</b>；查询 <b>j 从大到小</b>。</div>
+        </div>
+        <div class="notebox" style="margin-top:20px">
+          <div class="sm"><b>常见优化：</b><br>
+            · 查询时 <span class="mono">while diff</span> 比
+            <span class="mono">for j in range(LOG)</span> 更快（跳过的位直接略过）<br>
+            · <span class="mono">LOG</span> 只取到 <span class="mono">depth</span> 的最大值即可</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:120px;top:340px">四问写完，代码只是翻译</div>
+  </div>
+</section>
+
+<!-- ============ 28 解题流程图 ============ -->
+<section class="slide" data-ch="6" data-stagger="180"
+  data-title="解题流程图"
+  data-rec="能拆成 2 的幂 → 倍增"
+  data-eyebrow="第六章 · 方法题单 · 目标：把方法固定成流程">
+  <div class="stage-inner">
+    <svg viewBox="0 0 1120 440" width="1120" height="440">
+      <defs><marker id="ahf" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="#8A6E52"/></marker></defs>
+      <g data-seq="0">
+        <rect x="20" y="30" width="200" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="42" y="58">要「跳 k 步」吗？</text>
+        <text class="svgm" x="42" y="80">或第 k 个 / 2 的幂长度</text>
+      </g>
+      <path class="arw" marker-end="url(#ahf)" d="M220 62 H292" data-seq="1"/>
+      <g data-seq="1">
+        <rect x="300" y="30" width="230" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="322" y="58">能预处理 2^j 吗？</text>
+        <text class="svgm" x="322" y="80">状态与边界写出来</text>
+      </g>
+      <path class="arw" marker-end="url(#ahf)" d="M530 62 H602" data-seq="2"/>
+      <g data-seq="2">
+        <rect x="610" y="30" width="230" height="64" rx="6" fill="#FDEECC" stroke="#E2542A" stroke-width="2"/>
+        <text class="svgtxtv" x="632" y="58">要带上什么信息？</text>
+        <text class="svgm" x="632" y="80">max / min / sum / xor</text>
+      </g>
+      <path class="arw" marker-end="url(#ahf)" d="M840 62 H912" data-seq="3"/>
+      <g data-seq="3">
+        <rect x="920" y="30" width="180" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="942" y="58">写转移</text>
+        <text class="svgm" x="942" y="80">两半合并</text>
+      </g>
+
+      <path class="arw" marker-end="url(#ahf)" d="M1010 94 V150 H110 V192" data-seq="4"/>
+
+      <g data-seq="4">
+        <rect x="20" y="196" width="200" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="42" y="224">定哨兵</text>
+        <text class="svgm" x="42" y="246">0 还是 -1</text>
+      </g>
+      <path class="arw" marker-end="url(#ahf)" d="M220 228 H292" data-seq="5"/>
+      <g data-seq="5">
+        <rect x="300" y="196" width="230" height="64" rx="6" fill="#FDEECC" stroke="#E2542A" stroke-width="2"/>
+        <text class="svgtxtv" x="322" y="224">查询：从大到小试跳</text>
+        <text class="svgm" x="322" y="246">跳不了就换小跳板</text>
+      </g>
+      <path class="arw" marker-end="url(#ahf)" d="M530 228 H602" data-seq="6"/>
+      <g data-seq="6">
+        <rect x="610" y="196" width="230" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="632" y="224">小数据手算验证</text>
+        <text class="svgm" x="632" y="246">n = 1 / 2、链、星形</text>
+      </g>
+      <path class="arw" marker-end="url(#ahf)" d="M840 228 H912" data-seq="7"/>
+      <g data-seq="7">
+        <rect x="920" y="196" width="180" height="64" rx="6" fill="#FFFFFF" stroke="#E2542A" stroke-width="2"/>
+        <text class="svgtxtv" x="942" y="224">写代码</text>
+        <text class="svgm" x="942" y="246">BFS 建表 + 位运算</text>
+      </g>
+
+      <path class="arw" marker-end="url(#ahf)" d="M1010 260 V320 H620 V358" data-seq="8"/>
+      <g data-seq="8">
+        <rect x="360" y="362" width="520" height="42" rx="6" fill="#FDEECC" stroke="#F3A33C"/>
+        <text class="svgtxt" x="382" y="389">答案是「k 次以上」？→ 倍增 + 贪心 / 二分</text>
+      </g>
+    </svg>
+    <div class="hand" data-at="2700" style="left:20px;top:352px">红框那两问，决定写法</div>
+  </div>
+</section>
+
+<!-- ============ 29 词汇表 ============ -->
+<section class="slide" data-ch="6" data-stagger="100"
+  data-title="词汇表"
+  data-rec="binary lifting · LCA · RMQ"
+  data-eyebrow="第六章 · 方法题单 · 目标：把术语对上号">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="flex:1">
+        <table class="t">
+          <tr><th style="width:160px">术语</th><th style="width:190px">英文</th><th>一句话</th></tr>
+          <tr><td class="k">倍增</td><td class="k">binary lifting</td><td>用 2 的幂做「跳板」，把 k 次压成 log k 次。</td></tr>
+          <tr><td class="k">二进制拆分</td><td class="k">binary decomposition</td><td>把 k 写成 2 的幂之和，如 13 = 8+4+1。</td></tr>
+          <tr><td class="k">跳板</td><td class="k">jump pointer</td><td>预存「走 2<sup>j</sup> 步到哪」的表。</td></tr>
+          <tr><td class="k">哨兵</td><td class="k">sentinel</td><td>「不存在」的统一表示，0 或 −1。</td></tr>
+          <tr><td class="k">LOG</td><td class="k">⌈log₂ n⌉</td><td>跳板层数，n = 10⁵ 时约 17。</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <table class="t">
+          <tr><th style="width:160px">术语</th><th style="width:190px">英文</th><th>一句话</th></tr>
+          <tr><td class="k">LCA</td><td class="k">Lowest Common Ancestor</td><td>两点最近的公共祖先。</td></tr>
+          <tr><td class="k">RMQ</td><td class="k">Range Minimum Query</td><td>静态区间最值查询。</td></tr>
+          <tr><td class="k">ST 表</td><td class="k">Sparse Table</td><td>倍增思想解 RMQ 的经典结构。</td></tr>
+          <tr><td class="k">欧拉序</td><td class="k">Euler Tour</td><td>把树拍成序列，LCA 可化为 RMQ。</td></tr>
+          <tr><td class="k">可结合</td><td class="k">associative</td><td>能拆成两半合并的运算，如 max / min。</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="hand" data-at="2200" style="left:880px;top:340px">这一页可以截图存下来</div>
+  </div>
+</section>
+
+<!-- ============ 30 题单 ============ -->
+<section class="slide" data-ch="6" data-stagger="110"
+  data-title="总题单：LeetCode + 洛谷"
+  data-rec="n = 15 problems"
+  data-eyebrow="第六章 · 方法题单 · 目标：拿到可执行的练习清单">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="flex:1">
+        <div class="meta">入门 · 必做</div>
+        <table class="t" style="margin-top:10px">
+          <tr><th>题</th><th>考点</th></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/kth-ancestor-of-a-tree-node/" target="_blank">LC 1483 第 k 级祖先</a></td><td>倍增模板</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P3379" target="_blank">P3379 最近公共祖先</a></td><td>LCA 模板</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P3865" target="_blank">P3865 ST 表</a></td><td>RMQ 模板</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-tree/" target="_blank">LC 236 二叉树 LCA</a></td><td>LCA 概念</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P2880" target="_blank">P2880 Balanced Lineup</a></td><td>ST 表应用</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <div class="meta">进阶 · 巩固</div>
+        <table class="t" style="margin-top:10px">
+          <tr><th>题</th><th>考点</th></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1967" target="_blank">P1967 货车运输</a></td><td>最大生成树 + 路径最小值</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1613" target="_blank">P1613 跑路</a></td><td>图上倍增</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/cycle-length-queries-in-a-tree/" target="_blank">LC 2509 树中环长查询</a></td><td>LCA 算路径</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/minimum-edge-weight-equilibrium-queries-in-a-tree/" target="_blank">LC 2846 边权均等查询</a></td><td>LCA + 路径信息</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P2251" target="_blank">P2251 质数距离</a></td><td>ST 表求区间最值</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <div class="meta">提高 · 挑战</div>
+        <table class="t" style="margin-top:10px">
+          <tr><th>题</th><th>考点</th></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P2680" target="_blank">P2680 运输计划</a></td><td>倍增 + 二分 + 差分</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1081" target="_blank">P1081 开车旅行</a></td><td>序列倍增</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P4281" target="_blank">P4281 紧急集合</a></td><td>三 LCA</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/sum-of-distances-in-tree/" target="_blank">LC 834 树中距离之和</a></td><td>LCA + 换根</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P2261" target="_blank">P2261 余数求和</a></td><td>倍增分块</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:880px;top:340px">按顺序做，不要跳</div>
+  </div>
+</section>
+
+<!-- ============ 31 复习：四步法 ============ -->
+<section class="slide" data-ch="6" data-stagger="160"
+  data-title="一页复习：四步法 + 三问"
+  data-rec="state · boundary · merge · order"
+  data-eyebrow="第六章 · 方法题单 · 目标：留下可复用的骨架">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:520px">
+        <h4 class="h2">四步法 · 每次都问</h4>
+        <div class="keyline"></div>
+        <table class="t">
+          <tr><th style="width:110px">步骤</th><th>倍增版本</th></tr>
+          <tr><td class="k v">① 存什么</td><td><span class="mono">up[u][j]</span> = 从 u 走 2<sup>j</sup> 步到的点</td></tr>
+          <tr><td class="k v">② 怎么转</td><td><span class="mono">up[u][j] = up[up[u][j-1]][j-1]</span></td></tr>
+          <tr><td class="k v">③ 从哪起</td><td><span class="mono">up[u][0] = parent(u)</span>；根设哨兵</td></tr>
+          <tr><td class="k v">④ 顺序</td><td>建表 j 小→大；查询 j 大→小</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <h4 class="h2">三问 · 决定用不用</h4>
+        <div class="keyline"></div>
+        <div class="row" style="margin-top:8px">
+          <div class="numbox">1</div>
+          <div class="sm" style="flex:1"><b>能不能预处理「跳 2^j 步」？</b>
+            <br>不能 → 用线段树 / 树形 DP。</div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="numbox">2</div>
+          <div class="sm" style="flex:1"><b>能不能「从大到小试跳」？</b>
+            <br>不能 → 可能不适合倍增。</div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="numbox">3</div>
+          <div class="sm" style="flex:1"><b>只需 log 次就能拼出答案？</b>
+            <br>是 → 复杂度稳稳 <b class="mono g">O(log n)</b>。</div>
+        </div>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>记忆口诀：</b><br>
+            <b>「小跳板建表，大跳板查询；<br>
+            二进制拆分，一路走到顶。」</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">口诀背下来，题就做不丢</div>
+  </div>
+</section>
+
+<!-- ============ 32 结语 ============ -->
+<section class="slide" data-ch="6" data-stagger="180"
+  data-title="收尾"
+  data-rec="up[u][j] = up[ up[u][j-1] ][j-1]"
+  data-eyebrow="ALGO PRIMER / DP-04 · 完 · 下一讲：树链剖分">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-7">
+        <div class="meta rise" data-seq="0">结语</div>
+        <h2 class="disp rise" data-seq="1" style="margin-top:14px;font-size:52px">
+          倍增就是<br><b class="v">用二进制拆掉 k</b>。
+        </h2>
+        <div class="keyline" data-seq="2"></div>
+        <p class="lead rise" data-seq="3">
+          今天你只需要记住四句话：<br>
+          ① <b class="mono">k</b> 一定写得成 <b>2 的幂之和</b>；<br>
+          ② 预处理 <b class="mono">up[u][j]</b>，一次跳 2<sup>j</sup>；<br>
+          ③ 转移是 <b>「先跳一半，再跳一半」</b>；<br>
+          ④ 查询时 <b>从大跳板开始试</b>。
+        </p>
+        <p class="p rise" data-seq="4" style="margin-top:12px">
+          倍增<b>不是题型</b>，是<b>加速手段</b>。<br>
+          认出「跳 k 步」这种形状，你就比别人快一步。
+        </p>
+      </div>
+      <div class="c8-12">
+        <div class="meta" data-seq="1">今天就做这五道</div>
+        <div class="hrule dot" data-seq="2"></div>
+        <div class="sm rise" data-seq="3">
+          ① <a class="link" href="https://leetcode.cn/problems/kth-ancestor-of-a-tree-node/" target="_blank">LC 1483 第 k 级祖先</a><br>
+          ② <a class="link" href="https://www.luogu.com.cn/problem/P3379" target="_blank">P3379 最近公共祖先</a><br>
+          ③ <a class="link" href="https://www.luogu.com.cn/problem/P3865" target="_blank">P3865 ST 表</a><br>
+          ④ <a class="link" href="https://www.luogu.com.cn/problem/P1967" target="_blank">P1967 货车运输</a><br>
+          ⑤ <a class="link" href="https://www.luogu.com.cn/problem/P1613" target="_blank">P1613 跑路</a>
+        </div>
+        <div class="notebox" data-seq="4" style="margin-top:16px">
+          <div class="sm">每做一道，先在纸上<b>画一棵小树</b>，<br>
+            标出 <span class="mono">up[u][j]</span> 的每格，<br>
+            再回答「<b>跳板跳几步到哪？</b>」</div>
+        </div>
+        <div class="row" data-seq="5" style="margin-top:20px">
+          <div class="chip">2⁰</div><div class="chip">2¹</div>
+          <div class="chip">2²</div><div class="chip">2³</div><div class="chip">…</div>
+        </div>
+      </div>
+    </div>
+    <div class="watermark" style="top:190px">LIFT</div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">「先跳一半，再跳一半」就是全部</div>
+  </div>
+</section>
+
+</div></div>
+
+<div id="panel"><h4>跳转 · 输入编号或点击 · ESC 关闭</h4><div id="plist"></div></div>
+
+<script>
+(function(){
+  'use strict';
+  const deck = document.getElementById('deck');
+  const slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  const TOTAL = slides.length;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FOOT_HELP = '← → 或空格翻页 ｜ R 重放动画 ｜ G 跳页 ｜ Esc 目录';
+
+  slides.forEach(function(s, i){ s.dataset.num = String(i).padStart(2,'0'); });
+
+  /* ---- syntax highlight ---- */
+  const RE = /(#.*$)|("[^"]*"|'[^']*')|\b(def|return|for|in|if|elif|else|while|and|or|not|None|True|False|import|from|class|break|continue|pass|global|nonlocal|lambda)\b|\b(len|min|max|range|abs|sum|print|sorted|map|int|str|list|input|append|float|next|deque|bit_length|kth_ancestor|path_max|build|query|lca|reroot)\b|\b(\d+)\b/g;
+  function hl(line){
+    return line.replace(RE, function(m,c,s,k,f,n){
+      if(c) return '<span class="cm">'+c+'</span>';
+      if(s) return '<span class="s">'+s+'</span>';
+      if(k) return '<span class="k">'+k+'</span>';
+      if(f) return '<span class="fn">'+f+'</span>';
+      return '<span class="n">'+n+'</span>';
+    });
+  }
+  function paintCode(root){
+    root.querySelectorAll('ol.cl li').forEach(function(li){ li.innerHTML = hl(li.textContent); });
+  }
+
+  /* ---- chrome（无 wordmark；章节条 bar/label 合一） ---- */
+  const CH = ['','起点','首例','经典','进阶','扩展','方法题单'];
+  function ruler(ch){
+    let h = '<div class="ruler">';
+    for(let i=1;i<=6;i++){
+      h += '<a data-go="'+i+'" class="'+(i===ch?'on':'')+'"><div class="bar"><span class="lbl">'+CH[i]+'</span></div></a>';
+    }
+    return h + '</div>';
+  }
+  function buildChrome(){
+    slides.forEach(function(s){
+      const desc = s.dataset.desc
+        ? '<div class="qdesc"><span class="qlabel">题意</span>'+s.dataset.desc+'</div>'
+        : '';
+      const head =
+        '<header class="top">'+
+          '<h1 class="s-title">'+s.dataset.title+'</h1>'+
+          desc+
+          '<div class="top-rule"></div><div class="top-accent"></div>'+
+        '</header>'+
+        '<div class="numline">'+s.dataset.rec+'</div>'+
+        '<div class="pager"><div class="pg">'+s.dataset.num+' / '+(TOTAL-1)+'</div></div>'+
+        '<div class="numrule"></div>'+
+        '<div class="mnum">'+s.dataset.num+'</div>'+
+        '<div class="mlabel">'+s.dataset.eyebrow.split(' · ')[0]+'</div>';
+      const foot =
+        '<footer class="bottom">'+
+          '<div class="bot-rule"></div>'+
+          ruler(+(s.dataset.ch||0))+
+          '<div class="botline">'+
+            '<span class="eyebrow">'+s.dataset.eyebrow+'</span>'+
+            '<span class="bsep"></span>'+
+            '<span class="help">'+FOOT_HELP+'</span>'+
+            '<span class="bmark">ALGO PRIMER · 倍增</span>'+
+          '</div>'+
+        '</footer>';
+      s.insertAdjacentHTML('afterbegin', head);
+      s.insertAdjacentHTML('beforeend', foot);
+    });
+  }
+
+  /* ---- motion ---- */
+  let timers = [];
+  function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+  function paths(slide){ return Array.prototype.slice.call(slide.querySelectorAll('[data-draw]')); }
+  function setPathLen(slide){
+    paths(slide).forEach(function(p){
+      let L = 0;
+      try{ L = Math.ceil(p.getTotalLength()); }catch(e){ L = 0; }
+      if(!L || !isFinite(L)) L = 600;
+      p.style.setProperty('--len', L);
+    });
+  }
+  function play(slide, instant){
+    clearTimers();
+    const stag = +(slide.dataset.stagger || 180);
+    const items = Array.prototype.slice.call(slide.querySelectorAll('[data-seq],[data-at]'));
+    items.forEach(function(el){ el.classList.remove('on'); });
+    const ps = paths(slide);
+    ps.forEach(function(p){ p.classList.remove('on'); });
+    setPathLen(slide);
+    if(instant || reduce){
+      items.forEach(function(el){ el.classList.add('on'); });
+      ps.forEach(function(p){ p.classList.add('on'); });
+      return;
+    }
+    items.forEach(function(el){
+      const d = (el.dataset.at !== undefined) ? +el.dataset.at : 240 + (+el.dataset.seq) * stag;
+      timers.push(setTimeout(function(){ el.classList.add('on'); }, Math.max(0, d)));
+    });
+    ps.forEach(function(p){
+      timers.push(setTimeout(function(){ p.classList.add('on'); }, +(p.dataset.draw || 900)));
+    });
+  }
+  function reset(slide){
+    clearTimers();
+    slide.querySelectorAll('[data-seq],[data-at]').forEach(function(el){ el.classList.remove('on'); });
+    paths(slide).forEach(function(p){ p.classList.remove('on'); });
+  }
+
+  /* ---- navigation ---- */
+  let cur = 0;
+  function show(i, instant){
+    if(i < 0) i = 0;
+    if(i > TOTAL-1) i = TOTAL-1;
+    slides.forEach(function(s){ s.classList.remove('active'); });
+    cur = i;
+    const s = slides[i];
+    s.classList.add('active');
+    play(s, instant);
+    if(history.replaceState) history.replaceState(null,'','#'+s.dataset.num);
+  }
+  function next(){ show(cur+1); }
+  function prev(){ show(cur-1); }
+
+  /* ---- panel ---- */
+  const panel = document.getElementById('panel');
+  const plist = document.getElementById('plist');
+  function buildPanel(){
+    plist.innerHTML = slides.map(function(s,i){
+      return '<button data-i="'+i+'"><span>'+s.dataset.num+' &nbsp; '+s.dataset.eyebrow.split(' · ')[0]+'</span>'+s.dataset.title+'</button>';
+    }).join('');
+    plist.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click', function(){ panel.classList.remove('open'); show(+b.dataset.i, true); });
+    });
+  }
+  function jumpChapter(c){
+    const s = slides.find(function(x){ return +x.dataset.ch === c; });
+    if(s) show(slides.indexOf(s), true);
+  }
+
+  /* ---- events ---- */
+  document.addEventListener('keydown', function(e){
+    const k = e.key;
+    if(k === 'Escape'){ panel.classList.toggle('open'); return; }
+    if(panel.classList.contains('open')) return;
+    if(k === 'ArrowRight' || k === 'PageDown' || k === ' ' || k === 'Enter'){ e.preventDefault(); next(); }
+    else if(k === 'ArrowLeft' || k === 'PageUp'){ e.preventDefault(); prev(); }
+    else if(k === 'Home'){ show(0, true); }
+    else if(k === 'End'){ show(TOTAL-1, true); }
+    else if(k === 'r' || k === 'R'){ play(slides[cur], false); }
+    else if(k === 'g' || k === 'G'){ panel.classList.add('open'); }
+    else if(/^[0-9]$/.test(k)){ if(+k <= TOTAL-1) show(+k, true); }
+  });
+
+  let wheelLock = 0;
+  window.addEventListener('wheel', function(e){
+    const now = Date.now();
+    if(now - wheelLock < 620 || Math.abs(e.deltaY) < 12) return;
+    wheelLock = now;
+    if(e.deltaY > 0) next(); else prev();
+  }, {passive:true});
+
+  let tx = null;
+  window.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; }, {passive:true});
+  window.addEventListener('touchend', function(e){
+    if(tx === null) return;
+    const dx = e.changedTouches[0].clientX - tx;
+    if(Math.abs(dx) > 50){ if(dx < 0) next(); else prev(); }
+    tx = null;
+  }, {passive:true});
+
+  deck.addEventListener('click', function(e){
+    const go = e.target.closest('[data-go]');
+    if(go){ jumpChapter(+go.dataset.go); return; }
+    if(e.target.closest('[data-run]')){ play(slides[cur], false); return; }
+    if(e.target.closest('[data-reset]')){ reset(slides[cur]); return; }
+    const cp = e.target.closest('[data-copy]');
+    if(cp){
+      const box = cp.closest('.code').querySelector('ol.cl');
+      const txt = Array.prototype.slice.call(box.querySelectorAll('li'))
+        .map(function(li){ return li.textContent; }).join('\n');
+      if(navigator.clipboard) navigator.clipboard.writeText(txt);
+      const old = cp.textContent; cp.textContent = 'ok';
+      setTimeout(function(){ cp.textContent = old; }, 900);
+    }
+  });
+
+  function fit(){
+    deck.style.transform = 'scale(' + Math.min(window.innerWidth/1280, window.innerHeight/720) + ')';
+  }
+  window.addEventListener('resize', fit);
+
+  /* ---- init ---- */
+  paintCode(deck);
+  buildChrome();
+  fit();
+  buildPanel();
+  const startNum = (location.hash || '').replace('#','');
+  const startIdx = slides.findIndex(function(s){ return s.dataset.num === startNum; });
+  show(startIdx >= 0 ? startIdx : 0, false);
+})();
+</script>
+</body>
+</html>

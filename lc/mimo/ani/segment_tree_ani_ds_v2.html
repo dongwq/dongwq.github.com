@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>线段树 · 构建 / 单点更新 / 区间查询 / 区间更新 动画</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1080px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead {
+    font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px;
+  }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  .st-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.2;
+    transition: fill .25s, stroke .25s, stroke-width .25s;
+  }
+  .st-node .node-idx {
+    font-family: ui-monospace, monospace;
+    font-size: 11px; font-weight: 700; fill: #4a5568;
+    pointer-events: none; user-select: none;
+  }
+  .st-node .node-val {
+    font-size: 20px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .st-node .node-rng {
+    font-family: ui-monospace, monospace;
+    font-size: 10px; font-weight: 600; fill: #829ab1;
+    pointer-events: none; user-select: none;
+  }
+  /* lazy 徽章 */
+  .lazy-badge {
+    fill: #ffe4cc; stroke: #d9713b; stroke-width: 1.6;
+  }
+  .lazy-txt {
+    font-family: ui-monospace, monospace;
+    font-size: 10.5px; font-weight: 800; fill: #b95a28;
+    pointer-events: none; user-select: none;
+  }
+
+  .st-node.touched .node-bg { fill: #ffe9a8; stroke: #e09b00; stroke-width: 3.2; }
+  .st-node.touched .node-val { fill: #a35e00; }
+  .st-node.updated .node-bg { fill: #c9efc9; stroke: #57a957; stroke-width: 3.4; }
+  .st-node.updated .node-val { fill: #2f7a34; }
+  .st-node.hit .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.6; }
+  .st-node.hit .node-val { fill: #1c5e28; }
+  .st-node.miss .node-bg { fill: #eeeeee; stroke: #999999; stroke-width: 2; }
+  .st-node.miss .node-val { fill: #666666; }
+  /* 打懒标记时的节点 */
+  .st-node.lazy-mark .node-bg { fill: #ffd0b8; stroke: #d9713b; stroke-width: 3.6; }
+  .st-node.lazy-mark .node-val { fill: #a34d1a; }
+  /* push_down 时父节点的样子 */
+  .st-node.pushdown .node-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3.4; }
+  .st-node.pushdown .node-val { fill: #5b3db8; }
+
+  .arr-node .node-bg {
+    fill: #f1f3f6; stroke: #829ab1; stroke-width: 2;
+    transition: fill .25s, stroke .25s;
+  }
+  .arr-node .node-idx {
+    font-family: ui-monospace, monospace;
+    font-size: 11px; font-weight: 700; fill: #5a6068;
+    pointer-events: none; user-select: none;
+  }
+  .arr-node .node-val {
+    font-size: 18px; font-weight: 800; fill: #334e68;
+    pointer-events: none; user-select: none;
+  }
+  .arr-node.covered .node-bg { fill: #ffe9a8; stroke: #e09b00; stroke-width: 2.6; }
+  .arr-node.changed .node-bg { fill: #ffcccc; stroke: #d64545; stroke-width: 3; }
+  .arr-node.changed .node-val { fill: #b33232; }
+
+  .st-edge { stroke: #cbd2d9; stroke-width: 1.6; fill: none; }
+  .st-edge.active {
+    stroke: #e09b00; stroke-width: 2.8;
+    stroke-dasharray: 6 4;
+    animation: dashflow .75s linear infinite;
+  }
+  .st-edge.query {
+    stroke: #2f7a34; stroke-width: 2.8;
+    stroke-dasharray: 6 4;
+    animation: dashflow .75s linear infinite;
+  }
+  .st-edge.push {
+    stroke: #7c5cd6; stroke-width: 2.8;
+    stroke-dasharray: 6 4;
+    animation: dashflow .75s linear infinite;
+  }
+  @keyframes dashflow { to { stroke-dashoffset: -10; } }
+
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.base   { color: #2f7a34; }
+  .row-label.upd    { color: #2369ad; }
+  .row-label.query  { color: #7c5cd6; }
+  .row-label.rupd   { color: #b95a28; }
+
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  .stat-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #f0f7ff; color: #2369ad;
+    padding: 4px 12px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600;
+    border: 1px solid #c7defa;
+  }
+  .stat-badge .num {
+    font-family: ui-monospace, monospace;
+    font-size: 14px; font-weight: 800; color: #2a7fd0;
+  }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.purple  { background: #7c5cd6; border-color: #7c5cd6; color: #fff; }
+  button.purple:hover { background: #634ab0; border-color: #634ab0; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.danger:hover { background: #b33232; border-color: #b33232; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost   { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+  button.ghost:hover { background: #f0f7ff; }
+  button.orange  { background: #d9713b; border-color: #d9713b; color: #fff; }
+  button.orange:hover { background: #b95a28; border-color: #b95a28; }
+
+  input[type="number"], select {
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border-radius: 7px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  input[type="number"] { width: 76px; }
+  select { min-width: 130px; }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .tree-table {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    font-size: 12.5px;
+  }
+  .tree-table .title {
+    font-weight: 700; color: #243b53; margin-right: 8px;
+  }
+  .tree-cell {
+    display: inline-flex; flex-direction: column; align-items: center;
+    padding: 4px 8px; border-radius: 6px;
+    background: #f0f4f8; color: #4a5568;
+    font-family: ui-monospace, monospace; font-size: 12px;
+    border: 1px solid #dbe4ec; min-width: 46px;
+    transition: background .25s, color .25s, border-color .25s;
+  }
+  .tree-cell .i { font-size: 10px; color: #829ab1; }
+  .tree-cell .v { font-weight: 800; }
+  .tree-cell .lz {
+    font-size: 9.5px; color: #b95a28; font-weight: 700;
+    margin-top: 1px;
+  }
+  .tree-cell.done   { background: #eaf9ee; color: #2f7a34; border-color: #b8e0bf; }
+  .tree-cell.active { background: #fffbf2; color: #a35e00; border-color: #ffd98a; }
+  .tree-cell.hit    { background: #d4f4dd; color: #1c5e28; border-color: #7ec88e; }
+  .tree-cell.haslazy { border-color: #d9713b; background: #fff4ea; }
+
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-card.lazy-point { border-color: #d9713b; background: #fff4ea; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-card.lazy-point .k-icon { background: linear-gradient(135deg, #ffd0b8 0%, #ffb08a 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-card.lazy-point .k-title { color: #a34d1a; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-card.lazy-point .k-lines li::before { color: #d9713b; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 640px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>线段树 · 构建 / 单点更新 / 区间查询 / 区间更新 动画</h1>
+  <p class="subtitle" id="subtitle">
+    每个节点维护区间 <code>[l, r]</code> 的聚合值 · 单点更新 O(log N) · 区间查询 O(log N) · <b>区间更新（懒标记）O(log N)</b>
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · 懒标记如何把区间更新降到 O(log N)？</h2>
+    <p class="intro-lead">
+      如果对区间 <code>[l, r]</code> 的每个元素都做一次单点更新，代价是 <b>O((r−l+1) log N)</b>。
+      <b>懒标记（Lazy Tag）</b>的巧妙之处在于：当一个节点管理的区间<b>完全被 <code>[l, r]</code> 覆盖</b>时，
+      不再递归到叶子，而是<b>只更新这个节点的值</b>、同时给它挂一个标记 <code>lazy[p]</code>，
+      表示"<b>我的整个子树都还要再加这个值，但我先不传下去</b>"。
+      只有当后续操作真的需要访问它的孩子时，才把标记<b>下传（push_down）</b>给两个孩子。
+      这样一次区间更新也只访问 O(log N) 个节点。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">核心 1</div>
+        <div class="title">apply：把标记应用到节点</div>
+        <div class="desc">
+          当节点 p 完全被覆盖时：<br>
+          · <code>tree[p] += val × (r−l+1)</code>（sum 语义）<br>
+          · <code>lazy[p] += val</code>（记录待下传的标记）<br>
+          · <b>直接返回，不再向下递归</b>
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 2</div>
+        <div class="title">push_down：把标记下传</div>
+        <div class="desc">
+          访问 p 的孩子<b>之前</b>必须先把 <code>lazy[p]</code> 下传：<br>
+          · 给两个孩子分别 <code>apply</code><br>
+          · 然后 <code>lazy[p] = 0</code><br>
+          保证"标记永远挂在该管的节点上"。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 3</div>
+        <div class="title">区间查询与区间更新兼容</div>
+        <div class="desc">
+          查询时若遇到有 <code>lazy</code> 的节点，<br>
+          先 <code>push_down</code> 再递归，<br>
+          保证查到的值包含所有未下传的修改。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">区间更新 [l, r] += Δ</div>
+        <div class="desc">
+          <code>update(p, l, r, ql, qr, Δ)</code><br>
+          · 完全覆盖 → <code>apply</code> 打标记<br>
+          · 部分覆盖 → <code>push_down</code> 后递归
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">对比</div>
+        <div class="title">朴素做法 vs 懒标记</div>
+        <div class="desc">
+          朴素：<code>O((r−l+1) log N)</code>，可能退化到 O(N log N)<br>
+          懒标记：<b>O(log N)</b>，无论区间多大
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">注意</div>
+        <div class="title">懒标记需要"可复合"</div>
+        <div class="desc">
+          示例用"区间加 + 区间求和"。<br>
+          若换成"区间赋值"或"区间乘"，需要额外定义<br>
+          <code>compose(old, new)</code> 如何把新旧标记合并。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 660" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label base">基本</span>
+      <button id="btnReset" class="ghost">重置为初始数组</button>
+      <span class="stat-badge">
+        初始 a[] = <span class="num" id="arrStat">3,1,4,1,5,9,2,6</span>
+      </span>
+      <span class="label" style="margin-left:12px;">操作</span>
+      <select id="opSel">
+        <option value="sum">求和 sum</option>
+        <option value="max">最大值 max</option>
+        <option value="min">最小值 min</option>
+        <option value="gcd">最大公约数 gcd</option>
+        <option value="lcm">最小公倍数 lcm</option>
+        <option value="or">按位或 or</option>
+        <option value="and">按位与 and</option>
+        <option value="xor">按位异或 xor</option>
+      </select>
+      <span class="row-hint">
+        灰色方块是 a[1..8]；蓝色条带是 tree 节点，横向跨度 = 它管辖的 a 区间
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label upd">单点更新</span>
+      <span class="label">a[</span>
+      <input id="updIdx" type="number" value="3" min="1" max="8">
+      <span class="label">] =</span>
+      <input id="updVal" type="number" value="10" min="0" max="99">
+      <button id="btnUpdate" class="primary">update</button>
+      <span class="row-hint">
+        从叶子向上，每层重算 <code>tree[p] = merge(tree[2p], tree[2p+1])</code>
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label query">区间查询</span>
+      <span class="label">[</span>
+      <input id="qryL" type="number" value="2" min="1" max="8">
+      <span class="label">..</span>
+      <input id="qryR" type="number" value="6" min="1" max="8">
+      <span class="label">]</span>
+      <button id="btnQuery" class="purple">query</button>
+      <span class="row-hint">
+        从根递归分解，遇到 lazy 节点会先 <code>push_down</code>
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label rupd">区间更新</span>
+      <span class="label">[</span>
+      <input id="rupdL" type="number" value="3" min="1" max="8">
+      <span class="label">..</span>
+      <input id="rupdR" type="number" value="6" min="1" max="8">
+      <span class="label">] += Δ =</span>
+      <input id="rupdDelta" type="number" value="10" min="-20" max="20">
+      <button id="btnRangeUpdate" class="orange">range_update</button>
+      <span class="row-hint">
+        <b>仅 sum 支持</b>（其余操作需专门设计 lazy 的语义）· 完全覆盖的节点打 <code>lazy</code> 标记并直接返回
+      </span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 试试 update / query / range_update，或点击「开始演示」</div>
+
+  <div class="tree-table" id="treeTable">
+    <span class="title">tree[]</span>
+  </div>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 线段树核心要点 <span class="hint">普通操作 + 懒标记</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · 线段树
+      <span class="badge">普通 + 懒标记</span>
+      <span class="hint">O(log N) 每次操作</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyCode"></pre></div>
+  </details>
+</div>
+
+<!-- ============ Python 源码 ============ -->
+<script type="text/plain" id="pySrc">
+"""
+线段树（Segment Tree）—— 普通 + 懒标记。
+
+普通线段树：
+    tree[p] = merge(tree[2p], tree[2p+1])
+    单点更新 / 区间查询都是 O(log N)
+
+懒标记线段树：
+    区间加 + 区间求和
+    apply(p, l, r, val)   把标记应用到节点 p
+    push_down(p, l, r)    把标记下传给孩子
+    区间更新 / 区间查询都是 O(log N)
+"""
+
+from math import gcd
+
+
+def lcm(a, b):
+    if a == 0 or b == 0:
+        return 0
+    return abs(a // gcd(a, b) * b)
+
+
+# ============================================================
+# 模块 1：普通线段树
+# ============================================================
+class SegmentTree:
+    """单点更新 + 区间查询。支持任意结合律操作。"""
+
+    IDENT = {
+        'sum': 0, 'xor': 0,
+        'max': float('-inf'), 'min': float('inf'),
+        'gcd': 0, 'lcm': 1,
+        'or':  0, 'and': -1,
+    }
+
+    def __init__(self, arr, op='sum'):
+        self.n = len(arr) - 1
+        self.op = op
+        self.arr = arr[:]
+        self.tree = [self.IDENT[op]] * (4 * self.n + 5)
+        self._build(1, 1, self.n)
+
+    def _merge(self, a, b):
+        op = self.op
+        if op == 'sum': return a + b
+        if op == 'xor': return a ^ b
+        if op == 'max': return max(a, b)
+        if op == 'min': return min(a, b)
+        if op == 'gcd': return gcd(a, b)
+        if op == 'lcm': return lcm(a, b)
+        if op == 'or':  return a | b
+        if op == 'and': return a & b
+        raise ValueError(f'unknown op: {op}')
+
+    def _build(self, p, l, r):
+        if l == r:
+            self.tree[p] = self.arr[l]
+            return
+        mid = (l + r) // 2
+        self._build(2 * p, l, mid)
+        self._build(2 * p + 1, mid + 1, r)
+        self.tree[p] = self._merge(self.tree[2 * p], self.tree[2 * p + 1])
+
+    def update(self, idx, val):
+        """单点更新 a[idx] = val，O(log N)"""
+        self.arr[idx] = val
+        self._update(1, 1, self.n, idx, val)
+
+    def _update(self, p, l, r, idx, val):
+        if l == r:
+            self.tree[p] = val
+            return
+        mid = (l + r) // 2
+        if idx <= mid:
+            self._update(2 * p, l, mid, idx, val)
+        else:
+            self._update(2 * p + 1, mid + 1, r, idx, val)
+        self.tree[p] = self._merge(self.tree[2 * p], self.tree[2 * p + 1])
+
+    def query(self, ql, qr):
+        return self._query(1, 1, self.n, ql, qr)
+
+    def _query(self, p, l, r, ql, qr):
+        if ql <= l and r <= qr:
+            return self.tree[p]
+        mid = (l + r) // 2
+        if qr <= mid:
+            return self._query(2 * p, l, mid, ql, qr)
+        if ql > mid:
+            return self._query(2 * p + 1, mid + 1, r, ql, qr)
+        left  = self._query(2 * p, l, mid, ql, qr)
+        right = self._query(2 * p + 1, mid + 1, r, ql, qr)
+        return self._merge(left, right)
+
+
+# ============================================================
+# 模块 2：懒标记线段树（区间加 + 区间求和）
+# ============================================================
+class LazySegmentTree:
+    """
+    支持：
+        range_add(l, r, val)    区间 [l, r] 全部加 val，O(log N)
+        range_sum(l, r)         区间求和，O(log N)
+        point_get(i)            单点查询，O(log N)（借道 range_sum(i, i)）
+
+    两个核心函数：
+        apply(p, l, r, val)     把标记 val 应用到节点 p
+        push_down(p, l, r)      把节点 p 的标记下传给孩子
+    """
+
+    def __init__(self, arr):
+        self.n = len(arr) - 1
+        self.tree = [0] * (4 * self.n + 5)
+        self.lazy = [0] * (4 * self.n + 5)
+        self._build(1, 1, self.n, arr)
+
+    def _build(self, p, l, r, arr):
+        if l == r:
+            self.tree[p] = arr[l]
+            return
+        mid = (l + r) // 2
+        self._build(2 * p, l, mid, arr)
+        self._build(2 * p + 1, mid + 1, r, arr)
+        self.tree[p] = self.tree[2 * p] + self.tree[2 * p + 1]
+
+    # ---------- 核心：apply 与 push_down ----------
+    def _apply(self, p, l, r, val):
+        """
+        把标记 val 应用到节点 p：
+            tree[p] += val * (区间长度)
+            lazy[p] += val
+        这一步是 O(1) —— 我们没有真的去改每个叶子，
+        只是"记账"在节点 p 上。
+        """
+        self.tree[p] += val * (r - l + 1)
+        self.lazy[p] += val
+
+    def _push_down(self, p, l, r):
+        """
+        把节点 p 的 lazy 下传给孩子。
+        只有在真正需要访问孩子时（部分覆盖 / 继续向下查询）才调用。
+        """
+        if self.lazy[p] == 0 or l == r:
+            return
+        mid = (l + r) // 2
+        self._apply(2 * p, l, mid, self.lazy[p])
+        self._apply(2 * p + 1, mid + 1, r, self.lazy[p])
+        self.lazy[p] = 0
+
+    # ---------- 区间加 ----------
+    def range_add(self, ql, qr, val):
+        self._range_add(1, 1, self.n, ql, qr, val)
+
+    def _range_add(self, p, l, r, ql, qr, val):
+        if ql <= l and r <= qr:
+            # 完全覆盖：打标记，直接返回！
+            self._apply(p, l, r, val)
+            return
+        # 部分覆盖：先把旧标记下传
+        self._push_down(p, l, r)
+        mid = (l + r) // 2
+        if ql <= mid:
+            self._range_add(2 * p, l, mid, ql, qr, val)
+        if qr > mid:
+            self._range_add(2 * p + 1, mid + 1, r, ql, qr, val)
+        # 回溯：重新合并
+        self.tree[p] = self.tree[2 * p] + self.tree[2 * p + 1]
+
+    # ---------- 区间求和 ----------
+    def range_sum(self, ql, qr):
+        return self._range_sum(1, 1, self.n, ql, qr)
+
+    def _range_sum(self, p, l, r, ql, qr):
+        if ql <= l and r <= qr:
+            return self.tree[p]
+        # 关键：访问孩子前必须把 lazy 下传，否则孩子的 tree 值不完整
+        self._push_down(p, l, r)
+        mid = (l + r) // 2
+        res = 0
+        if ql <= mid: res += self._range_sum(2 * p, l, mid, ql, qr)
+        if qr > mid:  res += self._range_sum(2 * p + 1, mid + 1, r, ql, qr)
+        return res
+
+
+if __name__ == '__main__':
+    arr = [None, 3, 1, 4, 1, 5, 9, 2, 6]
+
+    # 普通线段树演示
+    for op in ['sum', 'max', 'min', 'gcd', 'xor']:
+        st = SegmentTree(arr, op)
+        print(f'{op:>4}[2..6] =', st.query(2, 6))
+
+    # 懒标记演示
+    lst = LazySegmentTree(arr)
+    print('初始 sum[1..8] =', lst.range_sum(1, 8))    # 31
+
+    lst.range_add(3, 6, 10)                            # a[3..6] 全部 +10
+    print('range_add(3,6,+10) 后:')
+    print('  sum[1..8] =', lst.range_sum(1, 8))       # 71
+    print('  sum[3..6] =', lst.range_sum(3, 6))       # 59
+    print('  sum[2..7] =', lst.range_sum(2, 7))       # 60
+</script>
+
+<script>
+/* =========================================================
+   1. 数据结构
+   ========================================================= */
+const N = 8;
+const INIT_A = [null, 3, 1, 4, 1, 5, 9, 2, 6];
+
+const NODES = {
+  1:  { l: 1, r: 8, depth: 0 },
+  2:  { l: 1, r: 4, depth: 1 },
+  3:  { l: 5, r: 8, depth: 1 },
+  4:  { l: 1, r: 2, depth: 2 },
+  5:  { l: 3, r: 4, depth: 2 },
+  6:  { l: 5, r: 6, depth: 2 },
+  7:  { l: 7, r: 8, depth: 2 },
+  8:  { l: 1, r: 1, depth: 3 },
+  9:  { l: 2, r: 2, depth: 3 },
+  10: { l: 3, r: 3, depth: 3 },
+  11: { l: 4, r: 4, depth: 3 },
+  12: { l: 5, r: 5, depth: 3 },
+  13: { l: 6, r: 6, depth: 3 },
+  14: { l: 7, r: 7, depth: 3 },
+  15: { l: 8, r: 8, depth: 3 },
+};
+const LEAF_OF = i => i + 7;
+const PARENT_OF = p => Math.floor(p / 2);
+const LEFT_OF = p => 2 * p;
+const RIGHT_OF = p => 2 * p + 1;
+
+let arr = INIT_A.slice();
+let tree = new Array(16).fill(null);
+let lazy = new Array(16).fill(0);      /* ★ 懒标记数组 */
+
+/* 状态变量 */
+let busy = false;
+let inDemo = false;
+let OP = 'sum';
+
+let nodeState = {};    // p -> '' | 'touched' | 'updated' | 'hit' | 'miss' | 'lazy-mark' | 'pushdown'
+let arrState = {};
+let edgeState = {};    // p -> 'active' | 'query' | 'push'
+
+/* =========================================================
+   2. 聚合操作
+   ========================================================= */
+function gcd2(a, b) {
+  a = Math.abs(a); b = Math.abs(b);
+  while (b) { [a, b] = [b, a % b]; }
+  return a;
+}
+
+const OP_FN = {
+  sum: (a, b) => a + b,
+  max: (a, b) => Math.max(a, b),
+  min: (a, b) => Math.min(a, b),
+  gcd: (a, b) => gcd2(a, b),
+  lcm: (a, b) => { if (a === 0 || b === 0) return 0; return Math.abs(a / gcd2(a, b) * b); },
+  or:  (a, b) => a | b,
+  and: (a, b) => a & b,
+  xor: (a, b) => a ^ b,
+};
+const OP_IDENT = {
+  sum: 0, max: -Infinity, min: Infinity, gcd: 0,
+  lcm: 1, or: 0, and: -1, xor: 0,
+};
+const OP_SYM  = { sum:'sum', max:'max', min:'min', gcd:'gcd', lcm:'lcm', or:'or', and:'and', xor:'xor' };
+const OP_NAME = {
+  sum:'区间求和', max:'区间最大值', min:'区间最小值', gcd:'区间最大公约数',
+  lcm:'区间最小公倍数', or:'区间按位或', and:'区间按位与', xor:'区间按位异或',
+};
+
+/* =========================================================
+   3. buildTree / reset
+   ========================================================= */
+function buildTree() {
+  tree = new Array(16).fill(null);
+  lazy = new Array(16).fill(0);
+  for (let i = 1; i <= N; i++) tree[LEAF_OF(i)] = arr[i];
+  for (let p = 7; p >= 1; p--) {
+    tree[p] = OP_FN[OP](tree[LEFT_OF(p)], tree[RIGHT_OF(p)]);
+  }
+}
+
+function resetState() {
+  arr = INIT_A.slice();
+  buildTree();
+  nodeState = {};
+  arrState = {};
+  edgeState = {};
+  for (let p = 1; p <= 15; p++) {
+    nodeState[p] = '';
+    edgeState[p] = '';
+  }
+  for (let j = 1; j <= N; j++) arrState[j] = '';
+}
+
+/* =========================================================
+   4. 坐标布局
+   ========================================================= */
+const SVG_W = 900, SVG_H = 660;
+const A_W = 72, A_H = 50, A_GAP = 14;
+const TOTAL_A_W = N * A_W + (N - 1) * A_GAP;
+const A_LEFT = (SVG_W - TOTAL_A_W) / 2;
+const A_Y = 540;
+
+const TREE_H = 42;
+const LAYER_Y = [80, 190, 300, 410];
+
+const aLeft  = j => A_LEFT + (j - 1) * (A_W + A_GAP);
+const aRight = j => aLeft(j) + A_W;
+const aCx    = j => aLeft(j) + A_W / 2;
+
+function nodeBox(p) {
+  const { l, r } = NODES[p];
+  const left  = aLeft(l);
+  const right = aRight(r);
+  return { left, right, width: right - left, cx: (left + right) / 2 };
+}
+const nodeY = p => LAYER_Y[NODES[p].depth];
+
+/* =========================================================
+   5. SVG 构建
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const defs = document.createElementNS(NS, 'defs');
+svg.appendChild(defs);
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+/* =========================================================
+   6. 渲染
+   ========================================================= */
+function render() {
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+
+  /* 父子连线 */
+  for (let p = 2; p <= 15; p++) {
+    const par = PARENT_OF(p);
+    const cb = nodeBox(p);
+    const pb = nodeBox(par);
+    const x1 = cb.cx, y1 = nodeY(p) - TREE_H / 2;
+    const x2 = pb.cx, y2 = nodeY(par) + TREE_H / 2;
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', `M ${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`);
+    let cls = 'st-edge';
+    if (edgeState[p] === 'active') cls += ' active';
+    if (edgeState[p] === 'query')  cls += ' query';
+    if (edgeState[p] === 'push')   cls += ' push';
+    path.setAttribute('class', cls);
+    edgeLayer.appendChild(path);
+  }
+
+  /* 树节点 */
+  for (let p = 1; p <= 15; p++) {
+    const box = nodeBox(p);
+    const y = nodeY(p);
+    const { l, r } = NODES[p];
+
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'st-node';
+    if (nodeState[p]) cls += ' ' + nodeState[p];
+    g.setAttribute('class', cls);
+
+    /* 条带 */
+    const rect = document.createElementNS(NS, 'rect');
+    rect.setAttribute('x', box.left);
+    rect.setAttribute('y', y - TREE_H / 2);
+    rect.setAttribute('width', box.width);
+    rect.setAttribute('height', TREE_H);
+    rect.setAttribute('rx', '8');
+    rect.setAttribute('class', 'node-bg');
+    g.appendChild(rect);
+
+    /* 编号 + 区间（同一行，居中） */
+    const idxTxt = document.createElementNS(NS, 'text');
+    idxTxt.setAttribute('class', 'node-idx');
+    idxTxt.setAttribute('text-anchor', 'middle');
+    idxTxt.setAttribute('x', box.cx);
+    idxTxt.setAttribute('y', y - TREE_H / 2 - 9);
+    idxTxt.setAttribute('dominant-baseline', 'central');
+    idxTxt.textContent = `node ${p}  [${l},${r}]`;
+    g.appendChild(idxTxt);
+
+    /* 中央值 */
+    const valTxt = document.createElementNS(NS, 'text');
+    valTxt.setAttribute('class', 'node-val');
+    valTxt.setAttribute('text-anchor', 'middle');
+    valTxt.setAttribute('x', box.cx);
+    valTxt.setAttribute('y', y + 1);
+    valTxt.setAttribute('dominant-baseline', 'central');
+    valTxt.textContent = tree[p] === null ? '–' : tree[p];
+    g.appendChild(valTxt);
+
+    /* lazy 徽章：条带下方居中 */
+    if (lazy[p] !== 0) {
+      const badgeY = y + TREE_H / 2 + 11;
+      const badgeW = 78;
+      const badgeH = 18;
+
+      const badge = document.createElementNS(NS, 'rect');
+      badge.setAttribute('class', 'lazy-badge');
+      badge.setAttribute('x', box.cx - badgeW / 2);
+      badge.setAttribute('y', badgeY - badgeH / 2);
+      badge.setAttribute('width', badgeW);
+      badge.setAttribute('height', badgeH);
+      badge.setAttribute('rx', '5');
+      g.appendChild(badge);
+
+      const lzTxt = document.createElementNS(NS, 'text');
+      lzTxt.setAttribute('class', 'lazy-txt');
+      lzTxt.setAttribute('text-anchor', 'middle');
+      lzTxt.setAttribute('x', box.cx);
+      lzTxt.setAttribute('y', badgeY);
+      lzTxt.setAttribute('dominant-baseline', 'central');
+      lzTxt.textContent = `lazy=${lazy[p] >= 0 ? '+' : ''}${lazy[p]}`;
+      g.appendChild(lzTxt);
+    }
+
+    nodeLayer.appendChild(g);
+  }
+
+  /* a 方块 */
+  for (let j = 1; j <= N; j++) {
+    const x = aCx(j);
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'arr-node';
+    if (arrState[j]) cls += ' ' + arrState[j];
+    g.setAttribute('class', cls);
+
+    const rect = document.createElementNS(NS, 'rect');
+    rect.setAttribute('x', aLeft(j));
+    rect.setAttribute('y', A_Y - A_H / 2);
+    rect.setAttribute('width', A_W);
+    rect.setAttribute('height', A_H);
+    rect.setAttribute('rx', '8');
+    rect.setAttribute('class', 'node-bg');
+    g.appendChild(rect);
+
+    const idxTxt = document.createElementNS(NS, 'text');
+    idxTxt.setAttribute('class', 'node-idx');
+    idxTxt.setAttribute('text-anchor', 'middle');
+    idxTxt.setAttribute('x', x);
+    idxTxt.setAttribute('y', A_Y - A_H / 2 - 12);
+    idxTxt.setAttribute('dominant-baseline', 'central');
+    idxTxt.textContent = 'a[' + j + ']';
+    g.appendChild(idxTxt);
+
+    const valTxt = document.createElementNS(NS, 'text');
+    valTxt.setAttribute('class', 'node-val');
+    valTxt.setAttribute('text-anchor', 'middle');
+    valTxt.setAttribute('x', x);
+    valTxt.setAttribute('y', A_Y);
+    valTxt.setAttribute('dominant-baseline', 'central');
+    valTxt.textContent = arr[j];
+    g.appendChild(valTxt);
+
+    nodeLayer.appendChild(g);
+  }
+
+  updateTreeTable();
+}
+
+/* =========================================================
+   7. tree 数组状态表
+   ========================================================= */
+function updateTreeTable() {
+  const el = document.getElementById('treeTable');
+  if (!el) return;
+  el.innerHTML = '<span class="title">tree[]</span>';
+  for (let p = 1; p <= 15; p++) {
+    const cell = document.createElement('span');
+    let cls = 'tree-cell';
+    if (lazy[p] !== 0) cls += ' haslazy';
+    if (nodeState[p] === 'updated' || nodeState[p] === 'touched') cls += ' active';
+    else if (nodeState[p] === 'hit') cls += ' hit';
+    else if (tree[p] !== null) cls += ' done';
+    cell.className = cls;
+    const v = tree[p] === null ? '–' : tree[p];
+    const lz = lazy[p] !== 0 ? `<span class="lz">lazy=${lazy[p]}</span>` : '';
+    cell.innerHTML = `<span class="i">p=${p}</span><span class="v">${v}</span>${lz}`;
+    el.appendChild(cell);
+  }
+}
+
+/* =========================================================
+   8. 状态工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+function clearHl() {
+  for (let p = 1; p <= 15; p++) {
+    nodeState[p] = '';
+    edgeState[p] = '';
+  }
+  for (let j = 1; j <= N; j++) arrState[j] = '';
+}
+
+function setButtonsDisabled(d) {
+  if (inDemo) d = true;
+  for (const id of ['btnReset', 'btnUpdate', 'btnQuery', 'btnRangeUpdate']) {
+    document.getElementById(id).disabled = d;
+  }
+  document.getElementById('opSel').disabled = d;
+}
+
+function coverArr(l, r, cls) {
+  for (let j = l; j <= r; j++) arrState[j] = cls;
+}
+function clearArrCover() {
+  for (let j = 1; j <= N; j++) {
+    if (arrState[j] === 'covered') arrState[j] = '';
+  }
+}
+
+/* =========================================================
+   9. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   10. 构建动画
+   ========================================================= */
+async function animatedBuild() {
+  if (busy && !inDemo) return;
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+  resetState();
+  render();
+  setStatus(`构建开始：叶子 = a[i]，然后从下向上逐层合并`);
+  await tick(600);
+
+  for (let i = 1; i <= N; i++) {
+    const p = LEAF_OF(i);
+    nodeState[p] = 'touched';
+    render();
+    setStatus(`叶子 node ${p} 管辖 [${i}, ${i}]，值 = a[${i}] = ${arr[i]}`);
+    await tick(280);
+    nodeState[p] = 'updated';
+    render();
+    await tick(120);
+  }
+  clearHl();
+  render();
+
+  const layers = [[4, 5, 6, 7], [2, 3], [1]];
+  for (const layer of layers) {
+    for (const p of layer) {
+      const L = LEFT_OF(p), R = RIGHT_OF(p);
+      const { l, r } = NODES[p];
+      nodeState[L] = 'touched';
+      nodeState[R] = 'touched';
+      edgeState[L] = 'active';
+      edgeState[R] = 'active';
+      coverArr(l, r, 'covered');
+      render();
+      setStatus(`合并 node ${p}（管 [${l}, ${r}]）= ${OP_SYM[OP]}(tree[${L}], tree[${R}])`);
+      await tick(600);
+
+      tree[p] = OP_FN[OP](tree[L], tree[R]);
+      nodeState[p] = 'updated';
+      nodeState[L] = ''; nodeState[R] = '';
+      edgeState[L] = ''; edgeState[R] = '';
+      clearArrCover();
+      render();
+      setStatus(`  ✔ tree[${p}] = ${tree[p]}`);
+      await tick(500);
+
+      nodeState[p] = '';
+      render();
+    }
+  }
+
+  clearHl();
+  render();
+  setStatus(`✔ 构建完成：根节点 tree[1] = ${OP_SYM[OP]}[1..${N}] = ${tree[1]}`);
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   11. 单点更新动画
+   ========================================================= */
+async function animatedUpdate(idx, newVal) {
+  if (busy && !inDemo) return;
+  if (idx < 1 || idx > N) {
+    setStatus(`✘ 下标必须在 [1, ${N}] 范围内`);
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  const oldVal = arr[idx];
+  arr[idx] = newVal;
+  const leaf = LEAF_OF(idx);
+
+  arrState[idx] = 'changed';
+  render();
+  setStatus(`update(${idx}, ${newVal})：a[${idx}] 从 ${oldVal} 变成 ${newVal}`);
+  await tick(750);
+
+  nodeState[leaf] = 'touched';
+  render();
+  setStatus(`叶子 node ${leaf}（管 [${idx}, ${idx}]）= ${newVal}`);
+  await tick(550);
+
+  tree[leaf] = newVal;
+  nodeState[leaf] = 'updated';
+  render();
+  setStatus(`  ✔ tree[${leaf}] = ${newVal}`);
+  await tick(500);
+
+  let p = leaf;
+  let step = 1;
+  while (p > 1) {
+    const par = PARENT_OF(p);
+    const L = LEFT_OF(par), R = RIGHT_OF(par);
+    const { l, r } = NODES[par];
+
+    edgeState[p] = 'active';
+    render();
+    setStatus(`向上传播（第 ${step} 层）：node ${p} → 父 node ${par}`);
+    await tick(500);
+
+    nodeState[L] = 'touched';
+    nodeState[R] = 'touched';
+    coverArr(l, r, 'covered');
+    render();
+    setStatus(`合并 node ${par}（管 [${l}, ${r}]）= ${OP_SYM[OP]}(tree[${L}], tree[${R}])`);
+    await tick(650);
+
+    tree[par] = OP_FN[OP](tree[L], tree[R]);
+    nodeState[L] = ''; nodeState[R] = '';
+    edgeState[p] = '';
+    nodeState[par] = 'updated';
+    clearArrCover();
+    render();
+    setStatus(`  ✔ tree[${par}] = ${tree[par]}` + (par > 1 ? `　下一站：node ${PARENT_OF(par)}` : '　到达根，结束'));
+    await tick(600);
+
+    p = par;
+    step++;
+  }
+
+  setStatus(`✔ update 完成：路径上共 ${step} 个节点被重算（O(log N)）`);
+  await tick(1300);
+
+  clearHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   12. 区间查询动画
+   ========================================================= */
+async function animatedQuery(ql, qr) {
+  if (busy && !inDemo) return;
+  if (ql < 1 || qr > N || ql > qr) {
+    setStatus(`✘ 区间不合法`);
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  setStatus(`query(${ql}, ${qr})：从根开始分解 [${ql}, ${qr}]，遇到 lazy 先下传`);
+  await tick(600);
+
+  let acc = OP_IDENT[OP];
+  let firstHit = true;
+  let hitCount = 0;
+
+  /* 递归处理：按访问顺序动画 */
+  async function dfs(p, l, r) {
+    if (demoAborted) throw new Error('aborted');
+    const inRange = (ql <= l && r <= qr);
+
+    if (inRange) {
+      nodeState[p] = 'hit';
+      if (p > 1) edgeState[p] = 'query';
+      render();
+      setStatus(`命中 node ${p}（管 [${l}, ${r}] = ${tree[p]}）：完全覆盖`);
+      await tick(600);
+
+      if (OP === 'sum') {
+        /* sum 语义下 merge 就是加 */
+        const before = acc;
+        acc = acc + tree[p];
+        setStatus(`  累计 = ${firstHit ? tree[p] : `${before} + ${tree[p]} = ${acc}`}`);
+        firstHit = false;
+      } else {
+        /* 其他操作：用一个"合并"来解释 */
+        const before = acc;
+        acc = OP_FN[OP](acc, tree[p]);
+        setStatus(`  累计 = ${firstHit ? tree[p] : `${OP_SYM[OP]}(${before}, ${tree[p]}) = ${acc}`}`);
+        firstHit = false;
+      }
+      hitCount++;
+      await tick(500);
+      return;
+    }
+
+    /* 部分重叠 */
+    nodeState[p] = 'touched';
+    if (p > 1) edgeState[p] = 'query';
+    render();
+    setStatus(`访问 node ${p}（管 [${l}, ${r}]）：部分重叠，继续向下`);
+    await tick(450);
+
+    /* 若该节点有 lazy，先 push_down */
+    if (lazy[p] !== 0) {
+      /* 高亮父节点和下传边 */
+      const oldLazy = lazy[p];
+      nodeState[p] = 'pushdown';
+      edgeState[LEFT_OF(p)] = 'push';
+      edgeState[RIGHT_OF(p)] = 'push';
+      render();
+      setStatus(`  node ${p} 有 lazy = ${oldLazy}：先 push_down，把它传给孩子`);
+      await tick(800);
+
+      /* 执行 push_down */
+      const mid = (l + r) >> 1;
+      applyNode(LEFT_OF(p), l, mid, oldLazy);
+      applyNode(RIGHT_OF(p), mid + 1, r, oldLazy);
+      lazy[p] = 0;
+
+      render();
+      setStatus(`  ✔ push_down 完成：孩子收到 +${oldLazy}，node ${p} 的 lazy 清零`);
+      await tick(700);
+
+      edgeState[LEFT_OF(p)] = '';
+      edgeState[RIGHT_OF(p)] = '';
+      nodeState[p] = '';
+      render();
+      await tick(200);
+    }
+
+    const mid = (l + r) >> 1;
+    if (ql <= mid) await dfs(LEFT_OF(p), l, mid);
+    if (qr > mid)  await dfs(RIGHT_OF(p), mid + 1, r);
+
+    nodeState[p] = '';
+    if (p > 1) edgeState[p] = '';
+    render();
+  }
+
+  await dfs(1, 1, N);
+
+  setStatus(`✔ query(${ql}, ${qr}) = ${acc}，共命中 ${hitCount} 个节点（O(log N)）`);
+  await tick(1500);
+
+  clearHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   13. 区间更新动画（懒标记）
+   ========================================================= */
+function applyNode(p, l, r, val) {
+  /* 完全覆盖时把标记应用到节点 p */
+  tree[p] += val * (r - l + 1);
+  lazy[p] += val;
+}
+
+async function animatedRangeUpdate(ql, qr, delta) {
+  if (busy && !inDemo) return;
+  if (OP !== 'sum') {
+    setStatus('✘ 区间更新（懒标记）只支持 sum 操作，请先切换');
+    return;
+  }
+  if (ql < 1 || qr > N || ql > qr) {
+    setStatus(`✘ 区间不合法`);
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  setStatus(`range_update(${ql}, ${qr}, ${delta >= 0 ? '+' : ''}${delta})：从根开始递归分解`);
+  await tick(600);
+
+  /* a 方块变色 */
+  for (let j = ql; j <= qr; j++) arrState[j] = 'changed';
+  render();
+  setStatus(`目标区间 [${ql}, ${qr}] 的所有元素都要加 ${delta}`);
+  await tick(600);
+
+  let updated = 0;
+
+  async function dfs(p, l, r) {
+    if (demoAborted) throw new Error('aborted');
+    const inRange = (ql <= l && r <= qr);
+
+    if (inRange) {
+      /* 完全覆盖：打标记 */
+      nodeState[p] = 'lazy-mark';
+      render();
+      setStatus(`命中 node ${p}（管 [${l}, ${r}]）：完全覆盖，打上 lazy 标记`);
+      await tick(650);
+
+      applyNode(p, l, r, delta);
+      updated++;
+      render();
+      setStatus(`  ✔ apply：tree[${p}] += ${delta} × ${r - l + 1} = ${delta * (r - l + 1)}，lazy[${p}] += ${delta}`);
+      await tick(750);
+
+      nodeState[p] = 'updated';
+      render();
+      await tick(400);
+      return;
+    }
+
+    /* 部分重叠 */
+    nodeState[p] = 'touched';
+    if (p > 1) edgeState[p] = 'active';
+    render();
+    setStatus(`访问 node ${p}（管 [${l}, ${r}]）：部分重叠`);
+    await tick(450);
+
+    /* 有 lazy 则先下传 */
+    if (lazy[p] !== 0) {
+      const oldLazy = lazy[p];
+      nodeState[p] = 'pushdown';
+      edgeState[LEFT_OF(p)] = 'push';
+      edgeState[RIGHT_OF(p)] = 'push';
+      render();
+      setStatus(`  node ${p} 有 lazy = ${oldLazy}：先 push_down 再递归`);
+      await tick(800);
+
+      const mid = (l + r) >> 1;
+      applyNode(LEFT_OF(p), l, mid, oldLazy);
+      applyNode(RIGHT_OF(p), mid + 1, r, oldLazy);
+      lazy[p] = 0;
+
+      render();
+      setStatus(`  ✔ push_down 完成：孩子收到 +${oldLazy}，node ${p} 的 lazy 清零`);
+      await tick(700);
+
+      edgeState[LEFT_OF(p)] = '';
+      edgeState[RIGHT_OF(p)] = '';
+      nodeState[p] = '';
+      render();
+      await tick(200);
+    }
+
+    const mid = (l + r) >> 1;
+    if (ql <= mid) await dfs(LEFT_OF(p), l, mid);
+    if (qr > mid)  await dfs(RIGHT_OF(p), mid + 1, r);
+
+    /* 回溯：重新合并 */
+    tree[p] = tree[LEFT_OF(p)] + tree[RIGHT_OF(p)];
+    nodeState[p] = 'updated';
+    render();
+    setStatus(`  ↻ 回溯：tree[${p}] = tree[${LEFT_OF(p)}] + tree[${RIGHT_OF(p)}] = ${tree[p]}`);
+    await tick(500);
+
+    nodeState[p] = '';
+    if (p > 1) edgeState[p] = '';
+    render();
+  }
+
+  await dfs(1, 1, N);
+
+  /* 更新 a 方块的实际值 */
+  for (let j = ql; j <= qr; j++) arr[j] += delta;
+  render();
+
+  setStatus(`✔ range_update 完成：a[${ql}..${qr}] 全部 += ${delta}，共 apply ${updated} 次（O(log N)）`);
+  await tick(1500);
+
+  clearHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   14. 自动演示
+   ========================================================= */
+async function autoDemo() {
+  resetState();
+  render();
+  await animatedBuild();
+  await tick(400);
+
+  setStatus('② 单点更新 a[3] = 10');
+  await tick(400);
+  await animatedUpdate(3, 10);
+  await tick(400);
+
+  setStatus('③ 区间查询 [2, 6]');
+  await tick(400);
+  await animatedQuery(2, 6);
+  await tick(400);
+
+  setStatus('④ 区间更新 [3, 6] += 10 —— 关键演示：打标记 + 下传');
+  await tick(400);
+  await animatedRangeUpdate(3, 6, 10);
+  await tick(400);
+
+  setStatus('⑤ 再次查询 [2, 6] —— 观察 lazy 如何被 push_down');
+  await tick(400);
+  await animatedQuery(2, 6);
+  await tick(400);
+
+  setStatus('✔ 演示结束：区间更新只打标记，查询时把标记下传');
+}
+
+/* =========================================================
+   15. 演示控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const demoModeGroup = document.getElementById('demoModeGroup');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  inDemo = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  setButtonsDisabled(true);
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await autoDemo();
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  inDemo = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  busy = false;
+  setButtonsDisabled(false);
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+/* =========================================================
+   16. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: '线段树是什么', key: true, lines: [
+    '一棵<b>二叉树</b>，每个节点维护一个连续区间 <code>[l, r]</code> 的聚合值',
+    '根节点管 <code>[1, N]</code>，左右孩子分别管 <code>[l, mid]</code>、<code>[mid+1, r]</code>',
+    '叶子节点对应单个元素 <code>a[i]</code>',
+    '树高 <code>⌈log₂N⌉ + 1</code>，节点总数约 <code>2N − 1</code>',
+  ]},
+  { icon: '🔗', title: 'merge：父子关系的本质', key: true, lines: [
+    '<code>tree[p] = merge(tree[2p], tree[2p+1])</code>',
+    '只要求 <code>merge</code> 满足<b>结合律</b>，不要求可逆',
+    '典型操作：sum / max / min / gcd / lcm / and / or / xor / 矩阵乘',
+    '这是线段树比树状数组更通用的关键',
+  ]},
+  { icon: '🌱', title: '构建：从叶子向上合并', key: true, lines: [
+    '先把 <code>a[1..N]</code> 填到叶子节点',
+    '从下向上逐层合并：<code>tree[p] = merge(tree[2p], tree[2p+1])</code>',
+    '自底向上一次 O(N)',
+    '递归写法更简洁，但可能爆栈；迭代写法更稳',
+  ]},
+  { icon: '⬆️', title: '单点更新 O(log N)', key: true, lines: [
+    '修改 <code>a[i]</code> 后，从叶子向上走到根',
+    '每层重新合并：<code>tree[p] = merge(tree[2p], tree[2p+1])</code>',
+    '路径长度 = 树高 = <code>O(log N)</code>',
+    '其余节点不受影响',
+  ]},
+  { icon: '🔍', title: '区间查询 O(log N)', key: true, lines: [
+    '从根递归分解 <code>[ql, qr]</code>',
+    '节点区间完全被覆盖 → <b>直接采用，不再向下</b>',
+    '否则把查询区间分到左右孩子继续递归',
+    '每层最多访问 2 个节点，共 <code>O(log N)</code> 个',
+  ]},
+  { icon: '🏷️', title: '懒标记 · 区间更新', key: false, lines: [
+    '区间加 Δ 时不必递归到每个叶子',
+    '给"完全覆盖"的节点打上 <code>lazy</code> 标记，<b>直接返回</b>',
+    '查询 / 后续更新路过该节点时，把标记下传给孩子',
+    '区间更新和区间查询都是 <code>O(log N)</code>',
+    '典型题：区间加 + 区间求和（洛谷 P3372）',
+  ]},
+  { icon: '🔥', title: '懒标记的两大核心函数', key: false, lines: [
+    '<code>apply(p, l, r, val)</code>：<br>　<code>tree[p] += val × (r−l+1)</code><br>　<code>lazy[p] += val</code>',
+    '<code>push_down(p, l, r)</code>：<br>　把 <code>lazy[p]</code> 分别 apply 给两个孩子<br>　然后 <code>lazy[p] = 0</code>',
+    '这两个函数是整个懒标记的核心',
+  ]},
+  { icon: '🧩', title: '典型应用', key: false, lines: [
+    '<b>区间最值</b>：ST 天然支持，BIT 做不到',
+    '<b>区间 gcd / lcm</b>：只要求结合律',
+    '<b>区间加 + 区间求和</b>：用懒标记',
+    '<b>区间赋值 / 区间乘</b>：需定义 <code>compose</code>',
+    '<b>扫描线</b>：配合离散化求矩形面积并',
+    '<b>可持久化 / 动态开点</b>：进阶用法',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    let cls = 'k-card';
+    if (card.key) cls += ' key-point';
+    el.className = cls;
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   17. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue','assert'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','len','range','float','int','str','list','dict',
+    'set','tuple','sum','isinstance','math','gcd','SegmentTree','LazySegmentTree'
+  ]);
+  let html = '', i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '#') {
+      let j = i; while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1;
+      while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_.]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+      if (word === 'self') html += '<span class="tok-self">self</span>';
+      else if (KEYWORDS.has(word)) html += '<span class="tok-keyword">' + word + '</span>';
+      else if (BUILTINS.has(word)) html += '<span class="tok-builtin">' + word + '</span>';
+      else if (code[j] === '(') html += '<span class="tok-func">' + word + '</span>';
+      else html += word;
+      i = j; continue;
+    }
+    if (/\d/.test(c)) {
+      let j = i; while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j; continue;
+    }
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+}
+
+/* =========================================================
+   18. 初始化 & 事件
+   ========================================================= */
+renderKnowledge();
+renderPythonCode();
+resetState();
+render();
+updateDemoUI();
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (busy) return;
+  resetState();
+  render();
+  setStatus('已重置为初始数组');
+});
+
+document.getElementById('opSel').addEventListener('change', () => {
+  if (busy) return;
+  OP = document.getElementById('opSel').value;
+  resetState();
+  render();
+  setStatus(`已切换到 ${OP_NAME[OP]}` + (OP !== 'sum' ? '（区间更新仅 sum 支持）' : ''));
+});
+
+document.getElementById('btnUpdate').addEventListener('click', () => {
+  const i = +document.getElementById('updIdx').value;
+  const v = +document.getElementById('updVal').value;
+  animatedUpdate(i, v);
+});
+
+document.getElementById('btnQuery').addEventListener('click', () => {
+  const l = +document.getElementById('qryL').value;
+  const r = +document.getElementById('qryR').value;
+  animatedQuery(l, r);
+});
+
+document.getElementById('btnRangeUpdate').addEventListener('click', () => {
+  const l = +document.getElementById('rupdL').value;
+  const r = +document.getElementById('rupdR').value;
+  const d = +document.getElementById('rupdDelta').value;
+  animatedRangeUpdate(l, r, d);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,2090 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>树形 DP · 从「父子」开始 — ALGO PRIMER / DP-03</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;700;900&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#FFFBF3;--panel:#FFFFFF;--ink:#2A2018;--ink2:#5A4636;--muted:#A18768;
+  --line:#EEDDC2;--line2:#F7EEDF;--accent:#E2542A;--amber:#F3A33C;--amber-soft:#FDEECC;
+  --green:#3E7B4E;--red:#B53B2C;
+  --serif:'Noto Serif SC','Songti SC',serif;
+  --sans:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  --hand:'Zhi Mang Xing','STKaiti','KaiTi',cursive;
+}
+html,body{height:100%;overflow:hidden;background:#F1E3CB;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;display:grid;place-items:center}
+#deck{position:relative;width:1280px;height:720px;overflow:hidden;
+  background:radial-gradient(1600px 980px at 18% -14%,#FFFDF9 0%,#FFF7EA 48%,#FDEBD3 100%)}
+.slide{position:absolute;inset:0;display:none}
+.slide.active{display:block}
+
+/* ---------- frame（无 wordmark，标题上移） ---------- */
+.top{position:absolute;left:0;top:0;width:1280px;height:100px}
+.s-title{position:absolute;left:80px;top:24px;font:700 28px/1.3 var(--serif);color:var(--ink)}
+.qdesc{position:absolute;left:80px;top:66px;width:1010px;font:400 13px/1.5 var(--sans);color:var(--ink2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qlabel{display:inline-block;background:var(--amber-soft);color:#9A6420;font:500 10px/1.2 var(--mono);
+  letter-spacing:.16em;padding:3px 7px;border-radius:3px;margin-right:10px;vertical-align:1px}
+.top-rule{position:absolute;left:80px;top:98px;width:1120px;height:1px;background:var(--line)}
+.top-accent{position:absolute;left:80px;top:96px;width:76px;height:3px;background:var(--accent)}
+.numline{position:absolute;left:80px;top:112px;font:700 21px/1.4 var(--mono)}
+.pager{position:absolute;right:80px;top:115px;text-align:right}
+.pg{font:700 15px/1 var(--serif);color:var(--accent);letter-spacing:.06em}
+.numrule{position:absolute;left:80px;top:152px;width:1120px;height:0;border-top:1px solid var(--line2)}
+.mnum{position:absolute;left:26px;top:110px;font:700 22px/1 var(--mono);color:var(--accent)}
+.mlabel{position:absolute;left:32px;top:166px;writing-mode:vertical-rl;font:500 11px/1 var(--mono);letter-spacing:.24em;color:var(--muted)}
+.stage-inner{position:absolute;left:80px;top:170px;width:1120px;height:460px}
+
+/* ---------- bottom band（单行页脚，尽量靠下） ---------- */
+.bottom{position:absolute;left:0;top:646px;width:1280px;height:74px}
+.bot-rule{position:absolute;left:80px;top:4px;width:1120px;height:1px;background:var(--line)}
+.ruler{position:absolute;left:80px;top:14px;width:1120px;display:flex;gap:8px}
+.ruler a{flex:1;display:block;cursor:pointer;text-decoration:none}
+.ruler .bar{height:22px;border-radius:5px;background:#F3E4CC;display:flex;align-items:center;justify-content:center;
+  transition:background .2s}
+.ruler .lbl{font:500 10px/1 var(--mono);color:#8A6E52;letter-spacing:.12em;transition:color .2s}
+.ruler a.on .bar{background:var(--accent)}
+.ruler a.on .lbl{color:#FFF8EF}
+.botline{position:absolute;left:80px;bottom:8px;width:1120px;display:flex;align-items:center;gap:16px;
+  white-space:nowrap;overflow:hidden}
+.eyebrow{font:500 11px/1.3 var(--mono);letter-spacing:.13em;color:var(--muted)}
+.bsep{width:1px;height:11px;background:var(--line);flex:none}
+.help{font:500 10px/1.3 var(--mono);letter-spacing:.085em;color:rgba(161,135,104,.85)}
+.bmark{margin-left:auto;font:500 10px/1.3 var(--mono);letter-spacing:.16em;color:rgba(161,135,104,.62);flex:none}
+
+/* ---------- type ---------- */
+.meta{font:500 11px/1.3 var(--mono);letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+.hero{font:900 92px/1.02 var(--serif);letter-spacing:-.01em}
+.disp{font:700 42px/1.22 var(--serif)}
+.h2{font:700 24px/1.35 var(--serif)}
+.h3{font:700 18px/1.4 var(--mono)}
+.lead{font:400 19px/1.8 var(--sans)}
+.p{font:400 16px/1.82 var(--sans)}
+.sm{font:400 14px/1.75 var(--sans);color:var(--ink2)}
+.mono{font-family:var(--mono)}
+.v{color:var(--accent)}
+.mu{color:var(--muted)}
+.g{color:var(--green)}
+.l{color:var(--red)}
+.big{font:700 30px/1.2 var(--mono)}
+
+/* ---------- layout ---------- */
+.g12{display:grid;grid-template-columns:repeat(12,64px);gap:32px;align-items:start;height:100%}
+.c1-4{grid-column:1/span 4}.c1-5{grid-column:1/span 5}.c1-6{grid-column:1/span 6}
+.c1-7{grid-column:1/span 7}.c1-12{grid-column:1/span 12}
+.c7-12{grid-column:7/span 6}.c8-12{grid-column:8/span 5}.c9-12{grid-column:9/span 4}
+.row{display:flex;gap:24px;align-items:flex-start}
+.hrule{height:1px;background:var(--line);margin:16px 0}
+.hrule.dot{background:var(--line2)}
+.keyline{width:52px;height:3px;background:var(--accent);margin:14px 0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px}
+.note\boxed{border-left:3px solid var(--accent);padding:2px 0 2px 14px}
+.warm\boxed{background:var(--amber-soft);border-radius:6px;padding:14px 18px}
+
+/* ---------- annotation ---------- */
+.hand{position:absolute;font:400 21px/1.42 var(--hand);color:var(--accent);transform:rotate(-1.5deg);max-width:300px;z-index:5}
+.hand[data-at]{opacity:1;clip-path:inset(0 100% 0 0);transition:clip-path .38s ease-out}
+.hand[data-at].on{clip-path:inset(0 -20% 0 0)}
+.hand:before{content:'';display:block;width:26px;height:2px;background:var(--accent);margin-bottom:8px}
+
+/* ---------- motion ---------- */
+[data-seq]:not(.dpcell):not(.path):not(td.dp),[data-at]:not(.hand){opacity:0;transition:opacity .32s cubic-bezier(.22,1,.36,1),transform .32s cubic-bezier(.22,1,.36,1)}
+[data-seq].on:not(.dpcell):not(.path):not(td.dp),[data-at].on:not(.hand){opacity:1}
+.rise{transform:translateY(10px)}.rise.on{transform:none}
+.path{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:miter;
+  stroke-dasharray:var(--len);stroke-dashoffset:var(--len);transition:stroke-dashoffset .7s cubic-bezier(.16,1,.3,1)}
+.path.on{stroke-dashoffset:0}
+.arw{fill:none;stroke:#8A6E52;stroke-width:1.5}
+.svgtxt{font:500 12px var(--mono);fill:var(--ink)}
+.svgtxtb{font:700 13px var(--mono);fill:var(--ink)}
+.svgtxtv{font:700 14px var(--mono);fill:var(--accent)}
+.svgm{font:500 10px var(--mono);fill:var(--muted);letter-spacing:.12em}
+.node{fill:#FDEECC;stroke:#E2542A;stroke-width:1.5}
+.node.hot{fill:#F9D3C4;stroke-width:2.5}
+.node.plain{fill:#FFFFFF;stroke:#EEDDC2}
+.edge{stroke:#C9AF8C;stroke-width:2}
+
+/* ---------- dp cells ---------- */
+.seq{display:flex;gap:4px;align-items:flex-end}
+.dpcell{width:44px;height:42px;border-radius:4px;background:var(--panel);border:1px solid var(--line);
+  display:grid;place-items:center;font:600 15px/1 var(--mono);color:var(--ink);
+  transition:background .22s ease-out,color .22s ease-out,border-color .22s ease-out}
+.dpcell i{font-style:normal;opacity:0;transition:opacity .12s ease-out}
+.dpcell.on{background:var(--amber-soft);border-color:var(--amber)}
+.dpcell.on i{opacity:1}
+.dpcell.on.cur{animation:flash .9s ease-out}
+@keyframes flash{0%,42%{background:var(--accent);color:#FFF8EF;border-color:var(--accent)}
+  100%{background:var(--amber-soft);color:var(--ink);border-color:var(--amber)}}
+.seq-lbl{font:500 11px/1 var(--mono);color:var(--muted);margin-right:14px;width:82px;text-align:right;padding-bottom:13px}
+
+/* ---------- tables ---------- */
+table.t{border-collapse:collapse;width:100%}
+table.t th{font:500 10px/1.2 var(--mono);letter-spacing:.16em;color:var(--muted);text-align:left;
+  padding:8px 10px;border-bottom:1.5px solid var(--accent);text-transform:uppercase}
+table.t td{padding:8px 10px;border-bottom:1px solid var(--line2);font-size:14px;line-height:1.62;vertical-align:top}
+table.t tr:last-child td{border-bottom:none}
+table.t td.k{font-family:var(--mono);font-size:13px;font-weight:600;white-space:nowrap}
+table.m{border-collapse:collapse}
+table.m th{font:500 10px/1.2 var(--mono);letter-spacing:.12em;color:var(--muted);padding:6px 4px;text-transform:uppercase}
+table.m th.rl{text-align:right;padding-right:12px;letter-spacing:.04em;font-size:11px;color:var(--ink);white-space:nowrap}
+table.m td.dp{width:52px;height:36px;text-align:center;font:600 14px/1 var(--mono);color:var(--ink);
+  border-radius:3px;border:1px solid var(--line2);opacity:.13;transition:opacity .12s ease-out,background-color .24s ease-out}
+table.m td.dp.on{opacity:1;background:var(--amber-soft);border-color:var(--amber)}
+table.m td.dp.on.cur{animation:flash .9s ease-out}
+table.m td.hd{font:500 10px var(--mono);color:var(--muted)}
+table.m td.void{border:none}
+
+/* ---------- code ---------- */
+.code{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.cbar{height:32px;background:#3B2B1E;color:#FFF8EF;display:flex;align-items:center;gap:10px;padding:0 12px}
+.cf{flex:1;font:500 11px/1 var(--mono);letter-spacing:.12em}
+.mini{background:none;border:1px solid rgba(255,248,239,.34);color:#FFF8EF;font:500 10px/1 var(--mono);
+  padding:5px 8px;border-radius:3px;cursor:pointer;letter-spacing:.08em;transition:background .18s,border-color .18s}
+.mini:hover{background:var(--accent);border-color:var(--accent)}
+ol.cl{position:relative;list-style:none;counter-reset:l;padding:10px 0 12px}
+ol.cl li{counter-increment:l;position:relative;padding:1px 14px 1px 56px;font:400 14px/1.68 var(--mono);white-space:pre}
+ol.cl li:before{content:counter(l,decimal-leading-zero);position:absolute;left:0;top:1px;width:38px;
+  text-align:right;color:var(--muted);font:500 11px/2.2 var(--mono)}
+ol.cl li.hl{background:rgba(226,84,42,.08);box-shadow:inset 3px 0 0 var(--accent)}
+ol.cl li.hl[data-note]:after{content:attr(data-note);display:block;white-space:normal;
+  font:400 12px/1.55 var(--sans);color:var(--accent);margin:3px 0 6px}
+.k{color:#C0472B;font-weight:700}.fn{color:var(--ink);font-weight:700}
+.n{color:#96662A}.s{color:#6B7A3A}.cm{color:#AF9676;font-style:italic}
+
+/* ---------- misc ---------- */
+.chip{display:inline-block;border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:3px 9px;
+  font:500 11px/1.2 var(--mono);letter-spacing:.1em;color:var(--ink2)}
+.num\boxed{width:36px;height:36px;border-radius:6px;background:var(--accent);color:#FFF8EF;display:grid;place-items:center;
+  font:700 15px/1 var(--mono);flex:none}
+.numbox.alt{background:var(--panel);color:var(--accent);border:1px solid var(--accent)}
+.q{font:500 17px/1.78 var(--sans)}
+.term{font:500 13px/1.5 var(--mono)}
+.link{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(226,84,42,.32)}
+.link:hover{border-color:var(--accent)}
+.watermark{position:absolute;right:-50px;top:110px;font:900 230px/1 var(--serif);color:var(--accent);
+  opacity:.07;pointer-events:none;user-select:none}
+.ans{display:inline-block;background:var(--accent);color:#FFF8EF;padding:3px 10px;border-radius:4px;
+  font:700 13px/1.3 var(--mono)}
+
+/* ---------- jump panel ---------- */
+#panel{position:fixed;inset:0;background:rgba(42,32,24,.94);display:none;z-index:50;padding:44px 52px;overflow:auto}
+#panel.open{display:block}
+#panel h4{font:500 11px/1 var(--mono);letter-spacing:.24em;color:#F0D2A6;margin-bottom:22px}
+#plist{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(238,221,194,.25)}
+#plist button{background:#3B2B1E;border:none;color:#FFF8EF;text-align:left;padding:11px 13px;cursor:pointer;
+  font:400 12.5px/1.5 var(--sans)}
+#plist button span{display:block;font:500 10px/1 var(--mono);letter-spacing:.16em;color:#D2B28C;margin-bottom:5px}
+#plist button:hover{background:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="deck">
+
+<!-- ============ 01 封面 ============ -->
+<section class="slide" data-ch="0" data-stagger="250"
+  data-title="封面 · 树形 DP"
+  data-rec="dp[u][k] = f( dp[v][·] )"
+  data-eyebrow="ALGO PRIMER / DP-03 · 树形动态规划 · 32 页">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-7">
+        <div class="meta rise" data-at="0">从零开始 · 算法入门系列 · 第 03 讲</div>
+        <h2 class="hero rise" data-at="120" style="margin-top:16px">树形 DP</h2>
+        <h3 class="disp rise" data-at="250" style="margin-top:12px;color:var(--ink2)">从「父子」开始</h3>
+        <div class="keyline" data-at="380"></div>
+        <p class="lead rise" data-at="440">
+          状态从「前 i 个」变成「<b class="v mono">以 u 为根的子树</b>」，<br>
+          转移从「切一刀」变成「<b class="v mono">把子节点的答案合起来</b>」。
+        </p>
+      </div>
+      <div class="c8-12">
+        <svg viewBox="0 0 400 260" width="400" height="260">
+          <defs><marker id="ah0" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-at="600">
+            <circle class="node hot" cx="200" cy="42" r="26"/>
+            <text class="svgtxtv" x="190" y="47">root</text>
+            <path class="edge" d="M200 68 L110 122"/><path class="edge" d="M200 68 L290 122"/>
+            <circle class="node" cx="110" cy="142" r="24"/><circle class="node" cx="290" cy="142" r="24"/>
+            <text class="svgtxtb" x="104" y="147">v1</text><text class="svgtxtb" x="284" y="147">v2</text>
+          </g>
+          <g data-at="1200">
+            <path class="edge" d="M110 166 L52 212"/><path class="edge" d="M110 166 L168 212"/>
+            <path class="edge" d="M290 166 L232 212"/><path class="edge" d="M290 166 L348 212"/>
+            <circle class="node plain" cx="52" cy="228" r="18"/><circle class="node plain" cx="168" cy="228" r="18"/>
+            <circle class="node plain" cx="232" cy="228" r="18"/><circle class="node plain" cx="348" cy="228" r="18"/>
+            <text class="svgm" x="120" y="262">叶子先算完，再往上合</text>
+          </g>
+          <g data-at="1900">
+            <path class="arw" stroke="#E2542A" stroke-width="2.5" marker-end="url(#ah0)" d="M40 214 V180"/>
+            <path class="arw" stroke="#E2542A" stroke-width="2.5" marker-end="url(#ah0)" d="M360 214 V180"/>
+            <path class="arw" stroke="#E2542A" stroke-width="2.5" marker-end="url(#ah0)" d="M200 108 V82"/>
+            <text class="svgtxtv" x="212" y="100">向上合并</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="watermark">TREE</div>
+    <div class="hand" data-at="2700" style="left:110px;top:340px">从叶子往根，一次走完</div>
+  </div>
+</section>
+
+<!-- ============ 02 路线图 ============ -->
+<section class="slide" data-ch="1" data-stagger="180"
+  data-title="今天要解决的三个问题"
+  data-rec="① 子树状态 → ② 合并子节点 → ③ 从叶子到根"
+  data-eyebrow="第一章 · 起点 · 目标：先看全局路线">
+  <div class="stage-inner">
+    <div class="row" style="align-items:stretch">
+      <div data-seq="0" style="width:350px">
+        <div class="numbox">Q1</div>
+        <h4 class="h2" style="margin-top:12px">状态要存成什么样？</h4>
+        <div class="keyline"></div>
+        <p class="sm">线性 DP 是「前 i 个」，区间 DP 是「[i,j]」。<br>
+          树上没有「位置」，只有「<b>以某个节点为根的子树</b>」。<br><br>
+          <b class="v">→ dp[u][k]，u 是节点，k 是 u 自己的状态</b></p>
+      </div>
+      <svg width="34" height="110" data-seq="1"><path class="arw" d="M2 10 H24"/><path class="arw" d="M18 6 L27 10 L18 14"/></svg>
+      <div data-seq="1" style="width:350px">
+        <div class="numbox">Q2</div>
+        <h4 class="h2" style="margin-top:12px">转移要枚举什么？</h4>
+        <div class="keyline"></div>
+        <p class="sm">枚举<b>每个子节点</b>在「u 的状态约束下」的选择，<br>
+          然后把结果<b>累加</b>到 u 身上。<br><br>
+          <b class="v">→ 合并所有子节点</b></p>
+      </div>
+      <svg width="34" height="110" data-seq="2"><path class="arw" d="M2 10 H24"/><path class="arw" d="M18 6 L27 10 L18 14"/></svg>
+      <div data-seq="2" style="width:350px">
+        <div class="numbox">Q3</div>
+        <h4 class="h2" style="margin-top:12px">表要按什么顺序填？</h4>
+        <div class="keyline"></div>
+        <p class="sm">父节点要等所有子节点算完。<br>
+          所以顺序是<b>从叶子到根</b>——也就是后序遍历。<br><br>
+          <b class="v">→ 一次 DFS 就够了</b></p>
+      </div>
+    </div>
+    <div class="hrule dot" data-seq="3" style="margin-top:22px"></div>
+    <div class="row" data-seq="4">
+      <div class="chip">四个案例</div>
+      <div class="p" style="flex:1">
+        ① 最大深度 / 直径（入门） &nbsp;② 打家劫舍 III（经典二选） &nbsp;③ 最大路径和（两线分离） &nbsp;④ 树中距离之和（换根）
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:880px;top:340px">和前两讲一样：三个问题，三步走</div>
+  </div>
+</section>
+
+<!-- ============ 03 线性 DP = 链 ============ -->
+<section class="slide" data-ch="1" data-stagger="180"
+  data-title="先看清一件事：线性 DP 就是「链」"
+  data-rec="dp[i] = f(dp[i-1])"
+  data-eyebrow="第一章 · 起点 · 目标：把前后两讲接起来">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:520px">
+        <h4 class="q">链，是树的特例</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          线性 DP：每个点<b>只有一个前驱</b>。<br>
+          区间 DP：只是把「一段链」当成主角。<br><br>
+          树形 DP：<b>一个点可能有多个孩子</b>。
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>所以不用从零学起。</b><br>
+            只要把「向左/向右取一个」换成「<b>向每个孩子各取一个，再合起来</b>」，
+            其它套路（定义状态、写转移、定边界、定顺序）一模一样。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm">前两讲的四步法，这一讲照样管用：<br>
+            <b>① 存什么 ② 怎么转 ③ 从哪开始 ④ 答案在哪。</b></div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 540 330" width="540" height="330">
+          <defs><marker id="ah1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#8A6E52"/></marker></defs>
+          <text class="svgm" x="10" y="18">线性 DP：每个节点只有一个父亲</text>
+          <g data-seq="0">
+            <circle class="node plain" cx="34" cy="56" r="18"/><circle class="node plain" cx="112" cy="56" r="18"/>
+            <circle class="node plain" cx="190" cy="56" r="18"/><circle class="node plain" cx="268" cy="56" r="18"/>
+            <circle class="node plain" cx="346" cy="56" r="18"/>
+            <g class="svgtxtb"><text x="28" y="61">1</text><text x="106" y="61">2</text>
+              <text x="184" y="61">3</text><text x="262" y="61">4</text><text x="340" y="61">5</text></g>
+            <path class="arw" marker-end="url(#ah1)" d="M54 56 H92"/><path class="arw" marker-end="url(#ah1)" d="M132 56 H170"/>
+            <path class="arw" marker-end="url(#ah1)" d="M210 56 H248"/><path class="arw" marker-end="url(#ah1)" d="M288 56 H326"/>
+          </g>
+          <text class="svgm" x="10" y="150">树形 DP：一个节点可能有一群孩子</text>
+          <g data-seq="1">
+            <circle class="node hot" cx="180" cy="212" r="26"/>
+            <text class="svgtxtv" x="172" y="217">u</text>
+            <path class="edge" d="M180 238 L78 278"/><path class="edge" d="M180 238 L180 284"/>
+            <path class="edge" d="M180 238 L282 278"/><path class="edge" d="M180 238 L384 278"/>
+            <circle class="node" cx="78" cy="298" r="20"/><circle class="node" cx="180" cy="304" r="20"/>
+            <circle class="node" cx="282" cy="298" r="20"/><circle class="node" cx="384" cy="298" r="20"/>
+            <text class="svgm" x="424" y="228">多个孩子，</text>
+            <text class="svgm" x="424" y="248">各自算完</text>
+            <text class="svgm" x="424" y="268">再合到 u</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">把「取一个」换成「取一群」就行</div>
+  </div>
+</section>
+
+<!-- ============ 04 新问题 ============ -->
+<section class="slide" data-ch="1" data-stagger="170"
+  data-desc="n 个员工各有开心值，每人最多一个直接上司；party 时若某人到场，其直接上司必须缺席。求最大开心值之和。"
+  data-title="新问题：如果数据是一棵树"
+  data-rec="选 u ⟹ 不选父(u)"
+  data-eyebrow="第一章 · 起点 · 目标：看清问题长什么样">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">洛谷 P1352 · 没有上司的舞会</div>
+        <h4 class="q" style="margin-top:10px">谁能来，谁不能来？</h4>
+        <p class="sm" style="margin-top:10px">
+          一人来，<b>他的直接上司</b>就不能来。<br>
+          下属之间的规则<b>不重要</b>，只看父子。<br>
+          求<b class="v">最大开心值和</b>。
+        </p>
+        <svg viewBox="0 0 500 270" width="500" height="270" style="margin-top:8px">
+          <defs><marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#E2542A"/></marker></defs>
+          <path class="edge" d="M120 62 L58 116"/><path class="edge" d="M120 62 L182 116"/>
+          <path class="edge" d="M182 116 L242 172"/><path class="edge" d="M182 116 L306 172"/>
+          <path class="edge" d="M182 116 L370 172"/>
+          <circle class="node plain" cx="120" cy="42" r="22"/>
+          <circle class="node hot" cx="58" cy="136" r="20"/><circle class="node plain" cx="182" cy="136" r="20"/>
+          <circle class="node hot" cx="242" cy="192" r="20"/><circle class="node plain" cx="306" cy="192" r="20"/>
+          <circle class="node hot" cx="370" cy="192" r="20"/>
+          <g class="svgtxtb"><text x="112" y="47">1</text><text x="50" y="141">4</text>
+            <text x="174" y="141">2</text><text x="234" y="197">3</text><text x="298" y="197">1</text>
+            <text x="362" y="197">5</text></g>
+          <path class="arw" stroke="#E2542A" stroke-width="2" marker-end="url(#ah2)" d="M132 34 V20 H212"/>
+          <text class="svgtxtv" x="218" y="24">上司缺席时才可来</text>
+          <text class="svgm" x="10" y="242">红色 = 到场的人</text>
+        </svg>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">关键观察</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          「<b>某人来不来</b>」这件事，只影响他的<b>直接父亲</b>。<br>
+          而他自己的最优选择，要看他的<b>所有下属</b>怎么选。
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>一句话：</b>每个节点的答案，
+            都是<b>由下往上</b>攒出来的。<br>
+            这就是树形 DP 的全部味道。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm">先别急着写代码。下一页我们看看：
+            <b>为什么只写 dp[u] 不够用</b>。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1352" target="_blank">P1352</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/house-robber-iii/" target="_blank">LC 337</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">「父子之间有约束」是树形题的信号</div>
+  </div>
+</section>
+
+<!-- ============ 05 为什么 dp[u] 不够 ============ -->
+<section class="slide" data-ch="1" data-stagger="180"
+  data-title="为什么 dp[u] 不够用"
+  data-rec="dp[u] → dp[u][0/1]"
+  data-eyebrow="第一章 · 起点 · 目标：看懂「为何要转变」">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <h4 class="q">试着只写 <span class="mono">dp[u]</span>，会卡在哪？</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          想写 <span class="mono">dp[u] = 以 u 为根的子树的最大开心值</span>。<br><br>
+          现在要把结果<b>交给 u 的父亲</b>。<br>
+          父亲需要知道：<b>「u 自己来没来？」</b><br>
+          ——因为 u 来了，父亲就不能来。
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm">问题：<b>光有 dp[u]，父亲不知道该怎么接</b>。<br>
+            所以要把「u 自己的状态」也写进下标。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 320" width="620" height="320">
+          <defs><marker id="ah3" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#8A6E52"/></marker></defs>
+          <g data-seq="0">
+            <circle class="node plain" cx="120" cy="62" r="24"/>
+            <text class="svgtxtb" x="114" y="67">父</text>
+            <path class="edge" d="M120 86 L120 130"/>
+            <circle class="node hot" cx="120" cy="160" r="26"/>
+            <text class="svgtxtv" x="112" y="165">u</text>
+            <text class="svgm" x="20" y="212">dp[u] = 12</text>
+            <text class="svgm" x="20" y="236">但这 12 是怎么来的？</text>
+            <text class="svgm" x="20" y="260">u 来了没？不知道</text>
+            <path class="arw" marker-end="url(#ah3)" d="M172 212 H216"/>
+            <text class="svgm" x="180" y="202">传不上去</text>
+          </g>
+          <g data-seq="1">
+            <rect x="250" y="30" width="330" height="96" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+            <text class="svgtxtb" x="272" y="64">dp[u][0] = 12</text>
+            <text class="svgm" x="272" y="92">u 不来，下属随便选</text>
+            <rect x="250" y="150" width="330" height="96" rx="6" fill="#FDEECC" stroke="#E2542A" stroke-width="2"/>
+            <text class="svgtxtv" x="272" y="184">dp[u][1] = 15</text>
+            <text class="svgm" x="272" y="212">u 来，下属一个都不能来</text>
+            <path class="arw" marker-end="url(#ah3)" d="M222 160 H244"/>
+          </g>
+          <text class="svgtxt" x="250" y="292">两个状态，才够父亲做决定</text>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">要往上交的信息，必须写进状态</div>
+  </div>
+</section>
+
+<!-- ============ 06 三个必问 ============ -->
+<section class="slide" data-ch="1" data-stagger="200"
+  data-title="树形 DP 的三个必问"
+  data-rec="state[u][k] · merge_v · leaf"
+  data-eyebrow="第一章 · 起点 · 目标：拿到三个必问的问题">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-4">
+        <div class="numbox" data-seq="0">①</div>
+        <h4 class="h2" data-seq="1" style="margin-top:14px">存什么？</h4>
+        <div class="keyline" data-seq="1"></div>
+        <p class="p" data-seq="2"><b>dp[u][k]</b> ＝ 以 <b>u</b> 为根的子树，在 u 处于状态 k 时的最优值。</p>
+        <p class="sm" data-seq="3" style="margin-top:12px">
+          <span class="mono">k</span> 是 u 自己的状态：<br>
+          来 / 不来、选 / 不选、颜色、……<br>
+          如果题目不关心，<span class="mono">k</span> 可以只有一个值。
+        </p>
+        <div class="notebox" data-seq="4" style="margin-top:16px"><div class="sm">永远是「<b>以 u 为根的子树</b>」，不是「u 本身」。</div></div>
+      </div>
+      <div style="grid-column:5/span 4">
+        <div class="numbox" data-seq="1">②</div>
+        <h4 class="h2" data-seq="2" style="margin-top:14px">怎么转？</h4>
+        <div class="keyline" data-seq="2"></div>
+        <p class="p" data-seq="3"><b>把每个子节点的结果合并到 u</b>。</p>
+        <p class="sm" data-seq="4" style="margin-top:12px">
+          <span class="mono">dp[u][k] = val(u,k) + Σ_v g( dp[v][·] )</span><br><br>
+          <span class="mono">v</span> 跑遍 u 的所有孩子；<br>
+          <span class="mono">g</span> 取 max / min / 求和。
+        </p>
+        <div class="notebox" data-seq="5" style="margin-top:16px"><div class="sm">子节点之间<b>互相独立</b>，所以可以直接相加。</div></div>
+      </div>
+      <div class="c9-12">
+        <div class="numbox" data-seq="2">③</div>
+        <h4 class="h2" data-seq="3" style="margin-top:14px">从哪开始？</h4>
+        <div class="keyline" data-seq="3"></div>
+        <p class="p" data-seq="4"><b>叶子节点</b>。</p>
+        <p class="sm" data-seq="5" style="margin-top:12px">
+          没有孩子时，<span class="mono">Σ</span> 是空的：<br>
+          <span class="mono">dp[u][k] = val(u,k)</span><br><br>
+          这就是初始条件，不用额外写。
+        </p>
+        <div class="notebox" data-seq="6" style="margin-top:16px"><div class="sm"><b>第四问：</b>答案在 <span class="mono">dp[root]</span> 吗？<b>不一定！</b>（后面会讲）</div></div>
+      </div>
+    </div>
+    <div class="hand" data-at="2500" style="left:880px;top:340px">② 和 ④ 是最容易出错的两处</div>
+  </div>
+</section>
+
+<!-- ============ 07 核心图像 ============ -->
+<section class="slide" data-ch="1" data-stagger="180"
+  data-title="核心图像：从叶子到根"
+  data-rec="dp[u][k] = val(u,k) + Σ_v f(dp[v][·])"
+  data-eyebrow="第一章 · 起点 · 目标：建立正确的心智图像">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:470px">
+        <h4 class="q">一次后序遍历，把整棵树算完</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          访问顺序：<b>孩子 → 自己 → 父亲</b>。<br>
+          每到一个节点，它的孩子都已经算好，直接合并就行。
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>为什么必须是「从叶子到根」？</b><br>
+            因为 <span class="mono">dp[u][k]</span> 要用到 <span class="mono">dp[v][·]</span>，
+            而 v 是 u 的<b>子节点</b>——必须<b>先算孩子</b>。<br>
+            这正是区间 DP 里「<b>按长度填表</b>」在树上的对应物。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>复杂度：</b>每个节点访问一次，
+            <span class="mono">O(n × 状态数 × 每个孩子的枚举量)</span>。<br>
+            大多数题就是 <b class="mono">O(n)</b> 或 <b class="mono">O(n·k)</b>。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 600 360" width="600" height="360">
+          <defs><marker id="ah4" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-seq="0">
+            <circle class="node hot" cx="300" cy="58" r="30"/>
+            <text class="svgtxtv" x="288" y="64">root</text>
+            <path class="edge" d="M300 88 L150 160"/><path class="edge" d="M300 88 L450 160"/>
+            <circle class="node" cx="150" cy="182" r="26"/><circle class="node" cx="450" cy="182" r="26"/>
+            <text class="svgtxtb" x="142" y="188">v1</text><text class="svgtxtb" x="442" y="188">v2</text>
+            <path class="edge" d="M150 208 L82 258"/><path class="edge" d="M150 208 L218 258"/>
+            <path class="edge" d="M450 208 L382 258"/><path class="edge" d="M450 208 L518 258"/>
+            <circle class="node plain" cx="82" cy="280" r="20"/><circle class="node plain" cx="218" cy="280" r="20"/>
+            <circle class="node plain" cx="382" cy="280" r="20"/><circle class="node plain" cx="518" cy="280" r="20"/>
+            <text class="svgm" x="18" y="336">第 1 步：叶子（空 Σ）</text>
+          </g>
+          <g data-seq="1">
+            <path class="arw" stroke="#E2542A" stroke-width="2.5" marker-end="url(#ah4)" d="M70 252 V222"/>
+            <path class="arw" stroke="#E2542A" stroke-width="2.5" marker-end="url(#ah4)" d="M230 252 V222"/>
+            <path class="arw" stroke="#E2542A" stroke-width="2.5" marker-end="url(#ah4)" d="M370 252 V222"/>
+            <path class="arw" stroke="#E2542A" stroke-width="2.5" marker-end="url(#ah4)" d="M530 252 V222"/>
+            <text class="svgm" x="228" y="336">第 2 步：合并孩子</text>
+          </g>
+          <g data-seq="2">
+            <path class="arw" stroke="#E2542A" stroke-width="3" marker-end="url(#ah4)" d="M150 150 V100"/>
+            <path class="arw" stroke="#E2542A" stroke-width="3" marker-end="url(#ah4)" d="M450 150 V100"/>
+            <text class="svgm" x="430" y="336">第 3 步：交到根</text>
+          </g>
+          <g data-seq="3">
+            <rect x="222" y="12" width="156" height="34" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtv" x="238" y="34">dp[root][*]</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">顺序就是「孩子 → 自己 → 父亲」</div>
+  </div>
+</section>
+
+<!-- ============ 08 最大深度题意 ============ -->
+<section class="slide" data-ch="2" data-stagger="170"
+  data-desc="给定一棵二叉树 root，返回它的最大深度：根节点到最远叶子节点所经过的节点数。"
+  data-title="第一个案例：二叉树的最大深度"
+  data-rec="depth(u) = ?"
+  data-eyebrow="第二章 · 首例 · 目标：认识最简树形 DP">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">LeetCode 104 · 最大深度</div>
+        <h4 class="q" style="margin-top:10px">root = <span class="mono">[3,9,20,null,null,15,7]</span></h4>
+        <svg viewBox="0 0 500 270" width="500" height="270" style="margin-top:8px">
+          <path class="edge" d="M250 56 L150 112"/><path class="edge" d="M250 56 L350 112"/>
+          <path class="edge" d="M350 112 L300 168"/><path class="edge" d="M350 112 L400 168"/>
+          <circle class="node" cx="250" cy="36" r="22"/><circle class="node" cx="150" cy="132" r="22"/>
+          <circle class="node" cx="350" cy="132" r="22"/><circle class="node" cx="300" cy="188" r="22"/>
+          <circle class="node" cx="400" cy="188" r="22"/>
+          <g class="svgtxtb"><text x="242" y="41">3</text><text x="142" y="137">9</text>
+            <text x="338" y="137">20</text><text x="290" y="193">15</text><text x="392" y="193">7</text></g>
+          <text class="svgm" x="10" y="60">深度 1</text>
+          <text class="svgm" x="10" y="142">深度 2</text>
+          <text class="svgm" x="10" y="200">深度 3</text>
+          <path class="arw" stroke="#E2542A" stroke-width="2" d="M460 40 H480 M460 132 H480 M460 190 H480"/>
+          <text class="svgm" x="10" y="248">根到最远叶子，一共经过 3 个节点</text>
+        </svg>
+        <div class="row" data-seq="1" style="margin-top:12px">
+          <div class="term">答案 <b class="v mono">3</b></div>
+          <div class="term">空树答案 <b class="mono">0</b></div>
+          <div class="term">单节点 <b class="mono">1</b></div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">为什么它是最简入门？</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          · 状态只有一个下标 <span class="mono">u</span>，不需要 <span class="mono">k</span><br>
+          · 转移只用 <span class="mono">max</span>，没有额外枚举<br>
+          · 答案就在 <span class="mono">dp[root]</span>
+        </p>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>先用最简单的题把「骨架」练熟</b>：<br>
+            定状态 → 写转移 → 处理叶子 → 定答案位置。<br><br>
+            下一题就加一层难度：<b>答案不在根上</b>。</div>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm">注意「深度」的定义：<b>根到最远叶子的节点数</b>。<br>
+            如果题目问的是<b>边数</b>，答案要减 1。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/maximum-depth-of-binary-tree/" target="_blank">LC 104</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/minimum-depth-of-binary-tree/" target="_blank">LC 111 最小深度</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">最小的树形题，用来练骨架</div>
+  </div>
+</section>
+
+<!-- ============ 09 状态与转移 ============ -->
+<section class="slide" data-ch="2" data-stagger="170"
+  data-desc="给定二叉树 root，返回最大深度（根到最远叶子的节点数）。"
+  data-title="状态与转移：dp[u] 就够了"
+  data-rec="dp[u] = 1 + max(dp[l], dp[r])"
+  data-eyebrow="第二章 · 首例 · 目标：写出转移式">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">四步法 · 第 1、2 步</div>
+        <h4 class="h2" style="margin-top:12px">把定义和转移写清楚</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:15px;line-height:2">
+            <b>dp[u] = 以 u 为根的子树的最大深度</b><br><br>
+            dp[u] = 1 + max( dp[u.left], dp[u.right] )
+          </div>
+        </div>
+        <p class="sm" style="margin-top:16px">
+          <b>为什么是 1 + ？</b><br>
+          因为 u 自己也算一层。<br><br>
+          <b>为什么要 max？</b><br>
+          「最远」的意思是取最深的那一支。
+        </p>
+      </div>
+      <div class="c7-12">
+        <div class="meta">第 3、4 步 · 边界与答案</div>
+        <table class="t" style="margin-top:14px">
+          <tr><th style="width:130px">情况</th><th>值</th></tr>
+          <tr><td class="k">空节点</td><td><span class="mono v">dp[None] = 0</span>（深度 0）</td></tr>
+          <tr><td class="k">叶子节点</td><td><span class="mono">dp[u] = 1</span>（自动成立）</td></tr>
+          <tr><td class="k">答案位置</td><td><span class="mono v">dp[root]</span></td></tr>
+        </table>
+        <div class="notebox" style="margin-top:20px">
+          <div class="sm"><b>叶子的初值其实不用单独写。</b><br>
+            把「空节点返回 0」写好，叶子的
+            <span class="mono">1 + max(0, 0) = 1</span> 自动就对了。<br>
+            —— 这是<b>递归写法</b>比「递推填表」省事的地方。</div>
+        </div>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>小提醒：</b>「子树的最大深度」≠「最远叶子的编号」。<br>
+            状态里存的是<b>数值</b>，不是<b>方案</b>。要方案就再记录一个父亲指针。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">空节点返回 0，能省掉一半边界讨论</div>
+  </div>
+</section>
+
+<!-- ============ 10 手推与代码 ============ -->
+<section class="slide" data-ch="2" data-stagger="120"
+  data-desc="给定二叉树 root，返回最大深度（根到最远叶子的节点数）。"
+  data-title="手推 + 代码：三行就够"
+  data-rec="return 1 + max(...)"
+  data-eyebrow="第二章 · 首例 · 目标：亲手算一次">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:520px">
+        <svg viewBox="0 0 500 300" width="500" height="300">
+          <defs><marker id="ah5" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#E2542A"/></marker></defs>
+          <path class="edge" d="M250 56 L150 112"/><path class="edge" d="M250 56 L350 112"/>
+          <path class="edge" d="M350 112 L300 168"/><path class="edge" d="M350 112 L400 168"/>
+          <circle class="node" cx="250" cy="36" r="22"/><circle class="node" cx="150" cy="132" r="22"/>
+          <circle class="node" cx="350" cy="132" r="22"/><circle class="node" cx="300" cy="188" r="22"/>
+          <circle class="node" cx="400" cy="188" r="22"/>
+          <g class="svgtxtb"><text x="242" y="41">3</text><text x="142" y="137">9</text>
+            <text x="338" y="137">20</text><text x="290" y="193">15</text><text x="392" y="193">7</text></g>
+          <g data-seq="0">
+            <text class="svgtxtv" x="132" y="112">1</text>
+            <text class="svgtxtv" x="282" y="168">1</text>
+            <text class="svgtxtv" x="382" y="168">1</text>
+          </g>
+          <g data-seq="1">
+            <text class="svgtxtv" x="332" y="112">2</text>
+            <path class="arw" stroke="#E2542A" stroke-width="2" marker-end="url(#ah5)" d="M312 160 L338 142"/>
+            <path class="arw" stroke="#E2542A" stroke-width="2" marker-end="url(#ah5)" d="M392 160 L346 142"/>
+          </g>
+          <g data-seq="2">
+            <text class="svgtxtv" x="222" y="20">3</text>
+            <path class="arw" stroke="#E2542A" stroke-width="2.5" marker-end="url(#ah5)" d="M340 112 L268 42"/>
+            <path class="arw" stroke="#E2542A" stroke-width="2.5" marker-end="url(#ah5)" d="M162 112 L238 42"/>
+          </g>
+          <text class="svgm" x="20" y="252">1 + max(1, 2) = 3 ← 答案在根</text>
+        </svg>
+      </div>
+      <div style="flex:1">
+        <div class="code">
+          <div class="cbar"><span class="cf">max_depth.py</span>
+            <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>def maxDepth(root):</li>
+<li>    if root is None:</li>
+<li class="hl" data-note="空节点的初值：让叶子的值自动正确">        return 0</li>
+<li>    return 1 + max(maxDepth(root.left),</li>
+<li>                   maxDepth(root.right))</li>
+          </ol>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="numbox">i</div>
+          <div class="sm" style="flex:1">
+            这三行<b>就是树形 DP 的骨架</b>：<br>
+            <span class="mono">dfs(u) = 1 + f(dfs(子节点))</span><br>
+            后面所有题都长这样，只是 <span class="mono">f</span> 变复杂。
+          </div>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm">注意 Python 的递归：<b>树退化成链时递归层数 = n</b>，
+            可能爆栈。后面「实现要点」会讲怎么处理。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">三行，就是树形 DP 的骨架</div>
+  </div>
+</section>
+
+<!-- ============ 11 直径：答案不在根 ============ -->
+<section class="slide" data-ch="2" data-stagger="170"
+  data-desc="给定二叉树 root，求它的直径：任意两节点之间最长路径的边数，路径可以不经过根。"
+  data-title="难点来了：答案不在根上"
+  data-rec="ans ≠ dp[root]"
+  data-eyebrow="第二章 · 首例 · 目标：认识「打擂台」">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">LeetCode 543 · 二叉树的直径</div>
+        <h4 class="q" style="margin-top:10px">最长路径可能「拐个弯」</h4>
+        <svg viewBox="0 0 500 280" width="500" height="280" style="margin-top:8px">
+          <path class="edge" d="M250 56 L150 112"/><path class="edge" d="M250 56 L350 112"/>
+          <path class="edge" d="M350 112 L300 168"/><path class="edge" d="M350 112 L400 168"/>
+          <circle class="node" cx="250" cy="36" r="22"/><circle class="node" cx="150" cy="132" r="22"/>
+          <circle class="node" cx="350" cy="132" r="22"/><circle class="node" cx="300" cy="188" r="22"/>
+          <circle class="node" cx="400" cy="188" r="22"/>
+          <g class="svgtxtb"><text x="242" y="41">3</text><text x="142" y="137">9</text>
+            <text x="338" y="137">20</text><text x="290" y="193">15</text><text x="392" y="193">7</text></g>
+          <path class="path" data-draw="1200" d="M150 132 L250 36 L350 132 L300 188" stroke-width="6" stroke-linecap="round"/>
+          <g data-seq="1">
+            <text class="svgtxtv" x="120" y="262">答案 = 3 条边（15 → 20 → 3 → 9）</text>
+          </g>
+        </svg>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">为什么 <span class="mono">dp[root]</span> 不是答案？</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          <span class="mono">dp[u]</span> 如果定义成「以 u 为根的直径」，
+          那它<b>只关心穿过 u 的路径</b>。<br><br>
+          但最长路径可能<b>完全落在某个子树里</b>，根本不经过 root。
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>解法：两条线分开</b><br>
+            <b>① 向上传的贡献</b>：u 往下最长的链（单边）<br>
+            <b>② 打擂台的答案</b>：以 u 为拐点的最长路径<br><br>
+            ① 交给父亲；② 只用来更新全局答案。</div>
+        </div>
+        <div class="notebox" style="margin-top:20px">
+          <div class="sm"><b>这是树形 DP 最重要的一个意识：</b><br>
+            <b>「我要传上去的信息」和「我要记录的答案」经常不是一回事。</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">传上去的 ≠ 最后要的答案</div>
+  </div>
+</section>
+
+<!-- ============ 12 直径代码 ============ -->
+<section class="slide" data-ch="2" data-stagger="150"
+  data-desc="给定二叉树 root，求直径：任意两节点间最长路径的边数。"
+  data-title="代码：直径（两线分离）"
+  data-rec="ans = max(ans, dp[l] + dp[r])"
+  data-eyebrow="第二章 · 首例 · 目标：写出两线分离的代码">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.3">
+        <div class="cbar"><span class="cf">diameter.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>def diameterOfBinaryTree(root):</li>
+<li>    ans = 0</li>
+<li class="hl" data-note="nonlocal：在内层函数里更新外层的 ans">    def dfs(u):</li>
+<li>        nonlocal ans</li>
+<li>        if u is None:</li>
+<li>            return 0</li>
+<li>        L = dfs(u.left)          # 左边最长链</li>
+<li>        R = dfs(u.right)         # 右边最长链</li>
+<li class="hl" data-note="① 打擂台：以 u 为拐点的路径">        ans = max(ans, L + R)</li>
+<li class="hl" data-note="② 向上传：u 往下只接一条链">        return 1 + max(L, R)</li>
+<li>    dfs(root)</li>
+<li>    return ans</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">三处细节</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:110px">位置</th><th>为什么这么写</th></tr>
+          <tr><td class="k">nonlocal</td><td>Python 内层函数要改外层变量，必须声明</td></tr>
+          <tr><td class="k">L + R</td><td>拐点路径 = 左链 + 右链，<b>边数</b>就是相加</td></tr>
+          <tr><td class="k">1 + max</td><td>向上传只能选<b>一条</b>链（路径不能分叉）</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:20px">
+          <div class="sm"><b>一个常犯的错：</b>把 <span class="mono">return</span> 写成
+            <span class="mono">L + R</span>。<br>
+            那样传上去就变成「拐弯的路径」，
+            父亲一接就出现<b>分叉</b>，不再是路径了。</div>
+        </div>
+        <div class="row" style="margin-top:20px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/diameter-of-binary-tree/" target="_blank">LC 543</a></div>
+          <div class="term">时间 <b class="g">O(n)</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">return 只能接一条链，别分叉</div>
+  </div>
+</section>
+
+<!-- ============ 13 最长同值路径 ============ -->
+<section class="slide" data-ch="2" data-stagger="170"
+  data-desc="给定二叉树 root，求一条最长路径，要求路径上所有节点值都相同；返回边数。"
+  data-title="同一骨架，换一层外衣"
+  data-rec="ans = max(ans, L + R)"
+  data-eyebrow="第二章 · 首例 · 目标：看到形状的稳定性">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">LeetCode 687 · 最长同值路径</div>
+        <h4 class="q" style="margin-top:10px">题意</h4>
+        <p class="sm" style="margin-top:8px">
+          路径上<b>所有节点值必须相同</b>，求最长路径的<b>边数</b>。
+        </p>
+        <svg viewBox="0 0 480 270" width="480" height="270" style="margin-top:6px">
+          <path class="edge" d="M240 54 L150 108"/><path class="edge" d="M240 54 L330 108"/>
+          <path class="edge" d="M330 108 L288 162"/><path class="edge" d="M330 108 L372 162"/>
+          <circle class="node" cx="240" cy="34" r="22"/><circle class="node" cx="150" cy="128" r="22"/>
+          <circle class="node" cx="330" cy="128" r="22"/><circle class="node" cx="288" cy="182" r="22"/>
+          <circle class="node" cx="372" cy="182" r="22"/>
+          <g class="svgtxtb"><text x="232" y="39">5</text><text x="142" y="133">4</text>
+            <text x="322" y="133">5</text><text x="280" y="187">5</text><text x="364" y="187">5</text></g>
+          <path class="path" data-draw="1300" d="M288 182 L330 128 L240 34" stroke-width="6" stroke-linecap="round"/>
+          <text class="svgtxtv" x="10" y="242">答案 = 2 条边（5-5-5）</text>
+        </svg>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">转移式只多了一个「条件」</h4>
+        <div class="keyline"></div>
+        <div class="mono" style="font-size:14px;line-height:2">
+          # 向上传的贡献<br>
+          <span class="v">L = dfs(u.left) if u.left.val == u.val else 0</span><br>
+          <span class="v">R = dfs(u.right) if u.right.val == u.val else 0</span><br><br>
+          # 打擂台的答案<br>
+          <span class="v">ans = max(ans, L + R)</span><br><br>
+          # 向上传<br>
+          <span class="v">return 1 + max(L, R)</span>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>对比 LC 543：</b>骨架<b>一模一样</b>，
+            只是把「无条件继承」改成「<b>值相等才继承</b>」。<br><br>
+            <b>这就是学树形 DP 的意义：</b>
+            形状稳定，变的只是「继承条件」。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/longest-univalue-path/" target="_blank">LC 687</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/longest-zigzag-path-in-a-binary-tree/" target="_blank">LC 1372 最长交错路径</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">形状不变，只改「继承条件」</div>
+  </div>
+</section>
+
+<!-- ============ 14 打家劫舍 III 题意 ============ -->
+<section class="slide" data-ch="3" data-stagger="170"
+  data-desc="二叉树每个节点存放金额；不能同时偷相连的父子节点。求能偷到的最大金额。"
+  data-title="经典案例：打家劫舍 III"
+  data-rec="选 / 不选"
+  data-eyebrow="第三章 · 经典二选 · 目标：认识「带自身状态」的转移">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">LeetCode 337 · House Robber III</div>
+        <h4 class="q" style="margin-top:10px">root = <span class="mono">[3,2,3,null,3,null,1]</span></h4>
+        <svg viewBox="0 0 500 270" width="500" height="270" style="margin-top:8px">
+          <path class="edge" d="M250 54 L160 110"/><path class="edge" d="M250 54 L340 110"/>
+          <path class="edge" d="M160 110 L176 168"/><path class="edge" d="M340 110 L356 168"/>
+          <circle class="node hot" cx="250" cy="34" r="22"/><circle class="node plain" cx="160" cy="130" r="22"/>
+          <circle class="node plain" cx="340" cy="130" r="22"/><circle class="node hot" cx="176" cy="188" r="22"/>
+          <circle class="node hot" cx="356" cy="188" r="22"/>
+          <g class="svgtxtb"><text x="242" y="39">3</text><text x="152" y="135">2</text>
+            <text x="332" y="135">3</text><text x="168" y="193">3</text><text x="348" y="193">1</text></g>
+          <text class="svgm" x="10" y="242">红色 = 偷的节点：3 + 3 + 1 = 7</text>
+        </svg>
+        <div class="row" data-seq="1" style="margin-top:8px">
+          <div class="term">答案 <b class="v mono">7</b></div>
+          <div class="term">父子不能同时偷</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">和 P1352 是同一个模型</h4>
+        <div class="keyline"></div>
+        <table class="t">
+          <tr><th style="width:130px"></th><th>LC 337</th><th>P1352</th></tr>
+          <tr><td class="k">树的形状</td><td>二叉</td><td>多叉</td></tr>
+          <tr><td class="k">节点值</td><td>金额</td><td>开心值</td></tr>
+          <tr><td class="k">约束</td><td>父子不同偷</td><td>上司与下属不同到</td></tr>
+          <tr><td class="k">答案</td><td class="mono v">max(dp[root][0/1])</td><td class="mono v">同上</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:20px">
+          <div class="sm"><b>学一个模型，能做一整类题。</b><br>
+            后面的 P2015 二叉苹果树、P2014 选课，
+            也是这一类的变体。</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/house-robber-iii/" target="_blank">LC 337</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1352" target="_blank">P1352</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">父子有约束，就得带上自身状态</div>
+  </div>
+</section>
+
+<!-- ============ 15 为什么要两个状态 ============ -->
+<section class="slide" data-ch="3" data-stagger="180"
+  data-desc="二叉树每个节点存放金额；不能同时偷父子，求最大金额。"
+  data-title="为什么要 dp[u][0] 和 dp[u][1]"
+  data-rec="dp[u][0] · dp[u][1]"
+  data-eyebrow="第三章 · 经典二选 · 目标：理解状态为什么要加 k">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:500px">
+        <h4 class="q">父亲要看 u「偷没偷」，才能决定自己</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          如果 u 偷了 → 父亲<b>不能</b>偷<br>
+          如果 u 没偷 → 父亲<b>随便</b><br><br>
+          所以传给父亲的必须是<b>两个数</b>，不是一个。
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>状态定义</b><br>
+            <span class="mono">dp[u][0]</span> = u <b>不偷</b>时，以 u 为根的子树的最大金额<br>
+            <span class="mono">dp[u][1]</span> = u <b>偷</b>时，以 u 为根的子树的最大金额</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>一般规律：</b>当「u 自己的选择」会影响父亲时，
+            状态里就要带上 <span class="mono">k</span>。<br>
+            <span class="mono">k</span> 的取值个数就是「<b>状态数</b>」。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 560 340" width="560" height="340">
+          <defs><marker id="ah6" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#8A6E52"/></marker></defs>
+          <g data-seq="0">
+            <text class="svgm" x="10" y="22">情况 A：u 不偷</text>
+            <circle class="node plain" cx="70" cy="62" r="22"/>
+            <text class="svgtxtb" x="62" y="67">u</text>
+            <path class="edge" d="M70 84 L34 124"/><path class="edge" d="M70 84 L106 124"/>
+            <circle class="node hot" cx="34" cy="146" r="20"/><circle class="node hot" cx="106" cy="146" r="20"/>
+            <text class="svgm" x="140" y="96">孩子随便选</text>
+            <text class="svgm" x="140" y="118">取 max(偷, 不偷)</text>
+          </g>
+          <g data-seq="1">
+            <text class="svgm" x="320" y="22">情况 B：u 偷</text>
+            <circle class="node hot" cx="380" cy="62" r="22"/>
+            <text class="svgtxtb" x="372" y="67">u</text>
+            <path class="edge" d="M380 84 L344 124"/><path class="edge" d="M380 84 L416 124"/>
+            <circle class="node plain" cx="344" cy="146" r="20"/><circle class="node plain" cx="416" cy="146" r="20"/>
+            <text class="svgm" x="450" y="96">孩子都不能偷</text>
+            <text class="svgm" x="450" y="118">只能取「不偷」</text>
+          </g>
+          <g data-seq="2">
+            <rect x="20" y="220" width="520" height="92" rx="6" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtv" x="42" y="256">dp[u][0] = Σ_v max(dp[v][0], dp[v][1])</text>
+            <text class="svgtxtv" x="42" y="290">dp[u][1] = val[u] + Σ_v dp[v][0]</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">两个状态，才能让父亲做决定</div>
+  </div>
+</section>
+
+<!-- ============ 16 手推 ============ -->
+<section class="slide" data-ch="3" data-stagger="110"
+  data-desc="二叉树每个节点存放金额；不能同时偷父子，求最大金额。"
+  data-title="手推：从叶子一路算到根"
+  data-rec="dp[root][*] = 7"
+  data-eyebrow="第三章 · 经典二选 · 目标：亲手算一次">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:540px">
+        <svg viewBox="0 0 520 300" width="520" height="300">
+          <defs><marker id="ah7" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#E2542A"/></marker></defs>
+          <path class="edge" d="M250 54 L160 110"/><path class="edge" d="M250 54 L340 110"/>
+          <path class="edge" d="M160 110 L176 168"/><path class="edge" d="M340 110 L356 168"/>
+          <circle class="node" cx="250" cy="34" r="22"/><circle class="node" cx="160" cy="130" r="22"/>
+          <circle class="node" cx="340" cy="130" r="22"/><circle class="node" cx="176" cy="188" r="22"/>
+          <circle class="node" cx="356" cy="188" r="22"/>
+          <g class="svgtxtb"><text x="242" y="39">3</text><text x="152" y="135">2</text>
+            <text x="332" y="135">3</text><text x="168" y="193">3</text><text x="348" y="193">1</text></g>
+          <g data-seq="0">
+            <text class="svgtxtv" x="112" y="228">0 / 3</text>
+            <text class="svgtxtv" x="376" y="228">0 / 1</text>
+          </g>
+          <g data-seq="1">
+            <text class="svgtxtv" x="112" y="106">3 / 2</text>
+            <text class="svgtxtv" x="376" y="106">1 / 3</text>
+            <path class="arw" stroke="#E2542A" stroke-width="2" marker-end="url(#ah7)" d="M188 180 L176 158"/>
+            <path class="arw" stroke="#E2542A" stroke-width="2" marker-end="url(#ah7)" d="M344 180 L332 158"/>
+          </g>
+          <g data-seq="2">
+            <text class="svgtxtv" x="212" y="16">6 / 7</text>
+            <path class="arw" stroke="#E2542A" stroke-width="2.5" marker-end="url(#ah7)" d="M170 112 L240 42"/>
+            <path class="arw" stroke="#E2542A" stroke-width="2.5" marker-end="url(#ah7)" d="M330 112 L262 42"/>
+          </g>
+          <text class="svgm" x="10" y="276">每格写作「不偷 / 偷」，从叶子往根填</text>
+        </svg>
+      </div>
+      <div style="flex:1">
+        <div class="meta">根节点的两格</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:110px">格子</th><th>算式</th><th>值</th></tr>
+          <tr><td class="k">dp[root][0]</td>
+            <td class="mono">max(3,2) + max(1,3)</td><td class="mono v">3 + 3 = 6</td></tr>
+          <tr><td class="k">dp[root][1]</td>
+            <td class="mono">3 + 3 + 1</td><td class="mono v">3 + 3 + 1 = 7</td></tr>
+          <tr><td class="k">答案</td>
+            <td class="mono">max(6, 7)</td><td class="mono v">7 ✓</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:20px">
+          <div class="sm"><b>验证：</b>偷 root(3) + 2 的右孩子(3) + 3 的右孩子(1) = 7。<br>
+            它们互相都不是父子，符合条件。</div>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm">注意 <span class="mono">dp[root][1]</span> 里两个孩子只能取
+            <b>「不偷」</b>那格：<span class="mono">3 + 1</span>，<b>不是 max</b>。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">两格，从下往上一格格填</div>
+  </div>
+</section>
+
+<!-- ============ 17 代码 ============ -->
+<section class="slide" data-ch="3" data-stagger="150"
+  data-desc="二叉树每个节点存放金额；不能同时偷父子，求最大金额。"
+  data-title="代码：打家劫舍 III"
+  data-rec="return max(dfs(root))"
+  data-eyebrow="第三章 · 经典二选 · 目标：写出可提交的代码">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.3">
+        <div class="cbar"><span class="cf">house_robber_III.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>def rob(root):</li>
+<li class="hl" data-note="返回一个「二元组」：(不偷, 偷)。这是树形 DP 的常用技巧">    def dfs(u):</li>
+<li>        if u is None:</li>
+<li class="hl" data-note="空节点：两格都是 0，不影响累加">            return (0, 0)</li>
+<li>        l0, l1 = dfs(u.left)</li>
+<li>        r0, r1 = dfs(u.right)</li>
+<li>        no = max(l0, l1) + max(r0, r1)   # u 不偷，孩子随便</li>
+<li>        yes = u.val + l0 + r0            # u 偷，孩子只能不偷</li>
+<li>        return (no, yes)</li>
+<li>    return max(dfs(root))</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">写法技巧</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:110px">技巧</th><th>好处</th></tr>
+          <tr><td class="k">返回元组</td><td>一次 DFS 把所有状态一起算完，省一次遍历</td></tr>
+          <tr><td class="k">命名 l0/l1</td><td>看得出「左孩子不偷/偷」，少写注释</td></tr>
+          <tr><td class="k">空节点返回 (0,0)</td><td>自动处理叶子，不用判边界</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:20px">
+          <div class="sm"><b>另一种写法：</b>把状态写成二维数组
+            <span class="mono">dp[u][0/1]</span>，用字典或数组存。<br>
+            递归返回元组<b>更短更直观</b>，推荐先用这个。</div>
+        </div>
+        <div class="row" style="margin-top:20px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/house-robber-iii/" target="_blank">LC 337</a></div>
+          <div class="term">时间 <b class="g">O(n)</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">返回元组，一次算完两格</div>
+  </div>
+</section>
+
+<!-- ============ 18 P1352 迁移 ============ -->
+<section class="slide" data-ch="3" data-stagger="170"
+  data-desc="n 个员工各有开心值，每人最多一个直接上司；某人到场则其直接上司必须缺席，求最大开心值之和。"
+  data-title="迁移：没有上司的舞会"
+  data-rec="root = 没有上司的人"
+  data-eyebrow="第三章 · 经典二选 · 目标：把模型迁到多叉树">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:500px">
+        <div class="meta">洛谷 P1352 · 与 LC 337 同模型</div>
+        <h4 class="h2" style="margin-top:12px">三个不同点</h4>
+        <div class="keyline"></div>
+        <table class="t">
+          <tr><th style="width:150px">不同点</th><th>做法</th></tr>
+          <tr><td class="k">① 多叉不是二叉</td><td>用邻接表 <span class="mono">children[u]</span> 存孩子</td></tr>
+          <tr><td class="k">② 没给根</td><td>「<b>没有上司的人</b>」就是根</td></tr>
+          <tr><td class="k">③ 输入是上司关系</td><td>读 <span class="mono">l k</span> 表示 l 的上司是 k</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:20px">
+          <div class="sm"><b>转移式一字不改</b>：<br>
+            <span class="mono">dp[u][0] = Σ_v max(dp[v][0], dp[v][1])</span><br>
+            <span class="mono">dp[u][1] = h[u] + Σ_v dp[v][0]</span></div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="code">
+          <div class="cbar"><span class="cf">p1352_build.py</span><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>n = int(input())</li>
+<li>h = [0] + list(map(int, input().split()))</li>
+<li>fa = [0] * (n + 1)</li>
+<li>children = [[] for _ in range(n + 1)]</li>
+<li>for _ in range(n - 1):</li>
+<li>    l, k = map(int, input().split())</li>
+<li class="hl" data-note="题目给的是「l 的上司是 k」，方向要记对">    children[k].append(l)</li>
+<li>    fa[l] = k</li>
+<li class="hl" data-note="没上司的人就是根">root = next(i for i in range(1, n + 1) if fa[i] == 0)</li>
+          </ol>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>建树这一步很容易翻车</b>：<br>
+            下标是 <span class="mono">1..n</span> 还是 <span class="mono">0..n-1</span>？
+            方向是「下属 → 上司」还是反过来？<br>
+            <b>先写在纸上，再写进代码。</b></div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1352" target="_blank">P1352</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P2015" target="_blank">P2015 二叉苹果树</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">建树写对，剩下就一样了</div>
+  </div>
+</section>
+
+<!-- ============ 19 最大路径和题意 ============ -->
+<section class="slide" data-ch="4" data-stagger="170"
+  data-desc="二叉树每个节点为整数（可能为负）；路径是任意两节点间的简单路径，不必经过根。求最大路径和。"
+  data-title="进阶：二叉树的最大路径和"
+  data-rec="ans ≠ dp[root]，且可为负"
+  data-eyebrow="第四章 · 进阶 · 目标：面对「可为负」的难题">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">LeetCode 124 · Hard</div>
+        <h4 class="q" style="margin-top:10px">root = <span class="mono">[-10,9,20,null,null,15,7]</span></h4>
+        <svg viewBox="0 0 500 270" width="500" height="270" style="margin-top:8px">
+          <path class="edge" d="M250 54 L160 110"/><path class="edge" d="M250 54 L340 110"/>
+          <path class="edge" d="M340 110 L300 166"/><path class="edge" d="M340 110 L380 166"/>
+          <circle class="node plain" cx="250" cy="34" r="24"/><circle class="node plain" cx="160" cy="130" r="22"/>
+          <circle class="node" cx="340" cy="130" r="24"/><circle class="node" cx="300" cy="188" r="22"/>
+          <circle class="node" cx="380" cy="188" r="22"/>
+          <g class="svgtxtb"><text x="238" y="39">-10</text><text x="152" y="135">9</text>
+            <text x="328" y="135">20</text><text x="288" y="193">15</text><text x="372" y="193">7</text></g>
+          <path class="path" data-draw="1300" d="M300 188 L340 130 L380 188" stroke-width="6" stroke-linecap="round"/>
+          <text class="svgtxtv" x="10" y="242">答案 = 15 + 20 + 7 = 42（完全不经过根）</text>
+        </svg>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">难在哪？</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          ① <b>答案不在根</b>（同 LC 543，要打擂台）<br>
+          ② <b>节点值可为负</b>—— 有时「不接」更好<br>
+          ③ <b>路径可以只是一个点</b>
+        </p>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>第 ② 点是新东西。</b><br>
+            以前 <span class="mono">return 1 + max(L, R)</span> 永远往上接。<br>
+            现在若 <span class="mono">L</span>、<span class="mono">R</span> 都是负数，
+            就<b>应该不接</b>——返回 <span class="mono">0</span> 不太对，
+            因为 u 自己还在。<br><br>
+            所以写成 <span class="mono">u.val + max(L, R)</span>，
+            其中 <span class="mono">L = max(0, dfs(left))</span>。</div>
+        </div>
+        <div class="notebox" style="margin-top:20px">
+          <div class="sm">这就是<b>「贡献可以为 0，答案可以为负」</b>的典型分离。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">有负数，就要学会「不接」</div>
+  </div>
+</section>
+
+<!-- ============ 20 关键想法 ============ -->
+<section class="slide" data-ch="4" data-stagger="180"
+  data-desc="二叉树每个节点为整数（可能为负）；求最大路径和。"
+  data-title="关键想法：贡献与答案分离"
+  data-rec="gain(u) · vs · ans"
+  data-eyebrow="第四章 · 进阶 · 目标：把两件事彻底分开">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:500px">
+        <h4 class="q">两条公式，两个用途</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:14px;line-height:2">
+            <b class="v">① 向上传的贡献</b>（交给父亲）<br>
+            &nbsp;&nbsp;gain(u) = u.val + max(0, max(gain(l), gain(r)))<br><br>
+            <b class="v">② 打擂台的答案</b>（更新全局）<br>
+            &nbsp;&nbsp;ans = max(ans, u.val + max(0,gain(l)) + max(0,gain(r)))
+          </div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>为什么 ① 只能接一条？</b><br>
+            路径是一条线，<b>不能分叉</b>。<br>
+            ② 里的「左 + 右」是「u 当拐点」的路径，但这条路<b>不能继续往上</b>。</div>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>为什么要 max(0, ...)？</b><br>
+            贡献为负时不如不接。<br>
+            但 <span class="mono">ans</span> 本身<b>可以是负数</b>——
+            全树都是负数时，答案就是最大的那个负数。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 540 340" width="540" height="340">
+          <defs><marker id="ah8" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#8A6E52"/></marker></defs>
+          <g data-seq="0">
+            <circle class="node hot" cx="270" cy="112" r="32"/>
+            <text class="svgtxtv" x="258" y="118">u</text>
+            <path class="edge" d="M270 144 L140 206"/><path class="edge" d="M270 144 L400 206"/>
+            <circle class="node" cx="140" cy="228" r="24"/><circle class="node" cx="400" cy="228" r="24"/>
+            <text class="svgtxtb" x="132" y="233">L</text><text class="svgtxtb" x="392" y="233">R</text>
+            <path class="arw" stroke="#E2542A" stroke-width="2" marker-end="url(#ah8)" d="M152 198 L244 132"/>
+            <path class="arw" stroke="#E2542A" stroke-width="2" marker-end="url(#ah8)" d="M388 198 L296 132"/>
+            <text class="svgtxtv" x="20" y="300">② 答案 = L + u + R（拐点在 u）</text>
+          </g>
+          <g data-seq="1">
+            <path class="arw" stroke="#3E7B4E" stroke-width="3" marker-end="url(#ah8)" d="M270 74 V32"/>
+            <text class="svgtxt" x="286" y="52">① 传上去的 = u + max(L, R)</text>
+            <text class="svgm" x="286" y="26">只能接一条！</text>
+          </g>
+          <g data-seq="2">
+            <rect x="20" y="20" width="210" height="66" rx="6" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgm" x="36" y="48">L、R 可能为负</text>
+            <text class="svgtxtv" x="36" y="72">max(0, ·) 才是贡献</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">记住：传的是一条，记的是两条</div>
+  </div>
+</section>
+
+<!-- ============ 21 代码 ============ -->
+<section class="slide" data-ch="4" data-stagger="150"
+  data-desc="二叉树每个节点为整数（可能为负）；求最大路径和。"
+  data-title="代码：最大路径和"
+  data-rec="return u.val + max(L, R)"
+  data-eyebrow="第四章 · 进阶 · 目标：写出 Hard 题的代码">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.3">
+        <div class="cbar"><span class="cf">max_path_sum.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>def maxPathSum(root):</li>
+<li>    ans = float('-inf')</li>
+<li>    def dfs(u):</li>
+<li>        nonlocal ans</li>
+<li>        if u is None:</li>
+<li>            return 0</li>
+<li class="hl" data-note="max(0, ...)：负贡献不如不接">        L = max(0, dfs(u.left))</li>
+<li>        R = max(0, dfs(u.right))</li>
+<li class="hl" data-note="① 打擂台：u 当拐点的路径">        ans = max(ans, u.val + L + R)</li>
+<li class="hl" data-note="② 向上传：只能接一条，不加 max(0,·) 因为 u 自己必须在">        return u.val + max(L, R)</li>
+<li>    dfs(root)</li>
+<li>    return ans</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">三处易错</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:130px">易错</th><th>正确写法</th></tr>
+          <tr><td class="k">ans 初值</td><td>必须是 <span class="mono">-inf</span>，<b>不能是 0</b></td></tr>
+          <tr><td class="k">return 加 max(0)</td><td><b>不要</b>—— u 一定在路径里</td></tr>
+          <tr><td class="k">L、R 加 max(0)</td><td><b>要</b>—— 子链可以不接</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:20px">
+          <div class="sm"><b>拿 [-10] 试一下：</b><br>
+            <span class="mono">L = R = 0</span>，
+            <span class="mono">ans = -10</span>，
+            返回 <span class="mono">-10</span>。<br>
+            答案是 <b class="v mono">-10</b> 而不是 0 —— 对的。</div>
+        </div>
+        <div class="row" style="margin-top:20px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/binary-tree-maximum-path-sum/" target="_blank">LC 124</a></div>
+          <div class="term">时间 <b class="g">O(n)</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">拿单节点负数试一下，最容易抓 bug</div>
+  </div>
+</section>
+
+<!-- ============ 22 四种形状总结 ============ -->
+<section class="slide" data-ch="4" data-stagger="130"
+  data-title="四种常见形状，一表看完"
+  data-rec="① 子树贡献 ② 父子二选 ③ 两线分离 ④ 换根"
+  data-eyebrow="第四章 · 进阶 · 目标：把套路归类">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:130px">形状</th><th style="width:330px">转移式</th><th style="width:230px">适用问题</th><th>记住的要点</th></tr>
+      <tr><td class="k v">① 子树贡献</td>
+        <td data-seq="0"><span class="mono">dp[u] = 1 + f(dp[v])</span></td>
+        <td data-seq="1">最大深度、子树和、最大子树</td>
+        <td data-seq="2">最简骨架，答案通常在 <span class="mono">dp[root]</span></td></tr>
+      <tr><td class="k v">② 父子二选</td>
+        <td data-seq="1"><span class="mono">dp[u][0] = Σ max(dp[v][0],dp[v][1])</span><br>
+          <span class="mono">dp[u][1] = val + Σ dp[v][0]</span></td>
+        <td data-seq="2">打家劫舍 III、P1352、P2015</td>
+        <td data-seq="3">u 的选择约束了孩子，<b>状态带上 k</b></td></tr>
+      <tr><td class="k v">③ 两线分离</td>
+        <td data-seq="2"><span class="mono">ans = max(ans, L+R)</span><br>
+          <span class="mono">return u + max(L,R)</span></td>
+        <td data-seq="3">直径、LC 124、LC 687、LC 1372</td>
+        <td data-seq="4">传上去的和记录的<b>不是一回事</b></td></tr>
+      <tr><td class="k v">④ 换根</td>
+        <td data-seq="3"><span class="mono">ans[v] = ans[u] + n - 2·sz[v]</span></td>
+        <td data-seq="4">LC 834、P3047、P2986</td>
+        <td data-seq="5">两次 DFS：<b>先算子树，再推到孩子</b></td></tr>
+    </table>
+    <div class="hrule dot" data-seq="6" style="margin-top:26px"></div>
+    <div class="row" data-seq="7">
+      <div class="numbox">!</div>
+      <div class="p" style="flex:1">
+        拿到题先问两个问题：<br>
+        <b class="v">① u 自己的状态会不会约束孩子？</b>（会 → 形状 ②）<br>
+        <b class="v">② 答案是不是一定要过 u？</b>（不是 → 形状 ③）
+      </div>
+    </div>
+    <div class="hand" data-at="2500" style="left:880px;top:340px">先判断形状，再动笔</div>
+  </div>
+</section>
+
+<!-- ============ 23 换根动机 ============ -->
+<section class="slide" data-ch="5" data-stagger="180"
+  data-title="为什么要「换根」？"
+  data-rec="ans[v] = ans[u] - sz[v] + (n - sz[v])"
+  data-eyebrow="第五章 · 换根 · 目标：看懂问题的暴力与优化">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">如果题目问「以每个点为根，答案是多少」？</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          暴力：每个点当一次根，跑一遍 DFS。<br>
+          复杂度 <b class="mono l">O(n²)</b>。n = 10⁵ 就会超时。
+        </p>
+        <svg viewBox="0 0 480 270" width="480" height="270" style="margin-top:6px">
+          <defs><marker id="ah9" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#E2542A"/></marker></defs>
+          <circle class="node hot" cx="240" cy="62" r="26"/><circle class="node" cx="130" cy="142" r="22"/>
+          <circle class="node" cx="350" cy="142" r="22"/><circle class="node plain" cx="90" cy="206" r="18"/>
+          <circle class="node plain" cx="180" cy="206" r="18"/><circle class="node plain" cx="320" cy="206" r="18"/>
+          <circle class="node plain" cx="410" cy="206" r="18"/>
+          <path class="edge" d="M240 88 L130 122"/><path class="edge" d="M240 88 L350 122"/>
+          <path class="edge" d="M130 164 L92 190"/><path class="edge" d="M130 164 L178 190"/>
+          <path class="edge" d="M350 164 L322 190"/><path class="edge" d="M350 164 L408 190"/>
+          <path class="arw" stroke="#E2542A" stroke-width="3" marker-end="url(#ah9)" d="M366 222 L350 176"/>
+          <text class="svgtxtv" x="252" y="242">换一个当根，再算一遍？</text>
+        </svg>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">换个角度：父子关系是「可逆」的</h4>
+        <div class="keyline"></div>
+        <p class="sm">
+          第一次 DFS 时，u 是 v 的父亲。<br>
+          换根之后，v 变成根，<b>u 反而是 v 的孩子</b>。<br>
+          所以答案之间可以「<b>互相推</b>」。
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>核心公式</b><br>
+            <span class="mono">ans[v] = ans[u] − sz[v] + (n − sz[v])</span><br><br>
+            · <span class="mono">− sz[v]</span>：v 子树里的点，<b>各近了 1</b><br>
+            · <span class="mono">+(n − sz[v])</span>：外面的点，<b>各远了 1</b></div>
+        </div>
+        <div class="notebox" style="margin-top:20px">
+          <div class="sm"><b>这就是换根 DP：</b>两次 DFS，<span class="mono">O(n)</span> 搞定。<br>
+            第一次「从下往上」算子树；<br>
+            第二次「<b>从上往下</b>」把答案推给每个孩子。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:120px;top:340px">父子可以互换，答案就能递推</div>
+  </div>
+</section>
+
+<!-- ============ 24 LC834 题意 ============ -->
+<section class="slide" data-ch="5" data-stagger="170"
+  data-desc="给定一棵 n 个节点的无向树 edges，对每个节点 i，计算树中所有节点到 i 的距离之和。"
+  data-title="案例：树中距离之和"
+  data-rec="ans[i] = Σ dist(j, i)"
+  data-eyebrow="第五章 · 换根 · 目标：读懂题目与样例">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">LeetCode 834 · Sum of Distances in Tree</div>
+        <h4 class="q" style="margin-top:10px">n = 6，edges = <span class="mono">[[0,1],[0,2],[2,3],[2,4],[2,5]]</span></h4>
+        <svg viewBox="0 0 500 270" width="500" height="270" style="margin-top:8px">
+          <path class="edge" d="M170 56 L96 110"/><path class="edge" d="M170 56 L244 110"/>
+          <path class="edge" d="M244 110 L200 166"/><path class="edge" d="M244 110 L244 172"/>
+          <path class="edge" d="M244 110 L288 166"/>
+          <circle class="node hot" cx="170" cy="36" r="22"/><circle class="node" cx="96" cy="130" r="20"/>
+          <circle class="node" cx="244" cy="130" r="22"/><circle class="node plain" cx="200" cy="188" r="18"/>
+          <circle class="node plain" cx="244" cy="192" r="18"/><circle class="node plain" cx="288" cy="188" r="18"/>
+          <g class="svgtxtb"><text x="162" y="41">0</text><text x="88" y="135">1</text>
+            <text x="236" y="135">2</text><text x="192" y="193">3</text><text x="236" y="197">4</text>
+            <text x="280" y="193">5</text></g>
+          <text class="svgm" x="360" y="80">求每个节点的</text>
+          <text class="svgm" x="360" y="102">「距离总和」</text>
+          <text class="svgm" x="10" y="242">答案数组长度 = n = 6</text>
+        </svg>
+        <div class="row" data-seq="1" style="margin-top:8px">
+          <div class="term">答案 <b class="v mono">[8, 12, 6, 10, 10, 10]</b></div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">样例验证（节点 0）</h4>
+        <div class="keyline"></div>
+        <table class="t">
+          <tr><th style="width:110px">目标</th><th style="width:110px">距离</th><th>路径</th></tr>
+          <tr><td class="k">→ 1</td><td class="mono">1</td><td>0 - 1</td></tr>
+          <tr><td class="k">→ 2</td><td class="mono">1</td><td>0 - 2</td></tr>
+          <tr><td class="k">→ 3</td><td class="mono">2</td><td>0 - 2 - 3</td></tr>
+          <tr><td class="k">→ 4</td><td class="mono">2</td><td>0 - 2 - 4</td></tr>
+          <tr><td class="k">→ 5</td><td class="mono">2</td><td>0 - 2 - 5</td></tr>
+          <tr><td class="k">合计</td><td class="mono v">8</td><td>1+1+2+2+2 = 8 ✓</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:20px">
+          <div class="sm"><b>先手算一个答案</b>，是检验代码的最好办法。<br>
+            换根题特别容易「差 1」，样例一定要核对。</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/sum-of-distances-in-tree/" target="_blank">LC 834</a></div>
+          <div class="term">暴力 <b class="mono l">O(n²)</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">先手算一个答案，再写代码</div>
+  </div>
+</section>
+
+<!-- ============ 25 两次 DFS ============ -->
+<section class="slide" data-ch="5" data-stagger="180"
+  data-desc="给定一棵 n 个节点的无向树 edges，对每个节点 i，计算树中所有节点到 i 的距离之和。"
+  data-title="两次 DFS：先向下，再向上"
+  data-rec="dfs1 → dfs2"
+  data-eyebrow="第五章 · 换根 · 目标：搞懂两次 DFS 的分工">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:500px">
+        <h4 class="q">第一次：从下往上，算「子树」</h4>
+        <div class="keyline"></div>
+        <div class="mono" style="font-size:14px;line-height:2">
+          <span class="v">sz[u]</span> &nbsp;&nbsp;= u 的子树节点数<br>
+          <span class="v">down[u]</span> = u 到<u>自己子树里</u>所有点的距离和<br><br>
+          sz[u] = 1 + Σ sz[v]<br>
+          down[u] = Σ ( down[v] + sz[v] )
+        </div>
+        <div class="sm" style="margin-top:12px">
+          <b>为什么 + sz[v]？</b><br>
+          v 子树里的每个点，从 u 走过去都要<b>多走 1 步</b>。
+        </div>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm">第一次算完，<span class="mono">down[0]</span> 就是节点 0 的答案。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <h4 class="q">第二次：从上往下，把答案「推」给孩子</h4>
+        <div class="keyline"></div>
+        <div class="mono" style="font-size:14px;line-height:2">
+          <span class="v">ans[0] = down[0]</span><br><br>
+          <span class="v">ans[v] = ans[u] − sz[v] + (n − sz[v])</span>
+        </div>
+        <div class="sm" style="margin-top:12px">
+          <b>两个项的含义：</b><br>
+          · <span class="mono">− sz[v]</span>：v 子树里的 <span class="mono">sz[v]</span> 个点，
+          现在<b>各近了 1</b> → 总距离减 <span class="mono">sz[v]</span><br>
+          · <span class="mono">+ (n − sz[v])</span>：其余点<b>各远了 1</b>
+          → 总距离加 <span class="mono">n − sz[v]</span>
+        </div>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>直观记忆：</b><br>
+            「<b>进去的人少了，出来的人多了</b>」<br>
+            <span class="mono">ans[v] = ans[u] + n − 2·sz[v]</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:340px">先算子树，再把答案推出去</div>
+  </div>
+</section>
+
+<!-- ============ 26 代码 ============ -->
+<section class="slide" data-ch="5" data-stagger="150"
+  data-desc="给定一棵 n 个节点的无向树 edges，对每个节点 i，计算树中所有节点到 i 的距离之和。"
+  data-title="代码：树中距离之和"
+  data-rec="ans[v] = ans[u] + n - 2*sz[v]"
+  data-eyebrow="第五章 · 换根 · 目标：写出两次 DFS 的代码">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.35">
+        <div class="cbar"><span class="cf">sum_distances.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>def sumOfDistancesInParent(n, edges):</li>
+<li>    g = [[] for _ in range(n)]</li>
+<li>    for a, b in edges:</li>
+<li>        g[a].append(b); g[b].append(a)</li>
+<li>    sz = [1] * n          # 子树大小，自己算 1</li>
+<li>    down = [0] * n        # 到自己子树的距离和</li>
+<li>    ans = [0] * n</li>
+<li class="hl" data-note="第一次 DFS：从下往上">    def dfs(u, p):</li>
+<li>        for v in g[u]:</li>
+<li>            if v == p: continue</li>
+<li>            dfs(v, u)</li>
+<li>            sz[u] += sz[v]</li>
+<li>            down[u] += down[v] + sz[v]</li>
+<li>    dfs(0, -1)</li>
+<li class="hl" data-note="第二次 DFS：从上往下，把答案推给孩子">    def reroot(u, p):</li>
+<li>        for v in g[u]:</li>
+<li>            if v == p: continue</li>
+<li>            ans[v] = ans[u] + n - 2 * sz[v]</li>
+<li>            reroot(v, u)</li>
+<li>    ans[0] = down[0]</li>
+<li>    reroot(0, -1)</li>
+<li>    return ans</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">三个细节</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:110px">位置</th><th>说明</th></tr>
+          <tr><td class="k">p（父亲）</td><td>无向图 DFS 必须记住父亲，<b>防止走回去</b></td></tr>
+          <tr><td class="k">sz 初值 1</td><td>节点自己也算一个</td></tr>
+          <tr><td class="k">-1 当哨兵</td><td>根没有父亲，用 <span class="mono">-1</span> 表示</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:20px">
+          <div class="sm"><b>为什么不用「每点当根」？</b><br>
+            两次 DFS 是 <b class="g mono">O(n)</b>，<br>
+            暴力是 <b class="l mono">O(n²)</b>。<br>
+            n = 3×10⁴ 时，差距是 10⁴ 倍。</div>
+        </div>
+        <div class="row" style="margin-top:20px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/sum-of-distances-in-tree/" target="_blank">LC 834</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P2986" target="_blank">P2986 牛聚集</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">无向图 DFS 一定要记住父亲</div>
+  </div>
+</section>
+
+<!-- ============ 27 常见错误 ============ -->
+<section class="slide" data-ch="6" data-stagger="150"
+  data-title="常见错误与对策"
+  data-rec="后序遍历：先子后父"
+  data-eyebrow="第六章 · 方法题单 · 目标：避开五个大坑">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:150px">错误</th><th style="width:380px">症状</th><th style="width:320px">对策</th><th>检验</th></tr>
+      <tr><td class="k v">① 遍历顺序错</td>
+        <td data-seq="0">父节点算出来的值还是初值，像没算过一样。</td>
+        <td data-seq="1">递归写法天然正确；迭代时用<b>后序栈</b>。</td>
+        <td data-seq="2">打印节点访问顺序。</td></tr>
+      <tr><td class="k v">② 答案位置错</td>
+        <td data-seq="3">输出 <span class="mono">dp[root]</span>，但题目的答案在别处。</td>
+        <td data-seq="4">问自己「答案一定过根吗？」<br>不一定 → <b>打擂台</b>。</td>
+        <td data-seq="5">找一棵「最长路径在子树里」的树手算。</td></tr>
+      <tr><td class="k v">③ 空节点没处理</td>
+        <td data-seq="6">空树 / 单节点报错。</td>
+        <td data-seq="7">递归第一行写 <span class="mono">if u is None: return ...</span>。</td>
+        <td data-seq="8">输入 <span class="mono">[]</span> 和 <span class="mono">[1]</span> 试试。</td></tr>
+      <tr><td class="k v">④ 负权忘了「不接」</td>
+        <td data-seq="9">答案比预期小（或大）。</td>
+        <td data-seq="10">贡献加 <span class="mono">max(0,·)</span>，答案保持原值。</td>
+        <td data-seq="11">全负数数组，答案应是最大那个。</td></tr>
+      <tr><td class="k v">⑤ 递归爆栈</td>
+        <td data-seq="12">树退化成链时 <span class="mono">RecursionError</span>。</td>
+        <td data-seq="13"><span class="mono">sys.setrecursionlimit(10**6)</span> 或改迭代。</td>
+        <td data-seq="14">造一条 n = 10⁵ 的链测一测。</td></tr>
+    </table>
+    <div class="row" style="margin-top:22px">
+      <div class="numbox">!</div>
+      <div class="p" style="flex:1">
+        树形 DP 的 bug 多数出在<b class="v">「答案位置」与「边界」</b>，不是转移式。<br>
+        最有效的一招：<b>先画一棵 5 个节点的树，手算一遍。</b></div>
+    </div>
+    <div class="hand" data-at="2600" style="left:880px;top:340px">五个坑，画一棵小树就能试出来</div>
+  </div>
+</section>
+
+<!-- ============ 28 实现要点 ============ -->
+<section class="slide" data-ch="6" data-stagger="130"
+  data-title="实现要点与复杂度"
+  data-rec="O(n · 状态数 · 枚举)"
+  data-eyebrow="第六章 · 方法题单 · 目标：把代码写稳">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="h2">建树：邻接表最快最稳</h4>
+        <div class="keyline"></div>
+        <div class="code">
+          <div class="cbar"><span class="cf">build.py</span><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>g = [[] for _ in range(n)]</li>
+<li>for a, b in edges:</li>
+<li>    g[a].append(b)</li>
+<li>    g[b].append(a)      # 无向图要双向</li>
+<li>def dfs(u, p):         # p = 父亲，防走回头</li>
+<li>    for v in g[u]:</li>
+<li>        if v == p: continue</li>
+<li>        dfs(v, u)</li>
+          </ol>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm">二叉树直接用 <span class="mono">u.left / u.right</span>，
+            不用建表。<b>多叉树必须建表。</b></div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <h4 class="h2">复杂度一览</h4>
+        <div class="keyline"></div>
+        <table class="t">
+          <tr><th style="width:180px">场景</th><th>时间</th><th>空间</th></tr>
+          <tr><td class="k">单状态（深度、子树和）</td><td class="k g">O(n)</td><td class="k g">O(n)</td></tr>
+          <tr><td class="k">两状态（选/不选）</td><td class="k g">O(2n)</td><td class="k g">O(n)</td></tr>
+          <tr><td class="k">k 个状态（颜色、距离）</td><td class="k g">O(nk)</td><td class="k g">O(nk)</td></tr>
+          <tr><td class="k">树上背包（P2015）</td><td class="k l">O(n·m²)</td><td class="k g">O(nm)</td></tr>
+          <tr><td class="k">换根</td><td class="k g">O(2n)</td><td class="k g">O(n)</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:20px">
+          <div class="sm"><b>Python 三件套</b><br>
+            ① <span class="mono">sys.setrecursionlimit(10**6)</span><br>
+            ② 输入用 <span class="mono">sys.stdin.buffer.read()</span>，洛谷大输入更快<br>
+            ③ 递归改迭代：用<b>显式栈</b>模拟后序遍历</div>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>记忆化搜索</b>适合「状态不是真树」的递归：<br>
+            加一个 <span class="mono">@lru_cache</span>，效果等同 DP。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:120px;top:340px">递归深度这一条，几乎必踩</div>
+  </div>
+</section>
+
+<!-- ============ 29 流程图 ============ -->
+<section class="slide" data-ch="6" data-stagger="180"
+  data-title="解题流程图"
+  data-rec="if 树: 树形 DP"
+  data-eyebrow="第六章 · 方法题单 · 目标：把方法固定成流程">
+  <div class="stage-inner">
+    <svg viewBox="0 0 1120 440" width="1120" height="440">
+      <defs><marker id="aha" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="#8A6E52"/></marker></defs>
+      <g data-seq="0">
+        <rect x="20" y="30" width="200" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="42" y="58">数据是不是「树」？</text>
+        <text class="svgm" x="42" y="80">n 个点 n-1 条边</text>
+      </g>
+      <path class="arw" marker-end="url(#aha)" d="M220 62 H292" data-seq="1"/>
+      <g data-seq="1">
+        <rect x="300" y="30" width="230" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="322" y="58">dp[u] = 什么？</text>
+        <text class="svgm" x="322" y="80">写成一句中文</text>
+      </g>
+      <path class="arw" marker-end="url(#aha)" d="M530 62 H602" data-seq="2"/>
+      <g data-seq="2">
+        <rect x="610" y="30" width="230" height="64" rx="6" fill="#FDEECC" stroke="#E2542A" stroke-width="2"/>
+        <text class="svgtxtv" x="632" y="58">u 的状态会不会约束孩子？</text>
+        <text class="svgm" x="632" y="80">会 → dp[u][0/1]</text>
+      </g>
+      <path class="arw" marker-end="url(#aha)" d="M840 62 H912" data-seq="3"/>
+      <g data-seq="3">
+        <rect x="920" y="30" width="180" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="942" y="58">写转移</text>
+        <text class="svgm" x="942" y="80">Σ_v f(dp[v][·])</text>
+      </g>
+
+      <path class="arw" marker-end="url(#aha)" d="M1010 94 V150 H110 V192" data-seq="4"/>
+
+      <g data-seq="4">
+        <rect x="20" y="196" width="200" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="42" y="224">定叶子初值</text>
+        <text class="svgm" x="42" y="246">空节点返回什么</text>
+      </g>
+      <path class="arw" marker-end="url(#aha)" d="M220 228 H292" data-seq="5"/>
+      <g data-seq="5">
+        <rect x="300" y="196" width="230" height="64" rx="6" fill="#FDEECC" stroke="#E2542A" stroke-width="2"/>
+        <text class="svgtxtv" x="322" y="224">答案一定过根吗？</text>
+        <text class="svgm" x="322" y="246">不是 → 打擂台</text>
+      </g>
+      <path class="arw" marker-end="url(#aha)" d="M530 228 H602" data-seq="6"/>
+      <g data-seq="6">
+        <rect x="610" y="196" width="230" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="632" y="224">5 个节点的手算验证</text>
+        <text class="svgm" x="632" y="246">含空树、单节点</text>
+      </g>
+      <path class="arw" marker-end="url(#aha)" d="M840 228 H912" data-seq="7"/>
+      <g data-seq="7">
+        <rect x="920" y="196" width="180" height="64" rx="6" fill="#FFFFFF" stroke="#E2542A" stroke-width="2"/>
+        <text class="svgtxtv" x="942" y="224">写代码</text>
+        <text class="svgm" x="942" y="246">递归 + 后序</text>
+      </g>
+
+      <path class="arw" marker-end="url(#aha)" d="M1010 260 V320 H620 V358" data-seq="8"/>
+      <g data-seq="8">
+        <rect x="400" y="362" width="440" height="42" rx="6" fill="#FDEECC" stroke="#F3A33C"/>
+        <text class="svgtxt" x="422" y="389">问「以每个点为根」？→ 换根 DP，两次 DFS</text>
+      </g>
+    </svg>
+    <div class="hand" data-at="2700" style="left:20px;top:352px">红框那两问，决定写法</div>
+  </div>
+</section>
+
+<!-- ============ 30 词汇表 ============ -->
+<section class="slide" data-ch="6" data-stagger="100"
+  data-title="词汇表"
+  data-rec="subtree · post-order · reroot"
+  data-eyebrow="第六章 · 方法题单 · 目标：把术语对上号">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="flex:1">
+        <table class="t">
+          <tr><th style="width:160px">术语</th><th style="width:190px">英文</th><th>一句话</th></tr>
+          <tr><td class="k">树形 DP</td><td class="k">tree DP</td><td>状态是「以某点为根的子树」的动态规划。</td></tr>
+          <tr><td class="k">子树</td><td class="k">subtree</td><td>以 u 为根，u 的所有后代。</td></tr>
+          <tr><td class="k">后序遍历</td><td class="k">post-order</td><td>孩子 → 自己，保证子节点先算完。</td></tr>
+          <tr><td class="k">根 / 叶子</td><td class="k">root / leaf</td><td>无父亲 / 无孩子。</td></tr>
+          <tr><td class="k">换根</td><td class="k">reroot</td><td>利用父子关系，把答案从父亲推给孩子。</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <table class="t">
+          <tr><th style="width:160px">术语</th><th style="width:190px">英文</th><th>一句话</th></tr>
+          <tr><td class="k">树的直径</td><td class="k">tree diameter</td><td>树上最长的简单路径。</td></tr>
+          <tr><td class="k">打擂台</td><td class="k">best-so-far</td><td>答案不来自根，遍历中全局更新。</td></tr>
+          <tr><td class="k">树上背包</td><td class="k">tree knapsack</td><td>子树里选 k 个物品的最优化。</td></tr>
+          <tr><td class="k">记忆化搜索</td><td class="k">memoized DFS</td><td>递归 + 缓存，等价于 DP。</td></tr>
+          <tr><td class="k">递归深度</td><td class="k">recursion depth</td><td>链状树会达 n，Python 要调限制。</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="hand" data-at="2200" style="left:880px;top:340px">这一页可以截图存下来</div>
+  </div>
+</section>
+
+<!-- ============ 31 总题单 ============ -->
+<section class="slide" data-ch="6" data-stagger="110"
+  data-title="总题单：LeetCode + 洛谷"
+  data-rec="n = 15 problems"
+  data-eyebrow="第六章 · 方法题单 · 目标：拿到可执行的练习清单">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="flex:1">
+        <div class="meta">入门 · 必做</div>
+        <table class="t" style="margin-top:10px">
+          <tr><th>题</th><th>形状</th></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/maximum-depth-of-binary-tree/" target="_blank">LC 104 最大深度</a></td><td>① 子树贡献</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/diameter-of-binary-tree/" target="_blank">LC 543 二叉树的直径</a></td><td>③ 两线分离</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/longest-univalue-path/" target="_blank">LC 687 最长同值路径</a></td><td>③ 两线分离</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/house-robber-iii/" target="_blank">LC 337 打家劫舍 III</a></td><td>② 父子二选</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1352" target="_blank">P1352 没有上司的舞会</a></td><td>② 父子二选</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <div class="meta">进阶 · 巩固</div>
+        <table class="t" style="margin-top:10px">
+          <tr><th>题</th><th>形状</th></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/binary-tree-maximum-path-sum/" target="_blank">LC 124 最大路径和</a></td><td>③ 两线分离</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/longest-zigzag-path-in-a-binary-tree/" target="_blank">LC 1372 最长交错路径</a></td><td>③ 两线分离</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/distribute-coins-in-binary-tree/" target="_blank">LC 979 分配硬币</a></td><td>③ 两线分离</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1122" target="_blank">P1122 最大子树和</a></td><td>① 子树贡献</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P2015" target="_blank">P2015 二叉苹果树</a></td><td>树上背包</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <div class="meta">提高 · 挑战</div>
+        <table class="t" style="margin-top:10px">
+          <tr><th>题</th><th>形状</th></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/sum-of-distances-in-tree/" target="_blank">LC 834 树中距离之和</a></td><td>④ 换根</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P2986" target="_blank">P2986 Great Cow Gathering</a></td><td>④ 换根</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P3047" target="_blank">P3047 附近的牛</a></td><td>④ 换根</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P2014" target="_blank">P2014 选课</a></td><td>树上背包</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/binary-tree-cameras/" target="_blank">LC 968 监控二叉树</a></td><td>② 多状态</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:880px;top:340px">按顺序做，不要跳</div>
+  </div>
+</section>
+
+<!-- ============ 32 结语 ============ -->
+<section class="slide" data-ch="6" data-stagger="180"
+  data-title="收尾"
+  data-rec="dp[u] = Σ_v f( dp[v][·] )"
+  data-eyebrow="ALGO PRIMER / DP-03 · 完 · 下一讲：背包 DP">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-7">
+        <div class="meta rise" data-seq="0">结语</div>
+        <h2 class="disp rise" data-seq="1" style="margin-top:14px;font-size:52px">
+          树形 DP 就是<br><b class="v">后序遍历的四步法</b>。
+        </h2>
+        <div class="keyline" data-seq="2"></div>
+        <p class="lead rise" data-seq="3">
+          今天你只需要记住四句话：<br>
+          ① 状态是 <b class="mono">dp[u]</b> 或 <b class="mono">dp[u][k]</b>；<br>
+          ② 转移是 <b>把子节点的结果合并到 u</b>；<br>
+          ③ 顺序是 <b>从叶子到根</b>；<br>
+          ④ 答案<b>不一定在根</b>，别忘了打擂台。
+        </p>
+        <p class="p rise" data-seq="4" style="margin-top:12px">
+          把「前两讲」和这一讲连起来看：<br>
+          线性 → 区间 → 树形，<b>变的只是状态的形状</b>，
+          四步法一直没变。
+        </p>
+      </div>
+      <div class="c8-12">
+        <div class="meta" data-seq="1">今天就做这五道</div>
+        <div class="hrule dot" data-seq="2"></div>
+        <div class="sm rise" data-seq="3">
+          ① <a class="link" href="https://leetcode.cn/problems/maximum-depth-of-binary-tree/" target="_blank">LC 104 最大深度</a><br>
+          ② <a class="link" href="https://leetcode.cn/problems/diameter-of-binary-tree/" target="_blank">LC 543 二叉树的直径</a><br>
+          ③ <a class="link" href="https://leetcode.cn/problems/house-robber-iii/" target="_blank">LC 337 打家劫舍 III</a><br>
+          ④ <a class="link" href="https://leetcode.cn/problems/binary-tree-maximum-path-sum/" target="_blank">LC 124 最大路径和</a><br>
+          ⑤ <a class="link" href="https://leetcode.cn/problems/sum-of-distances-in-tree/" target="_blank">LC 834 树中距离之和</a>
+        </div>
+        <div class="notebox" data-seq="4" style="margin-top:16px">
+          <div class="sm">每做一道，先在纸上画一棵<b>5 个节点的树</b>，<br>
+            标出每个节点的 <span class="mono">dp</span> 值，
+            并回答「<b>答案在根吗？</b>」</div>
+        </div>
+        <div class="row" data-seq="5" style="margin-top:20px">
+          <div class="chip">子</div><div class="chip">父</div>
+          <div class="chip">根</div><div class="chip">叶</div><div class="chip">换根</div>
+        </div>
+      </div>
+    </div>
+    <div class="watermark" style="top:190px">TREE</div>
+    <div class="hand" data-at="2600" style="left:120px;top:340px">「从叶子到根」就是树形 DP 的全部</div>
+  </div>
+</section>
+
+</div></div>
+
+<div id="panel"><h4>跳转 · 输入编号或点击 · ESC 关闭</h4><div id="plist"></div></div>
+
+<script>
+(function(){
+  'use strict';
+  const deck = document.getElementById('deck');
+  const slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  const TOTAL = slides.length;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FOOT_HELP = '← → 或空格翻页 ｜ R 重放动画 ｜ G 跳页 ｜ Esc 目录';
+
+  slides.forEach(function(s, i){ s.dataset.num = String(i).padStart(2,'0'); });
+
+  /* ---- syntax highlight ---- */
+  const RE = /(#.*$)|("[^"]*"|'[^']*')|\b(def|return|for|in|if|elif|else|while|and|or|not|None|True|False|import|from|class|break|continue|pass|global|nonlocal|lambda)\b|\b(len|min|max|range|abs|sum|print|sorted|map|int|str|list|input|append|float|next|dfs|reroot)\b|\b(\d+)\b/g;
+  function hl(line){
+    return line.replace(RE, function(m,c,s,k,f,n){
+      if(c) return '<span class="cm">'+c+'</span>';
+      if(s) return '<span class="s">'+s+'</span>';
+      if(k) return '<span class="k">'+k+'</span>';
+      if(f) return '<span class="fn">'+f+'</span>';
+      return '<span class="n">'+n+'</span>';
+    });
+  }
+  function paintCode(root){
+    root.querySelectorAll('ol.cl li').forEach(function(li){ li.innerHTML = hl(li.textContent); });
+  }
+
+  /* ---- chrome（无 wordmark；章节条 bar/label 合一） ---- */
+  const CH = ['','起点','首例','二选','进阶','换根','方法题单'];
+  function ruler(ch){
+    let h = '<div class="ruler">';
+    for(let i=1;i<=6;i++){
+      h += '<a data-go="'+i+'" class="'+(i===ch?'on':'')+'"><div class="bar"><span class="lbl">'+CH[i]+'</span></div></a>';
+    }
+    return h + '</div>';
+  }
+  function buildChrome(){
+    slides.forEach(function(s){
+      const desc = s.dataset.desc
+        ? '<div class="qdesc"><span class="qlabel">题意</span>'+s.dataset.desc+'</div>'
+        : '';
+      const head =
+        '<header class="top">'+
+          '<h1 class="s-title">'+s.dataset.title+'</h1>'+
+          desc+
+          '<div class="top-rule"></div><div class="top-accent"></div>'+
+        '</header>'+
+        '<div class="numline">'+s.dataset.rec+'</div>'+
+        '<div class="pager"><div class="pg">'+s.dataset.num+' / '+(TOTAL-1)+'</div></div>'+
+        '<div class="numrule"></div>'+
+        '<div class="mnum">'+s.dataset.num+'</div>'+
+        '<div class="mlabel">'+s.dataset.eyebrow.split(' · ')[0]+'</div>';
+      const foot =
+        '<footer class="bottom">'+
+          '<div class="bot-rule"></div>'+
+          ruler(+(s.dataset.ch||0))+
+          '<div class="botline">'+
+            '<span class="eyebrow">'+s.dataset.eyebrow+'</span>'+
+            '<span class="bsep"></span>'+
+            '<span class="help">'+FOOT_HELP+'</span>'+
+            '<span class="bmark">ALGO PRIMER · 树形动态规划</span>'+
+          '</div>'+
+        '</footer>';
+      s.insertAdjacentHTML('afterbegin', head);
+      s.insertAdjacentHTML('beforeend', foot);
+    });
+  }
+
+  /* ---- motion ---- */
+  let timers = [];
+  function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+  function paths(slide){ return Array.prototype.slice.call(slide.querySelectorAll('[data-draw]')); }
+  function setPathLen(slide){
+    paths(slide).forEach(function(p){
+      let L = 0;
+      try{ L = Math.ceil(p.getTotalLength()); }catch(e){ L = 0; }
+      if(!L || !isFinite(L)) L = 600;
+      p.style.setProperty('--len', L);
+    });
+  }
+  function play(slide, instant){
+    clearTimers();
+    const stag = +(slide.dataset.stagger || 180);
+    const items = Array.prototype.slice.call(slide.querySelectorAll('[data-seq],[data-at]'));
+    items.forEach(function(el){ el.classList.remove('on'); });
+    const ps = paths(slide);
+    ps.forEach(function(p){ p.classList.remove('on'); });
+    setPathLen(slide);
+    if(instant || reduce){
+      items.forEach(function(el){ el.classList.add('on'); });
+      ps.forEach(function(p){ p.classList.add('on'); });
+      return;
+    }
+    items.forEach(function(el){
+      const d = (el.dataset.at !== undefined) ? +el.dataset.at : 240 + (+el.dataset.seq) * stag;
+      timers.push(setTimeout(function(){ el.classList.add('on'); }, Math.max(0, d)));
+    });
+    ps.forEach(function(p){
+      timers.push(setTimeout(function(){ p.classList.add('on'); }, +(p.dataset.draw || 900)));
+    });
+  }
+  function reset(slide){
+    clearTimers();
+    slide.querySelectorAll('[data-seq],[data-at]').forEach(function(el){ el.classList.remove('on'); });
+    paths(slide).forEach(function(p){ p.classList.remove('on'); });
+  }
+
+  /* ---- navigation ---- */
+  let cur = 0;
+  function show(i, instant){
+    if(i < 0) i = 0;
+    if(i > TOTAL-1) i = TOTAL-1;
+    slides.forEach(function(s){ s.classList.remove('active'); });
+    cur = i;
+    const s = slides[i];
+    s.classList.add('active');
+    play(s, instant);
+    if(history.replaceState) history.replaceState(null,'','#'+s.dataset.num);
+  }
+  function next(){ show(cur+1); }
+  function prev(){ show(cur-1); }
+
+  /* ---- panel ---- */
+  const panel = document.getElementById('panel');
+  const plist = document.getElementById('plist');
+  function buildPanel(){
+    plist.innerHTML = slides.map(function(s,i){
+      return '<button data-i="'+i+'"><span>'+s.dataset.num+' &nbsp; '+s.dataset.eyebrow.split(' · ')[0]+'</span>'+s.dataset.title+'</button>';
+    }).join('');
+    plist.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click', function(){ panel.classList.remove('open'); show(+b.dataset.i, true); });
+    });
+  }
+  function jumpChapter(c){
+    const s = slides.find(function(x){ return +x.dataset.ch === c; });
+    if(s) show(slides.indexOf(s), true);
+  }
+
+  /* ---- events ---- */
+  document.addEventListener('keydown', function(e){
+    const k = e.key;
+    if(k === 'Escape'){ panel.classList.toggle('open'); return; }
+    if(panel.classList.contains('open')) return;
+    if(k === 'ArrowRight' || k === 'PageDown' || k === ' ' || k === 'Enter'){ e.preventDefault(); next(); }
+    else if(k === 'ArrowLeft' || k === 'PageUp'){ e.preventDefault(); prev(); }
+    else if(k === 'Home'){ show(0, true); }
+    else if(k === 'End'){ show(TOTAL-1, true); }
+    else if(k === 'r' || k === 'R'){ play(slides[cur], false); }
+    else if(k === 'g' || k === 'G'){ panel.classList.add('open'); }
+    else if(/^[0-9]$/.test(k)){ if(+k <= TOTAL-1) show(+k, true); }
+  });
+
+  let wheelLock = 0;
+  window.addEventListener('wheel', function(e){
+    const now = Date.now();
+    if(now - wheelLock < 620 || Math.abs(e.deltaY) < 12) return;
+    wheelLock = now;
+    if(e.deltaY > 0) next(); else prev();
+  }, {passive:true});
+
+  let tx = null;
+  window.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; }, {passive:true});
+  window.addEventListener('touchend', function(e){
+    if(tx === null) return;
+    const dx = e.changedTouches[0].clientX - tx;
+    if(Math.abs(dx) > 50){ if(dx < 0) next(); else prev(); }
+    tx = null;
+  }, {passive:true});
+
+  deck.addEventListener('click', function(e){
+    const go = e.target.closest('[data-go]');
+    if(go){ jumpChapter(+go.dataset.go); return; }
+    if(e.target.closest('[data-run]')){ play(slides[cur], false); return; }
+    if(e.target.closest('[data-reset]')){ reset(slides[cur]); return; }
+    const cp = e.target.closest('[data-copy]');
+    if(cp){
+      const box = cp.closest('.code').querySelector('ol.cl');
+      const txt = Array.prototype.slice.call(box.querySelectorAll('li'))
+        .map(function(li){ return li.textContent; }).join('\n');
+      if(navigator.clipboard) navigator.clipboard.writeText(txt);
+      const old = cp.textContent; cp.textContent = 'ok';
+      setTimeout(function(){ cp.textContent = old; }, 900);
+    }
+  });
+
+  function fit(){
+    deck.style.transform = 'scale(' + Math.min(window.innerWidth/1280, window.innerHeight/720) + ')';
+  }
+  window.addEventListener('resize', fit);
+
+  /* ---- init ---- */
+  paintCode(deck);
+  buildChrome();
+  fit();
+  buildPanel();
+  const startNum = (location.hash || '').replace('#','');
+  const startIdx = slides.findIndex(function(s){ return s.dataset.num === startNum; });
+  show(startIdx >= 0 ? startIdx : 0, false);
+})();
+</script>
+</body>
+</html>

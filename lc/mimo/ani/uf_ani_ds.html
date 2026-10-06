@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>并查集 · 路径压缩 + 按秩合并 动画</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1080px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  /* ===== 原理简介 ===== */
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead {
+    font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px;
+  }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  /* ===== SVG ===== */
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+  .dsu-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.4;
+    transition: fill .25s, stroke .25s, stroke-width .25s;
+  }
+  .dsu-node .node-key {
+    font-size: 19px; font-weight: 700; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .dsu-node .node-rank {
+    font-size: 10.5px; font-weight: 600; fill: #627d98;
+    pointer-events: none; user-select: none;
+  }
+
+  .dsu-node.root .node-bg {
+    fill: #ffd98a; stroke: #e09b00; stroke-width: 3.4;
+  }
+  .dsu-node.root .node-key { fill: #a35e00; }
+  .dsu-node.root .node-rank { fill: #b45a12; font-weight: 700; }
+
+  .dsu-node.visit .node-bg {
+    fill: #ffe9a8; stroke: #e09b00; stroke-width: 3.2;
+  }
+  .dsu-node.visit .node-key { fill: #a35e00; }
+
+  .dsu-node.compress .node-bg {
+    fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3.2;
+  }
+  .dsu-node.compress .node-key { fill: #5b3db8; }
+
+  .dsu-node.attached .node-bg {
+    fill: #c9efc9; stroke: #57a957; stroke-width: 3.2;
+  }
+  .dsu-node.attached .node-key { fill: #2f7a34; }
+
+  .dsu-edge {
+    stroke: #b4bec9; stroke-width: 2;
+    stroke-dasharray: 6 5; stroke-linecap: round;
+    transition: stroke .25s, stroke-width .25s;
+  }
+  .dsu-edge.path {
+    stroke: #e09b00; stroke-width: 3;
+    stroke-dasharray: 9 6;
+    animation: dashflow 0.75s linear infinite;
+  }
+  .dsu-edge.compress {
+    stroke: #7c5cd6; stroke-width: 3;
+    stroke-dasharray: 9 6;
+    animation: dashflow 0.75s linear infinite;
+  }
+  .dsu-edge.attached {
+    stroke: #57a957; stroke-width: 3;
+    stroke-dasharray: 9 6;
+    animation: dashflow 0.75s linear infinite;
+  }
+  @keyframes dashflow { to { stroke-dashoffset: -15; } }
+
+  /* ===== 面板 ===== */
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 96px;
+  }
+  .row-label.base   { color: #2f7a34; }
+  .row-label.find   { color: #2369ad; }
+  .row-label.union  { color: #7c5cd6; }
+  .group { display: flex; align-items: center; gap: 8px; }
+  .group .label { color: #627d98; font-size: 12.5px; }
+
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  .stat-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #f0f7ff; color: #2369ad;
+    padding: 4px 12px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600;
+    border: 1px solid #c7defa;
+  }
+  .stat-badge .num {
+    font-family: ui-monospace, monospace;
+    font-size: 14px; font-weight: 800; color: #2a7fd0;
+  }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.purple  { background: #7c5cd6; border-color: #7c5cd6; color: #fff; }
+  button.purple:hover { background: #634ab0; border-color: #634ab0; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.danger:hover { background: #b33232; border-color: #b33232; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost   { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+  button.ghost:hover { background: #f0f7ff; }
+
+  input[type="number"] {
+    font: inherit; font-size: 13px; padding: 5px 8px;
+    border-radius: 7px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53; width: 66px;
+  }
+
+  /* ===== 演示控制条 ===== */
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+
+  /* ===== 知识模块 ===== */
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  /* ===== 代码模块 ===== */
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 620px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>并查集（DSU）· 路径压缩 + 按秩合并 动画</h1>
+  <p class="subtitle" id="subtitle">
+    单次操作的均摊复杂度 <b>O(α(N))</b>，α 是阿克曼函数的反函数，实际使用中可视为常数
+  </p>
+
+  <!-- 原理简介 -->
+  <div class="intro">
+    <h2>📖 原理简介 · 并查集如何做到近乎 O(1)？</h2>
+    <p class="intro-lead">
+      并查集维护一堆<b>不相交的集合</b>，每个集合用一棵树表示，树根是集合的<b>代表元</b>。
+      每个节点只需记录它的 <code>parent</code> 指针。核心操作只有两个：
+      <code>find(x)</code> 沿 parent 链找到根；<code>union(x, y)</code> 把两棵树合并。
+      单独使用时，树可能退化成链，单次操作退化为 <b>O(N)</b>。
+      加上<b>路径压缩</b>和<b>按秩合并</b>后，单次操作均摊复杂度降为 <b>O(α(N)) &lt; 5</b>。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">优化 1</div>
+        <div class="title">路径压缩 Path Compression</div>
+        <div class="desc">
+          <code>find(x)</code> 时把路径上的所有节点<b>直接挂到根上</b>。<br>
+          下次再查这些节点，一步就能到达根。树被压得很扁。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">优化 2</div>
+        <div class="title">按秩合并 Union by Rank</div>
+        <div class="desc">
+          <code>union</code> 时把<b>矮树挂到高树下</b>（按 rank 比较）。<br>
+          rank 只在两棵树一样高时才会 +1，因此树高 <code>O(log N)</code>。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">性质</div>
+        <div class="title">为什么是 α(N)？</div>
+        <div class="desc">
+          单独用路径压缩是 <code>O(log N)</code>，单独用按秩合并是 <code>O(log N)</code>。
+          两者一起用，均摊复杂度降到反阿克曼函数 <code>α(N)</code>，
+          对 N &lt; 10⁶⁰⁰ 都 ≤ 5。这是一个几乎常数的复杂度。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">find(x)</div>
+        <div class="desc">
+          沿 <code>parent</code> 一路向上，直到 <code>parent[x] == x</code>，
+          这个 x 就是所在集合的根。返回根作为代表元。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">union(x, y)</div>
+        <div class="desc">
+          分别找到 <code>rx = find(x)</code>、<code>ry = find(y)</code>。
+          若 <code>rx == ry</code> 说明本来就在一起，什么都不做；
+          否则按 rank 把一棵树挂到另一棵下。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">用途</div>
+        <div class="title">典型应用场景</div>
+        <div class="desc">
+          · 图的连通性判断<br>
+          · Kruskal 最小生成树<br>
+          · 动态维护等价类<br>
+          · 带权并查集（维护节点到根的权值差）
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label base">基本操作</span>
+      <button id="btnReset" class="ghost">重置（8 个独立集合）</button>
+      <span class="stat-badge">
+        当前集合数：<span class="num" id="countStat">8</span>
+      </span>
+      <span class="row-hint">每个元素一开始都是自己的集合，初始 8 个独立集合</span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label find">find(x)</span>
+      <span class="label">x =</span>
+      <input id="findInput" type="number" value="0" min="0" max="7">
+      <button id="btnFind" class="primary">find</button>
+      <span class="row-hint">沿 parent 链向上找根，并沿途做<b>路径压缩</b></span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label union">union(x, y)</span>
+      <span class="label">x =</span>
+      <input id="unionXInput" type="number" value="0" min="0" max="7">
+      <span class="label">y =</span>
+      <input id="unionYInput" type="number" value="1" min="0" max="7">
+      <button id="btnUnion" class="purple">union</button>
+      <span class="row-hint">先 find 两个根，再<b>按秩合并</b>（矮树挂到高树下）</span>
+    </div>
+  </div>
+
+  <!-- 演示控制条 -->
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 试试 find / union，或点击「开始演示」</div>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 并查集核心要点 <span class="hint">两个优化缺一不可</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · 并查集（模块化）
+      <span class="badge">路径压缩 + 按秩合并</span>
+      <span class="hint">均摊 O(α(N))</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyCode"></pre></div>
+  </details>
+</div>
+
+<!-- ============ Python 源码 ============ -->
+<script type="text/plain" id="pySrc">
+"""
+并查集（Disjoint Set Union，简称 DSU）。
+
+并查集维护若干个不相交的集合，每个集合用一棵树表示，
+树根作为集合的“代表元”。两个核心操作：
+
+    find(x)     查找 x 所在集合的根（代表元）
+    union(x, y) 合并 x 和 y 所在的集合
+
+若只使用朴素实现，树可能退化为一条链，单次操作 O(N)。
+加上以下两种优化后，单次操作均摊复杂度降为 O(α(N))：
+
+    1. 路径压缩 Path Compression
+       find(x) 时把路径上的所有节点直接挂到根上。
+
+    2. 按秩合并 Union by Rank
+       合并时把矮树挂到高树下（rank 是树高的上界）。
+"""
+
+
+# ============================================================
+# 模块 1：并查集类
+# ============================================================
+class UnionFind:
+    """
+    带路径压缩 + 按秩合并的并查集。
+
+    内部数组（下标 0..n-1）：
+        parent[i] —— i 的父节点。parent[i] == i 表示 i 是根。
+        rank[i]   —— 以 i 为根的子树高度上界。仅根节点的 rank 有意义。
+        count     —— 当前集合总数。初始为 n。
+
+    复杂度：
+        单次 find / union 均摊 O(α(N))，α 是反阿克曼函数。
+    """
+
+    def __init__(self, n):
+        self.parent = list(range(n))
+        self.rank = [0] * n
+        self.count = n
+
+    # --------------------------------------------------------
+    # find：查找根 + 路径压缩
+    # --------------------------------------------------------
+    def find(self, x):
+        """
+        查找 x 所在集合的根，同时做路径压缩（迭代版）。
+
+        原理：
+            第一遍沿 parent 向上找根；
+            第二遍把路径上所有节点直接挂到根上。
+
+        均摊 O(α(N))
+        """
+        # 第一遍：找到根
+        root = x
+        while self.parent[root] != root:
+            root = self.parent[root]
+
+        # 第二遍：路径压缩
+        while self.parent[x] != root:
+            nxt = self.parent[x]
+            self.parent[x] = root
+            x = nxt
+
+        return root
+
+    def find_recursive(self, x):
+        """
+        查找 x 的根，递归版路径压缩。
+
+        递归写法非常简洁，但深度大时可能触发 Python 递归上限，
+        实际使用推荐迭代版。
+        """
+        if self.parent[x] != x:
+            self.parent[x] = self.find_recursive(self.parent[x])
+        return self.parent[x]
+
+    # --------------------------------------------------------
+    # union：按秩合并
+    # --------------------------------------------------------
+    def union(self, x, y):
+        """
+        合并 x 和 y 所在的集合。
+
+        返回 True 表示两个原本不同的集合被合并；
+        返回 False 表示 x、y 已在同一集合，什么都没做。
+
+        按秩合并原则：
+            把 rank 较小的树挂到 rank 较大的树下。
+            rank 相等时任意挂一棵，并把新根的 rank + 1。
+
+        均摊 O(α(N))
+        """
+        rx, ry = self.find(x), self.find(y)
+        if rx == ry:
+            return False
+
+        # 保证 rx 是 rank 更大的那棵树的根
+        if self.rank[rx] < self.rank[ry]:
+            rx, ry = ry, rx
+
+        # 把 ry 挂到 rx 下
+        self.parent[ry] = rx
+
+        # 只有当两棵树一样高时，新根的高度才需要 +1
+        if self.rank[rx] == self.rank[ry]:
+            self.rank[rx] += 1
+
+        self.count -= 1
+        return True
+
+    # --------------------------------------------------------
+    # 便利方法
+    # --------------------------------------------------------
+    def connected(self, x, y):
+        """判断 x 与 y 是否在同一个集合中。"""
+        return self.find(x) == self.find(y)
+
+    def get_count(self):
+        """返回当前集合总数。"""
+        return self.count
+
+
+# ============================================================
+# 模块 2：演示
+# ============================================================
+if __name__ == '__main__':
+    uf = UnionFind(8)
+    print('初始集合数 =', uf.get_count())     # 8
+
+    # 两两合并成 4 个小集合
+    uf.union(0, 1)
+    uf.union(2, 3)
+    uf.union(4, 5)
+    uf.union(6, 7)
+    print('合并 4 对小集合后 count =', uf.get_count())    # 4
+
+    # 合并成两大集合
+    uf.union(1, 3)    # {0,1,2,3}
+    uf.union(5, 7)    # {4,5,6,7}
+    print('合并成 2 个大集合后 count =', uf.get_count())  # 2
+
+    # 全部合并
+    uf.union(3, 5)
+    print('全部合并后 count =', uf.get_count())          # 1
+
+    print('connected(0, 7) =', uf.connected(0, 7))       # True
+
+    # 路径压缩：find(0) 后 parent[0] 直接指向根
+    root = uf.find(0)
+    print('root =', root)
+    print('parent[0] =', uf.parent[0])
+</script>
+
+<script>
+/* =========================================================
+   1. 基础数据
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const N = 8;
+const GAP = 80;         // 每个叶子槽位的像素宽度
+const LAYER_H = 88;     // 层高
+const TOP_Y = 110;      // 最上层 y
+const CANVAS_W = 900;
+const CANVAS_H = 500;
+
+let parent = [];
+let rankArr = [];
+let nodes = [];
+let busy = false;
+let inDemo = false;
+
+const svg = document.getElementById('stage');
+const defs = document.createElementNS(NS, 'defs');
+svg.appendChild(defs);
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+/* 两种颜色的箭头 marker */
+(function makeMarker(id, color) {
+  const m = document.createElementNS(NS, 'marker');
+  m.setAttribute('id', id);
+  m.setAttribute('viewBox', '0 0 10 10');
+  m.setAttribute('refX', '8'); m.setAttribute('refY', '5');
+  m.setAttribute('markerWidth', '6'); m.setAttribute('markerHeight', '6');
+  m.setAttribute('orient', 'auto');
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', 'M0,0 L10,5 L0,10 z');
+  p.setAttribute('fill', color);
+  m.appendChild(p);
+  defs.appendChild(m);
+})('arrow-gray', '#b4bec9');
+(function makeMarker(id, color) {
+  const m = document.createElementNS(NS, 'marker');
+  m.setAttribute('id', id);
+  m.setAttribute('viewBox', '0 0 10 10');
+  m.setAttribute('refX', '8'); m.setAttribute('refY', '5');
+  m.setAttribute('markerWidth', '6'); m.setAttribute('markerHeight', '6');
+  m.setAttribute('orient', 'auto');
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', 'M0,0 L10,5 L0,10 z');
+  p.setAttribute('fill', color);
+  m.appendChild(p);
+  defs.appendChild(m);
+})('arrow-orange', '#e09b00');
+(function makeMarker(id, color) {
+  const m = document.createElementNS(NS, 'marker');
+  m.setAttribute('id', id);
+  m.setAttribute('viewBox', '0 0 10 10');
+  m.setAttribute('refX', '8'); m.setAttribute('refY', '5');
+  m.setAttribute('markerWidth', '6'); m.setAttribute('markerHeight', '6');
+  m.setAttribute('orient', 'auto');
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', 'M0,0 L10,5 L0,10 z');
+  p.setAttribute('fill', color);
+  m.appendChild(p);
+  defs.appendChild(m);
+})('arrow-purple', '#7c5cd6');
+(function makeMarker(id, color) {
+  const m = document.createElementNS(NS, 'marker');
+  m.setAttribute('id', id);
+  m.setAttribute('viewBox', '0 0 10 10');
+  m.setAttribute('refX', '8'); m.setAttribute('refY', '5');
+  m.setAttribute('markerWidth', '6'); m.setAttribute('markerHeight', '6');
+  m.setAttribute('orient', 'auto');
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', 'M0,0 L10,5 L0,10 z');
+  p.setAttribute('fill', color);
+  m.appendChild(p);
+  defs.appendChild(m);
+})('arrow-green', '#57a957');
+
+/* =========================================================
+   2. 初始化 / 重置
+   ========================================================= */
+function reset() {
+  parent = [];
+  rankArr = [];
+  nodes = [];
+  for (let i = 0; i < N; i++) {
+    parent.push(i);
+    rankArr.push(0);
+    nodes.push({
+      id: i,
+      x: CANVAS_W / 2, y: TOP_Y,
+      targetX: CANVAS_W / 2, targetY: TOP_Y,
+      hl: '',
+    });
+  }
+  layout();
+  for (const n of nodes) { n.x = n.targetX; n.y = n.targetY; }
+  render();
+  updateCountStat();
+}
+
+/* =========================================================
+   3. 布局
+   ========================================================= */
+function layout() {
+  /* 反向 children 映射 */
+  const children = Array.from({ length: N }, () => []);
+  for (let i = 0; i < N; i++) {
+    if (parent[i] !== i) children[parent[i]].push(i);
+  }
+  /* 找根 */
+  const roots = [];
+  for (let i = 0; i < N; i++) if (parent[i] === i) roots.push(i);
+
+  /* 用槽位做布局，最后换算成像素 */
+  let slot = 0;
+  function layoutNode(id, depth) {
+    const ch = children[id];
+    if (ch.length === 0) {
+      nodes[id].targetX = slot;
+      slot += 1;
+    } else {
+      ch.forEach(c => layoutNode(c, depth + 1));
+      const firstX = nodes[ch[0]].targetX;
+      const lastX = nodes[ch[ch.length - 1]].targetX;
+      nodes[id].targetX = (firstX + lastX) / 2;
+    }
+    nodes[id].targetY = depth;
+  }
+  roots.forEach((r, idx) => {
+    if (idx > 0) slot += 0.35;   // 树之间的空隙
+    layoutNode(r, 0);
+  });
+
+  /* 槽位 → 像素：水平居中 */
+  let minS = Infinity, maxS = -Infinity;
+  for (const n of nodes) {
+    minS = Math.min(minS, n.targetX);
+    maxS = Math.max(maxS, n.targetX);
+  }
+  const w = (maxS - minS) * GAP;
+  const offsetX = (CANVAS_W - w) / 2 - minS * GAP;
+  for (const n of nodes) {
+    n.targetX = n.targetX * GAP + offsetX;
+    n.targetY = TOP_Y + n.targetY * LAYER_H;
+  }
+}
+
+/* =========================================================
+   4. 渲染
+   ========================================================= */
+function render() {
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+
+  /* 边：从子指向父 */
+  for (let i = 0; i < N; i++) {
+    if (parent[i] === i) continue;
+    const from = nodes[i], to = nodes[parent[i]];
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const r = 28;
+    const x1 = from.x + dx / len * r;
+    const y1 = from.y + dy / len * r;
+    const x2 = to.x - dx / len * r;
+    const y2 = to.y - dy / len * r;
+
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    let cls = 'dsu-edge';
+    let marker = 'url(#arrow-gray)';
+    if (nodes[i].hl === 'compress') {
+      cls += ' compress';
+      marker = 'url(#arrow-purple)';
+    } else if (nodes[i].hl === 'path') {
+      cls += ' path';
+      marker = 'url(#arrow-orange)';
+    } else if (nodes[i].hl === 'attached') {
+      cls += ' attached';
+      marker = 'url(#arrow-green)';
+    }
+    line.setAttribute('class', cls);
+    line.setAttribute('marker-end', marker);
+    edgeLayer.appendChild(line);
+  }
+
+  /* 节点 */
+  for (let i = 0; i < N; i++) {
+    const n = nodes[i];
+    const isRoot = parent[i] === i;
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'dsu-node';
+    if (isRoot) cls += ' root';
+    if (n.hl) cls += ' ' + n.hl;
+    g.setAttribute('class', cls);
+    g.setAttribute('transform', `translate(${n.x}, ${n.y})`);
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('r', '26');
+    c.setAttribute('class', 'node-bg');
+    g.appendChild(c);
+
+    const key = document.createElementNS(NS, 'text');
+    key.setAttribute('class', 'node-key');
+    key.setAttribute('text-anchor', 'middle');
+    key.setAttribute('dominant-baseline', 'central');
+    key.textContent = i;
+    g.appendChild(key);
+
+    if (isRoot) {
+      const rk = document.createElementNS(NS, 'text');
+      rk.setAttribute('class', 'node-rank');
+      rk.setAttribute('text-anchor', 'middle');
+      rk.setAttribute('y', '44');
+      rk.setAttribute('dominant-baseline', 'central');
+      rk.textContent = 'rank=' + rankArr[i];
+      g.appendChild(rk);
+    }
+
+    nodeLayer.appendChild(g);
+  }
+  updateCountStat();
+}
+
+function updateCountStat() {
+  let cnt = 0;
+  for (let i = 0; i < N; i++) if (parent[i] === i) cnt++;
+  const el = document.getElementById('countStat');
+  if (el) el.textContent = cnt;
+}
+
+/* =========================================================
+   5. 动画
+   ========================================================= */
+const easeInOut = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+function animateToTargets(duration = 600) {
+  return new Promise(resolve => {
+    const starts = nodes.map(n => ({ x: n.x, y: n.y }));
+    const t0 = performance.now();
+    function frame(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      const e = easeInOut(t);
+      for (let i = 0; i < N; i++) {
+        nodes[i].x = starts[i].x + (nodes[i].targetX - starts[i].x) * e;
+        nodes[i].y = starts[i].y + (nodes[i].targetY - starts[i].y) * e;
+      }
+      render();
+      if (t < 1) requestAnimationFrame(frame); else resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+/* =========================================================
+   6. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   7. 状态工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+function clearAllHl() {
+  for (const n of nodes) n.hl = '';
+}
+
+function setButtonsDisabled(d) {
+  if (inDemo) d = true;
+  for (const id of ['btnReset', 'btnFind', 'btnUnion']) {
+    document.getElementById(id).disabled = d;
+  }
+}
+
+/* =========================================================
+   8. find 动画
+   ========================================================= */
+async function animatedFind(x, doCompress = true) {
+  if (busy && !inDemo) return;
+  busy = true;
+  setButtonsDisabled(true);
+  clearAllHl();
+  render();
+
+  setStatus(`find(${x})：从 ${x} 开始沿 parent 链向上找根`);
+  await tick(500);
+
+  /* 阶段 1：沿 parent 链向上，逐节点高亮 */
+  const path = [];
+  let cur = x;
+  while (true) {
+    path.push(cur);
+    nodes[cur].hl = 'path';
+    render();
+    const isRoot = parent[cur] === cur;
+    setStatus(`  → 访问节点 ${cur}（parent = ${parent[cur]}）${isRoot ? '，它是根！' : ''}`);
+    await tick(500);
+    if (isRoot) break;
+    cur = parent[cur];
+  }
+  const root = cur;
+
+  /* 根节点额外高亮 */
+  setStatus(`find(${x}) 找到根 ${root}`);
+  await tick(600);
+
+  /* 阶段 2：路径压缩 */
+  if (doCompress && path.length > 1) {
+    /* 先把路径上的所有节点换成紫色 */
+    for (const n of path) {
+      if (n !== root) nodes[n].hl = 'compress';
+    }
+    render();
+    setStatus(`路径压缩：把 ${path.length - 1} 个节点直接挂到根 ${root} 下`);
+    await tick(700);
+
+    /* 一次性修改 parent */
+    for (const n of path) {
+      if (n !== root) parent[n] = root;
+    }
+
+    /* 重新布局 + 动画 */
+    layout();
+    await animateToTargets(700);
+
+    setStatus(`✔ 路径压缩完成：以后从这些节点找根只需一步`);
+    await tick(700);
+  } else {
+    setStatus(`✔ find(${x}) = ${root}${path.length === 1 ? '（它本身就是根）' : ''}`);
+    await tick(700);
+  }
+
+  clearAllHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   9. union 动画
+   ========================================================= */
+async function animatedUnion(x, y) {
+  if (busy && !inDemo) return;
+  if (x === y) {
+    setStatus(`x = y = ${x}，无需合并`);
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearAllHl();
+  render();
+
+  /* ---------- 阶段 1：find(x) ---------- */
+  setStatus(`union(${x}, ${y})：先找 x = ${x} 所在集合的根`);
+  await tick(500);
+  let rx = x;
+  const pathX = [];
+  while (true) {
+    pathX.push(rx);
+    nodes[rx].hl = 'path';
+    render();
+    setStatus(`  → 访问 ${rx}（parent = ${parent[rx]}）`);
+    await tick(450);
+    if (parent[rx] === rx) break;
+    rx = parent[rx];
+  }
+  setStatus(`  x 的根 = ${rx}`);
+  await tick(500);
+
+  /* ---------- 阶段 2：find(y) ---------- */
+  setStatus(`union(${x}, ${y})：再找 y = ${y} 所在集合的根`);
+  await tick(500);
+  let ry = y;
+  const pathY = [];
+  while (true) {
+    pathY.push(ry);
+    nodes[ry].hl = 'path';
+    render();
+    setStatus(`  → 访问 ${ry}（parent = ${parent[ry]}）`);
+    await tick(450);
+    if (parent[ry] === ry) break;
+    ry = parent[ry];
+  }
+  setStatus(`  y 的根 = ${ry}`);
+  await tick(500);
+
+  /* ---------- 阶段 3：判断是否同集合 ---------- */
+  if (rx === ry) {
+    clearAllHl();
+    render();
+    setStatus(`节点 ${x} 和 ${y} 已经在同一集合（根都是 ${rx}），union 不改变任何东西`);
+    await tick(1300);
+    busy = false;
+    if (!inDemo) setButtonsDisabled(false);
+    return;
+  }
+
+  /* ---------- 阶段 4：按秩合并 ---------- */
+  setStatus(`按秩合并：rank(${rx}) = ${rankArr[rx]}，rank(${ry}) = ${rankArr[ry]}`);
+  await tick(700);
+
+  let newRoot, attached, rankIncreased = false;
+  if (rankArr[rx] < rankArr[ry]) {
+    newRoot = ry; attached = rx;
+  } else if (rankArr[rx] > rankArr[ry]) {
+    newRoot = rx; attached = ry;
+  } else {
+    newRoot = rx; attached = ry;
+    rankIncreased = true;
+  }
+
+  setStatus(`→ 把 ${attached} 挂到 ${newRoot} 下面（rank 小的挂到 rank 大的下）`);
+  await tick(700);
+
+  /* 修改 parent + rank */
+  parent[attached] = newRoot;
+  if (rankIncreased) rankArr[newRoot] += 1;
+
+  /* 高亮被挂的节点及其边 */
+  nodes[attached].hl = 'attached';
+  layout();
+  await animateToTargets(700);
+
+  /* ---------- 阶段 5：路径压缩（可选，这里顺带压一下） ---------- */
+  /* 保留路径高亮，让用户看出哪些节点被访问过 */
+  await tick(500);
+  clearAllHl();
+  render();
+
+  setStatus(`✔ union 完成：${x} 与 ${y} 现在同属一个集合，根 = ${newRoot}${rankIncreased ? `（rank 增加到 ${rankArr[newRoot]}）` : ''}`);
+  await tick(1100);
+  clearAllHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   10. 自动演示
+   ========================================================= */
+async function autoDemo() {
+  reset();
+  await tick(400);
+
+  setStatus('① union(0, 1)  —— 合并 {0} 和 {1}');
+  await animatedUnion(0, 1);
+  await tick(200);
+
+  setStatus('② union(2, 3)');
+  await animatedUnion(2, 3);
+  await tick(200);
+
+  setStatus('③ union(4, 5)');
+  await animatedUnion(4, 5);
+  await tick(200);
+
+  setStatus('④ union(6, 7)');
+  await animatedUnion(6, 7);
+  await tick(200);
+
+  setStatus('⑤ union(1, 3)  —— 把 {0,1} 和 {2,3} 合并成 {0,1,2,3}');
+  await animatedUnion(1, 3);
+  await tick(200);
+
+  setStatus('⑥ union(5, 7)  —— 把 {4,5} 和 {6,7} 合并成 {4,5,6,7}');
+  await animatedUnion(5, 7);
+  await tick(200);
+
+  setStatus('⑦ union(3, 5)  —— 合并成一个大集合');
+  await animatedUnion(3, 5);
+  await tick(200);
+
+  setStatus('⑧ find(0)  —— 触发路径压缩');
+  await animatedFind(0);
+  await tick(200);
+
+  setStatus('⑨ find(7)  —— 再次路径压缩');
+  await animatedFind(7);
+  await tick(200);
+
+  setStatus('✔ 演示结束：8 个元素已全部在同一个集合中，树被压得很扁');
+}
+
+/* =========================================================
+   11. 演示控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const demoModeGroup = document.getElementById('demoModeGroup');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  inDemo = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  setButtonsDisabled(true);
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await autoDemo();
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  inDemo = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  busy = false;
+  setButtonsDisabled(false);
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+/* =========================================================
+   12. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: '并查集是什么', key: true, lines: [
+    '维护若干个<b>不相交的集合</b>，每个集合用一棵树表示',
+    '树根是集合的<b>代表元</b>，每个节点只存 parent 指针',
+    '两个核心操作：<code>find</code>（找根）、<code>union</code>（合并）',
+    '广泛用于连通性、Kruskal MST、等价类维护',
+  ]},
+  { icon: '🌲', title: '为什么朴素实现会退化', key: true, lines: [
+    '朴素 find 沿 parent 一路走到根，代价 = 树高',
+    '若 union 时总是把大树挂到小树下，树可能退化成链',
+    '链的高度为 <code>O(N)</code>，单次操作退化到 <b>O(N)</b>',
+    '两种优化分别解决"树太高"和"合并方向不合理"',
+  ]},
+  { icon: '📉', title: '路径压缩 Path Compression', key: true, lines: [
+    '在 <code>find(x)</code> 的过程中，把路径上的所有节点直接挂到根上',
+    '下次再查这些节点，一步就能到达根',
+    '单独使用路径压缩：均摊 <code>O(log N)</code>',
+    '实现要点：先找根，再遍历路径把 parent 改成根',
+  ]},
+  { icon: '⚖️', title: '按秩合并 Union by Rank', key: true, lines: [
+    '合并时把 <b>rank 小的树挂到 rank 大的树下</b>',
+    'rank 可以理解为"树高的上界"',
+    'rank 相等时任意挂一棵，并把新根的 rank + 1',
+    '单独使用按秩合并：树高严格 <code>O(log N)</code>',
+  ]},
+  { icon: '🚀', title: '两者一起用：α(N)', key: true, lines: [
+    '路径压缩 + 按秩合并，均摊复杂度降到 <b>O(α(N))</b>',
+    'α 是<b>阿克曼函数的反函数</b>，增长极其缓慢',
+    '对 N &lt; 10⁶⁰⁰，α(N) ≤ 5',
+    '实际使用中可视为"常数时间"，但理论上不是常数',
+  ]},
+  { icon: '🔍', title: '路径压缩的两种写法', key: false, lines: [
+    '<b>递归版</b>：<code>parent[x] = find(parent[x])</code>，非常简洁',
+    '但递归深度可能很大，实际中可能触发栈溢出',
+    '<b>迭代版</b>：先找根，再走一遍把路径挂到根上',
+    '推荐使用迭代版，避免递归深度问题',
+  ]},
+  { icon: '🧩', title: '常见扩展', key: false, lines: [
+    '<b>带权并查集</b>：维护节点到根的权值差，可做区间判断',
+    '<b>可撤销并查集</b>：用栈记录修改，支持撤销',
+    '<b>可持久化并查集</b>：配合可持久化数组实现历史版本',
+    '<b>按大小合并</b>：用 size 代替 rank，用于一些特殊统计',
+  ]},
+  { icon: '⚖️', title: '与 BFS/DFS 对比', key: false, lines: [
+    'BFS / DFS 求连通性：一次性，<code>O(N + M)</code>',
+    '并查集：<b>动态</b>维护连通性，支持在线查询与合并',
+    '但并查集<b>不支持删除边</b>（只支持加边）',
+    'Kruskal 算法依赖并查集判断环',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    el.className = 'k-card' + (card.key ? ' key-point' : '');
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   13. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','len','range','float','int','str','list','dict',
+    'set','tuple','sum','isinstance','ValueError','UnionFind'
+  ]);
+  let html = '', i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '#') {
+      let j = i; while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1;
+      while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+      if (word === 'self') html += '<span class="tok-self">self</span>';
+      else if (KEYWORDS.has(word)) html += '<span class="tok-keyword">' + word + '</span>';
+      else if (BUILTINS.has(word)) html += '<span class="tok-builtin">' + word + '</span>';
+      else if (code[j] === '(') html += '<span class="tok-func">' + word + '</span>';
+      else html += word;
+      i = j; continue;
+    }
+    if (/\d/.test(c)) {
+      let j = i; while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j; continue;
+    }
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+}
+
+/* =========================================================
+   14. 初始化 & 事件
+   ========================================================= */
+renderKnowledge();
+renderPythonCode();
+reset();
+updateDemoUI();
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (busy) return;
+  reset();
+  setStatus('已重置为 8 个独立的单元素集合');
+});
+
+document.getElementById('btnFind').addEventListener('click', () => {
+  const x = +document.getElementById('findInput').value;
+  if (x < 0 || x >= N) { setStatus(`x 必须在 [0, ${N-1}] 范围内`); return; }
+  animatedFind(x);
+});
+
+document.getElementById('btnUnion').addEventListener('click', () => {
+  const x = +document.getElementById('unionXInput').value;
+  const y = +document.getElementById('unionYInput').value;
+  if (x < 0 || x >= N || y < 0 || y >= N) {
+    setStatus(`x、y 必须在 [0, ${N-1}] 范围内`);
+    return;
+  }
+  animatedUnion(x, y);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,2723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>贪心 · 每一步都选当前最好 — ALGO PRIMER / GR-05</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@400;700;900&family=Zhi+Mang+Xing&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#FFFBF3;--panel:#FFFFFF;--ink:#2A2018;--ink2:#5A4636;--muted:#A18768;
+  --line:#EEDDC2;--line2:#F7EEDF;--accent:#E2542A;--amber:#F3A33C;--amber-soft:#FDEECC;
+  --green:#3E7B4E;--red:#B53B2C;
+  --serif:'Noto Serif SC','Songti SC',serif;
+  --sans:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;
+  --hand:'Zhi Mang Xing','STKaiti','KaiTi',cursive;
+}
+html,body{height:100%;overflow:hidden;background:#F1E3CB;font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;display:grid;place-items:center}
+#deck{position:relative;width:1280px;height:720px;overflow:hidden;
+  background:radial-gradient(1600px 980px at 18% -14%,#FFFDF9 0%,#FFF7EA 48%,#FDEBD3 100%)}
+.slide{position:absolute;inset:0;display:none}
+.slide.active{display:block}
+
+/* ---------- frame（无 wordmark，单行页脚） ---------- */
+.top{position:absolute;left:0;top:0;width:1280px;height:100px}
+.s-title{position:absolute;left:80px;top:24px;font:700 28px/1.3 var(--serif);color:var(--ink)}
+.qdesc{position:absolute;left:80px;top:66px;width:1010px;font:400 13px/1.5 var(--sans);color:var(--ink2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qlabel{display:inline-block;background:var(--amber-soft);color:#9A6420;font:500 10px/1.2 var(--mono);
+  letter-spacing:.16em;padding:3px 7px;border-radius:3px;margin-right:10px;vertical-align:1px}
+.top-rule{position:absolute;left:80px;top:98px;width:1120px;height:1px;background:var(--line)}
+.top-accent{position:absolute;left:80px;top:96px;width:76px;height:3px;background:var(--accent)}
+.numline{position:absolute;left:80px;top:112px;font:700 21px/1.4 var(--mono)}
+.pager{position:absolute;right:80px;top:115px;text-align:right}
+.pg{font:700 15px/1 var(--serif);color:var(--accent);letter-spacing:.06em}
+.numrule{position:absolute;left:80px;top:152px;width:1120px;height:0;border-top:1px solid var(--line2)}
+.mnum{position:absolute;left:26px;top:110px;font:700 22px/1 var(--mono);color:var(--accent)}
+.mlabel{position:absolute;left:32px;top:166px;writing-mode:vertical-rl;font:500 11px/1 var(--mono);letter-spacing:.24em;color:var(--muted)}
+.stage-inner{position:absolute;left:80px;top:170px;width:1120px;height:460px}
+
+/* ---------- bottom band ---------- */
+.bottom{position:absolute;left:0;top:646px;width:1280px;height:74px}
+.bot-rule{position:absolute;left:80px;top:4px;width:1120px;height:1px;background:var(--line)}
+.ruler{position:absolute;left:80px;top:14px;width:1120px;display:flex;gap:8px}
+.ruler a{flex:1;display:block;cursor:pointer;text-decoration:none}
+.ruler .bar{height:22px;border-radius:5px;background:#F3E4CC;display:flex;align-items:center;justify-content:center;transition:background .2s}
+.ruler .lbl{font:500 10px/1 var(--mono);color:#8A6E52;letter-spacing:.12em;transition:color .2s}
+.ruler a.on .bar{background:var(--accent)}
+.ruler a.on .lbl{color:#FFF8EF}
+.botline{position:absolute;left:80px;bottom:8px;width:1120px;display:flex;align-items:center;gap:16px;
+  white-space:nowrap;overflow:hidden}
+.eyebrow{font:500 11px/1.3 var(--mono);letter-spacing:.13em;color:var(--muted)}
+.bsep{width:1px;height:11px;background:var(--line);flex:none}
+.help{font:500 10px/1.3 var(--mono);letter-spacing:.085em;color:rgba(161,135,104,.85)}
+.bmark{margin-left:auto;font:500 10px/1.3 var(--mono);letter-spacing:.16em;color:rgba(161,135,104,.62);flex:none}
+
+/* ---------- type ---------- */
+.meta{font:500 11px/1.3 var(--mono);letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
+.hero{font:900 92px/1.02 var(--serif);letter-spacing:-.01em}
+.disp{font:700 42px/1.22 var(--serif)}
+.h2{font:700 24px/1.35 var(--serif)}
+.h3{font:700 18px/1.4 var(--mono)}
+.lead{font:400 19px/1.8 var(--sans)}
+.p{font:400 16px/1.82 var(--sans)}
+.sm{font:400 14px/1.75 var(--sans);color:var(--ink2)}
+.mono{font-family:var(--mono)}
+.v{color:var(--accent)}
+.mu{color:var(--muted)}
+.g{color:var(--green)}
+.l{color:var(--red)}
+.big{font:700 30px/1.2 var(--mono)}
+
+/* ---------- layout ---------- */
+.g12{display:grid;grid-template-columns:repeat(12,64px);gap:32px;align-items:start;height:100%}
+.c1-4{grid-column:1/span 4}.c1-5{grid-column:1/span 5}.c1-6{grid-column:1/span 6}
+.c1-7{grid-column:1/span 7}.c1-12{grid-column:1/span 12}
+.c7-12{grid-column:7/span 6}.c8-12{grid-column:8/span 5}.c9-12{grid-column:9/span 4}
+.row{display:flex;gap:24px;align-items:flex-start}
+.hrule{height:1px;background:var(--line);margin:16px 0}
+.hrule.dot{background:var(--line2)}
+.keyline{width:52px;height:3px;background:var(--accent);margin:14px 0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:18px 20px}
+.note\boxed{border-left:3px solid var(--accent);padding:2px 0 2px 14px}
+.warm\boxed{background:var(--amber-soft);border-radius:6px;padding:14px 18px}
+
+/* ---------- annotation ---------- */
+.hand{position:absolute;font:400 21px/1.42 var(--hand);color:var(--accent);transform:rotate(-1.5deg);max-width:300px;z-index:5}
+.hand[data-at]{opacity:1;clip-path:inset(0 100% 0 0);transition:clip-path .38s ease-out}
+.hand[data-at].on{clip-path:inset(0 -20% 0 0)}
+.hand:before{content:'';display:block;width:26px;height:2px;background:var(--accent);margin-bottom:8px}
+
+/* ---------- motion ---------- */
+[data-seq]:not(.dpcell):not(.path):not(td.dp),[data-at]:not(.hand){opacity:0;transition:opacity .32s cubic-bezier(.22,1,.36,1),transform .32s cubic-bezier(.22,1,.36,1)}
+[data-seq].on:not(.dpcell):not(.path):not(td.dp),[data-at].on:not(.hand){opacity:1}
+.rise{transform:translateY(10px)}.rise.on{transform:none}
+.path{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:miter;
+  stroke-dasharray:var(--len);stroke-dashoffset:var(--len);transition:stroke-dashoffset .7s cubic-bezier(.16,1,.3,1)}
+.path.on{stroke-dashoffset:0}
+.arw{fill:none;stroke:#8A6E52;stroke-width:1.5}
+.arw.hot{stroke:#E2542A;stroke-width:2.5}
+.svgtxt{font:500 12px var(--mono);fill:var(--ink)}
+.svgtxtb{font:700 13px var(--mono);fill:var(--ink)}
+.svgtxtv{font:700 14px var(--mono);fill:var(--accent)}
+.svgm{font:500 10px var(--mono);fill:var(--muted);letter-spacing:.12em}
+.node{fill:#FDEECC;stroke:#E2542A;stroke-width:1.5}
+.node.hot{fill:#F9D3C4;stroke-width:2.5}
+.node.plain{fill:#FFFFFF;stroke:#EEDDC2}
+.edge{stroke:#C9AF8C;stroke-width:2}
+
+/* ---------- dp cells ---------- */
+.seq{display:flex;gap:4px;align-items:flex-end}
+.dpcell{width:44px;height:42px;border-radius:4px;background:var(--panel);border:1px solid var(--line);
+  display:grid;place-items:center;font:600 15px/1 var(--mono);color:var(--ink);
+  transition:background .22s ease-out,color .22s ease-out,border-color .22s ease-out}
+.dpcell i{font-style:normal;opacity:0;transition:opacity .12s ease-out}
+.dpcell.on{background:var(--amber-soft);border-color:var(--amber)}
+.dpcell.on i{opacity:1}
+.dpcell.on.cur{animation:flash .9s ease-out}
+@keyframes flash{0%,42%{background:var(--accent);color:#FFF8EF;border-color:var(--accent)}
+  100%{background:var(--amber-soft);color:var(--ink);border-color:var(--amber)}}
+.seq-lbl{font:500 11px/1 var(--mono);color:var(--muted);margin-right:14px;width:82px;text-align:right;padding-bottom:13px}
+
+/* ---------- tables ---------- */
+table.t{border-collapse:collapse;width:100%}
+table.t th{font:500 10px/1.2 var(--mono);letter-spacing:.16em;color:var(--muted);text-align:left;
+  padding:8px 10px;border-bottom:1.5px solid var(--accent);text-transform:uppercase}
+table.t td{padding:8px 10px;border-bottom:1px solid var(--line2);font-size:14px;line-height:1.62;vertical-align:top}
+table.t tr:last-child td{border-bottom:none}
+table.t td.k{font-family:var(--mono);font-size:13px;font-weight:600;white-space:nowrap}
+table.m{border-collapse:collapse}
+table.m th{font:500 10px/1.2 var(--mono);letter-spacing:.12em;color:var(--muted);padding:6px 4px;text-transform:uppercase}
+table.m th.rl{text-align:right;padding-right:12px;letter-spacing:.04em;font-size:11px;color:var(--ink);white-space:nowrap}
+table.m td.dp{width:52px;height:36px;text-align:center;font:600 14px/1 var(--mono);color:var(--ink);
+  border-radius:3px;border:1px solid var(--line2);opacity:.13;transition:opacity .12s ease-out,background-color .24s ease-out}
+table.m td.dp.on{opacity:1;background:var(--amber-soft);border-color:var(--amber)}
+table.m td.dp.on.cur{animation:flash .9s ease-out}
+table.m td.hd{font:500 10px var(--mono);color:var(--muted)}
+
+/* ---------- code ---------- */
+.code{background:var(--panel);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.cbar{height:32px;background:#3B2B1E;color:#FFF8EF;display:flex;align-items:center;gap:10px;padding:0 12px}
+.cf{flex:1;font:500 11px/1 var(--mono);letter-spacing:.12em}
+.mini{background:none;border:1px solid rgba(255,248,239,.34);color:#FFF8EF;font:500 10px/1 var(--mono);
+  padding:5px 8px;border-radius:3px;cursor:pointer;letter-spacing:.08em;transition:background .18s,border-color .18s}
+.mini:hover{background:var(--accent);border-color:var(--accent)}
+ol.cl{position:relative;list-style:none;counter-reset:l;padding:10px 0 12px}
+ol.cl li{counter-increment:l;position:relative;padding:1px 14px 1px 56px;font:400 14px/1.68 var(--mono);white-space:pre}
+ol.cl li:before{content:counter(l,decimal-leading-zero);position:absolute;left:0;top:1px;width:38px;
+  text-align:right;color:var(--muted);font:500 11px/2.2 var(--mono)}
+ol.cl li.hl{background:rgba(226,84,42,.08);box-shadow:inset 3px 0 0 var(--accent)}
+ol.cl li.hl[data-note]:after{content:attr(data-note);display:block;white-space:normal;
+  font:400 12px/1.55 var(--sans);color:var(--accent);margin:3px 0 6px}
+.k{color:#C0472B;font-weight:700}.fn{color:var(--ink);font-weight:700}
+.n{color:#96662A}.s{color:#6B7A3A}.cm{color:#AF9676;font-style:italic}
+
+/* ---------- misc ---------- */
+.chip{display:inline-block;border:1px solid var(--line);background:var(--panel);border-radius:4px;padding:3px 9px;
+  font:500 11px/1.2 var(--mono);letter-spacing:.1em;color:var(--ink2)}
+.num\boxed{width:36px;height:36px;border-radius:6px;background:var(--accent);color:#FFF8EF;display:grid;place-items:center;
+  font:700 15px/1 var(--mono);flex:none}
+.numbox.alt{background:var(--panel);color:var(--accent);border:1px solid var(--accent)}
+.q{font:500 17px/1.78 var(--sans)}
+.term{font:500 13px/1.5 var(--mono)}
+.link{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(226,84,42,.32)}
+.link:hover{border-color:var(--accent)}
+.watermark{position:absolute;right:-50px;top:110px;font:900 230px/1 var(--serif);color:var(--accent);
+  opacity:.07;pointer-events:none;user-select:none}
+.ans{display:inline-block;background:var(--accent);color:#FFF8EF;padding:3px 10px;border-radius:4px;
+  font:700 13px/1.3 var(--mono)}
+.bad{display:inline-block;background:#FBE2DC;color:#B53B2C;padding:3px 10px;border-radius:4px;
+  font:700 13px/1.3 var(--mono)}
+
+/* ---------- jump panel ---------- */
+#panel{position:fixed;inset:0;background:rgba(42,32,24,.94);display:none;z-index:50;padding:44px 52px;overflow:auto}
+#panel.open{display:block}
+#panel h4{font:500 11px/1 var(--mono);letter-spacing:.24em;color:#F0D2A6;margin-bottom:22px}
+#plist{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(238,221,194,.25)}
+#plist button{background:#3B2B1E;border:none;color:#FFF8EF;text-align:left;padding:11px 13px;cursor:pointer;
+  font:400 12.5px/1.5 var(--sans)}
+#plist button span{display:block;font:500 10px/1 var(--mono);letter-spacing:.16em;color:#D2B28C;margin-bottom:5px}
+#plist button:hover{background:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="viewport"><div id="deck">
+
+<!-- ============ 01 封面 ============ -->
+<section class="slide" data-ch="0" data-stagger="260"
+  data-title="封面 · 贪心"
+  data-rec="每一步选当前最好"
+  data-eyebrow="ALGO PRIMER / GR-05 · 贪心思想与运用 · 40 页">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-7">
+        <div class="meta rise" data-at="0">算法入门系列 · 第 05 讲 · 面向算法竞赛学习者</div>
+        <h2 class="hero rise" data-at="130" style="margin-top:16px">贪 心</h2>
+        <h3 class="disp rise" data-at="280" style="margin-top:12px;color:var(--ink2)">每一步都选当前最好</h3>
+        <div class="keyline" data-at="420"></div>
+        <p class="lead rise" data-at="500">
+          不回头看，<b class="v">不回头改</b>。<br>
+          走一步，<b>选当前最优</b>，继续走。
+        </p>
+      </div>
+      <div class="c8-12">
+        <svg viewBox="0 0 400 290" width="400" height="290">
+          <defs><marker id="ah00" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-at="800">
+            <rect x="30" y="222" width="62" height="34" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <rect x="98" y="186" width="62" height="70" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <rect x="166" y="150" width="62" height="106" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <rect x="234" y="114" width="62" height="142" rx="4" fill="#F9D3C4" stroke="#E2542A" stroke-width="2"/>
+            <rect x="302" y="78" width="62" height="178" rx="4" fill="#F9D3C4" stroke="#E2542A" stroke-width="2"/>
+          </g>
+          <g data-at="1600">
+            <path class="arw hot" marker-end="url(#ah00)" d="M62 214 V200"/>
+            <text class="svgtxtv" x="34" y="206">选</text>
+            <path class="arw hot" marker-end="url(#ah00)" d="M130 178 V164"/>
+            <text class="svgtxtv" x="102" y="170">选</text>
+            <path class="arw hot" marker-end="url(#ah00)" d="M198 142 V128"/>
+            <text class="svgtxtv" x="170" y="134">选</text>
+            <path class="arw hot" marker-end="url(#ah00)" d="M266 106 V92"/>
+            <text class="svgtxtv" x="238" y="98">选</text>
+            <path class="arw hot" marker-end="url(#ah00)" d="M334 70 V56"/>
+            <text class="svgtxtv" x="306" y="62">选</text>
+          </g>
+          <text class="svgm" x="20" y="278">一路走高，一步不回头</text>
+        </svg>
+      </div>
+    </div>
+    <div class="watermark">GREED</div>
+    <div class="hand" data-at="3000" style="left:110px;top:352px">贪心最快，但要证明它对</div>
+  </div>
+</section>
+
+<!-- ============ 02 路线图 ============ -->
+<section class="slide" data-ch="1" data-stagger="190"
+  data-title="今天要解决的三个问题"
+  data-rec="什么时候能贪 → 怎么证明 → 有什么套路"
+  data-eyebrow="第一章 · 起点 · 目标：先看全局路线">
+  <div class="stage-inner">
+    <div class="row" style="align-items:stretch">
+      <div data-seq="0" style="width:350px">
+        <div class="numbox">Q1</div>
+        <h4 class="h2" style="margin-top:12px">什么时候能贪？</h4>
+        <div class="keyline"></div>
+        <p class="sm">贪心需要两个性质：<br>
+          <b>贪心选择性质</b> + <b>最优子结构</b>。<br>
+          缺一个，就会挂在某个数据上。<br><br>
+          <b class="v">→ 判别信号 + 反例</b></p>
+      </div>
+      <svg width="34" height="110" data-seq="1"><path class="arw" d="M2 10 H24"/><path class="arw" d="M18 6 L27 10 L18 14"/></svg>
+      <div data-seq="1" style="width:350px">
+        <div class="numbox">Q2</div>
+        <h4 class="h2" style="margin-top:12px">怎么证明贪心对？</h4>
+        <div class="keyline"></div>
+        <p class="sm">标准工具是<b>交换论证</b>：<br>
+          取最优解 → 把它改成贪心解 →<br>
+          证明<b>不变差</b>。<br><br>
+          <b class="v">→ 四步证明法</b></p>
+      </div>
+      <svg width="34" height="110" data-seq="2"><path class="arw" d="M2 10 H24"/><path class="arw" d="M18 6 L27 10 L18 14"/></svg>
+      <div data-seq="2" style="width:350px">
+        <div class="numbox">Q3</div>
+        <h4 class="h2" style="margin-top:12px">有哪些固定套路？</h4>
+        <div class="keyline"></div>
+        <p class="sm">区间三模板、排序比较器、<br>
+          哈夫曼、双指针、<b>反悔贪心</b>。<br>
+          大部分贪心题都能套进去。<br><br>
+          <b class="v">→ 六类模板</b></p>
+      </div>
+    </div>
+    <div class="hrule dot" data-seq="3" style="margin-top:22px"></div>
+    <div class="row" data-seq="4">
+      <div class="chip">一句话</div>
+      <div class="p" style="flex:1">
+        贪心<b>不是「大胆猜」</b>，而是<b class="v">「先找策略，再严格证明」</b>。
+        竞赛里你只需要写一遍代码，但心里得过一遍证明。
+      </div>
+    </div>
+    <div class="hand" data-at="2500" style="left:880px;top:352px">先想「凭什么对」，再动手</div>
+  </div>
+</section>
+
+<!-- ============ 03 什么是贪心 ============ -->
+<section class="slide" data-ch="1" data-stagger="190"
+  data-title="贪心是什么？和 DP 差在哪？"
+  data-rec="greedy 保留 1 个状态，DP 保留全部"
+  data-eyebrow="第一章 · 起点 · 目标：建立正确心智图像">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:520px">
+        <h4 class="q">贪心：每一步只保留一个「当前最优」</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:15px;line-height:2">
+            while 没到终点:<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;在<b>当前可选</b>的方案里<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;选<b class="v">一个最好的</b><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<b>不回头，不撤销</b>
+          </div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>三个特征：</b><br>
+            ① <b>无后效性</b>：做了就做了，不反悔<br>
+            ② <b>只留一条路</b>：不像 DP 保留多个状态<br>
+            ③ <b>速度快</b>：常常是 O(n log n) 或 O(n)</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 580 320" width="580" height="320">
+          <defs><marker id="ah01" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#8A6E52"/></marker></defs>
+          <text class="svgm" x="20" y="18">DP：枚举所有分支</text>
+          <g data-seq="0">
+            <circle class="node plain" cx="60" cy="46" r="14"/>
+            <circle class="node plain" cx="24" cy="112" r="12"/><circle class="node plain" cx="96" cy="112" r="12"/>
+            <circle class="node plain" cx="8" cy="170" r="11"/><circle class="node plain" cx="40" cy="170" r="11"/>
+            <circle class="node plain" cx="80" cy="170" r="11"/><circle class="node plain" cx="112" cy="170" r="11"/>
+            <g class="arw"><path d="M60 60 L28 98"/><path d="M60 60 L92 98"/>
+              <path d="M24 124 L12 156"/><path d="M24 124 L36 156"/>
+              <path d="M96 124 L84 156"/><path d="M96 124 L108 156"/></g>
+          </g>
+          <text class="svgm" x="170" y="18">贪心：只走一条线</text>
+          <g data-seq="1">
+            <path class="path" data-draw="900" d="M230 46 L300 112 L370 170 L440 112 L510 46"/>
+            <circle class="node hot" cx="230" cy="46" r="14"/><circle class="node hot" cx="300" cy="112" r="14"/>
+            <circle class="node hot" cx="370" cy="170" r="14"/><circle class="node hot" cx="440" cy="112" r="14"/>
+            <circle class="node hot" cx="510" cy="46" r="14"/>
+          </g>
+          <g data-seq="2">
+            <rect x="20" y="212" width="540" height="86" rx="6" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxt" x="42" y="240">DP：dp[i] = 枚举所有转移，O(n²) 起步</text>
+            <text class="svgtxt" x="42" y="264">贪心：ans = 每次取局部最优，O(n log n)</text>
+            <text class="svgtxtv" x="42" y="288">差别 = 正确性！DP 天然对，贪心要证明</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">DP 不用证明，贪心一定要</div>
+  </div>
+</section>
+
+<!-- ============ 04 两个必要条件 ============ -->
+<section class="slide" data-ch="1" data-stagger="190"
+  data-title="贪心正确的两个必要条件"
+  data-rec="贪心选择性质 + 最优子结构"
+  data-eyebrow="第一章 · 起点 · 目标：拿到判据">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="numbox">①</div>
+        <h4 class="h2" style="margin-top:14px">贪心选择性质</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="sm"><b>存在一个全局最优解，它<b>包含</b>我这一步的贪心选择。</b><br><br>
+            也就是说：<b>不选它也不会更优</b>。<br>
+            我可以放心选。</div>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>怎么检验？</b><br>
+            试着<b>把这一步换成别的</b>，看看有没有<b>更优的解</b>。<br>
+            如果有 → <b class="l">不能贪</b>。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <div class="numbox alt">②</div>
+        <h4 class="h2" style="margin-top:14px">最优子结构</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="sm"><b>选完一步后，剩下的子问题仍然是同类问题</b>，<br>
+            而且子问题的最优解 + 我这一步 = 原问题最优解。<br><br>
+            这条通常自动满足。</div>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>一个对比：</b><br>
+            <b>「无权最短路」</b>（BFS）能贪；<br>
+            <b>「带权最短路」</b>（Dijkstra）也能贪（用堆），<br>
+            但<b>「最长路」</b>不能贪 —— 没有最优子结构。</div>
+        </div>
+      </div>
+    </div>
+    <div class="warmbox" data-seq="6" style="margin-top:22px">
+      <div class="sm"><b>一句话：</b>
+        <b>「选了这一步，剩下的不会变难」</b> —— 这就是两个条件的合体。
+        不能满足时，改用 <b>DP</b>、<b>搜索 + 剪枝</b> 或 <b>网络流</b>。</div>
+    </div>
+    <div class="hand" data-at="2600" style="left:880px;top:352px">缺一条，贪心就崩</div>
+  </div>
+</section>
+
+<!-- ============ 05 反例：零钱兑换 ============ -->
+<section class="slide" data-ch="1" data-stagger="180"
+  data-desc="给定硬币面额 coins 和金额 amount，求凑出 amount 所需的最少硬币数。"
+  data-title="反例：零钱兑换，贪心会挂"
+  data-rec="coins = [1,3,4], amount = 6"
+  data-eyebrow="第一章 · 起点 · 目标：看到贪心的边界">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <div class="meta">LeetCode 322 · 零钱兑换</div>
+        <h4 class="q" style="margin-top:10px">数据：<span class="mono">coins = [1, 3, 4]</span>，<span class="mono">amount = 6</span></h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="sm"><b>贪心做法：</b>每次选<b>面额最大</b>的<br>
+            <span class="mono">6 → 4 + 2 → 4 + 1 + 1</span><br>
+            用了 <b class="mono l">3</b> 枚。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>真实最优：</b><br>
+            <span class="mono">3 + 3 = 6</span>，只用 <b class="mono g">2</b> 枚。</div>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>问题在哪？</b><br>
+            贪心选择「<b>先用 4</b>」<u>不在任何最优解里</u>。<br>
+            → <b class="l">不满足贪心选择性质</b>。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 320" width="620" height="320">
+          <g data-seq="0">
+            <text class="svgm" x="20" y="24">贪心路径</text>
+            <rect x="20" y="42" width="160" height="42" rx="5" fill="#F9D3C4" stroke="#E2542A" stroke-width="2"/>
+            <text class="svgtxtv" x="42" y="68">4</text>
+            <rect x="192" y="42" width="60" height="42" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="210" y="68">1</text>
+            <rect x="264" y="42" width="60" height="42" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="282" y="68">1</text>
+            <text class="svgtxt" x="348" y="68">= 3 枚</text>
+          </g>
+          <g data-seq="1">
+            <text class="svgm" x="20" y="132">最优路径</text>
+            <rect x="20" y="150" width="120" height="42" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="42" y="176">3</text>
+            <rect x="152" y="150" width="120" height="42" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="174" y="176">3</text>
+            <text class="svgtxtv" x="296" y="176">= 2 枚</text>
+          </g>
+          <g data-seq="2">
+            <rect x="20" y="222" width="580" height="72" rx="6" fill="#FBE2DC" stroke="#B53B2C" stroke-width="2"/>
+            <text class="svgtxt" x="42" y="250">结论：贪心能「快」，但不一定「对」。</text>
+            <text class="svgtxt" x="42" y="276">零钱兑换一般要用 DP / BFS；只有硬币满足特殊条件才贪。</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2900" style="left:120px;top:352px">别把「大概对」当「一定对」</div>
+  </div>
+</section>
+
+<!-- ============ 06 判别信号 ============ -->
+<section class="slide" data-ch="1" data-stagger="140"
+  data-title="什么时候能贪？判别信号"
+  data-rec="可排序 · 可交换 · 无后效 · 能拼"
+  data-eyebrow="第一章 · 起点 · 目标：拿到识别工具">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:170px">信号</th><th style="width:420px">长什么样</th><th>典型题目</th></tr>
+      <tr><td class="k v">① 能排序</td>
+        <td data-seq="0">答案跟「<b>某种顺序</b>」有关，排完序一遍扫就完事。</td>
+        <td data-seq="1">活动选择、装箱、排队取水</td></tr>
+      <tr><td class="k v">② 可交换</td>
+        <td data-seq="2">任意两个元素<b>相邻交换</b>，能判断「谁在前更好」。</td>
+        <td data-seq="3">国王游戏、拼数、任务调度</td></tr>
+      <tr><td class="k v">③ 无后效</td>
+        <td data-seq="4">做了选择以后，<b>后续选择不受之前细节影响</b>，只受「总量」影响。</td>
+        <td data-seq="5">跳跃游戏、区间选点</td></tr>
+      <tr><td class="k v">④ 能拼出</td>
+        <td data-seq="6">答案可以由<b>几个独立的局部选择拼起来</b>。</td>
+        <td data-seq="7">哈夫曼、区间分组</td></tr>
+    </table>
+    <div class="hrule dot" data-seq="8" style="margin-top:22px"></div>
+    <div class="row" data-seq="9">
+      <div style="width:350px">
+        <div class="numbox">✓</div>
+        <h4 class="h2" style="margin-top:12px">大概率能贪</h4>
+        <p class="sm" style="margin-top:8px">
+          · 数据范围大（n = 10⁵ 以上），<b>不能 DP</b><br>
+          · 题目求「<b>最多 / 最少</b>」<br>
+          · 答案形如「<b>次数、条数、覆盖数</b>」<br>
+          · 输入能<b>自然排序</b></p>
+      </div>
+      <div style="width:350px">
+        <div class="numbox alt">✗</div>
+        <h4 class="h2" style="margin-top:12px">大概率不能贪</h4>
+        <p class="sm" style="margin-top:8px">
+          · <b>背包类</b>（容量约束）<br>
+          · <b>需要组合</b>才能满足的条件<br>
+          · <b>有依赖顺序</b>（拓扑序）<br>
+          · 要求<b>输出方案字典序最小</b></p>
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:880px;top:352px">范围大到不能 DP，先想贪心</div>
+  </div>
+</section>
+
+<!-- ============ 07 交换论证 ============ -->
+<section class="slide" data-ch="1" data-stagger="180"
+  data-title="怎么证明贪心是对的？交换论证"
+  data-rec="取最优解 → 改成贪心解 → 不变差"
+  data-eyebrow="第一章 · 起点 · 目标：拿到证明工具">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <h4 class="q">四步交换论证</h4>
+        <div class="keyline"></div>
+        <div class="row" style="margin-top:8px">
+          <div class="numbox">1</div>
+          <div class="sm" style="flex:1"><b>取一个最优解</b> <span class="mono">OPT</span>（任意的都行）</div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="numbox">2</div>
+          <div class="sm" style="flex:1"><b>找第一个不同</b>：<span class="mono">OPT</span> 与贪心解 <span class="mono">G</span> 第一处不一致的地方</div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="numbox">3</div>
+          <div class="sm" style="flex:1"><b>做交换</b>：把 <span class="mono">OPT</span> 那一处换成贪心选择，证明<b>不会更差</b></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div class="numbox">4</div>
+          <div class="sm" style="flex:1"><b>重复</b>，直到 <span class="mono">OPT == G</span>，于是 <b>G 也是最优解</b></div>
+        </div>
+        <div class="notebox" style="margin-top:20px">
+          <div class="sm"><b>核心只有一句：</b><br>
+            <b class="v">「把最优解里的某个选择，换成贪心的选择，不会更差。」</b></div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 330" width="620" height="330">
+          <defs><marker id="ah02" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-seq="0">
+            <text class="svgm" x="20" y="22">OPT（最优解）</text>
+            <rect x="20" y="38" width="120" height="38" rx="5" fill="#FFF" stroke="#EEDDC2"/>
+            <text class="svgtxtb" x="42" y="62">a₁</text>
+            <rect x="152" y="38" width="120" height="38" rx="5" fill="#F9D3C4" stroke="#E2542A" stroke-width="2"/>
+            <text class="svgtxtv" x="174" y="62">a₂ ≠ g₂</text>
+            <rect x="284" y="38" width="120" height="38" rx="5" fill="#FFF" stroke="#EEDDC2"/>
+            <text class="svgtxtb" x="306" y="62">a₃</text>
+          </g>
+          <g data-seq="1">
+            <text class="svgm" x="20" y="132">G（贪心解）</text>
+            <rect x="20" y="148" width="120" height="38" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="42" y="172">g₁</text>
+            <rect x="152" y="148" width="120" height="38" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="174" y="172">g₂</text>
+            <rect x="284" y="148" width="120" height="38" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="306" y="172">g₃</text>
+          </g>
+          <g data-seq="2">
+            <path class="arw hot" marker-end="url(#ah02)" d="M212 84 V142"/>
+            <text class="svgtxtv" x="228" y="120">换成 g₂，不变差</text>
+          </g>
+          <g data-seq="3">
+            <rect x="20" y="222" width="580" height="86" rx="6" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxt" x="42" y="250">重复一次，又改一处，最终 OPT 完全变成 G。</text>
+            <text class="svgtxt" x="42" y="274">由于 OPT 是最优解，G 的代价 ≤ OPT → G 也是最优。</text>
+            <text class="svgtxtv" x="42" y="298">完整四步：取 OPT → 找不同 → 交换 → 归纳</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2900" style="left:120px;top:352px">「换成贪心的选择，不会更差」</div>
+  </div>
+</section>
+
+<!-- ============ 08 活动选择题意 ============ -->
+<section class="slide" data-ch="2" data-stagger="180"
+  data-desc="n 个活动 [s_i, f_i)，一个人同一时刻只能参加一个活动，问最多能参加几个。"
+  data-title="首例：活动选择问题"
+  data-rec="max 不重叠活动数"
+  data-eyebrow="第二章 · 首例 · 目标：从一道经典题入门">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <div class="meta">Interval Scheduling · 经典入门</div>
+        <h4 class="q" style="margin-top:10px">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · 有 <b>n</b> 个活动，第 i 个占 <span class="mono">[sᵢ, fᵢ)</span><br>
+          · 一个人<b>同一时刻只能做 1 个</b>活动<br>
+          · 问：<b>最多能参加几个</b>？
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>样例</b><br>
+            <span class="mono">(1,4) (3,5) (0,6) (5,7) (3,9) (5,9) (6,10) (8,11) (8,12) (2,14) (12,16)</span><br>
+            答案：<b class="mono v">4</b>
+            个：<span class="mono">(1,4)(5,7)(8,11)(12,16)</span></div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>先问自己：</b>
+            能不能用 DP？<br>
+            能，但状态难定义、复杂度 <span class="mono">O(n²)</span>。<br>
+            数据一大就<b>挂</b>。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 330" width="620" height="330">
+          <g data-seq="0">
+            <line x1="20" y1="296" x2="600" y2="296" stroke="#C9AF8C" stroke-width="2"/>
+            <g class="svgtxt"><text x="20" y="318">0</text><text x="120" y="318">2</text>
+              <text x="220" y="318">4</text><text x="320" y="318">6</text>
+              <text x="420" y="318">8</text><text x="520" y="318">10</text></g>
+            <g class="svgtxtm">
+              <line x1="120" y1="292" x2="120" y2="300" stroke="#C9AF8C"/>
+              <line x1="220" y1="292" x2="220" y2="300" stroke="#C9AF8C"/>
+              <line x1="320" y1="292" x2="320" y2="300" stroke="#C9AF8C"/>
+              <line x1="420" y1="292" x2="420" y2="300" stroke="#C9AF8C"/>
+              <line x1="520" y1="292" x2="520" y2="300" stroke="#C9AF8C"/>
+            </g>
+          </g>
+          <g data-seq="1">
+            <rect x="60" y="252" width="180" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="70" y="270">a1 (1,4)</text>
+            <rect x="170" y="220" width="100" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="180" y="238">a2 (3,5)</text>
+            <rect x="20" y="188" width="280" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="30" y="206">a3 (0,6)</text>
+            <rect x="270" y="156" width="100" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="280" y="174">a4 (5,7)</text>
+            <rect x="170" y="124" width="280" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="180" y="142">a5 (3,9)</text>
+            <rect x="270" y="92" width="200" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="280" y="110">a6 (5,9)</text>
+            <rect x="320" y="60" width="220" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="330" y="78">a7 (6,10)</text>
+          </g>
+          <g data-seq="2">
+            <text class="svgtxtv" x="20" y="26">重叠很多，怎么选才最多？</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">先别想公式，想想选谁</div>
+  </div>
+</section>
+
+<!-- ============ 09 朴素枚举为什么慢 ============ -->
+<section class="slide" data-ch="2" data-stagger="180"
+  data-desc="n 个活动 [s_i, f_i)，一个人同一时刻只能参加一个活动，问最多能参加几个。"
+  data-title="朴素枚举为什么慢？"
+  data-rec="2^n 子集枚举"
+  data-eyebrow="第二章 · 首例 · 目标：看清朴素做法的代价">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <h4 class="q">思路一：枚举所有子集</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="sm"><b>做法：</b><br>
+            枚举所有 <b>2ⁿ</b> 个子集，<br>
+            对每个检查<b>是否合法</b>，取最大。</div>
+        </div>
+        <table class="t" style="margin-top:16px">
+          <tr><th style="width:110px">n</th><th>2ⁿ</th></tr>
+          <tr><td class="k">20</td><td class="mono">1,048,576</td></tr>
+          <tr><td class="k">30</td><td class="mono l">1,073,741,824</td></tr>
+          <tr><td class="k">40</td><td class="mono l">≈ 10¹²</td></tr>
+          <tr><td class="k">10⁵</td><td class="mono l">完全不可能</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>指数级</b>，n ≥ 30 就不行。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">思路二：DP</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="sm"><b>状态：</b>
+            <span class="mono">dp[i]</span> = 只考虑前 i 个活动，最多选几个<br>
+            <b>转移：</b><span class="mono">dp[i] = max(dp[i-1], dp[p(i)] + 1)</span><br>
+            其中 <span class="mono">p(i)</span> = 最后一个与 i 不冲突的活动</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term">时间 <b class="v mono">O(n log n)</b>（要二分 p(i)）</div>
+          <div class="term">空间 <b class="v mono">O(n)</b></div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>DP 能做，但复杂。</b><br>
+            定义状态就要想半天，转移还要二分。<br><br>
+            <b>问题：</b>有没有<b>更直接</b>的办法？<br>
+            → <b class="v">有！贪心。</b></div>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>贪心：</b>排序 + 一遍扫描，<br>
+            时间 <b class="mono g">O(n log n)</b>，<b>代码 5 行</b>。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2900" style="left:120px;top:352px">DP 也能做，但贪心更短</div>
+  </div>
+</section>
+
+<!-- ============ 10 贪心策略 ============ -->
+<section class="slide" data-ch="2" data-stagger="190"
+  data-desc="n 个活动 [s_i, f_i)，问最多能参加几个不重叠的活动。"
+  data-title="选哪个？三个候选策略"
+  data-rec="选结束最早的"
+  data-eyebrow="第二章 · 首例 · 目标：看清为何要这样变">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:500px">
+        <h4 class="q">三个直觉，两个错</h4>
+        <div class="keyline"></div>
+        <table class="t">
+          <tr><th style="width:170px">策略</th><th style="width:70px">对错</th><th>为什么</th></tr>
+          <tr><td class="k">选<b>开始最早</b>的</td>
+            <td data-seq="0"><span class="bad">✗</span></td>
+            <td data-seq="1">开始早但<b>可能很长</b>，把后面全占了。</td></tr>
+          <tr><td class="k">选<b>时长最短</b>的</td>
+            <td data-seq="2"><span class="bad">✗</span></td>
+            <td data-seq="3">短但<b>位置卡在正中</b>，两边都被卡死。</td></tr>
+          <tr><td class="k">选<b>结束最早</b>的</td>
+            <td data-seq="4"><span class="ans">✓</span></td>
+            <td data-seq="5">结束早 → <b>留下的时间最多</b>，后面选择最宽。</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>关键直觉：</b><br>
+            贪心要选<b>「不会给后面挖坑」</b>的那个。<br>
+            「结束最早」正是这个意思：<b>越早结束，后面越宽</b>。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 580 300" width="580" height="300">
+          <g data-seq="0">
+            <text class="svgm" x="20" y="20">✗ 选开始最早：选了 a1（很长）</text>
+            <rect x="20" y="34" width="360" height="26" rx="4" fill="#FBE2DC" stroke="#B53B2C" stroke-width="2"/>
+            <text class="svgtxtb" x="30" y="52">a1 (0, 9)</text>
+            <rect x="400" y="34" width="100" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="410" y="52">a2</text>
+            <text class="svgtxt" x="20" y="80">选 1 个；其实能选 3 个。</text>
+          </g>
+          <g data-seq="1">
+            <text class="svgm" x="20" y="118">✗ 选时长最短：选了 b2（卡在正中）</text>
+            <rect x="20" y="132" width="140" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="30" y="150">b1</text>
+            <rect x="170" y="132" width="50" height="26" rx="4" fill="#FBE2DC" stroke="#B53B2C" stroke-width="2"/>
+            <text class="svgtxtb" x="180" y="150">b2</text>
+            <rect x="230" y="132" width="140" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="240" y="150">b3</text>
+            <text class="svgtxt" x="20" y="178">选了 b2，两边都用不了。</text>
+          </g>
+          <g data-seq="2">
+            <text class="svgm" x="20" y="216">✓ 选结束最早：先选 c1</text>
+            <rect x="20" y="230" width="100" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="30" y="248">c1</text>
+            <rect x="140" y="230" width="120" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="150" y="248">c2</text>
+            <rect x="280" y="230" width="120" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="290" y="248">c3</text>
+            <text class="svgtxtv" x="20" y="278">结束早 = 后面空间大，能选 3 个。</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">结束最早 = 给后面留最多空间</div>
+  </div>
+</section>
+
+<!-- ============ 11 交换论证证明 ============ -->
+<section class="slide" data-ch="2" data-stagger="180"
+  data-desc="n 个活动 [s_i, f_i)，问最多能参加几个不重叠的活动。"
+  data-title="证明：选结束最早一定最优"
+  data-rec="g₁ 的结束时间 ≤ a₁"
+  data-eyebrow="第二章 · 首例 · 目标：走一遍标准证明">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">四步走</h4>
+        <div class="keyline"></div>
+        <div class="row" style="margin-top:6px">
+          <div class="numbox">1</div>
+          <div class="sm" style="flex:1"><b>设</b> <span class="mono">G = (g₁, g₂, …, g_k)</span> 是贪心解（按结束时间），<br>
+            <span class="mono">OPT = (a₁, a₂, …, a_m)</span> 是某个最优解。</div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="numbox">2</div>
+          <div class="sm" style="flex:1"><b>由贪心定义</b>，g₁ 是所有活动里<b>结束最早的</b>，<br>
+            所以 <b class="mono v">f(g₁) ≤ f(a₁)</b>。</div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="numbox">3</div>
+          <div class="sm" style="flex:1"><b>做交换</b>：把 <span class="mono">a₁</span> 换成 <span class="mono">g₁</span>。<br>
+            因为 g₁ <b>结束更早</b>，后面所有 a₂、a₃…<b>都不冲突</b>，<br>
+            新解的<b>数量和 OPT 一样</b>。</div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="numbox">4</div>
+          <div class="sm" style="flex:1"><b>重复</b>：对剩下的部分继续做。<br>
+            最后 OPT 被完全改成 G。<br>
+            所以 <b class="mono v">|G| = |OPT|</b>，G 也是最优解。 ∎</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 330" width="620" height="330">
+          <defs><marker id="ah03" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-seq="0">
+            <text class="svgm" x="20" y="22">交换前</text>
+            <rect x="20" y="38" width="220" height="28" rx="4" fill="#F9D3C4" stroke="#E2542A" stroke-width="2"/>
+            <text class="svgtxtb" x="30" y="57">a₁（结束较晚）</text>
+            <rect x="260" y="38" width="180" height="28" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="270" y="57">a₂</text>
+          </g>
+          <g data-seq="1">
+            <path class="arw hot" marker-end="url(#ah03)" d="M310 76 V124"/>
+            <text class="svgtxtv" x="240" y="108">换 a₁ → g₁</text>
+          </g>
+          <g data-seq="2">
+            <text class="svgm" x="20" y="152">交换后：g₁ 结束更早，a₂ 仍可选</text>
+            <rect x="20" y="168" width="150" height="28" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="30" y="187">g₁（结束最早）</text>
+            <rect x="260" y="168" width="180" height="28" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="270" y="187">a₂ 仍然不冲突</text>
+            <text class="svgtxt" x="20" y="222">数量不变（m 个），但和贪心解「更像」了一步。</text>
+          </g>
+          <g data-seq="3">
+            <rect x="20" y="246" width="580" height="66" rx="6" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtv" x="42" y="274">所以 |G| = |OPT|，贪心解也是最优解。</text>
+            <text class="svgm" x="42" y="298">这个「换一步，不变差，逐步改到一致」就是交换论证</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2900" style="left:120px;top:352px">证明的模板，背下来能用一学期</div>
+  </div>
+</section>
+
+<!-- ============ 12 代码 ============ -->
+<section class="slide" data-ch="2" data-stagger="160"
+  data-desc="n 个活动 [s_i, f_i)，问最多能参加几个不重叠的活动。"
+  data-title="代码：活动选择"
+  data-rec="sort by end → scan"
+  data-eyebrow="第二章 · 首例 · 目标：拿到可提交代码">
+  <div class="stage-inner">
+    <div class="row">
+      <div class="code" style="flex:1.3">
+        <div class="cbar"><span class="cf">activity_selection.py</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>def select_max(intervals):</li>
+<li class="hl" data-note="① 排序：按结束时间升序（不是开始！）">    intervals.sort(key=lambda x: x[1])</li>
+<li>    cnt = 0</li>
+<li>    last_end = -10 ** 18</li>
+<li class="hl" data-note="② 扫描：只要不冲突就选，然后更新「已选的最晚结束」">    for s, f in intervals:</li>
+<li>        if s &gt;= last_end:</li>
+<li>            cnt += 1</li>
+<li>            last_end = f</li>
+<li>    return cnt</li>
+<li>&nbsp;</li>
+<li># LeetCode 435 无重叠区间：要删几个</li>
+<li>class Solution:</li>
+<li>    def eraseOverlapIntervals(self, intervals):</li>
+<li>        intervals.sort(key=lambda x: x[1])</li>
+<li>        cnt, last = 0, -10 ** 18</li>
+<li>        for s, f in intervals:</li>
+<li>            if s &gt;= last:</li>
+<li>                cnt += 1; last = f</li>
+<li>        return len(intervals) - cnt</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="meta">手推 · [1,4] [3,5] [0,6] [5,7]</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th>当前活动</th><th>last_end</th><th>选吗</th><th>cnt</th></tr>
+          <tr data-seq="0"><td class="mono">(1,4)</td><td class="mono">-∞</td><td class="g">选</td><td class="mono v">1</td></tr>
+          <tr data-seq="1"><td class="mono">(5,7)</td><td class="mono">4</td><td class="g">选</td><td class="mono v">2</td></tr>
+          <tr data-seq="2"><td class="mono">(3,5)</td><td class="mono">7</td><td class="l">不选</td><td class="mono">2</td></tr>
+          <tr data-seq="3"><td class="mono">(0,6)</td><td class="mono">7</td><td class="l">不选</td><td class="mono">2</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>排序后顺序：</b>
+            <span class="mono">(1,4)(5,7)(3,5)(0,6)</span><br>
+            <b>结果：</b><span class="mono">2</span> 个。
+            （题目保证 <span class="mono">s &lt; f</span>）</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>两个坑：</b><br>
+            ① 排序键写成 <span class="mono">x[0]</span>（开始时间）→ <b class="l">错</b><br>
+            ② 判断 <span class="mono">s &gt;= last_end</span> 还是
+            <span class="mono">s &gt; last_end</span>？<br>
+            &nbsp;&nbsp;&nbsp;看题目是<b>闭区间</b>还是<b>半开区间</b>。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term">时间 <b class="g mono">O(n log n)</b></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/non-overlapping-intervals/" target="_blank">LC 435</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:352px">排序键写错，全盘皆输</div>
+  </div>
+</section>
+
+<!-- ============ 13 变体 ============ -->
+<section class="slide" data-ch="2" data-stagger="160"
+  data-title="活动选择的四个变体"
+  data-rec="同一策略，四种问法"
+  data-eyebrow="第二章 · 首例 · 目标：举一反三">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:190px">问题</th><th style="width:240px">策略</th><th style="width:150px">答案</th><th>题目</th></tr>
+      <tr><td class="k v">最多不重叠</td>
+        <td data-seq="0">结束时间升序，能选就选</td>
+        <td data-seq="1">选中数</td>
+        <td data-seq="2"><a class="link" href="https://leetcode.cn/problems/maximum-length-of-pair-chain/" target="_blank">LC 646</a> ·
+          <a class="link" href="https://www.luogu.com.cn/problem/P1803" target="_blank">P1803</a></td></tr>
+      <tr><td class="k v">最少删除</td>
+        <td data-seq="3">同上，n 减去选中数</td>
+        <td data-seq="4">n − cnt</td>
+        <td data-seq="5"><a class="link" href="https://leetcode.cn/problems/non-overlapping-intervals/" target="_blank">LC 435</a></td></tr>
+      <tr><td class="k v">最少箭引爆</td>
+        <td data-seq="6">结束升序，箭放右端点</td>
+        <td data-seq="7">箭数</td>
+        <td data-seq="8"><a class="link" href="https://leetcode.cn/problems/minimum-number-of-arrows-to-burst-balloons/" target="_blank">LC 452</a></td></tr>
+      <tr><td class="k v">最少会议室</td>
+        <td data-seq="9">开始升序 + 小顶堆存结束</td>
+        <td data-seq="10">堆最大 size</td>
+        <td data-seq="11"><a class="link" href="https://leetcode.cn/problems/meeting-rooms-ii/" target="_blank">LC 253</a></td></tr>
+    </table>
+    <div class="hrule dot" data-seq="12" style="margin-top:22px"></div>
+    <div class="row" data-seq="13">
+      <div style="width:520px">
+        <div class="notebox">
+          <div class="sm"><b>核心洞察：</b><br>
+            这四道题<b>只差一个「统计口径」</b>，<br>
+            排序和扫描<b>完全一样</b>。<br><br>
+            把「<b>最多不重叠</b>」这一个模板吃透，<br>
+            区间问题就去了一大半。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="warmbox">
+          <div class="sm"><b>LC 452 引爆气球</b> 题意速读：<br>
+            <span class="mono">[[10,16],[2,8],[1,6],[7,12]]</span><br>
+            每支箭垂直射在 x 轴上，引爆所有<b>包含该点</b>的气球。<br>
+            求最少几支箭。<br>
+            答案：<b class="mono v">2</b>（在 x = 6 和 x = 12 射）。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2500" style="left:880px;top:352px">四题同模板</div>
+  </div>
+</section>
+
+<!-- ============ 14 区间三模板 ============ -->
+<section class="slide" data-ch="3" data-stagger="180"
+  data-title="区间问题的三种固定模板"
+  data-rec="选点 · 覆盖 · 分组"
+  data-eyebrow="第三章 · 经典 · 目标：拿到套路库">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:170px">模板</th><th style="width:230px">排序键</th><th style="width:230px">动作</th><th>典型题目</th></tr>
+      <tr><td class="k v">① 区间选点</td>
+        <td data-seq="0">右端点<b>升序</b></td>
+        <td data-seq="1">点放在<b>右端点</b></td>
+        <td data-seq="2"><a class="link" href="https://www.luogu.com.cn/problem/P1250" target="_blank">P1250 种树</a> · <a class="link" href="https://leetcode.cn/problems/minimum-number-of-arrows-to-burst-balloons/" target="_blank">LC 452</a></td></tr>
+      <tr><td class="k v">② 区间覆盖</td>
+        <td data-seq="3">左端点<b>升序</b></td>
+        <td data-seq="4">每次选「<b>延伸最远</b>」的</td>
+        <td data-seq="5"><a class="link" href="https://www.luogu.com.cn/problem/P2434" target="_blank">P2434 区间</a> · <a class="link" href="https://leetcode.cn/problems/jump-game-ii/" target="_blank">LC 45</a></td></tr>
+      <tr><td class="k v">③ 区间分组</td>
+        <td data-seq="6">左端点<b>升序</b></td>
+        <td data-seq="7">小顶堆存<b>结束时间</b></td>
+        <td data-seq="8"><a class="link" href="https://leetcode.cn/problems/meeting-rooms-ii/" target="_blank">LC 253</a> · <a class="link" href="https://leetcode.cn/problems/divide-intervals-into-minimum-number-of-groups/" target="_blank">LC 2406</a></td></tr>
+    </table>
+    <div class="hrule dot" data-seq="9" style="margin-top:22px"></div>
+    <div class="row" data-seq="10">
+      <div style="width:520px">
+        <h4 class="h2">为什么选点按<b class="v">右端点</b>，覆盖按<b class="v">左端点</b>？</h4>
+        <div class="keyline"></div>
+        <div class="sm">
+          <b>选点：</b>想让一个点<b>覆盖尽量多区间</b>，
+          就把它放在「<b>右端点</b>」——那是能盖住「左端点最晚」的区间的<b>最后一个机会</b>。<br><br>
+          <b>覆盖：</b>想让下一段<b>接得上</b>，
+          就按<b>左端点</b>排，扫到「接不上下一段」时才切。
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="warmbox">
+          <div class="sm"><b>记忆口诀：</b><br>
+            <b>「选点看右，覆盖看左，<br>
+            分组堆顶是最早的结束。」</b><br><br>
+            写代码前先<b>默念一遍</b>，能少犯一半错。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2700" style="left:880px;top:352px">选点看右，覆盖看左</div>
+  </div>
+</section>
+
+<!-- ============ 15 区间选点 ============ -->
+<section class="slide" data-ch="3" data-stagger="180"
+  data-desc="n 个区间 [l_i, r_i]，用最少的点使每个区间至少包含一个点。"
+  data-title="模板 ①：区间选点"
+  data-rec="点放右端点"
+  data-eyebrow="第三章 · 经典 · 目标：吃透第一个模板">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:490px">
+        <h4 class="q">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · n 个区间 <span class="mono">[lᵢ, rᵢ]</span><br>
+          · 每个区间<b>至少要有 1 个点</b><br>
+          · 问：最少放几个点？
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>样例</b><br>
+            <span class="mono">[1,4] [2,3] [3,6] [5,7] [6,8]</span><br>
+            答案：<b class="mono v">2</b>（点 3、6）</div>
+        </div>
+        <div class="keyline"></div>
+        <h4 class="h3">策略</h4>
+        <div class="notebox" style="margin-top:10px">
+          <div class="sm"><b>右端点升序</b>，<b>点放在右端点</b>。<br>
+            扫到一个区间时，如果<b>点还没覆盖</b>它，
+            就<b>在它右端点放一个新点</b>。</div>
+        </div>
+        <div class="notebox" style="margin-top:14px">
+          <div class="sm"><b>为什么对？</b><br>
+            右端点是这个区间<b>能放点的最右位置</b>，
+            也是<b>最能顺带覆盖后面区间</b>的位置。<br>
+            交换论证：把任意解里最左的点往右移，只会覆盖<b>更多</b>区间。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 580 320" width="580" height="320">
+          <g data-seq="0">
+            <rect x="30" y="40" width="180" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="40" y="58">[1,4]</text>
+            <rect x="90" y="76" width="60" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="100" y="94">[2,3]</text>
+            <rect x="150" y="112" width="180" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="160" y="130">[3,6]</text>
+            <rect x="270" y="148" width="120" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="280" y="166">[5,7]</text>
+            <rect x="330" y="184" width="120" height="26" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="340" y="202">[6,8]</text>
+          </g>
+          <g data-seq="1">
+            <path class="arw hot" stroke-width="3" d="M150 34 V222"/>
+            <circle class="node hot" cx="150" cy="236" r="13"/><text class="svgtxtv" x="142" y="241">3</text>
+            <path class="arw hot" stroke-width="3" d="M330 34 V222"/>
+            <circle class="node hot" cx="330" cy="236" r="13"/><text class="svgtxtv" x="322" y="241">6</text>
+          </g>
+          <g data-seq="2">
+            <text class="svgtxtv" x="30" y="288">2 个点覆盖所有 5 个区间</text>
+            <text class="svgm" x="30" y="310">点 3 盖 [1,4][2,3][3,6]　点 6 盖 [3,6][5,7][6,8]</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">点放右端点 = 一石多鸟</div>
+  </div>
+</section>
+
+<!-- ============ 16 区间覆盖 ============ -->
+<section class="slide" data-ch="3" data-stagger="180"
+  data-desc="给定 n 条线段 [l_i, r_i] 和目标线段 [L, R]，用最少的线段完整覆盖 [L, R]。"
+  data-title="模板 ②：区间覆盖"
+  data-rec="左端点排序，选延伸最远"
+  data-eyebrow="第三章 · 经典 · 目标：吃透第二个模板">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:490px">
+        <h4 class="q">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · 给定目标线段 <span class="mono">[L, R]</span><br>
+          · n 条线段 <span class="mono">[lᵢ, rᵢ]</span><br>
+          · 用<b>最少</b>的线段<b>完整覆盖</b> <span class="mono">[L, R]</span>
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>策略</b><br>
+            <b>左端点升序</b>排序，维护 <span class="mono">cur</span>（已覆盖到）：<br>
+            · 把所有 <span class="mono">lᵢ ≤ cur</span> 的线段拿来<br>
+            · 选<b> rᵢ 最大</b>的那条，更新 <span class="mono">cur = max_r</span><br>
+            · 重复，直到 <span class="mono">cur ≥ R</span></div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>为什么对？</b><br>
+            一个 <span class="mono">cur</span> 处，<b>所有能用的线段起点都 ≤ cur</b>，
+            所以<b>它们的「衔接能力」一样</b>，<b>终点越远越好</b>。<br>
+            交换论证：用「终点近的」换「终点远的」只会更差。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 580 320" width="580" height="320">
+          <g data-seq="0">
+            <rect x="20" y="272" width="500" height="14" rx="3" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtv" x="20" y="262">目标 [0, 500]</text>
+          </g>
+          <g data-seq="1">
+            <rect x="20" y="60" width="120" height="22" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="30" y="76">s1 [0,120]</text>
+            <rect x="20" y="94" width="200" height="22" rx="4" fill="#F9D3C4" stroke="#E2542A" stroke-width="2"/>
+            <text class="svgtxtb" x="30" y="110">s2 [0,200] ✓ 选</text>
+            <rect x="20" y="128" width="80" height="22" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="30" y="144">s3 [0,80]</text>
+            <rect x="120" y="162" width="180" height="22" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="130" y="178">s4 [100,280]</text>
+            <rect x="160" y="196" width="260" height="22" rx="4" fill="#F9D3C4" stroke="#E2542A" stroke-width="2"/>
+            <text class="svgtxtb" x="170" y="212">s5 [120,380] ✓ 选</text>
+            <rect x="300" y="230" width="180" height="22" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="310" y="246">s6 [260,440]</text>
+          </g>
+          <g data-seq="2">
+            <path class="arw hot" stroke-width="3" d="M220 52 V272"/>
+            <path class="arw hot" stroke-width="3" d="M420 188 V272"/>
+            <text class="svgtxtv" x="20" y="312">3 条线段：[0,200] → [120,380] → [260,440]，未盖完 → 不可行</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">选延伸最远的，一步顶多步</div>
+  </div>
+</section>
+
+<!-- ============ 17 区间分组 ============ -->
+<section class="slide" data-ch="3" data-stagger="180"
+  data-desc="n 个区间 [l_i, r_i]，分成最少的组，使同一组内区间互不重叠。等价于最少需要几个会议室。"
+  data-title="模板 ③：区间分组（会议室）"
+  data-rec="左端点排序 + 小顶堆"
+  data-eyebrow="第三章 · 经典 · 目标：吃透第三个模板">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:490px">
+        <h4 class="q">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · n 个会议 <span class="mono">[lᵢ, rᵢ]</span><br>
+          · 一个会议室同一时刻只能开<b> 1 个</b>会议<br>
+          · 问：<b>最少要几个会议室</b>？
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>样例</b><br>
+            <span class="mono">[0,30] [5,10] [15,20]</span><br>
+            答案：<b class="mono v">2</b>（[0,30] 占一个；[5,10][15,20] 共用一个）</div>
+        </div>
+        <div class="keyline"></div>
+        <h4 class="h3">策略</h4>
+        <div class="notebox" style="margin-top:10px">
+          <div class="sm"><b>左端点升序</b>，小顶堆存<b>各会议室的结束时间</b>：<br>
+            · <span class="mono">heap[0] ≤ lᵢ</span> → 复用最闲的会议室（pop + push）<br>
+            · 否则 → <b>新开一个</b>（只 push）<br>
+            答案 = <b>堆的最大 size</b></div>
+        </div>
+        <div class="notebox" style="margin-top:14px">
+          <div class="sm"><b>为什么对？</b><br>
+            堆顶是<b>最早结束</b>的会议室；
+            能复用就复用，<b>不会让后面更挤</b>。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 580 320" width="580" height="320">
+          <defs><marker id="ah04" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#8A6E52"/></marker></defs>
+          <g data-seq="0">
+            <text class="svgm" x="20" y="22">时间轴</text>
+            <rect x="20" y="38" width="300" height="28" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="30" y="57">[0,30] 会议室 A</text>
+            <rect x="70" y="80" width="80" height="28" rx="4" fill="#F9D3C4" stroke="#E2542A" stroke-width="2"/>
+            <text class="svgtxtb" x="80" y="99">[5,10] B</text>
+            <rect x="180" y="80" width="80" height="28" rx="4" fill="#F9D3C4" stroke="#E2542A" stroke-width="2"/>
+            <text class="svgtxtb" x="190" y="99">[15,20] B</text>
+          </g>
+          <g data-seq="1">
+            <text class="svgm" x="20" y="152">堆的变化</text>
+            <rect x="20" y="166" width="120" height="32" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="30" y="187">push 30</text>
+            <path class="arw" marker-end="url(#ah04)" d="M148 182 H182"/>
+            <rect x="190" y="166" width="120" height="32" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="200" y="187">push 10,30</text>
+            <path class="arw" marker-end="url(#ah04)" d="M318 182 H352"/>
+            <rect x="360" y="166" width="120" height="32" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="370" y="187">10→20,30</text>
+          </g>
+          <g data-seq="2">
+            <rect x="20" y="222" width="540" height="76" rx="6" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtv" x="42" y="250">答案 = 堆的最大 size = 2</text>
+            <text class="svgm" x="42" y="276">堆顶是最闲的会议室；能复用就复用，绝不会更挤</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">堆顶永远是「最闲」的那间</div>
+  </div>
+</section>
+
+<!-- ============ 18 字典序 ============ -->
+<section class="slide" data-ch="3" data-stagger="180"
+  data-desc="给定 n 个非负整数，把它们拼接成一个最大的数。"
+  data-title="应用：字典序与拼数"
+  data-rec="a+b > b+a 就 a 在前"
+  data-eyebrow="第三章 · 经典 · 目标：掌握排序比较器">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:490px">
+        <h4 class="q">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · n 个<b>非负整数</b><br>
+          · 拼成<b>一个最大的数</b>（前导 0 要去掉）<br>
+          · 返回字符串
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>样例</b><br>
+            <span class="mono">[10, 2]</span> → <b class="mono v">"210"</b>（不是 "102"）<br>
+            <span class="mono">[3, 30, 34, 5, 9]</span> → <b class="mono v">"9534330"</b></div>
+        </div>
+        <div class="keyline"></div>
+        <h4 class="h3">策略：相邻交换法找排序键</h4>
+        <div class="notebox" style="margin-top:10px">
+          <div class="sm">看两个数 <span class="mono">a</span> 和 <span class="mono">b</span>：
+            哪个放前面更好？<br>
+            比较 <span class="mono v">a+b</span> 和 <span class="mono v">b+a</span>
+            （<b>字符串拼接</b>后比较）。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="code">
+          <div class="cbar"><span class="cf">largest_number.py</span>
+            <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>from functools import cmp_to_key</li>
+<li>&nbsp;</li>
+<li>class Solution:</li>
+<li>    def largestNumber(self, nums):</li>
+<li>        a = [str(x) for x in nums]</li>
+<li class="hl" data-note="相邻交换法：a+b > b+a 就让 a 在前">        def cmp(x, y):</li>
+<li>            if x + y &gt; y + x: return -1</li>
+<li>            if x + y &lt; y + x: return 1</li>
+<li>            return 0</li>
+<li>        a.sort(key=cmp_to_key(cmp))</li>
+<li>        ans = ''.join(a)</li>
+<li class="hl" data-note="全 0 时要返回 '0' 而不是 '000'">        return '0' if ans[0] == '0' else ans</li>
+          </ol>
+        </div>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>为什么这么比？</b><br>
+            任何一组数字的排列，<b>相邻两个数的顺序</b>
+            决定了整体的大小。<br>
+            只要<b>每一对相邻</b>都满足 <span class="mono">a+b ≥ b+a</span>，
+            整体就是最大的。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/largest-number/" target="_blank">LC 179</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1012" target="_blank">P1012 拼数</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/queue-reconstruction-by-height/" target="_blank">LC 406</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:352px">相邻交换法：一招找排序键</div>
+  </div>
+</section>
+
+<!-- ============ 19 跳跃游戏 ============ -->
+<section class="slide" data-ch="3" data-stagger="180"
+  data-desc="数组 nums，从下标 0 出发，nums[i] 表示最多能跳几步。问能否到达最后一个下标。"
+  data-title="应用：跳跃游戏 I / II"
+  data-rec="维护最远可达"
+  data-eyebrow="第三章 · 经典 · 目标：贪心维护区间">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <div class="meta">LeetCode 55 / 45</div>
+        <h4 class="q" style="margin-top:10px">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · 数组 <span class="mono">nums</span>，站在 <span class="mono">i</span> 最多能跳 <span class="mono">nums[i]</span> 步<br>
+          · <b>LC 55</b>：能否到达最后一个下标？<br>
+          · <b>LC 45</b>：最少几次能到？
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>样例</b><br>
+            <span class="mono">[2,3,1,1,4]</span><br>
+            LC 55：<b class="mono g">true</b>　LC 45：<b class="mono v">2</b></div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>核心状态：</b>
+            <span class="mono">far</span> = 目前<b>能到的最远下标</b>。<br>
+            每走一步刷新一次。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 320" width="620" height="320">
+          <defs><marker id="ah05" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-seq="0">
+            <g class="svgtxtb">
+              <rect x="20" y="120" width="70" height="60" rx="5" fill="#F9D3C4" stroke="#E2542A" stroke-width="2"/>
+              <rect x="100" y="120" width="70" height="60" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+              <rect x="180" y="120" width="70" height="60" rx="5" fill="#FFF" stroke="#EEDDC2"/>
+              <rect x="260" y="120" width="70" height="60" rx="5" fill="#FFF" stroke="#EEDDC2"/>
+              <rect x="340" y="120" width="70" height="60" rx="5" fill="#F9D3C4" stroke="#E2542A" stroke-width="2"/>
+            </g>
+            <g class="svgtxtb"><text x="44" y="156">2</text><text x="124" y="156">3</text>
+              <text x="204" y="156">1</text><text x="284" y="156">1</text><text x="364" y="156">4</text></g>
+          </g>
+          <g data-seq="1">
+            <path class="arw hot" marker-end="url(#ah05)" d="M55 108 Q135 60 215 108"/>
+            <text class="svgtxtv" x="98" y="72">far = 0+2 = 2</text>
+            <path class="arw hot" marker-end="url(#ah05)" d="M135 108 Q215 60 295 108"/>
+            <text class="svgtxtv" x="180" y="72">far = 1+3 = 4</text>
+          </g>
+          <g data-seq="2">
+            <text class="svgtxtv" x="20" y="228">LC 55：far ≥ n-1 就能到</text>
+            <text class="svgtxtv" x="20" y="252">LC 45：每层扫描后 cur = far，层数 +1</text>
+            <text class="svgm" x="20" y="282">「最远可达」这一个变量就够了 —— 典型的无后效贪心</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">维护一个「最远可达」就够了</div>
+  </div>
+</section>
+
+<!-- ============ 20 救生艇 ============ -->
+<section class="slide" data-ch="3" data-stagger="180"
+  data-desc="n 个人，每人重量 people[i]，每条船限重 limit 且最多载 2 人。求最少需要几条船。"
+  data-title="应用：救生艇 / 乘船问题"
+  data-rec="排序 + 双指针"
+  data-eyebrow="第三章 · 经典 · 目标：贪心 + 双指针">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:490px">
+        <h4 class="q">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · n 个人，重量 <span class="mono">people[i]</span><br>
+          · 每条船<b>最多 2 人</b>，限重 <span class="mono">limit</span><br>
+          · 保证 <span class="mono">people[i] ≤ limit</span><br>
+          · 求<b>最少几条船</b>
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>样例</b><br>
+            <span class="mono">people = [3,2,2,1], limit = 3</span><br>
+            答案：<b class="mono v">3</b>
+            （[3]、[1,2]、[2]）</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>策略：排序 + 双指针</b><br>
+            最<b>重</b>的人必须上船。<br>
+            看能不能捎上最<b>轻</b>的：<br>
+            · 能 → <b>两人一起</b>，<span class="mono">l++, r--</span><br>
+            · 不能 → 重的人<b>单独</b>，<span class="mono">r--</span></div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="code">
+          <div class="cbar"><span class="cf">rescue_boats.py</span>
+            <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>class Solution:</li>
+<li>    def numRescueBoats(self, people, limit):</li>
+<li>        people.sort()</li>
+<li>        l, r = 0, len(people) - 1</li>
+<li>        ans = 0</li>
+<li class="hl" data-note="最重的人必须上，看看能不能捎上最轻的">        while l &lt;= r:</li>
+<li>            if people[l] + people[r] &lt;= limit:</li>
+<li>                l += 1</li>
+<li>            r -= 1</li>
+<li>            ans += 1</li>
+<li>        return ans</li>
+          </ol>
+        </div>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>为什么对？</b><br>
+            重的人<b>没法被别人替代</b>，只能上船；<br>
+            那和谁同船<b>都不会更差</b>？<b>挑最轻的</b>。<br>
+            交换论证：换一个更重的同船，只会占掉另一条船的位置。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term">时间 <b class="g mono">O(n log n)</b></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/boats-to-save-people/" target="_blank">LC 881</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1094" target="_blank">P1094 纪念品分组</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:352px">重的必须上，捎最轻的</div>
+  </div>
+</section>
+
+<!-- ============ 21 区间小结 ============ -->
+<section class="slide" data-ch="3" data-stagger="150"
+  data-title="区间问题一页总结"
+  data-rec="排个序 + 扫一遍"
+  data-eyebrow="第三章 · 经典 · 目标：留下完整工具箱">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:520px">
+        <h4 class="h2">所有区间贪心的骨架</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="mono" style="font-size:15px;line-height:2">
+            intervals.sort(key=???)
+            cur = 初始值
+            for x in intervals:
+            &nbsp;&nbsp;&nbsp;&nbsp;判断 x 和 cur 的关系
+            &nbsp;&nbsp;&nbsp;&nbsp;更新 cur / 计数
+          </div>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>要问自己的三个问题：</b><br>
+            ① <b>排序键是什么</b>？（左端点 / 右端点 / 长度）<br>
+            ② <b>「当前状态」是什么</b>？（last_end / cur / heap）<br>
+            ③ <b>什么时候更新</b>？（冲突了 / 覆盖不到 / 堆顶满足）</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <table class="t">
+          <tr><th style="width:140px">问题</th><th style="width:130px">排序键</th><th style="width:150px">状态</th><th>计数</th></tr>
+          <tr><td class="k">最多不重叠</td><td class="mono">end ↑</td><td class="mono">last_end</td><td>能选就选</td></tr>
+          <tr><td class="k">最少删除</td><td class="mono">end ↑</td><td class="mono">last_end</td><td>n − 选中数</td></tr>
+          <tr><td class="k">最少点</td><td class="mono">end ↑</td><td class="mono">last_point</td><td>未覆盖就放</td></tr>
+          <tr><td class="k">最少箭</td><td class="mono">end ↑</td><td class="mono">last_arrow</td><td>同上</td></tr>
+          <tr><td class="k">最少覆盖</td><td class="mono">start ↑</td><td class="mono">cur</td><td>延伸最远</td></tr>
+          <tr><td class="k">最少分组</td><td class="mono">start ↑</td><td class="mono">heap</td><td>堆最大 size</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>一张表记下来</b>，遇到区间题先对表。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:120px;top:352px">这一页可以直接截图</div>
+  </div>
+</section>
+
+<!-- ============ 22 排序的智慧 ============ -->
+<section class="slide" data-ch="4" data-stagger="190"
+  data-title="进阶：贪心的另一半是「怎么排序」"
+  data-rec="贪心 = 排序键 + 扫描"
+  data-eyebrow="第四章 · 进阶 · 目标：看清排序的关键作用">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">一个观察</h4>
+        <div class="keyline"></div>
+        <p class="lead">
+          大部分贪心题的<b>本质</b>是：<br>
+          <b class="v">找到一个排序键，排完序一遍扫</b>。
+        </p>
+        <div class="hrule dot"></div>
+        <div class="notebox">
+          <div class="sm"><b>难点从来不在扫描</b>，<br>
+            而在<b>「这个 key 到底是什么」</b>。</div>
+        </div>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>找排序键的三招</b><br>
+            ① <b>相邻交换法</b>：看 a、b 谁前谁后更好<br>
+            ② <b>极端数据法</b>：造 a 极大、b 极小试试<br>
+            ③ <b>看答案结构</b>：答案是「乘积 / 和 / 最大值」？<br>
+            &nbsp;&nbsp;&nbsp;这决定该按什么排序</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 330" width="620" height="330">
+          <g data-seq="0">
+            <text class="svgm" x="20" y="22">① 相邻交换法</text>
+            <rect x="20" y="38" width="260" height="38" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="36" y="62">a &nbsp; b</text>
+            <rect x="300" y="38" width="260" height="38" rx="5" fill="#FFF" stroke="#EEDDC2"/>
+            <text class="svgtxtb" x="316" y="62">b &nbsp; a</text>
+            <text class="svgtxt" x="20" y="96">比较 a+b 和 b+a，或比较 f(a,b) 和 f(b,a)</text>
+          </g>
+          <g data-seq="1">
+            <text class="svgm" x="20" y="142">② 极端数据法</text>
+            <rect x="20" y="158" width="260" height="38" rx="5" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="36" y="182">a = 999…9</text>
+            <rect x="300" y="158" width="260" height="38" rx="5" fill="#FFF" stroke="#EEDDC2"/>
+            <text class="svgtxtb" x="316" y="182">b = 1</text>
+            <text class="svgtxt" x="20" y="216">造极端值，看哪种顺序明显更好</text>
+          </g>
+          <g data-seq="2">
+            <text class="svgm" x="20" y="262">③ 看答案结构</text>
+            <rect x="20" y="278" width="540" height="42" rx="5" fill="#F9D3C4" stroke="#E2542A" stroke-width="2"/>
+            <text class="svgtxtv" x="36" y="304">答案 = 最大值最小 → 排序让「最坏的」尽量小</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">扫描简单，key 才是关键</div>
+  </div>
+</section>
+
+<!-- ============ 23 国王游戏 ============ -->
+<section class="slide" data-ch="4" data-stagger="180"
+  data-desc="n 个大臣，第 i 个左手 a_i 右手 b_i，国王排最前。每个大臣得「前面所有人左手数字之积 ÷ 自己右手数字」。求最大值最小。"
+  data-title="例题：P1080 国王游戏"
+  data-rec="按 a_i × b_i 升序"
+  data-eyebrow="第四章 · 进阶 · 目标：掌握排序比较器推导">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:490px">
+        <h4 class="q">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · 国王 + n 个大臣站成一队，<b>国王固定排最前</b><br>
+          · 第 i 个大臣有 <span class="mono">aᵢ</span>（左手）和 <span class="mono">bᵢ</span>（右手）<br>
+          · 每个大臣得到 <span class="mono">（前面所有人 a 之积）÷ 自己的 b</span><br>
+          · 求<b>所有大臣中的最大值</b>最小
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>策略：按 <span class="mono">aᵢ × bᵢ</span> 升序</b><br>
+            答案 = 每个大臣的值取最大。<br>
+            需要<b>高精度</b>（乘积会爆 long long）。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>相邻交换法推导</b><br>
+            看大臣 i 和 j（相邻），交换只影响这两个。<br>
+            设前面乘积为 <span class="mono">P</span>：<br>
+            &nbsp;顺序 (i, j)：max(P/aᵢ, P·aᵢ/bⱼ)<br>
+            &nbsp;顺序 (j, i)：max(P/aⱼ, P·aⱼ/bᵢ)<br>
+            要让「较大者」最小，<b>推出 aᵢ·bᵢ ≤ aⱼ·bⱼ</b>。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="code">
+          <div class="cbar"><span class="cf">king_game.py</span>
+            <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>from functools import cmp_to_key</li>
+<li>&nbsp;</li>
+<li>n = int(input())</li>
+<li>king_a = int(input())</li>
+<li>p = [tuple(map(int, input().split())) for _ in range(n)]</li>
+<li class="hl" data-note="排序键：a[i] * b[i] 升序（就是相邻交换的结论）">def cmp(x, y):</li>
+<li>    return x[0] * x[1] - y[0] * y[1]</li>
+<li>&nbsp;</li>
+<li>p.sort(key=cmp_to_key(cmp))</li>
+<li>prod = king_a</li>
+<li>ans = 0</li>
+<li>for a, b in p:</li>
+<li>    ans = max(ans, prod // b)</li>
+<li>    prod *= a</li>
+<li>print(ans)  # 题目需要高精度，此处省略</li>
+          </ol>
+        </div>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>关键套路：</b><br>
+            「求最大值最小」→ 用<b>相邻交换</b>推出<b>排序键</b>。<br>
+            这是<b>「排序比较器」类贪心</b>的通用推导法。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1080" target="_blank">P1080 国王游戏</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/largest-number/" target="_blank">LC 179</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:352px">相邻交换，一次推出排序键</div>
+  </div>
+</section>
+
+<!-- ============ 24 排队取水 ============ -->
+<section class="slide" data-ch="4" data-stagger="180"
+  data-desc="n 个人排队取水，第 i 人需要 t_i 时间。每个人等的时间 = 前面所有人时间之和。求所有人的总等待时间最小。"
+  data-title="例题：P1223 排队取水"
+  data-rec="按 t 升序"
+  data-eyebrow="第四章 · 进阶 · 目标：练习相邻交换">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <h4 class="q">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · n 个人排队，第 i 人取水要 <span class="mono">tᵢ</span> 分钟<br>
+          · 每个人的<b>等待时间</b> = 前面所有人的时间和<br>
+          · 求<b>总等待时间最小</b>（输出顺序和总时间）
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>策略：按 <span class="mono">t</span> 升序</b><br>
+            短的先来，后面等得少。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>相邻交换</b><br>
+            相邻两人 i、j，只看他们的贡献：<br>
+            &nbsp;顺序 (i,j)：<b>tᵢ + (tᵢ+tⱼ)</b> = 2tᵢ + tⱼ<br>
+            &nbsp;顺序 (j,i)：<b>tⱼ + (tᵢ+tⱼ)</b> = tᵢ + 2tⱼ<br>
+            要 (i,j) 更好 → <b class="mono v">tᵢ ≤ tⱼ</b>。</div>
+        </div>
+        <div class="warmbox" style="margin-top:16px">
+          <div class="sm"><b>公式：</b>
+            <span class="mono">总时间 = Σ (n-i) × tᵢ</span>（已排序）</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 330" width="620" height="330">
+          <g data-seq="0">
+            <text class="svgm" x="20" y="22">未排序 [5, 1, 2, 3]</text>
+            <rect x="20" y="38" width="120" height="32" rx="4" fill="#FBE2DC" stroke="#B53B2C" stroke-width="2"/>
+            <text class="svgtxtb" x="30" y="59">5</text>
+            <rect x="150" y="38" width="60" height="32" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="160" y="59">1</text>
+            <rect x="220" y="38" width="80" height="32" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="230" y="59">2</text>
+            <rect x="310" y="38" width="100" height="32" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="320" y="59">3</text>
+            <text class="svgtxt" x="20" y="96">总等待 = 5 + 6 + 8 + 11 = 30</text>
+          </g>
+          <g data-seq="1">
+            <text class="svgm" x="20" y="142">已排序 [1, 2, 3, 5]</text>
+            <rect x="20" y="158" width="60" height="32" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="30" y="179">1</text>
+            <rect x="90" y="158" width="80" height="32" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="100" y="179">2</text>
+            <rect x="180" y="158" width="100" height="32" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="190" y="179">3</text>
+            <rect x="290" y="158" width="120" height="32" rx="4" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtb" x="300" y="179">5</text>
+            <text class="svgtxtv" x="20" y="216">总等待 = 1 + 3 + 6 + 11 = 21 ✓</text>
+          </g>
+          <g data-seq="2">
+            <rect x="20" y="246" width="580" height="66" rx="6" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxt" x="42" y="274">Σ (n-i) × tᵢ = 4×1 + 3×2 + 2×3 + 1×5 = 21</text>
+            <text class="svgm" x="42" y="298">短任务在前 = 交叉项最小</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">短的先来，等的就少</div>
+  </div>
+</section>
+
+<!-- ============ 25 合并果子 ============ -->
+<section class="slide" data-ch="4" data-stagger="180"
+  data-desc="n 堆果子，每次合并两堆，代价 = 两堆之和。合并到只剩一堆，求最小总代价。"
+  data-title="例题：合并果子（哈夫曼）"
+  data-rec="每次取最小两堆"
+  data-eyebrow="第四章 · 进阶 · 目标：用堆做贪心">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:490px">
+        <h4 class="q">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · n 堆果子，重量 <span class="mono">a[i]</span><br>
+          · 每次合并<b>两堆</b>，代价 = 两堆重量和<br>
+          · 合并到只剩 1 堆，<b>最小总代价</b>
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>样例</b><br>
+            <span class="mono">[5, 2, 7, 4]</span><br>
+            (2+4)=6 → (5+6)=11 → (7+11)=18<br>
+            总 = <b class="mono v">35</b></div>
+        </div>
+        <div class="keyline"></div>
+        <h4 class="h3">策略：小顶堆，每次取最小两堆</h4>
+        <div class="notebox" style="margin-top:10px">
+          <div class="sm"><b>为什么对？</b><br>
+            一堆果子<b>被合并的次数越多，代价越大</b>。<br>
+            让<b>轻的</b>多合并几次，<b>重的</b>少合并，总代价最小。<br>
+            —— 这就是<b>哈夫曼编码</b>的思想。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <svg viewBox="0 0 580 330" width="580" height="330">
+          <defs><marker id="ah06" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#8A6E52"/></marker></defs>
+          <g data-seq="0">
+            <text class="svgm" x="20" y="22">合并过程</text>
+            <circle class="node" cx="50" cy="60" r="20"/><text class="svgtxtb" x="42" y="65">5</text>
+            <circle class="node" cx="130" cy="60" r="20"/><text class="svgtxtb" x="122" y="65">2</text>
+            <circle class="node" cx="210" cy="60" r="20"/><text class="svgtxtb" x="202" y="65">7</text>
+            <circle class="node" cx="290" cy="60" r="20"/><text class="svgtxtb" x="282" y="65">4</text>
+          </g>
+          <g data-seq="1">
+            <path class="edge" d="M130 80 L170 130"/><path class="edge" d="M290 80 L250 130"/>
+            <circle class="node hot" cx="210" cy="150" r="22"/><text class="svgtxtv" x="192" y="155">6</text>
+            <text class="svgtxt" x="320" y="152">2+4 = 6，代价 6</text>
+          </g>
+          <g data-seq="2">
+            <path class="edge" d="M50 80 L120 180"/><path class="edge" d="M210 172 L180 210"/>
+            <circle class="node hot" cx="150" cy="232" r="22"/><text class="svgtxtv" x="132" y="237">11</text>
+            <text class="svgtxt" x="320" y="232">5+6 = 11，代价 11</text>
+          </g>
+          <g data-seq="3">
+            <path class="edge" d="M210 80 L270 240"/><path class="edge" d="M172 232 L240 252"/>
+            <circle class="node hot" cx="290" cy="268" r="22"/><text class="svgtxtv" x="272" y="273">18</text>
+            <text class="svgtxtv" x="320" y="272">7+11 = 18，总代价 = 6+11+18 = 35</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">轻的多跑几次，重的少跑</div>
+  </div>
+</section>
+
+<!-- ============ 26 任务调度 ============ -->
+<section class="slide" data-ch="4" data-stagger="180"
+  data-desc="n 个活动，第 i 个需 t_i 时间、截止 d_i、罚分 w_i。未按时完成的罚分之和最小，求最小罚分。"
+  data-title="例题：P1230 智力大冲浪"
+  data-rec="按罚分降序，插空安排"
+  data-eyebrow="第四章 · 进阶 · 目标：贪心 + 插空">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:490px">
+        <h4 class="q">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · n 个活动，第 i 个要 <span class="mono">tᵢ</span> 时间，
+          <b>截止</b> <span class="mono">dᵢ</span>，
+          <b>罚分</b> <span class="mono">wᵢ</span><br>
+          · 在截止时间<b>前</b>做完则<b>不罚</b><br>
+          · 求<b>最小总罚分</b>
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>策略</b><br>
+            ① <b>按罚分降序</b>（贵的先保）<br>
+            ② 每个活动<b>尽量靠后安排</b>（为贵的留时间）<br>
+            ③ 装不下 → <b>放弃</b>，累加罚分</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>为什么对？</b><br>
+            按罚分从高到低<b>确定保留哪些</b>，
+            剩下只需要<b>合理摆位</b>（靠后放）。<br>
+            交换论证：用一个<b>贵的</b>换成<b>便宜的</b>，罚分<b>只增不减</b>。</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="code">
+          <div class="cbar"><span class="cf">rush.py</span>
+            <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>n = int(input())</li>
+<li>act = [tuple(map(int, input().split())) for _ in range(n)]</li>
+<li class="hl" data-note="贵的先保：罚分降序">act.sort(key=lambda x: -x[2])</li>
+<li>&nbsp;</li>
+<li>used = [False] * (max(d for _, d, _ in act) + 1)</li>
+<li>fine = 0</li>
+<li class="hl" data-note="尽量靠后放：给贵的留出前面的位置">for t, d, w in act:</li>
+<li>    placed = False</li>
+<li>    for s in range(min(t, d) - 1, -1, -1):</li>
+<li>        if all(not used[s - k] for k in range(t)):</li>
+<li>            for k in range(t): used[s - k] = True</li>
+<li>            placed = True</li>
+<li>            break</li>
+<li>    if not placed:</li>
+<li>        fine += w</li>
+<li>print(fine)</li>
+          </ol>
+        </div>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>升级版：</b>用<b>并查集</b>找空位，可以做到 <span class="mono">O(n log n)</span>。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1230" target="_blank">P1230 智力大冲浪</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/course-schedule-iii/" target="_blank">LC 630</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:352px">贵的先保，尽量靠后放</div>
+  </div>
+</section>
+
+<!-- ============ 27 装箱 ============ -->
+<section class="slide" data-ch="4" data-stagger="180"
+  data-desc="n 件纪念品，每件重量 w_i，一个箱子容量 W，最多装 2 件。求最少箱子数。"
+  data-title="例题：装箱与分组"
+  data-rec="排序 + 双指针 / 性价比排序"
+  data-eyebrow="第四章 · 进阶 · 目标：装箱类贪心">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">题 A：纪念品分组（P1094）</h4>
+        <div class="keyline"></div>
+        <div class="sm">
+          · n 件，重量 <span class="mono">wᵢ</span>，每箱最多 <b>2 件</b>，容量 <span class="mono">W</span><br>
+          · 求<b>最少箱子数</b><br><br>
+          <b>策略：</b>排序 + <b>双指针</b>（和 LC 881 一模一样）。
+        </div>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>样例</b>：<span class="mono">w = [2, 3, 5, 7], W = 10</span><br>
+            分组：<span class="mono">(2,7) (3,5)</span> → <b class="mono v">2</b> 箱</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <h4 class="q">题 B：装箱问题（P2240）</h4>
+        <div class="keyline"></div>
+        <div class="sm">
+          · n 种金币，第 i 种重 <span class="mono">wᵢ</span> 价值 <span class="mono">vᵢ</span>，<b>可拆</b><br>
+          · 箱子容量 <span class="mono">W</span>，求<b>最大价值</b><br><br>
+          <b>策略：</b>按<b>性价比</b> <span class="mono">vᵢ/wᵢ</span>
+          <b>降序</b>，能装就装，装不下<b>切一部分</b>。
+        </div>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>关键差别：</b><br>
+            <b>可拆</b>（部分背包）→ 贪心<b>对</b><br>
+            <b>不可拆</b>（01 背包）→ 贪心<b>不对</b>，必须 DP。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>识别信号：</b>题目说「<b>可以分成任意部分</b>」→ 贪心；
+            说「<b>整件</b>」→ DP。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1094" target="_blank">P1094</a></div>
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P2240" target="_blank">P2240</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">可拆就能贪，不可拆走 DP</div>
+  </div>
+</section>
+
+<!-- ============ 28 贪心与 DP 边界 ============ -->
+<section class="slide" data-ch="4" data-stagger="180"
+  data-desc="给定硬币面额 coins 和金额 amount，求凑出 amount 所需的最少硬币数。"
+  data-title="贪心与 DP 的边界"
+  data-rec="可拆 → 贪心 ｜ 不可拆 → DP"
+  data-eyebrow="第四章 · 进阶 · 目标：知道何时切换">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">同一道题，两个解法</h4>
+        <div class="keyline"></div>
+        <table class="t">
+          <tr><th style="width:150px">条件</th><th>能用贪心吗？</th></tr>
+          <tr><td class="k">硬币 <span class="mono">[1,5,10,25]</span></td>
+            <td data-seq="0"><span class="ans">能</span> —— 规范硬币，贪心对</td></tr>
+          <tr><td class="k">硬币 <span class="mono">[1,3,4]</span></td>
+            <td data-seq="1"><span class="bad">不能</span> —— 反例：6 = 3+3 比 4+1+1 短</td></tr>
+          <tr><td class="k">任意硬币</td>
+            <td data-seq="2">必须 <b>DP</b>（<span class="mono">O(n·amount)</span>）</td></tr>
+        </table>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>判断技巧：</b><br>
+            拿<b>最大面额</b>和<b>次大面额</b>试试：<br>
+            · 如果 <b>「最大 × k」 总能被别的组合替代</b>，贪心可能对<br>
+            · 如果存在「<b>非倍数关系</b>」的面额，要小心</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 330" width="620" height="330">
+          <defs><marker id="ah07" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#8A6E52"/></marker></defs>
+          <g data-seq="0">
+            <text class="svgm" x="20" y="22">决策树</text>
+            <circle class="node hot" cx="120" cy="52" r="22"/><text class="svgtxtv" x="104" y="57">问题</text>
+            <g class="arw" marker-end="url(#ah07)"><path d="M120 74 V106"/><path d="M62 88 L36 116"/><path d="M178 88 L204 116"/></g>
+          </g>
+          <g data-seq="1">
+            <circle class="node" cx="40" cy="140" r="20"/><text class="svgtxtb" x="22" y="145">可拆</text>
+            <circle class="node" cx="120" cy="140" r="20"/><text class="svgtxtb" x="106" y="145">可交换</text>
+            <circle class="node" cx="204" cy="140" r="20"/><text class="svgtxtb" x="188" y="145">有容量</text>
+            <text class="svgtxtv" x="20" y="192">可拆 / 可交换 → 贪心</text>
+            <text class="svgtxt" x="20" y="218">有容量 / 需要组合 → DP</text>
+          </g>
+          <g data-seq="2">
+            <rect x="280" y="40" width="320" height="120" rx="6" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtv" x="300" y="70">贪心</text>
+            <text class="svgtxt" x="300" y="98">O(n log n)</text>
+            <text class="svgtxt" x="300" y="124">代码短，要证明</text>
+          </g>
+          <g data-seq="3">
+            <rect x="280" y="180" width="320" height="120" rx="6" fill="#FFF" stroke="#EEDDC2"/>
+            <text class="svgtxtv" x="300" y="210">DP</text>
+            <text class="svgtxt" x="300" y="238">O(n·W) 或 O(n²)</text>
+            <text class="svgtxt" x="300" y="264">代码长，天然对</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">边界在这，别踩</div>
+  </div>
+</section>
+
+<!-- ============ 29 一题多解 ============ -->
+<section class="slide" data-ch="4" data-stagger="170"
+  data-desc="数组 nums，从下标 0 出发，nums[i] 表示最多能跳几步。求到达最后一个下标的最少跳数。"
+  data-title="一题多解：LC 45 跳跃游戏 II"
+  data-rec="BFS / DP / 贪心"
+  data-eyebrow="第四章 · 进阶 · 目标：学会比较解法">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:150px">解法</th><th style="width:200px">思路</th><th style="width:150px">时间</th><th style="width:150px">空间</th><th>优缺点</th></tr>
+      <tr><td class="k">BFS 分层</td>
+        <td data-seq="0">每次跳算<b>一层</b>，扫到最远</td>
+        <td data-seq="1" class="mono g">O(n)</td>
+        <td data-seq="1" class="mono">O(1)</td>
+        <td data-seq="2">好想，但要懂「层」的概念</td></tr>
+      <tr><td class="k">DP</td>
+        <td data-seq="3"><span class="mono">dp[i] = min(dp[j]+1)</span>，j 能跳到 i</td>
+        <td data-seq="4" class="mono l">O(n²)</td>
+        <td data-seq="4" class="mono">O(n)</td>
+        <td data-seq="5">通用，但数据一大就超时</td></tr>
+      <tr><td class="k v">贪心</td>
+        <td data-seq="6">维护当前层最远 <span class="mono">cur</span> 和下一层最远 <span class="mono">far</span></td>
+        <td data-seq="7" class="mono g">O(n)</td>
+        <td data-seq="7" class="mono g">O(1)</td>
+        <td data-seq="8">最优，但要证明「不变差」</td></tr>
+    </table>
+    <div class="hrule dot" data-seq="9" style="margin-top:22px"></div>
+    <div class="row" data-seq="10">
+      <div class="code" style="flex:1.2">
+        <div class="cbar"><span class="cf">jump_ii.py · 贪心解</span>
+          <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+        <ol class="cl">
+<li>class Solution:</li>
+<li>    def jump(self, nums):</li>
+<li>        n = len(nums)</li>
+<li>        far = cur = ans = 0</li>
+<li class="hl" data-note="每到一层边界就 ans+=1，并把下一层最远刷出来">        for i in range(n - 1):</li>
+<li>            far = max(far, i + nums[i])</li>
+<li>            if i == cur:</li>
+<li>                cur = far</li>
+<li>                ans += 1</li>
+<li>        return ans</li>
+        </ol>
+      </div>
+      <div style="flex:1">
+        <div class="notebox">
+          <div class="sm"><b>练习建议：</b><br>
+            同一道题<b>至少写两种解法</b>，<br>
+            你才能<b>感觉到贪心省在哪</b>。<br><br>
+            <b>典型顺序：</b><br>
+            ① 先写 <b>DP</b>（能跑出正确答案）<br>
+            ② 再写 <b>贪心</b>（要能证明）<br>
+            ③ 对比<b>复杂度</b>，看要不要优化</div>
+        </div>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>提示：</b>
+            LC 45 的<b>贪心解</b>其实是
+            <b>BFS 分层</b>的等价形式 ——<br>
+            「<b>走到层末尾 → 跳一次</b>」= 「<b>队列一层</b>」。</div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2500" style="left:120px;top:352px">同题写两遍，才知道省在哪</div>
+  </div>
+</section>
+
+<!-- ============ 30 精讲 P1250 ============ -->
+<section class="slide" data-ch="4" data-stagger="170"
+  data-desc="n 个区间 [l_i, r_i]，每个区间内至少种 k 棵树，求最少种多少棵树。"
+  data-title="精讲：P1250 种树"
+  data-rec="右端点排序 + 贪心反悔"
+  data-eyebrow="第四章 · 进阶 · 目标：完整走一遍解题">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-5">
+        <h4 class="q">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · 直线上的 n 个区间 <span class="mono">[lᵢ, rᵢ]</span><br>
+          · 第 i 个区间<b>至少要种 kᵢ 棵树</b><br>
+          · 求<b>最少</b>要种多少棵树
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>样例</b>：<br>
+            <span class="mono">[1,4] k=3</span>、
+            <span class="mono">[3,5] k=2</span>、
+            <span class="mono">[4,7] k=3</span>、
+            <span class="mono">[2,6] k=3</span><br>
+            答案：<b class="mono v">6</b></div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>为什么不能直接套区间选点？</b><br>
+            每个区间要<b>多棵树</b>，不是 1 棵。<br>
+            但<b>核心还是一样</b>：往<b>右</b>种，能顺带覆盖后面的。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <div class="meta">四步法</div>
+        <table class="t" style="margin-top:12px">
+          <tr><th style="width:130px">步骤</th><th>做法</th></tr>
+          <tr><td class="k v">① 排序</td><td>按<b>右端点升序</b>（同区间选点）</td></tr>
+          <tr><td class="k v">② 状态</td><td>维护<b>已种的树的位置集合</b>（有序）</td></tr>
+          <tr><td class="k v">③ 判断</td><td>当前区间内已有几棵？不够就补</td></tr>
+          <tr><td class="k v">④ 补树</td><td>从<b>右端点</b>往左依次种，能覆盖后面的最好</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>正确性：</b>
+            右端点升序后，区间按「<b>截止时间</b>」排列；
+            往右种<b>只会让后面更宽裕</b>。
+            交换论证：把任一解里的树往右移，不会让任何区间变差。</div>
+        </div>
+        <div class="row" style="margin-top:18px">
+          <div class="term"><a class="link" href="https://www.luogu.com.cn/problem/P1250" target="_blank">P1250 种树</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/divide-intervals-into-minimum-number-of-groups/" target="_blank">LC 2406</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">往右种，后面的都受益</div>
+  </div>
+</section>
+
+<!-- ============ 31 反悔贪心 ============ -->
+<section class="slide" data-ch="5" data-stagger="180"
+  data-title="扩展：反悔贪心"
+  data-rec="贪心 + 可撤销"
+  data-eyebrow="第五章 · 扩展 · 目标：拿到进阶工具">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">普通贪心「做了不能反悔」，反悔贪心「可以反悔」</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="sm"><b>核心思想</b><br>
+            贪心时<b>先全都要</b>（或全都不要），<br>
+            然后发现「<b>某个选择不好</b>」，就<b>把它撤回</b>。<br><br>
+            用<b>堆</b>维护「<b>可撤销的选择</b>」，<br>
+            每次<b>弹出最差的那个</b>。</div>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>什么时候用？</b><br>
+            · 有<b>总量约束</b>（选 k 个、t 天）<br>
+            · 贪心<b>局部</b>对，但<b>全局</b>可能超预算<br>
+            · 能定义「<b>这次的选择可以换掉上次的某个</b>」</div>
+        </div>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>标准套路</b><br>
+            ① 按<b>某个键</b>排序<br>
+            ② <b>逐个尝试</b>加入，用堆记录「已选的代价」<br>
+            ③ 总代价超了 → <b>弹出堆顶（最大的那个）</b><br>
+            ④ 最后堆里就是最优选</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <svg viewBox="0 0 620 330" width="620" height="330">
+          <defs><marker id="ah08" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2542A"/></marker></defs>
+          <g data-seq="0">
+            <text class="svgm" x="20" y="22">① 先全选</text>
+            <g class="svgtxtb">
+              <rect x="20" y="38" width="80" height="36" rx="4" fill="#FDEECC" stroke="#F3A33C"/><text x="40" y="61">A</text>
+              <rect x="110" y="38" width="80" height="36" rx="4" fill="#FDEECC" stroke="#F3A33C"/><text x="130" y="61">B</text>
+              <rect x="200" y="38" width="80" height="36" rx="4" fill="#FDEECC" stroke="#F3A33C"/><text x="220" y="61">C</text>
+              <rect x="290" y="38" width="80" height="36" rx="4" fill="#FDEECC" stroke="#F3A33C"/><text x="310" y="61">D</text>
+            </g>
+            <text class="svgtxt" x="20" y="98">堆里维护代价：[2, 5, 3, 7]</text>
+          </g>
+          <g data-seq="1">
+            <text class="svgm" x="20" y="142">② 超预算，弹出最大</text>
+            <g class="svgtxtb">
+              <rect x="20" y="158" width="80" height="36" rx="4" fill="#FDEECC" stroke="#F3A33C"/><text x="40" y="181">A</text>
+              <rect x="110" y="158" width="80" height="36" rx="4" fill="#FDEECC" stroke="#F3A33C"/><text x="130" y="181">B</text>
+              <rect x="200" y="158" width="80" height="36" rx="4" fill="#FDEECC" stroke="#F3A33C"/><text x="220" y="181">C</text>
+              <rect x="290" y="158" width="80" height="36" rx="4" fill="#FBE2DC" stroke="#B53B2C" stroke-width="2"/>
+              <text x="310" y="181" fill="#B53B2C">D</text>
+            </g>
+            <path class="arw hot" marker-end="url(#ah08)" d="M330 200 V228"/>
+            <text class="svgtxtv" x="352" y="218">弹出 D（代价 7）</text>
+          </g>
+          <g data-seq="2">
+            <rect x="20" y="250" width="580" height="64" rx="6" fill="#FDEECC" stroke="#F3A33C"/>
+            <text class="svgtxtv" x="42" y="278">「反悔」= 用堆顶（最差的）换掉，留下更好的</text>
+            <text class="svgm" x="42" y="302">这才是真正的「贪心 + 数据结构」</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+    <div class="hand" data-at="2900" style="left:120px;top:352px">先全选，再退掉最差的</div>
+  </div>
+</section>
+
+<!-- ============ 32 反悔贪心例题 ============ -->
+<section class="slide" data-ch="5" data-stagger="170"
+  data-desc="n 门课，第 i 门需 t_i 天、截止 d_i 前完成。每天最多上 1 门，最多能上几门？"
+  data-title="例题：LC 630 课程表 III"
+  data-rec="按截止排序 + 大顶堆反悔"
+  data-eyebrow="第五章 · 扩展 · 目标：反悔贪心实战">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="width:490px">
+        <h4 class="q">题意速读</h4>
+        <p class="sm" style="margin-top:8px">
+          · n 门课，第 i 门要 <span class="mono">tᵢ</span> 天，
+          <b>截止</b> <span class="mono">dᵢ</span> 前完成<br>
+          · 每天<b>只能上 1 门</b>（连续）<br>
+          · 问：<b>最多能上几门</b>？
+        </p>
+        <div class="warmbox" style="margin-top:14px">
+          <div class="sm"><b>样例</b><br>
+            <span class="mono">[[100,200],[200,1300],[1000,1250],[2000,3200]]</span><br>
+            答案：<b class="mono v">3</b></div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>策略</b><br>
+            ① <b>按截止时间升序</b><br>
+            ② 逐个加入，维护 <span class="mono">t</span>（已用天数）<br>
+            ③ 加入后若 <span class="mono">t &gt; dᵢ</span>，
+            <b>弹出已选中最长的那门</b>（大顶堆）<br>
+            ④ 结果 = 堆 size</div>
+        </div>
+      </div>
+      <div style="flex:1">
+        <div class="code">
+          <div class="cbar"><span class="cf">course_schedule_iii.py</span>
+            <button class="mini" data-run>▶</button><button class="mini" data-reset>↺</button><button class="mini" data-copy>copy</button></div>
+          <ol class="cl">
+<li>import heapq</li>
+<li>&nbsp;</li>
+<li>class Solution:</li>
+<li>    def scheduleCourse(self, courses):</li>
+<li class="hl" data-note="① 按截止时间升序">        courses.sort(key=lambda x: x[1])</li>
+<li>        heap = []        # 大顶堆（存负数）</li>
+<li>        t = 0</li>
+<li class="hl" data-note="② 逐个尝试加入">        for d, last in courses:</li>
+<li>            if t + d &lt;= last:</li>
+<li>                heapq.heappush(heap, -d)</li>
+<li>                t += d</li>
+<li class="hl" data-note="③ 超时就退掉最长的那门（反悔）">            elif heap and -heap[0] &gt; d:</li>
+<li>                t += d + heapq.heappop(heap)</li>
+<li>                heapq.heappush(heap, -d)</li>
+<li>        return len(heap)</li>
+          </ol>
+        </div>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>为什么对？</b><br>
+            按截止排序后，「<b>当前堆里已选的课</b>」<br>
+            和「<b>新来的课</b>」交换<b>只会影响这一对</b>。<br>
+            如果新课更短，<b>换掉最长的旧课</b>，总天数减小，且不会挤掉别的。</div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/course-schedule-iii/" target="_blank">LC 630</a></div>
+          <div class="term"><a class="link" href="https://leetcode.cn/problems/maximum-subsequence-score/" target="_blank">LC 2542</a></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2600" style="left:120px;top:352px">反悔 = 用堆顶换掉</div>
+  </div>
+</section>
+
+<!-- ============ 33 拟阵 ============ -->
+<section class="slide" data-ch="5" data-stagger="180"
+  data-title="理论：拟阵与贪心的正确性"
+  data-rec="贪心正确 ⇔ 独立集族是拟阵"
+  data-eyebrow="第五章 · 扩展 · 目标：知道为什么有时候贪心不对">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-6">
+        <h4 class="q">拟阵 (Matroid) 是什么？</h4>
+        <div class="keyline"></div>
+        <div class="warmbox">
+          <div class="sm">一个<b>独立集族</b> <span class="mono">M = (E, I)</span>，<br>
+            <span class="mono">E</span> 是元素集，<span class="mono">I</span> 是「独立子集」的集合，满足：<br><br>
+            <b>① 单调性</b>：A ∈ I 且 B ⊆ A ⟹ B ∈ I<br>
+            <b>② 交换性</b>：A, B ∈ I 且 |A| &lt; |B| ⟹
+            存在 x ∈ B∖A 使 A∪{x} ∈ I</div>
+        </div>
+        <div class="notebox" style="margin-top:18px">
+          <div class="sm"><b>定理：</b><br>
+            <b>权重最大化贪心正确</b>
+            ⟺ <b>独立集族是拟阵</b>。<br><br>
+            换句话说：<b>贪心不是「聪明」，是「恰好被数据结构允许」</b>。</div>
+        </div>
+      </div>
+      <div class="c7-12">
+        <table class="t">
+          <tr><th style="width:170px">问题</th><th style="width:170px">独立集族</th><th>是拟阵吗</th></tr>
+          <tr><td class="k">最小生成树</td>
+            <td data-seq="0">森林（无环边集）</td>
+            <td data-seq="1"><span class="ans">是</span> —— 图拟阵</td></tr>
+          <tr><td class="k">任务调度（区间）</td>
+            <td data-seq="2">不重叠的活动集</td>
+            <td data-seq="3"><span class="ans">是</span> —— 分区拟阵</td></tr>
+          <tr><td class="k">01 背包</td>
+            <td data-seq="4">总重 ≤ W 的子集</td>
+            <td data-seq="5"><span class="bad">否</span> —— 交换性不成立</td></tr>
+          <tr><td class="k">最长路径</td>
+            <td data-seq="6">简单路径集</td>
+            <td data-seq="7"><span class="bad">否</span> —— 单调性不成立</td></tr>
+        </table>
+        <div class="warmbox" style="margin-top:18px">
+          <div class="sm"><b>实用价值：</b><br>
+            竞赛里<b>不需要写拟阵证明</b>，<br>
+            但知道「<b>01 背包不是拟阵</b>」能让你<b>快速判断</b>
+            「这题能不能贪」。</div>
+        </div>
+        <div class="notebox" style="margin-top:16px">
+          <div class="sm"><b>一句话：</b>
+            <b>「贪心的正确性是数据结构给的，不是你猜的。」</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="hand" data-at="2800" style="left:120px;top:352px">贪心被结构允许，不是被聪明允许</div>
+  </div>
+</section>
+
+<!-- ============ 34 怎么想出策略 ============ -->
+<section class="slide" data-ch="5" data-stagger="180"
+  data-title="怎么「想出」贪心策略？"
+  data-rec="试小数据 · 找反例 · 试排序键"
+  data-eyebrow="第五章 · 扩展 · 目标：拿到寻找策略的工具">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-4">
+        <div class="numbox">①</div>
+        <h4 class="h2" style="margin-top:14px">试小数据</h4>
+        <div class="keyline"></div>
+        <p class="p">
+          n = 1, 2, 3 时答案是什么？<br>
+          <b>手推</b>出来，看规律。
+        </p>
+        <div class="notebox" data-seq="3" style="margin-top:14px">
+          <div class="sm">n = 1：只能选那个<br>
+            n = 2：选谁？<br>
+            n = 3：怎么排？<br><br>
+            三个一推，<b>排序键往往就浮出水面</b>。</div>
+        </div>
+      </div>
+      <div style="grid-column:5/span 4">
+        <div class="numbox alt">②</div>
+        <h4 class="h2" style="margin-top:14px">造极端数据</h4>
+        <div class="keyline"></div>
+        <p class="p">
+          故意让某个元素<b>极大</b>或<b>极小</b>，<br>
+          看哪种顺序<b>明显更好</b>。
+        </p>
+        <div class="notebox" data-seq="4" style="margin-top:14px">
+          <div class="sm">比如区间题：<br>
+            一个<b>超长</b>区间 + 几个<b>短</b>区间；<br>
+            或者<b>完全相同</b>的区间；<br>
+            或者<b>首尾相接</b>的区间。</div>
+        </div>
+      </div>
+      <div class="c9-12">
+        <div class="numbox">③</div>
+        <h4 class="h2" style="margin-top:14px">试排序键</h4>
+        <div class="keyline"></div>
+        <p class="p">
+          拿<b>相邻两个</b>元素，交换顺序，<br>
+          看<b>谁在前更好</b>。
+        </p>
+        <div class="notebox" data-seq="5" style="margin-top:14px">
+          <div class="sm">把「谁在前更好」<b>写成不等式</b>，<br>
+            就是<b>排序键</b>。<br><br>
+            这一招<b>能解 80% 的排序贪心</b>。</div>
+        </div>
+      </div>
+    </div>
+    <div class="warmbox" data-seq="6" style="margin-top:24px">
+      <div class="sm"><b>如果三招都没头绪：</b>
+        那这题<b>大概不是贪心</b>，转 <b>DP</b>、<b>搜索</b>、<b>二分答案</b>。</div>
+    </div>
+    <div class="hand" data-at="2600" style="left:880px;top:352px">三招没头绪，就换思路</div>
+  </div>
+</section>
+
+<!-- ============ 35 证明方法汇总 ============ -->
+<section class="slide" data-ch="6" data-stagger="150"
+  data-title="证明贪心的四种方法"
+  data-rec="交换 · 缩窄 · 构造 · 归纳"
+  data-eyebrow="第六章 · 方法题单 · 目标：拿到证明工具箱">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:170px">方法</th><th style="width:440px">怎么做</th><th>适用</th></tr>
+      <tr><td class="k v">① 交换论证</td>
+        <td data-seq="0">取 OPT → 找第一处不同 → 换成贪心选择 → 证明<b>不变差</b> → 重复</td>
+        <td data-seq="1">区间、排序类<b>最常用</b></td></tr>
+      <tr><td class="k v">② 决策缩窄</td>
+        <td data-seq="2">证明「<b>选了贪心选择后，剩下子问题的解不会更差</b>」</td>
+        <td data-seq="3">跳跃游戏、区间覆盖</td></tr>
+      <tr><td class="k v">③ 构造最优</td>
+        <td data-seq="4">直接<b>构造</b>一个「包含贪心选择」的最优解</td>
+        <td data-seq="5">哈夫曼、最小生成树</td></tr>
+      <tr><td class="k v">④ 数学归纳</td>
+        <td data-seq="6">对规模 n 归纳：假设 n-1 对，证明 n 对</td>
+        <td data-seq="7">分治型贪心、递归结构</td></tr>
+      <tr><td class="k">⑤ 反证</td>
+        <td data-seq="8">假设存在更优解，<b>导出矛盾</b></td>
+        <td data-seq="9">排序比较器、字典序</td></tr>
+    </table>
+    <div class="hrule dot" data-seq="10" style="margin-top:22px"></div>
+    <div class="row" data-seq="11">
+      <div class="numbox">!</div>
+      <div class="p" style="flex:1">
+        竞赛里<b>不需要把证明写在纸上</b>，但<b>一定要在脑中过一遍</b>。<br>
+        能在 <b class="v">30 秒</b>内说出「为什么对」的贪心，才是<b>能放心提交</b>的贪心。
+      </div>
+    </div>
+    <div class="hand" data-at="2500" style="left:880px;top:352px">30 秒说不清，就别提交</div>
+  </div>
+</section>
+
+<!-- ============ 36 常见错误 ============ -->
+<section class="slide" data-ch="6" data-stagger="150"
+  data-title="常见错误与对策"
+  data-rec="排序键 · 等号 · 边界"
+  data-eyebrow="第六章 · 方法题单 · 目标：避开七个大坑">
+  <div class="stage-inner">
+    <table class="t">
+      <tr><th style="width:160px">错误</th><th style="width:380px">症状</th><th style="width:300px">对策</th><th>检验</th></tr>
+      <tr><td class="k v">① 没证明就提交</td>
+        <td data-seq="0">过了样例，挂在极端数据。</td>
+        <td data-seq="1">先<b>手推小数据</b>，再想「为什么对」。</td>
+        <td data-seq="2">n = 1, 2, 3 手算</td></tr>
+      <tr><td class="k v">② 排序键写错</td>
+        <td data-seq="3">应该按<b>结束</b>却写了<b>开始</b>。</td>
+        <td data-seq="4">写下<b>不等式</b>再写代码。</td>
+        <td data-seq="5">写完再读一遍 key</td></tr>
+      <tr><td class="k v">③ 等号处理</td>
+        <td data-seq="6">两个元素<b>相等</b>时顺序任意，结果不对。</td>
+        <td data-seq="7">比较器<b>返回 0</b>，或用<b>稳定的</b>排序。</td>
+        <td data-seq="8">输入全相同</td></tr>
+      <tr><td class="k v">④ 边界没考虑</td>
+        <td data-seq="9">n = 1、区间<b>只有一点</b>、<b>全重叠</b>。</td>
+        <td data-seq="10">构造 <b>4 种边界</b>各测一遍。</td>
+        <td data-seq="11">4 组特殊数据</td></tr>
+      <tr><td class="k v">⑤ 把 DP 硬贪心</td>
+        <td data-seq="12">贪心在某个数据挂掉，百思不解。</td>
+        <td data-seq="13">先<b>枚举所有可能</b>对比，看有没有反例。</td>
+        <td data-seq="14">暴力小数据对比</td></tr>
+      <tr><td class="k v">⑥ 浮点比较</td>
+        <td data-seq="15">按<b>性价比</b>（除法）排序精度问题。</td>
+        <td data-seq="16">改成<b>乘法</b>比较，或用 <span class="mono">Fraction</span>。</td>
+        <td data-seq="17">极大、极小值</td></tr>
+      <tr><td class="k v">⑦ 贪心不唯一</td>
+        <td data-seq="18">题目要<b>字典序最小</b>，贪心给的不是。</td>
+        <td data-seq="19">贪心只管「值」，字典序要<b>再排一次</b>。</td>
+        <td data-seq="20">看输出格式</td></tr>
+    </table>
+    <div class="row" style="margin-top:22px">
+      <div class="numbox">!</div>
+      <div class="p" style="flex:1">
+        贪心的 bug 多数出在<b class="v">「排序键 + 等号」</b>，不是思路。<br>
+        最有效的一招：<b>拿 n = 1、全相同、全重叠、极端值各测一遍。</b></div>
+    </div>
+    <div class="hand" data-at="2600" style="left:880px;top:352px">四种边界，一测一个准</div>
+  </div>
+</section>
+
+<!-- ============ 37 解题流程图 ============ -->
+<section class="slide" data-ch="6" data-stagger="180"
+  data-title="解题流程图"
+  data-rec="能拆 → 贪心 ｜ 不能拆 → DP"
+  data-eyebrow="第六章 · 方法题单 · 目标：把方法固定成流程">
+  <div class="stage-inner">
+    <svg viewBox="0 0 1120 440" width="1120" height="440">
+      <defs><marker id="ahf2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+        <path d="M0 0 L9 4.5 L0 9 z" fill="#8A6E52"/></marker></defs>
+      <g data-seq="0">
+        <rect x="20" y="30" width="200" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="42" y="58">求「最多 / 最少」吗？</text>
+        <text class="svgm" x="42" y="80">计数类问题</text>
+      </g>
+      <path class="arw" marker-end="url(#ahf2)" d="M220 62 H292" data-seq="1"/>
+      <g data-seq="1">
+        <rect x="300" y="30" width="230" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="322" y="58">能枚举 / 能 DP 吗？</text>
+        <text class="svgm" x="322" y="80">n ≤ 2000 试 DP</text>
+      </g>
+      <path class="arw" marker-end="url(#ahf2)" d="M530 62 H602" data-seq="2"/>
+      <g data-seq="2">
+        <rect x="610" y="30" width="230" height="64" rx="6" fill="#FDEECC" stroke="#E2542A" stroke-width="2"/>
+        <text class="svgtxtv" x="632" y="58">能排序吗？</text>
+        <text class="svgm" x="632" y="80">按 start / end / 长度</text>
+      </g>
+      <path class="arw" marker-end="url(#ahf2)" d="M840 62 H912" data-seq="3"/>
+      <g data-seq="3">
+        <rect x="920" y="30" width="180" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="942" y="58">求排序键</text>
+        <text class="svgm" x="942" y="80">相邻交换法</text>
+      </g>
+
+      <path class="arw" marker-end="url(#ahf2)" d="M1010 94 V150 H110 V192" data-seq="4"/>
+
+      <g data-seq="4">
+        <rect x="20" y="196" width="200" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="42" y="224">定「当前状态」</text>
+        <text class="svgm" x="42" y="246">last_end / cur / heap</text>
+      </g>
+      <path class="arw" marker-end="url(#ahf2)" d="M220 228 H292" data-seq="5"/>
+      <g data-seq="5">
+        <rect x="300" y="196" width="230" height="64" rx="6" fill="#FDEECC" stroke="#E2542A" stroke-width="2"/>
+        <text class="svgtxtv" x="322" y="224">能交换论证吗？</text>
+        <text class="svgm" x="322" y="246">换成贪心不变差</text>
+      </g>
+      <path class="arw" marker-end="url(#ahf2)" d="M530 228 H602" data-seq="6"/>
+      <g data-seq="6">
+        <rect x="610" y="196" width="230" height="64" rx="6" fill="#FFFFFF" stroke="#EEDDC2"/>
+        <text class="svgtxt" x="632" y="224">写代码 + 4 组边界</text>
+        <text class="svgm" x="632" y="246">n=1、全同、全叠、极端</text>
+      </g>
+      <path class="arw" marker-end="url(#ahf2)" d="M840 228 H912" data-seq="7"/>
+      <g data-seq="7">
+        <rect x="920" y="196" width="180" height="64" rx="6" fill="#FFFFFF" stroke="#E2542A" stroke-width="2"/>
+        <text class="svgtxtv" x="942" y="224">提交</text>
+        <text class="svgm" x="942" y="246">贪心要写注释</text>
+      </g>
+
+      <path class="arw" marker-end="url(#ahf2)" d="M1010 260 V320 H620 V358" data-seq="8"/>
+      <g data-seq="8">
+        <rect x="360" y="362" width="520" height="42" rx="6" fill="#FDEECC" stroke="#F3A33C"/>
+        <text class="svgtxt" x="382" y="389">有「总量约束」？→ 反悔贪心（堆）</text>
+      </g>
+    </svg>
+    <div class="hand" data-at="2700" style="left:20px;top:352px">红框那两问，决定写法</div>
+  </div>
+</section>
+
+<!-- ============ 38 词汇表 ============ -->
+<section class="slide" data-ch="6" data-stagger="110"
+  data-title="词汇表"
+  data-rec="greedy · exchange argument · matroid"
+  data-eyebrow="第六章 · 方法题单 · 目标：把术语对上号">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="flex:1">
+        <table class="t">
+          <tr><th style="width:170px">术语</th><th style="width:190px">英文</th><th>一句话</th></tr>
+          <tr><td class="k">贪心</td><td class="k">greedy</td><td>每一步选当前最优，不回头。</td></tr>
+          <tr><td class="k">贪心选择性质</td><td class="k">greedy choice property</td><td>存在最优解包含当前贪心选择。</td></tr>
+          <tr><td class="k">最优子结构</td><td class="k">optimal substructure</td><td>选完一步后剩的是同类子问题。</td></tr>
+          <tr><td class="k">交换论证</td><td class="k">exchange argument</td><td>把最优解改成贪心解，证明不变差。</td></tr>
+          <tr><td class="k">反悔贪心</td><td class="k">greedy with undo</td><td>做了选择可以撤回，用堆维护。</td></tr>
+          <tr><td class="k">哈夫曼编码</td><td class="k">Huffman coding</td><td>每次取最小两堆合并。</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <table class="t">
+          <tr><th style="width:170px">术语</th><th style="width:190px">英文</th><th>一句话</th></tr>
+          <tr><td class="k">拟阵</td><td class="k">matroid</td><td>贪心正确的充要结构条件。</td></tr>
+          <tr><td class="k">相邻交换法</td><td class="k">adjacent swap</td><td>看两元素谁前谁后，推出排序键。</td></tr>
+          <tr><td class="k">区间选点</td><td class="k">interval point covering</td><td>右端点排序，点放右端点。</td></tr>
+          <tr><td class="k">区间分组</td><td class="k">interval partitioning</td><td>左端点排序 + 小顶堆。</td></tr>
+          <tr><td class="k">双指针</td><td class="k">two pointers</td><td>排序后两端向内扫描。</td></tr>
+          <tr><td class="k">部分背包</td><td class="k">fractional knapsack</td><td>可拆，按性价比排序能贪。</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="hand" data-at="2200" style="left:880px;top:352px">这一页可以截图存下来</div>
+  </div>
+</section>
+
+<!-- ============ 39 题单 ============ -->
+<section class="slide" data-ch="6" data-stagger="110"
+  data-title="总题单：LeetCode + 洛谷"
+  data-rec="n = 18 problems"
+  data-eyebrow="第六章 · 方法题单 · 目标：拿到可执行的练习清单">
+  <div class="stage-inner">
+    <div class="row">
+      <div style="flex:1">
+        <div class="meta">入门 · 必做</div>
+        <table class="t" style="margin-top:10px">
+          <tr><th>题</th><th>考点</th></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/assign-cookies/" target="_blank">LC 455 分发饼干</a></td><td>排序 + 双指针</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/non-overlapping-intervals/" target="_blank">LC 435 无重叠区间</a></td><td>活动选择</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/jump-game/" target="_blank">LC 55 跳跃游戏</a></td><td>维护最远</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/jump-game-ii/" target="_blank">LC 45 跳跃游戏 II</a></td><td>分层贪心</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/boats-to-save-people/" target="_blank">LC 881 救生艇</a></td><td>排序 + 双指针</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1031" target="_blank">P1031 均分纸牌</a></td><td>贪心模拟</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <div class="meta">进阶 · 巩固</div>
+        <table class="t" style="margin-top:10px">
+          <tr><th>题</th><th>考点</th></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/minimum-number-of-arrows-to-burst-balloons/" target="_blank">LC 452 引爆气球</a></td><td>区间选点</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/meeting-rooms-ii/" target="_blank">LC 253 会议室 II</a></td><td>区间分组</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/largest-number/" target="_blank">LC 179 最大数</a></td><td>排序比较器</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/queue-reconstruction-by-height/" target="_blank">LC 406 身高重建</a></td><td>排序 + 插入</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1090" target="_blank">P1090 合并果子</a></td><td>哈夫曼</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1223" target="_blank">P1223 排队取水</a></td><td>相邻交换</td></tr>
+        </table>
+      </div>
+      <div style="flex:1">
+        <div class="meta">提高 · 挑战</div>
+        <table class="t" style="margin-top:10px">
+          <tr><th>题</th><th>考点</th></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1080" target="_blank">P1080 国王游戏</a></td><td>排序比较器 + 高精度</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1250" target="_blank">P1250 种树</a></td><td>区间 + 反悔</td></tr>
+          <tr><td><a class="link" href="https://www.luogu.com.cn/problem/P1230" target="_blank">P1230 智力大冲浪</a></td><td>罚分排序 + 插空</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/course-schedule-iii/" target="_blank">LC 630 课程表 III</a></td><td>反悔贪心</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/maximum-subsequence-score/" target="_blank">LC 2542 最大子序列和</a></td><td>排序 + 堆</td></tr>
+          <tr><td><a class="link" href="https://leetcode.cn/problems/minimum-deletions-to-make-character-frequencies-unique/" target="_blank">LC 1647 字符频次唯一</a></td><td>贪心 + 堆</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="hand" data-at="2400" style="left:880px;top:352px">按顺序做，不要跳</div>
+  </div>
+</section>
+
+<!-- ============ 40 结语 ============ -->
+<section class="slide" data-ch="6" data-stagger="190"
+  data-title="收尾"
+  data-rec="先想「凭什么对」，再动手"
+  data-eyebrow="ALGO PRIMER / GR-05 · 完 · 下一讲：二分答案">
+  <div class="stage-inner">
+    <div class="g12">
+      <div class="c1-7">
+        <div class="meta rise" data-seq="0">结语</div>
+        <h2 class="disp rise" data-seq="1" style="margin-top:14px;font-size:52px">
+          贪心不是「大胆猜」，<br><b class="v">是「策略 + 证明」。</b>
+        </h2>
+        <div class="keyline" data-seq="2"></div>
+        <p class="lead rise" data-seq="3">
+          今天你只需要记住五句话：<br>
+          ① 贪心要<b>贪心选择性质</b> + <b>最优子结构</b>；<br>
+          ② 证明用<b>交换论证</b>：换成贪心，<b>不变差</b>；<br>
+          ③ 大部分贪心 = <b>排序键 + 一遍扫描</b>；<br>
+          ④ 找排序键用<b>相邻交换法</b>；<br>
+          ⑤ 有总量约束 → <b>反悔贪心</b>（堆）。
+        </p>
+        <p class="p rise" data-seq="4" style="margin-top:12px">
+          写代码前，先在心里说一遍<b>「为什么对」</b>。<br>
+          说不清的贪心，<b>别提交</b>。
+        </p>
+      </div>
+      <div class="c8-12">
+        <div class="meta" data-seq="1">今天就做这六道</div>
+        <div class="hrule dot" data-seq="2"></div>
+        <div class="sm rise" data-seq="3">
+          ① <a class="link" href="https://leetcode.cn/problems/assign-cookies/" target="_blank">LC 455 分发饼干</a><br>
+          ② <a class="link" href="https://leetcode.cn/problems/non-overlapping-intervals/" target="_blank">LC 435 无重叠区间</a><br>
+          ③ <a class="link" href="https://leetcode.cn/problems/minimum-number-of-arrows-to-burst-balloons/" target="_blank">LC 452 引爆气球</a><br>
+          ④ <a class="link" href="https://www.luogu.com.cn/problem/P1090" target="_blank">P1090 合并果子</a><br>
+          ⑤ <a class="link" href="https://www.luogu.com.cn/problem/P1223" target="_blank">P1223 排队取水</a><br>
+          ⑥ <a class="link" href="https://leetcode.cn/problems/course-schedule-iii/" target="_blank">LC 630 课程表 III</a>
+        </div>
+        <div class="notebox" data-seq="4" style="margin-top:16px">
+          <div class="sm">每做一道，<b>先不写代码</b>：<br>
+            在纸上<b>写出排序键</b>和<b>一句话证明</b>，<br>
+            再写代码。</div>
+        </div>
+        <div class="row" data-seq="5" style="margin-top:20px">
+          <div class="chip">排</div><div class="chip">扫</div>
+          <div class="chip">证</div><div class="chip">反悔</div>
+        </div>
+      </div>
+    </div>
+    <div class="watermark" style="top:190px">GREED</div>
+    <div class="hand" data-at="2700" style="left:120px;top:352px">「为什么对」说不清，就别提交</div>
+  </div>
+</section>
+
+</div></div>
+
+<div id="panel"><h4>跳转 · 输入编号或点击 · ESC 关闭</h4><div id="plist"></div></div>
+
+<script>
+(function(){
+  'use strict';
+  const deck = document.getElementById('deck');
+  const slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  const TOTAL = slides.length;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FOOT_HELP = '← → 或空格翻页 ｜ R 重放动画 ｜ G 跳页 ｜ Esc 目录';
+
+  slides.forEach(function(s, i){ s.dataset.num = String(i).padStart(2,'0'); });
+
+  /* ---- syntax highlight ---- */
+  const RE = /(#.*$)|("[^"]*"|'[^']*')|\b(def|return|for|in|if|elif|else|while|and|or|not|None|True|False|import|from|class|break|continue|pass|global|nonlocal|lambda)\b|\b(len|min|max|range|abs|sum|print|sorted|map|int|str|list|input|append|float|next|heapq|heappush|heappop|cmp_to_key|all|join|Solution)\b|\b(\d+)\b/g;
+  function hl(line){
+    return line.replace(RE, function(m,c,s,k,f,n){
+      if(c) return '<span class="cm">'+c+'</span>';
+      if(s) return '<span class="s">'+s+'</span>';
+      if(k) return '<span class="k">'+k+'</span>';
+      if(f) return '<span class="fn">'+f+'</span>';
+      return '<span class="n">'+n+'</span>';
+    });
+  }
+  function paintCode(root){
+    root.querySelectorAll('ol.cl li').forEach(function(li){ li.innerHTML = hl(li.textContent); });
+  }
+
+  /* ---- chrome（无 wordmark；章节条 bar/label 合一） ---- */
+  const CH = ['','起点','首例','经典','进阶','扩展','方法题单'];
+  function ruler(ch){
+    let h = '<div class="ruler">';
+    for(let i=1;i<=6;i++){
+      h += '<a data-go="'+i+'" class="'+(i===ch?'on':'')+'"><div class="bar"><span class="lbl">'+CH[i]+'</span></div></a>';
+    }
+    return h + '</div>';
+  }
+  function buildChrome(){
+    slides.forEach(function(s){
+      const desc = s.dataset.desc
+        ? '<div class="qdesc"><span class="qlabel">题意</span>'+s.dataset.desc+'</div>'
+        : '';
+      const head =
+        '<header class="top">'+
+          '<h1 class="s-title">'+s.dataset.title+'</h1>'+
+          desc+
+          '<div class="top-rule"></div><div class="top-accent"></div>'+
+        '</header>'+
+        '<div class="numline">'+s.dataset.rec+'</div>'+
+        '<div class="pager"><div class="pg">'+s.dataset.num+' / '+(TOTAL-1)+'</div></div>'+
+        '<div class="numrule"></div>'+
+        '<div class="mnum">'+s.dataset.num+'</div>'+
+        '<div class="mlabel">'+s.dataset.eyebrow.split(' · ')[0]+'</div>';
+      const foot =
+        '<footer class="bottom">'+
+          '<div class="bot-rule"></div>'+
+          ruler(+(s.dataset.ch||0))+
+          '<div class="botline">'+
+            '<span class="eyebrow">'+s.dataset.eyebrow+'</span>'+
+            '<span class="bsep"></span>'+
+            '<span class="help">'+FOOT_HELP+'</span>'+
+            '<span class="bmark">ALGO PRIMER · 贪心</span>'+
+          '</div>'+
+        '</footer>';
+      s.insertAdjacentHTML('afterbegin', head);
+      s.insertAdjacentHTML('beforeend', foot);
+    });
+  }
+
+  /* ---- motion ---- */
+  let timers = [];
+  function clearTimers(){ timers.forEach(clearTimeout); timers = []; }
+  function paths(slide){ return Array.prototype.slice.call(slide.querySelectorAll('[data-draw]')); }
+  function setPathLen(slide){
+    paths(slide).forEach(function(p){
+      let L = 0;
+      try{ L = Math.ceil(p.getTotalLength()); }catch(e){ L = 0; }
+      if(!L || !isFinite(L)) L = 600;
+      p.style.setProperty('--len', L);
+    });
+  }
+  function play(slide, instant){
+    clearTimers();
+    const stag = +(slide.dataset.stagger || 180);
+    const items = Array.prototype.slice.call(slide.querySelectorAll('[data-seq],[data-at]'));
+    items.forEach(function(el){ el.classList.remove('on'); });
+    const ps = paths(slide);
+    ps.forEach(function(p){ p.classList.remove('on'); });
+    setPathLen(slide);
+    if(instant || reduce){
+      items.forEach(function(el){ el.classList.add('on'); });
+      ps.forEach(function(p){ p.classList.add('on'); });
+      return;
+    }
+    items.forEach(function(el){
+      const d = (el.dataset.at !== undefined) ? +el.dataset.at : 240 + (+el.dataset.seq) * stag;
+      timers.push(setTimeout(function(){ el.classList.add('on'); }, Math.max(0, d)));
+    });
+    ps.forEach(function(p){
+      timers.push(setTimeout(function(){ p.classList.add('on'); }, +(p.dataset.draw || 900)));
+    });
+  }
+  function reset(slide){
+    clearTimers();
+    slide.querySelectorAll('[data-seq],[data-at]').forEach(function(el){ el.classList.remove('on'); });
+    paths(slide).forEach(function(p){ p.classList.remove('on'); });
+  }
+
+  /* ---- navigation ---- */
+  let cur = 0;
+  function show(i, instant){
+    if(i < 0) i = 0;
+    if(i > TOTAL-1) i = TOTAL-1;
+    slides.forEach(function(s){ s.classList.remove('active'); });
+    cur = i;
+    const s = slides[i];
+    s.classList.add('active');
+    play(s, instant);
+    if(history.replaceState) history.replaceState(null,'','#'+s.dataset.num);
+  }
+  function next(){ show(cur+1); }
+  function prev(){ show(cur-1); }
+
+  /* ---- panel ---- */
+  const panel = document.getElementById('panel');
+  const plist = document.getElementById('plist');
+  function buildPanel(){
+    plist.innerHTML = slides.map(function(s,i){
+      return '<button data-i="'+i+'"><span>'+s.dataset.num+' &nbsp; '+s.dataset.eyebrow.split(' · ')[0]+'</span>'+s.dataset.title+'</button>';
+    }).join('');
+    plist.querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click', function(){ panel.classList.remove('open'); show(+b.dataset.i, true); });
+    });
+  }
+  function jumpChapter(c){
+    const s = slides.find(function(x){ return +x.dataset.ch === c; });
+    if(s) show(slides.indexOf(s), true);
+  }
+
+  /* ---- events ---- */
+  document.addEventListener('keydown', function(e){
+    const k = e.key;
+    if(k === 'Escape'){ panel.classList.toggle('open'); return; }
+    if(panel.classList.contains('open')) return;
+    if(k === 'ArrowRight' || k === 'PageDown' || k === ' ' || k === 'Enter'){ e.preventDefault(); next(); }
+    else if(k === 'ArrowLeft' || k === 'PageUp'){ e.preventDefault(); prev(); }
+    else if(k === 'Home'){ show(0, true); }
+    else if(k === 'End'){ show(TOTAL-1, true); }
+    else if(k === 'r' || k === 'R'){ play(slides[cur], false); }
+    else if(k === 'g' || k === 'G'){ panel.classList.add('open'); }
+    else if(/^[0-9]$/.test(k)){ if(+k <= TOTAL-1) show(+k, true); }
+  });
+
+  let wheelLock = 0;
+  window.addEventListener('wheel', function(e){
+    const now = Date.now();
+    if(now - wheelLock < 620 || Math.abs(e.deltaY) < 12) return;
+    wheelLock = now;
+    if(e.deltaY > 0) next(); else prev();
+  }, {passive:true});
+
+  let tx = null;
+  window.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; }, {passive:true});
+  window.addEventListener('touchend', function(e){
+    if(tx === null) return;
+    const dx = e.changedTouches[0].clientX - tx;
+    if(Math.abs(dx) > 50){ if(dx < 0) next(); else prev(); }
+    tx = null;
+  }, {passive:true});
+
+  deck.addEventListener('click', function(e){
+    const go = e.target.closest('[data-go]');
+    if(go){ jumpChapter(+go.dataset.go); return; }
+    if(e.target.closest('[data-run]')){ play(slides[cur], false); return; }
+    if(e.target.closest('[data-reset]')){ reset(slides[cur]); return; }
+    const cp = e.target.closest('[data-copy]');
+    if(cp){
+      const box = cp.closest('.code').querySelector('ol.cl');
+      const txt = Array.prototype.slice.call(box.querySelectorAll('li'))
+        .map(function(li){ return li.textContent; }).join('\n');
+      if(navigator.clipboard) navigator.clipboard.writeText(txt);
+      const old = cp.textContent; cp.textContent = 'ok';
+      setTimeout(function(){ cp.textContent = old; }, 900);
+    }
+  });
+
+  function fit(){
+    deck.style.transform = 'scale(' + Math.min(window.innerWidth/1280, window.innerHeight/720) + ')';
+  }
+  window.addEventListener('resize', fit);
+
+  /* ---- init ---- */
+  paintCode(deck);
+  buildChrome();
+  fit();
+  buildPanel();
+  const startNum = (location.hash || '').replace('#','');
+  const startIdx = slides.findIndex(function(s){ return s.dataset.num === startNum; });
+  show(startIdx >= 0 ? startIdx : 0, false);
+})();
+</script>
+</body>
+</html>

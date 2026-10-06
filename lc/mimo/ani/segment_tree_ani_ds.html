@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>线段树动画演示 · 区间聚合</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .wrap { width: min(1100px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  svg#stage {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  /* ===== 节点 ===== */
+  .green-node {
+    fill: #c9efc9; stroke: #57a957; stroke-width: 2;
+    transition: fill .3s, stroke .3s, stroke-width .3s;
+    transform-box: fill-box; transform-origin: center;
+  }
+  .green-node.hl-update { fill: #ffd98a; stroke: #e09b00; stroke-width: 3; }
+  .green-node.hl-query  { fill: #9fd4ff; stroke: #2a86d0; stroke-width: 3; }
+  .green-node.hl-hit    { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.4; }
+  .green-node.hl-leaf   { fill: #ffd98a; stroke: #e09b00; stroke-width: 3; }
+
+  .gray-node {
+    fill: #c9cdd2; stroke: #8b929a; stroke-width: 2;
+    transition: fill .3s, stroke .3s;
+    transform-box: fill-box; transform-origin: center;
+  }
+  .gray-node.hl-cell  { fill: #ffb0b0; stroke: #d64545; stroke-width: 3; }
+
+  /* ===== 树边：默认虚线 ===== */
+  .edge {
+    stroke: #b4bec9;
+    stroke-width: 1.8;
+    stroke-dasharray: 6 5;
+    stroke-linecap: round;
+    fill: none;
+    transition: stroke .25s, stroke-width .25s;
+    marker-end: url(#ah-gray);
+  }
+  /* 更新路径：橙色流动虚线 */
+  .edge.hl {
+    stroke: #e09b00;
+    stroke-width: 3.2;
+    stroke-dasharray: 9 6;
+    marker-end: url(#ah-orange);
+    animation: dashflow 0.75s linear infinite;
+  }
+  /* 查询命中：蓝色流动虚线 */
+  .edge.qhit {
+    stroke: #2a86d0;
+    stroke-width: 3;
+    stroke-dasharray: 9 6;
+    marker-end: url(#ah-blue);
+    animation: dashflow 0.75s linear infinite;
+  }
+  @keyframes dashflow {
+    to { stroke-dashoffset: -15; }
+  }
+
+  /* ===== 节点内文字：分层排版 ===== */
+  .green-val   { font-size: 20px; font-weight: 700; fill: #20662c; pointer-events: none; user-select: none; }
+  .green-idx   { font-size: 11.5px; font-weight: 800; fill: #ffffff; pointer-events: none; user-select: none; }
+  .green-range { font-size: 10.5px; font-weight: 600; fill: #4d8a5a; pointer-events: none; user-select: none; }
+  .idx-badge   { fill: #57a957; }
+
+  .gray-idx    { font-size: 12px; font-weight: 700; fill: #5a6068; pointer-events: none; user-select: none; }
+  .gray-val    { font-size: 18px; font-weight: 700; fill: #2b3138; pointer-events: none; user-select: none; }
+
+  /* ===== 面板 ===== */
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 14px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; font-size: 14px;
+  }
+  .group { display: flex; align-items: center; gap: 8px; }
+  .group .label { color: #627d98; }
+  .group.op .label { color: #243b53; font-weight: 600; }
+
+  button {
+    font: inherit; font-size: 13.5px; padding: 7px 16px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+
+  select, input[type="number"] {
+    font: inherit; font-size: 13.5px; padding: 6px 8px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53;
+  }
+  input[type="number"] { width: 68px; }
+  select#opSel {
+    font-weight: 700; color: #2a7fd0;
+    border-color: #9dc3e6; background: #f0f7ff; min-width: 190px;
+  }
+
+  .result {
+    margin-top: 14px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    transition: border-color .3s;
+  }
+
+  /* ===== 知识模块：双列网格 ===== */
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  @media (max-width: 720px) {
+    .k-grid { grid-template-columns: 1fr; }
+  }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+    transition: border-color .25s, box-shadow .25s;
+  }
+  .k-card:hover {
+    border-color: #9dc3e6; box-shadow: 0 3px 12px rgba(42, 127, 208, .10);
+  }
+  .k-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+
+  /* ===== 代码模块 ===== */
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+    transition: background .15s;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-module > summary .badge.blue {
+    background: #e3edf7; color: #2369ad;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 640px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>线段树 · 区间聚合动画</h1>
+  <p class="subtitle" id="subtitle"></p>
+
+  <svg id="stage" viewBox="0 0 820 620" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel">
+    <div class="group op">
+      <span class="label">操作：</span>
+      <select id="opSel">
+        <option value="sum">求和 sum</option>
+        <option value="max">最大值 max</option>
+        <option value="min">最小值 min</option>
+        <option value="gcd">最大公约数 gcd</option>
+        <option value="lcm">最小公倍数 lcm</option>
+        <option value="or">按位或 or</option>
+        <option value="and">按位与 and</option>
+        <option value="xor">按位异或 xor</option>
+      </select>
+    </div>
+
+    <div class="group">
+      <button id="btnBuild" class="primary">重新构建</button>
+    </div>
+
+    <div class="group">
+      <span class="label">单点更新 a[</span>
+      <select id="updIdx"></select>
+      <span class="label">] =</span>
+      <input id="updVal" type="number" value="10" min="0" max="99">
+      <button id="btnUpdate">执行更新</button>
+    </div>
+
+    <div class="group">
+      <span class="label">区间查询 [</span>
+      <select id="qryL"></select>
+      <span class="label">..</span>
+      <select id="qryR"></select>
+      <span class="label">]</span>
+      <button id="btnQuery">执行查询</button>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪</div>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 线段树核心要点 <span class="hint">与树状数组对比</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · 递归线段树
+      <span class="badge">8 种操作</span>
+      <span class="hint">单点更新 O(log N) · 区间查询 O(log N)</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyCode"></pre></div>
+  </details>
+
+  <details class="code-module">
+    <summary>
+      🐍 Python 实现 · 懒标记线段树
+      <span class="badge blue">区间加 + 区间求和</span>
+      <span class="hint">区间更新 O(log N) · 区间查询 O(log N)</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyLazyCode"></pre></div>
+  </details>
+</div>
+
+<!-- ============ 普通线段树源码 ============ -->
+<script type="text/plain" id="pySrc">
+from math import gcd
+
+
+def lcm(a, b):
+    """最小公倍数"""
+    if a == 0 or b == 0:
+        return 0
+    return abs(a // gcd(a, b) * b)
+
+
+class SegmentTree:
+    """
+    递归线段树，支持多种区间聚合操作。
+
+    每个节点 p 维护一段区间 [l, r] 的聚合值：
+        tree[p] = merge(tree[2p], tree[2p+1])
+
+    复杂度：
+        单点更新  O(log N)
+        区间查询  O(log N)
+
+    数组使用 1-based，arr[0] 占位不用。
+    """
+
+    IDENT = {
+        'sum': 0, 'xor': 0,
+        'max': float('-inf'), 'min': float('inf'),
+        'gcd': 0, 'lcm': 1,
+        'or':  0, 'and': -1,
+    }
+
+    def __init__(self, arr, op='sum'):
+        self.n = len(arr) - 1
+        self.op = op
+        self.arr = arr[:]
+        self.tree = [self.IDENT[op]] * (4 * self.n + 5)
+        self._build(1, 1, self.n)
+
+    def _merge(self, a, b):
+        op = self.op
+        if op == 'sum': return a + b
+        if op == 'xor': return a ^ b
+        if op == 'max': return max(a, b)
+        if op == 'min': return min(a, b)
+        if op == 'gcd': return gcd(a, b)
+        if op == 'lcm': return lcm(a, b)
+        if op == 'or':  return a | b
+        if op == 'and': return a & b
+        raise ValueError(f'unknown op: {op}')
+
+    def _build(self, p, l, r):
+        if l == r:
+            self.tree[p] = self.arr[l]
+            return
+        mid = (l + r) // 2
+        self._build(2 * p, l, mid)
+        self._build(2 * p + 1, mid + 1, r)
+        self.tree[p] = self._merge(self.tree[2 * p], self.tree[2 * p + 1])
+
+    def update(self, idx, val):
+        """把 a[idx] 修改为 val，O(log N)"""
+        self.arr[idx] = val
+        self._update(1, 1, self.n, idx, val)
+
+    def _update(self, p, l, r, idx, val):
+        if l == r:
+            self.tree[p] = val
+            return
+        mid = (l + r) // 2
+        if idx <= mid:
+            self._update(2 * p, l, mid, idx, val)
+        else:
+            self._update(2 * p + 1, mid + 1, r, idx, val)
+        self.tree[p] = self._merge(self.tree[2 * p], self.tree[2 * p + 1])
+
+    def query(self, ql, qr):
+        """查询 a[ql..qr] 的聚合值，O(log N)"""
+        return self._query(1, 1, self.n, ql, qr)
+
+    def _query(self, p, l, r, ql, qr):
+        if ql <= l and r <= qr:
+            return self.tree[p]
+        mid = (l + r) // 2
+        if qr <= mid:
+            return self._query(2 * p, l, mid, ql, qr)
+        if ql > mid:
+            return self._query(2 * p + 1, mid + 1, r, ql, qr)
+        left  = self._query(2 * p, l, mid, ql, qr)
+        right = self._query(2 * p + 1, mid + 1, r, ql, qr)
+        return self._merge(left, right)
+
+
+if __name__ == '__main__':
+    arr = [None, 3, 1, 4, 1, 5, 9, 2, 6]
+
+    for op in ['sum', 'max', 'min', 'gcd', 'lcm', 'or', 'and', 'xor']:
+        st = SegmentTree(arr, op)
+        print(f'{op:>4}[2..6] =', st.query(2, 6))
+
+    st = SegmentTree(arr, 'sum')
+    st.update(3, 100)
+    print('sum[1..8] after update =', st.query(1, 8))
+</script>
+
+<!-- ============ 懒标记线段树源码 ============ -->
+<script type="text/plain" id="pyLazySrc">
+class LazySegmentTree:
+    """
+    懒标记线段树：支持「区间加」与「区间求和」。
+
+    与普通线段树的区别：
+        1. 区间更新时，若节点区间被完全覆盖，直接打上 lazy 标记并返回；
+           不再递归到叶子，把 O(N) 降到 O(log N)。
+        2. 任何时刻访问该节点的孩子之前，先把它的 lazy 下传（push_down）。
+
+    推广到其他操作时，需要按语义调整 3 个函数：
+        merge(tree, l, r)      父节点值 = 合并左右孩子
+        apply(p, l, r, val)    把标记应用到节点 p
+        compose(lazy, val)     旧标记与新标记合并
+    """
+
+    def __init__(self, arr):
+        self.n = len(arr) - 1
+        self.tree = [0] * (4 * self.n + 5)
+        self.lazy = [0] * (4 * self.n + 5)
+        self._build(1, 1, self.n, arr)
+
+    def _build(self, p, l, r, arr):
+        if l == r:
+            self.tree[p] = arr[l]
+            return
+        mid = (l + r) // 2
+        self._build(2 * p, l, mid, arr)
+        self._build(2 * p + 1, mid + 1, r, arr)
+        self.tree[p] = self.tree[2 * p] + self.tree[2 * p + 1]
+
+    def _apply(self, p, l, r, val):
+        """
+        把标记 val 应用到节点 p：
+            - 该节点的聚合值按 val 更新
+            - 该节点的 lazy 标记累加
+        """
+        self.tree[p] += val * (r - l + 1)
+        self.lazy[p] += val
+
+    def _push_down(self, p, l, r):
+        """把节点 p 的 lazy 标记下传给左右孩子"""
+        if self.lazy[p] == 0 or l == r:
+            return
+        mid = (l + r) // 2
+        self._apply(2 * p, l, mid, self.lazy[p])
+        self._apply(2 * p + 1, mid + 1, r, self.lazy[p])
+        self.lazy[p] = 0
+
+    def update(self, ql, qr, val):
+        """a[ql..qr] 全部加上 val，O(log N)"""
+        self._update(1, 1, self.n, ql, qr, val)
+
+    def _update(self, p, l, r, ql, qr, val):
+        if ql <= l and r <= qr:
+            self._apply(p, l, r, val)
+            return
+        self._push_down(p, l, r)
+        mid = (l + r) // 2
+        if ql <= mid:
+            self._update(2 * p, l, mid, ql, qr, val)
+        if qr > mid:
+            self._update(2 * p + 1, mid + 1, r, ql, qr, val)
+        self.tree[p] = self.tree[2 * p] + self.tree[2 * p + 1]
+
+    def query(self, ql, qr):
+        """查询 a[ql..qr] 的和，O(log N)"""
+        return self._query(1, 1, self.n, ql, qr)
+
+    def _query(self, p, l, r, ql, qr):
+        if ql <= l and r <= qr:
+            return self.tree[p]
+        self._push_down(p, l, r)
+        mid = (l + r) // 2
+        res = 0
+        if ql <= mid:
+            res += self._query(2 * p, l, mid, ql, qr)
+        if qr > mid:
+            res += self._query(2 * p + 1, mid + 1, r, ql, qr)
+        return res
+
+
+if __name__ == '__main__':
+    arr = [None, 3, 1, 4, 1, 5, 9, 2, 6]
+    lst = LazySegmentTree(arr)
+    print('sum[1..8] =', lst.query(1, 8))
+
+    lst.update(3, 6, 10)
+    print('sum[3..6] =', lst.query(3, 6))
+    print('sum[1..8] =', lst.query(1, 8))
+    print('sum[2..5] =', lst.query(2, 5))
+</script>
+
+<script>
+/* =========================================================
+   1. 数据 & 聚合操作
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const N  = 8;
+const INIT_ARR = [null, 3, 1, 4, 1, 5, 9, 2, 6];
+
+let arr  = INIT_ARR.slice();
+let tree = new Array(4 * N + 5).fill(null);
+let busy = false;
+let OP   = 'sum';
+
+function _gcd(a, b) {
+  a = Math.abs(a); b = Math.abs(b);
+  while (b) { [a, b] = [b, a % b]; }
+  return a;
+}
+
+const OP_FN = {
+  sum: (a, b) => a + b,
+  max: (a, b) => Math.max(a, b),
+  min: (a, b) => Math.min(a, b),
+  gcd: (a, b) => _gcd(a, b),
+  lcm: (a, b) => { if (a === 0 || b === 0) return 0; return Math.abs(a / _gcd(a, b) * b); },
+  or:  (a, b) => a | b,
+  and: (a, b) => a & b,
+  xor: (a, b) => a ^ b,
+};
+const OP_IDENT = {
+  sum: 0, max: -Infinity, min: Infinity, gcd: 0,
+  lcm: 1, or: 0, and: -1, xor: 0,
+};
+const OP_SYM  = { sum:'sum', max:'max', min:'min', gcd:'gcd', lcm:'lcm', or:'or', and:'and', xor:'xor' };
+const OP_NAME = {
+  sum:'区间求和', max:'区间最大值', min:'区间最小值', gcd:'区间最大公约数',
+  lcm:'区间最小公倍数', or:'区间按位或', and:'区间按位与', xor:'区间按位异或',
+};
+
+/* =========================================================
+   2. 树的定义
+   ========================================================= */
+const NODES = {
+  1:  { l:1, r:8, depth:0 },
+  2:  { l:1, r:4, depth:1 }, 3:  { l:5, r:8, depth:1 },
+  4:  { l:1, r:2, depth:2 }, 5:  { l:3, r:4, depth:2 },
+  6:  { l:5, r:6, depth:2 }, 7:  { l:7, r:8, depth:2 },
+  8:  { l:1, r:1, depth:3 }, 9:  { l:2, r:2, depth:3 },
+  10: { l:3, r:3, depth:3 }, 11: { l:4, r:4, depth:3 },
+  12: { l:5, r:5, depth:3 }, 13: { l:6, r:6, depth:3 },
+  14: { l:7, r:7, depth:3 }, 15: { l:8, r:8, depth:3 },
+};
+const leafOf = i => i + 7;
+const parentOf = p => Math.floor(p / 2);
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* =========================================================
+   3. 布局
+   ========================================================= */
+const GRAY_W = 76, GRAY_H = 56, GAP = 12, LEFT = 62;
+const grayLeft  = i => LEFT + (i - 1) * (GRAY_W + GAP);
+const grayRight = i => grayLeft(i) + GRAY_W;
+const grayCX    = i => grayLeft(i) + GRAY_W / 2;
+const GRAY_Y = 560;
+
+const LAYER_Y = [92, 206, 320, 434];
+const NODE_H = 56;
+
+const G_POS = {};
+for (const p in NODES) {
+  const { l, r, depth } = NODES[p];
+  const left = grayLeft(l);
+  const right = grayRight(r);
+  G_POS[p] = {
+    left, width: right - left,
+    cx: (left + right) / 2,
+    cy: LAYER_Y[depth],
+    l, r,
+  };
+}
+
+/* 关键：转成 rectEdge 需要的 {x, y, w, h} 结构 */
+function rectOf(p) {
+  const g = G_POS[p];
+  return { x: g.cx, y: g.cy, w: g.width, h: NODE_H };
+}
+function grayRectOf(i) {
+  return { x: grayCX(i), y: GRAY_Y, w: GRAY_W, h: GRAY_H };
+}
+
+/* =========================================================
+   4. SVG 工具
+   ========================================================= */
+const svg = document.getElementById('stage');
+function mk(tag, attrs = {}, parent) {
+  const el = document.createElementNS(NS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(el);
+  return el;
+}
+function rectEdge(rect, tx, ty) {
+  const dx = tx - rect.x, dy = ty - rect.y;
+  const hw = rect.w / 2, hh = rect.h / 2;
+  const sx = dx === 0 ? Infinity : hw / Math.abs(dx);
+  const sy = dy === 0 ? Infinity : hh / Math.abs(dy);
+  const s = Math.min(sx, sy);
+  return { x: rect.x + dx * s, y: rect.y + dy * s };
+}
+
+/* =========================================================
+   5. 场景元素
+   ========================================================= */
+const greenRect = {}, greenValTxt = {}, greenIdxTxt = {}, greenRangeTxt = {}, greenIdxBadge = {};
+const grayRect = [], grayIdxTxt = [], grayValTxt = [];
+const edgeEls = {};
+
+function buildScene() {
+  const defs = mk('defs', {}, svg);
+
+  /* 三种颜色的箭头 marker */
+  function makeMarker(id, color) {
+    const m = mk('marker', {
+      id, viewBox: '0 0 10 10',
+      refX: '9', refY: '5',
+      markerWidth: '7', markerHeight: '7',
+      orient: 'auto'
+    }, defs);
+    mk('path', { d: 'M0,0 L10,5 L0,10 z', fill: color }, m);
+    return m;
+  }
+  makeMarker('ah-gray',   '#b4bec9');
+  makeMarker('ah-orange', '#e09b00');
+  makeMarker('ah-blue',   '#2a86d0');
+
+  const edgeLayer = mk('g', {}, svg);
+  const nodeLayer = mk('g', {}, svg);
+
+  /* ---- 树边：用 rectOf 拿到正确的 {x,y,w,h} ---- */
+  for (let p = 2; p <= 15; p++) {
+    const par = parentOf(p);
+    const from = rectOf(p);
+    const to   = rectOf(par);
+
+    const a = rectEdge(from, to.x, to.y);
+    let   b = rectEdge(to, from.x, from.y);
+
+    /* 终点向节点内缩一点，避免箭头压在边框上 */
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    b.x -= dx / len * 5;
+    b.y -= dy / len * 5;
+
+    edgeEls[p] = mk('line', {
+      x1: a.x, y1: a.y, x2: b.x, y2: b.y,
+      class: 'edge'
+    }, edgeLayer);
+  }
+
+  /* ---- 灰色方块 ---- */
+  for (let i = 1; i <= N; i++) {
+    const cx = grayCX(i);
+    grayRect[i] = mk('rect', {
+      x: cx - GRAY_W / 2, y: GRAY_Y - GRAY_H / 2,
+      width: GRAY_W, height: GRAY_H, rx: 9, class: 'gray-node'
+    }, nodeLayer);
+    grayIdxTxt[i] = mk('text', {
+      x: cx, y: GRAY_Y - GRAY_H / 2 - 14,
+      class: 'gray-idx', 'text-anchor': 'middle', 'dominant-baseline': 'central'
+    }, nodeLayer);
+    grayIdxTxt[i].textContent = i;
+    grayValTxt[i] = mk('text', {
+      x: cx, y: GRAY_Y,
+      class: 'gray-val', 'text-anchor': 'middle', 'dominant-baseline': 'central'
+    }, nodeLayer);
+    grayValTxt[i].textContent = arr[i];
+  }
+
+  /* ---- 绿色节点：按层从根到叶画，避免遮挡 ---- */
+  const order = Object.keys(NODES).map(Number).sort((a, b) => NODES[a].depth - NODES[b].depth);
+  for (const p of order) {
+    const g = G_POS[p];
+
+    greenRect[p] = mk('rect', {
+      x: g.left, y: g.cy - NODE_H / 2,
+      width: g.width, height: NODE_H, rx: 8, class: 'green-node'
+    }, nodeLayer);
+
+    /* 左上角：编号徽章 */
+    greenIdxBadge[p] = mk('rect', {
+      x: g.left + 6, y: g.cy - NODE_H / 2 + 6,
+      width: 26, height: 16, rx: 5,
+      class: 'idx-badge'
+    }, nodeLayer);
+    greenIdxTxt[p] = mk('text', {
+      x: g.left + 19, y: g.cy - NODE_H / 2 + 14,
+      class: 'green-idx', 'text-anchor': 'middle', 'dominant-baseline': 'central'
+    }, nodeLayer);
+    greenIdxTxt[p].textContent = p;
+
+    /* 右上角：区间 */
+    greenRangeTxt[p] = mk('text', {
+      x: g.left + g.width - 8, y: g.cy - NODE_H / 2 + 14,
+      class: 'green-range', 'text-anchor': 'end', 'dominant-baseline': 'central'
+    }, nodeLayer);
+    greenRangeTxt[p].textContent = `[${g.l},${g.r}]`;
+
+    /* 中间：值 */
+    greenValTxt[p] = mk('text', {
+      x: g.cx, y: g.cy + 8,
+      class: 'green-val', 'text-anchor': 'middle', 'dominant-baseline': 'central'
+    }, nodeLayer);
+    greenValTxt[p].textContent = '–';
+  }
+}
+
+/* =========================================================
+   6. 工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+const setResult = t => { resultEl.textContent = t; };
+
+function pop(el) {
+  el.animate(
+    [{ transform: 'scale(1)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }],
+    { duration: 400, easing: 'ease-out' }
+  );
+}
+function clearHighlights() {
+  for (let p = 1; p <= 15; p++) {
+    greenRect[p].classList.remove('hl-update', 'hl-query', 'hl-hit', 'hl-leaf');
+  }
+  for (let i = 1; i <= N; i++) {
+    grayRect[i].classList.remove('hl-cell');
+  }
+  for (const k in edgeEls) edgeEls[k].classList.remove('hl', 'qhit');
+}
+function resetTree() {
+  tree = new Array(4 * N + 5).fill(null);
+  for (let p = 1; p <= 15; p++) {
+    greenValTxt[p].textContent = '–';
+    greenRect[p].setAttribute('class', 'green-node');
+  }
+  for (let i = 1; i <= N; i++) {
+    grayValTxt[i].textContent = arr[i];
+    grayRect[i].setAttribute('class', 'gray-node');
+  }
+  for (const k in edgeEls) edgeEls[k].setAttribute('class', 'edge');
+}
+function resetState() { arr = INIT_ARR.slice(); resetTree(); }
+
+/* =========================================================
+   7. 副标题
+   ========================================================= */
+function updateSubtitle() {
+  document.getElementById('subtitle').innerHTML =
+    `下标从 <b>1</b> 开始 · 根节点 [1, ${N}] 代表整个数组 · 每个内部节点 = 左右孩子合并 · 当前操作：<b>${OP_NAME[OP]}</b>`;
+}
+
+/* =========================================================
+   8. 构建
+   ========================================================= */
+async function runBuild() {
+  if (busy) return;
+  busy = true;
+  clearHighlights();
+  setResult(`构建中：从叶子向上，每个内部节点 = 左右孩子的 ${OP_NAME[OP]}`);
+  await sleep(450);
+
+  /* 先把叶子显示出来 */
+  for (let i = 1; i <= N; i++) {
+    const p = leafOf(i);
+    tree[p] = arr[i];
+    greenValTxt[p].textContent = arr[i];
+    greenRect[p].classList.add('hl-leaf');
+    await sleep(70);
+    greenRect[p].classList.remove('hl-leaf');
+  }
+
+  /* 逐层合并，先点亮边再合并 */
+  const layers = [[4, 5, 6, 7], [2, 3], [1]];
+  for (const layer of layers) {
+    for (const p of layer) {
+      const L = 2 * p, R = 2 * p + 1;
+
+      /* 两条边亮起（蓝绿色流动虚线） */
+      edgeEls[L].classList.add('qhit');
+      edgeEls[R].classList.add('qhit');
+      greenRect[L].classList.add('hl-query');
+      greenRect[R].classList.add('hl-query');
+      setResult(`节点 ${p}（区间 [${G_POS[p].l}, ${G_POS[p].r}]）：合并孩子 ${L} 与 ${R}`);
+      await sleep(400);
+
+      /* 计算父节点 */
+      tree[p] = OP_FN[OP](tree[L], tree[R]);
+      greenValTxt[p].textContent = tree[p];
+      greenRect[L].classList.remove('hl-query');
+      greenRect[R].classList.remove('hl-query');
+      edgeEls[L].classList.remove('qhit');
+      edgeEls[R].classList.remove('qhit');
+
+      greenRect[p].classList.add('hl-update');
+      pop(greenRect[p]);
+      setResult(`tree[${p}] = ${OP_SYM[OP]}(${tree[L]}, ${tree[R]}) = ${tree[p]}`);
+      await sleep(430);
+      greenRect[p].classList.remove('hl-update');
+    }
+  }
+
+  setResult(`构建完成：根节点 tree[1] = ${OP_SYM[OP]}[1..${N}] = ${tree[1]}`);
+  busy = false;
+}
+
+/* =========================================================
+   9. 单点更新：叶子 → 根，沿虚线逐条点亮
+   ========================================================= */
+async function runUpdate(idx, newVal) {
+  if (busy) return;
+  if (tree[1] === null) { setResult('请先点击「重新构建」'); return; }
+
+  busy = true;
+  clearHighlights();
+
+  const oldVal = arr[idx];
+  arr[idx] = newVal;
+  const leaf = leafOf(idx);
+
+  /* 灰块变化 */
+  grayValTxt[idx].textContent = newVal;
+  grayRect[idx].classList.add('hl-cell');
+  pop(grayRect[idx]);
+  setResult(`a[${idx}]：${oldVal} → ${newVal}　（更新路径沿虚线自底向上）`);
+  await sleep(720);
+
+  /* 更新叶子 */
+  tree[leaf] = newVal;
+  greenValTxt[leaf].textContent = newVal;
+  greenRect[leaf].classList.add('hl-update');
+  pop(greenRect[leaf]);
+  setResult(`叶子节点 ${leaf}（区间 [${idx}, ${idx}]）= ${newVal}`);
+  await sleep(600);
+
+  /* 沿虚线向上 */
+  let p = leaf;
+  while (p > 1) {
+    const par = parentOf(p);
+    const L = 2 * par, R = 2 * par + 1;
+
+    /* 点亮这条虚线边（橙色流动虚线） */
+    edgeEls[p].classList.add('hl');
+    setResult(`虚线路径：节点 ${p} → 父节点 ${par}，正在合并 ${L} 与 ${R}`);
+    await sleep(520);
+
+    /* 高亮两个孩子 */
+    greenRect[L].classList.add('hl-query');
+    greenRect[R].classList.add('hl-query');
+    if (L !== p) edgeEls[L].classList.add('hl');
+    if (R !== p) edgeEls[R].classList.add('hl');
+    await sleep(240);
+
+    /* 计算父节点 */
+    tree[par] = OP_FN[OP](tree[L], tree[R]);
+    greenValTxt[par].textContent = tree[par];
+    greenRect[L].classList.remove('hl-query');
+    greenRect[R].classList.remove('hl-query');
+    if (L !== p) edgeEls[L].classList.remove('hl');
+    if (R !== p) edgeEls[R].classList.remove('hl');
+    greenRect[par].classList.add('hl-update');
+    pop(greenRect[par]);
+    setResult(`tree[${par}] = ${OP_SYM[OP]}(${tree[L]}, ${tree[R]}) = ${tree[par]}`);
+    await sleep(480);
+
+    p = par;
+  }
+
+  setResult(`更新完成：从叶子到根，路径上的节点已重新合并`);
+  await sleep(700);
+  await sleep(700);
+  clearHighlights();
+  busy = false;
+}
+
+/* =========================================================
+   10. 区间查询
+   ========================================================= */
+function collectQuery(p, ql, qr, out, visit) {
+  const { l, r } = NODES[p];
+  const hit = (ql <= l && r <= qr);
+  visit.push({ p, hit });
+  if (hit) { out.push({ p }); return; }
+  const mid = (l + r) >> 1;
+  if (ql <= mid) collectQuery(2 * p, ql, qr, out, visit);
+  if (qr > mid)  collectQuery(2 * p + 1, ql, qr, out, visit);
+}
+
+async function runQuery(ql, qr) {
+  if (busy) return;
+  if (tree[1] === null) { setResult('请先点击「重新构建」'); return; }
+
+  busy = true;
+  clearHighlights();
+
+  const hits = [], visit = [];
+  collectQuery(1, ql, qr, hits, visit);
+
+  setResult(`查询 ${OP_SYM[OP]}[${ql}..${qr}]：从根出发，命中 ${hits.length} 个完全覆盖的节点`);
+  await sleep(560);
+
+  /* 高亮从根到命中节点的所有虚线边（蓝色流动虚线） */
+  const visitSet = new Set(visit.map(v => v.p));
+  for (const v of visit) {
+    if (v.p === 1) continue;
+    const par = parentOf(v.p);
+    if (visitSet.has(par) && !v.hit) {
+      edgeEls[v.p].classList.add('qhit');
+    }
+  }
+  await sleep(680);
+
+  let acc = OP_IDENT[OP];
+  for (let k = 0; k < hits.length; k++) {
+    const { p } = hits[k];
+    greenRect[p].classList.add('hl-hit');
+    pop(greenRect[p]);
+
+    const before = acc;
+    acc = OP_FN[OP](acc, tree[p]);
+    const isFirst = (k === 0);
+    setResult(`命中节点 ${p}（区间 [${G_POS[p].l}, ${G_POS[p].r}] = ${tree[p]}）　→　${OP_SYM[OP]}(${isFirst ? '空' : before}, ${tree[p]}) = ${acc}`);
+    await sleep(820);
+  }
+
+  setResult(`✔ ${OP_SYM[OP]}[${ql}..${qr}] = ${acc}`);
+  await sleep(900);
+  await sleep(700);
+  clearHighlights();
+  busy = false;
+}
+
+/* =========================================================
+   11. 知识模块（双列）
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🌳', title: '线段树的本质', lines: [
+    '每个节点维护原数组一段连续区间 <code>[l, r]</code> 的聚合值',
+    '根节点代表 <code>[1, N]</code>，覆盖整个数组',
+    '左右孩子分别覆盖 <code>[l, mid]</code> 和 <code>[mid+1, r]</code>',
+    '树高 <code>⌈log₂ N⌉ + 1</code>，节点总数约 <code>2N − 1</code>',
+  ]},
+  { icon: '✏️', title: '单点更新 O(log N)', lines: [
+    '修改 <code>a[idx]</code> 后，从对应叶子向上走到根',
+    '每层重新合并：<code>tree[p] = merge(tree[2p], tree[2p+1])</code>',
+    '只更新路径上的 O(log N) 个节点',
+    '动画中路径用橙色流动虚线显示',
+  ]},
+  { icon: '🔍', title: '区间查询 O(log N)', lines: [
+    '从根递归分解 <code>[ql, qr]</code>',
+    '节点区间完全被覆盖 → 直接采用，不再向下',
+    '否则把查询区间分到左右孩子继续递归',
+    '每层最多访问 2 个节点，共 <code>O(log N)</code>',
+  ]},
+  { icon: '🧩', title: '支持任意结合律操作', lines: [
+    'sum / max / min / gcd / lcm / or / and / xor / 矩阵乘…',
+    '不要求操作可逆，这是相比树状数组的关键优势',
+    '只要求 <code>merge(a, b)</code> 满足结合律',
+    '单点更新对任何结合律操作都是 <code>O(log N)</code>',
+  ]},
+  { icon: '⚖️', title: '与树状数组对比', lines: [
+    '单点更新：BIT <code>O(log N)</code>（仅可逆）；ST <code>O(log N)</code>（任意）',
+    '区间查询：BIT 仅前缀；ST 任意区间',
+    '区间更新：BIT 需差分；ST 支持懒标记',
+    '空间：BIT <code>O(N)</code>；ST <code>O(4N)</code>',
+  ]},
+  { icon: '🏷️', title: '懒标记 · 区间更新', lines: [
+    '区间加 Δ 时不必递归到每个叶子',
+    '给"完全覆盖"的节点打上 <code>lazy</code> 标记',
+    '查询 / 后续更新路过该节点时，再把标记下传给孩子',
+    '区间更新和区间查询都是 <code>O(log N)</code>',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    el.className = 'k-card';
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   12. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','gcd','lcm','len','range','float','int','str',
+    'list','dict','set','tuple','sum','isinstance','ValueError'
+  ]);
+  let html = '', i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '#') {
+      let j = i; while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1;
+      while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+      if (word === 'self') html += '<span class="tok-self">self</span>';
+      else if (KEYWORDS.has(word)) html += '<span class="tok-keyword">' + word + '</span>';
+      else if (BUILTINS.has(word)) html += '<span class="tok-builtin">' + word + '</span>';
+      else if (code[j] === '(') html += '<span class="tok-func">' + word + '</span>';
+      else html += word;
+      i = j; continue;
+    }
+    if (/\d/.test(c)) {
+      let j = i; while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j; continue;
+    }
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+  document.getElementById('pyLazyCode').innerHTML =
+    highlightPython(document.getElementById('pyLazySrc').textContent.trim());
+}
+
+/* =========================================================
+   13. 初始化 & 事件
+   ========================================================= */
+buildScene();
+renderKnowledge();
+renderPythonCode();
+
+const selUpd = document.getElementById('updIdx');
+const selQryL = document.getElementById('qryL');
+const selQryR = document.getElementById('qryR');
+const opSel  = document.getElementById('opSel');
+for (let i = 1; i <= N; i++) {
+  selUpd.appendChild(new Option(i, i));
+  selQryL.appendChild(new Option(i, i));
+  selQryR.appendChild(new Option(i, i));
+}
+selUpd.value = 3;
+selQryL.value = 2;
+selQryR.value = 6;
+
+opSel.addEventListener('change', () => {
+  if (busy) { opSel.value = OP; return; }
+  OP = opSel.value;
+  updateSubtitle();
+  resetTree();
+  runBuild();
+});
+document.getElementById('btnBuild').addEventListener('click', () => {
+  if (busy) return;
+  resetState();
+  runBuild();
+});
+document.getElementById('btnUpdate').addEventListener('click', () => {
+  runUpdate(+selUpd.value, +document.getElementById('updVal').value);
+});
+document.getElementById('btnQuery').addEventListener('click', () => {
+  let l = +selQryL.value, r = +selQryR.value;
+  if (l > r) [l, r] = [r, l];
+  runQuery(l, r);
+});
+
+setTimeout(() => { updateSubtitle(); resetState(); runBuild(); }, 500);
+</script>
+</body>
+</html>
