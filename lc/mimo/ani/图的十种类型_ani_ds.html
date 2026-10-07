@@ -1,0 +1,1311 @@
+<!-- =========================================================
+     图的类型分类 · 连通性变体演示（修复版）
+     ========================================================= -->
+<style>
+  .vgt-section { margin-top: 20px; width: 100%; }
+  .vgt-selector {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    padding: 10px 14px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); margin-bottom: 12px;
+  }
+  .vgt-tab {
+    padding: 6px 12px; border-radius: 7px;
+    border: 1.5px solid #dbe4ec; background: #f8fafc;
+    color: #4a5568; cursor: pointer; font-size: 12.5px;
+    font-weight: 700; transition: .18s; white-space: nowrap;
+  }
+  .vgt-tab:hover { background: #e8f0f8; border-color: #9dc3e6; }
+  .vgt-tab.active { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+
+  .vgt-canvas-wrap {
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10); overflow: hidden;
+  }
+  .vgt-canvas-wrap svg { width: 100%; height: auto; display: block; }
+
+  /* 节点 */
+  .vg-node .vn-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.4;
+    transition: fill .3s, stroke .3s, stroke-width .3s;
+  }
+  .vg-node .vn-id {
+    font-size: 18px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .vg-node .vn-sub-bg { fill: #829ab1; }
+  .vg-node .vn-sub-txt {
+    font-family: ui-monospace, monospace;
+    font-size: 10px; font-weight: 800; fill: #fff;
+    pointer-events: none; user-select: none;
+  }
+  .vg-node.c0 .vn-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.4; }
+  .vg-node.c0 .vn-id { fill: #1c5e28; }
+  .vg-node.c1 .vn-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3.4; }
+  .vg-node.c1 .vn-id { fill: #5b3db8; }
+  .vg-node.c2 .vn-bg { fill: #ffd0d0; stroke: #d64545; stroke-width: 3.4; }
+  .vg-node.c2 .vn-id { fill: #b33232; }
+  .vg-node.c3 .vn-bg { fill: #c9e0ff; stroke: #2369ad; stroke-width: 3.4; }
+  .vg-node.c3 .vn-id { fill: #1c5e98; }
+  .vg-node.c4 .vn-bg { fill: #fff5c9; stroke: #b45a12; stroke-width: 3.4; }
+  .vg-node.c4 .vn-id { fill: #8a5a00; }
+  .vg-node.current .vn-bg { fill: #ffd98a; stroke: #e09b00; stroke-width: 4; }
+  .vg-node.current .vn-id { fill: #a35e00; }
+  .vg-node.on-stack .vn-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3.4; }
+  .vg-node.on-stack .vn-id { fill: #5b3db8; }
+
+  /* 边 */
+  .vg-edge {
+    stroke: #cbd2d9; stroke-width: 2.2; fill: none;
+    transition: stroke .3s, stroke-width .3s;
+  }
+  .vg-edge.directed { stroke-width: 2.4; }
+  .vg-edge.tree { stroke: #3b82c4; stroke-width: 3.2; }
+  .vg-edge.processing {
+    stroke: #e09b00; stroke-width: 4;
+    stroke-dasharray: 8 5;
+    animation: vgt-dash .9s linear infinite;
+  }
+  .vg-edge.merged { stroke: #2f7a34; stroke-width: 3.4; }
+  .vg-edge.redundant {
+    stroke: #d64545; stroke-width: 2.5;
+    stroke-dasharray: 6 4; opacity: .7;
+  }
+  .vg-edge.bridge { stroke: #d64545; stroke-width: 5.5; }
+  .vg-edge.back { stroke: #d64545; stroke-width: 3.2; stroke-dasharray: 6 4; }
+  .vg-edge.positive { stroke: #2f7a34; stroke-width: 3; }
+  .vg-edge.negative { stroke: #d64545; stroke-width: 3; stroke-dasharray: 5 3; }
+  @keyframes vgt-dash { to { stroke-dashoffset: -14; } }
+
+  .vg-edge-label {
+    font-family: ui-monospace, monospace;
+    font-size: 12px; font-weight: 800;
+    fill: #4a5568; pointer-events: none; user-select: none;
+    paint-order: stroke; stroke: #fff; stroke-width: 5;
+    stroke-linejoin: round;
+  }
+
+  /* 超边 */
+  .vg-hyper { fill: none; stroke: #7c5cd6; stroke-width: 2.5;
+    stroke-dasharray: 7 4; opacity: .75; }
+  .vg-hyper.active {
+    stroke: #d64545; stroke-width: 4; opacity: 1;
+    animation: vgt-dash .9s linear infinite;
+  }
+
+  /* 网格 */
+  .vg-cell {
+    fill: #f4f6f9; stroke: #dbe4ec; stroke-width: 1.5;
+    transition: fill .3s, stroke .3s;
+  }
+  .vg-cell.filled { fill: #3b82c4; stroke: #2369ad; }
+  .vg-cell.labeled { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 2.5; }
+  .vg-cell.merged { fill: #ffd98a; stroke: #e09b00; stroke-width: 2.5; }
+
+  /* 面板 */
+  .vgt-info {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 20px; align-items: center;
+    font-size: 13.5px;
+  }
+  .vgt-info .item { display: flex; align-items: center; gap: 8px; }
+  .vgt-info .item .title { color: #627d98; font-weight: 600; }
+  .vgt-info .item .stat {
+    font-family: ui-monospace, monospace;
+    font-size: 13.5px; font-weight: 800;
+    background: #f0f7ff; color: #2369ad;
+    padding: 3px 12px; border-radius: 6px;
+    border: 1.5px solid #c7defa;
+  }
+  .vgt-info .item .stat.green { background: #eaf9ee; color: #2f7a34; border-color: #b8e0bf; }
+  .vgt-info .item .stat.purple { background: #f2ecff; color: #5b3db8; border-color: #d8c8ff; }
+
+  .vgt-status {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* 说明卡 */
+  .vgt-explain {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 14px 20px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    border-left: 4px solid #7c5cd6;
+  }
+  .vgt-explain .head {
+    font-size: 14.5px; font-weight: 700; color: #243b53;
+    margin-bottom: 8px; display: flex; align-items: center;
+    gap: 8px; flex-wrap: wrap;
+  }
+  .vgt-explain .head .badge {
+    font-size: 10.5px; font-weight: 700;
+    background: #f2ecff; color: #5b3db8;
+    padding: 2px 7px; border-radius: 5px;
+  }
+  .vgt-explain .head .badge.tool { background: #eef4fa; color: #2369ad; }
+  .vgt-explain .head .badge.ox { background: #eaf9ee; color: #2f7a34; }
+  .vgt-explain .feature {
+    background: #fffbf2; border: 1px dashed #ffd98a;
+    padding: 8px 12px; border-radius: 8px;
+    font-size: 12.5px; color: #8a5a00; margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .vgt-explain ul { list-style: none; margin: 0; padding: 0; }
+  .vgt-explain ul li {
+    font-size: 12.5px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .vgt-explain ul li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #7c5cd6; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .vgt-explain ul li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+
+  /* 关系总览 */
+  .vgt-relations {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .vgt-relations > summary {
+    padding: 14px 20px; cursor: pointer;
+    font-size: 14.5px; font-weight: 700; color: #243b53;
+    list-style: none; display: flex; align-items: center; gap: 8px;
+    user-select: none;
+  }
+  .vgt-relations > summary::-webkit-details-marker { display: none; }
+  .vgt-relations > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .vgt-relations[open] > summary::before { transform: rotate(90deg); }
+  .vgt-relations > summary:hover { background: #f8fafc; }
+  .vgt-relations > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .vgt-relations-body {
+    padding: 18px 22px; background: #fbfdff;
+    border-top: 1px solid #eef2f7;
+  }
+  .vgt-relations-body h4 {
+    font-size: 13.5px; color: #243b53; margin: 0 0 10px;
+  }
+  .vgt-relations-body p {
+    font-size: 12.5px; color: #334e68; line-height: 1.8;
+    margin: 0 0 12px;
+  }
+  .vgt-relations-body code {
+    background: #eef4fa; color: #2369ad;
+    padding: 1px 5px; border-radius: 3px; font-size: 11.5px;
+  }
+  .vgt-relations-body table {
+    width: 100%; border-collapse: separate; border-spacing: 0 6px;
+    font-size: 12.5px;
+  }
+  .vgt-relations-body th {
+    text-align: left; color: #627d98;
+    font-weight: 700; padding: 6px 10px; font-size: 12px;
+  }
+  .vgt-relations-body td {
+    background: #f8fafc; padding: 8px 10px;
+    border-top: 1px solid #eef2f7; border-bottom: 1px solid #eef2f7;
+    color: #334e68;
+  }
+  .vgt-relations-body td:first-child {
+    border-left: 1px solid #eef2f7; border-radius: 8px 0 0 8px;
+    font-weight: 700; color: #2369ad;
+  }
+  .vgt-relations-body td:last-child {
+    border-right: 1px solid #eef2f7; border-radius: 0 8px 8px 0;
+  }
+</style>
+
+<div class="vgt-section">
+  <div class="vgt-selector" id="vgtSelector">
+    <button class="vgt-tab active" data-id="undirected">无向图 CC</button>
+    <button class="vgt-tab" data-id="directed">有向图 SCC</button>
+    <button class="vgt-tab" data-id="weak">弱连通分量</button>
+    <button class="vgt-tab" data-id="unilateral">单侧连通</button>
+    <button class="vgt-tab" data-id="grid">网格连通域</button>
+    <button class="vgt-tab" data-id="hypergraph">超图连通</button>
+    <button class="vgt-tab" data-id="weighted">带权连通</button>
+    <button class="vgt-tab" data-id="capacity">带容量连通</button>
+    <button class="vgt-tab" data-id="multigraph">多重图</button>
+    <button class="vgt-tab" data-id="signed">符号图</button>
+  </div>
+
+  <div class="vgt-canvas-wrap">
+    <svg id="vgtSvg" viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <div class="vgt-info">
+    <div class="item">
+      <span class="title">图类型</span>
+      <span class="stat purple" id="vgtType">—</span>
+    </div>
+    <div class="item">
+      <span class="title">核心工具</span>
+      <span class="stat" id="vgtTool">—</span>
+    </div>
+    <div class="item">
+      <span class="title">复杂度</span>
+      <span class="stat green" id="vgtOx">—</span>
+    </div>
+  </div>
+
+  <div class="vgt-status" id="vgtStatus">点击「开始演示」查看这个变体的算法过程</div>
+
+  <div style="margin-top:12px;background:#fff;border-radius:12px;padding:12px 18px;box-shadow:0 4px 16px rgba(30,50,80,.07);display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:13.5px;border-left:4px solid #57a957;">
+    <span style="font-weight:700;color:#2f7a34;">🎬 演示</span>
+    <button id="vgtPlay" style="font:inherit;font-size:13px;padding:6px 14px;border-radius:8px;border:1px solid #57a957;background:#57a957;color:#fff;cursor:pointer;font-weight:700;">▶ 开始演示</button>
+    <button id="vgtReset" style="font:inherit;font-size:13px;padding:6px 14px;border-radius:8px;border:1px solid #bcccdc;background:#f8fafc;color:#243b53;cursor:pointer;">重置</button>
+    <span style="color:#627d98;margin-left:auto;font-size:12.5px;">当前步骤：</span>
+    <span id="vgtStepLabel" style="font-family:ui-monospace,monospace;font-weight:800;background:#eef4fa;color:#2369ad;padding:3px 10px;border-radius:5px;">0 / 0</span>
+  </div>
+
+  <div class="vgt-explain" id="vgtExplain"></div>
+
+  <details class="vgt-relations">
+    <summary>
+      🔗 10 种类型之间的关系
+      <span class="hint">（点击展开，从 3 个分类维度理清）</span>
+    </summary>
+    <div class="vgt-relations-body">
+      <h4>三个正交的分类维度</h4>
+      <p>
+        这 10 个变体不是杂乱列表，而是来自三个<b>正交维度</b>的组合：<br>
+        <b>① 边的语义</b>（方向 / 数量 / 附加信息 / 元数）<br>
+        <b>② 连通性的定义</b>（连通 / 弱 / 单侧 / 强 / 平衡）<br>
+        <b>③ 底层结构</b>（抽象图 / 栅格 / 超图）
+      </p>
+
+      <h4>按"边的语义"归类</h4>
+      <table>
+        <tr><th>维度</th><th>取值</th><th>对应变体</th></tr>
+        <tr><td>方向</td><td>无向 / 有向</td><td>无向 CC · SCC / 弱连通 / 单侧</td></tr>
+        <tr><td>数量</td><td>简单 / 多重</td><td>所有基础变体 · 多重图</td></tr>
+        <tr><td>附加信息</td><td>权重 / 容量 / 符号</td><td>带权连通 · 带容量连通 · 符号图</td></tr>
+        <tr><td>元数</td><td>二元 / 多元</td><td>所有基础变体 · 超图</td></tr>
+      </table>
+
+      <h4>按"连通性定义"的递进关系</h4>
+      <p>
+        有向图的三种连通是<b>严格递进</b>的：<br>
+        <code>弱连通 ⊂ 单侧连通 ⊂ 强连通（SCC）</code><br>
+        也就是说：<br>
+        · 强连通 → 一定单侧连通 → 一定弱连通<br>
+        · 反之不成立（举例：A→B 是弱连通、单侧连通，但不是强连通）<br>
+        · 一个弱连通分量可能包含多个 SCC
+      </p>
+
+      <h4>按"底层结构"归类</h4>
+      <p>
+        <b>抽象图</b>：节点和边显式给出 → 无向 CC、SCC、弱连通、单侧、带权、带容量、多重图、符号图<br>
+        <b>栅格</b>：节点是隐式的（像素），边由邻域（4/8 连通）定义 → 网格连通域<br>
+        <b>超图</b>：一条边连接多个点 → 超图连通<br>
+        三者的算法框架都是 <code>DSU + 遍历</code>，区别只在"如何定义邻接"
+      </p>
+
+      <h4>一句话总结</h4>
+      <p>
+        <b>连通性变体 = 图类型 × 连通性定义 × 底层结构</b>。<br>
+        掌握 3 个基础工具（BFS 染色、DSU、lowlink），再根据"图是哪种类型"调整输入即可覆盖全部 10 种场景。
+      </p>
+    </div>
+  </details>
+</div>
+
+<script>
+(function() {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById('vgtSvg');
+
+  /* defs + 5 种颜色的箭头 marker */
+  const defs = document.createElementNS(NS, 'defs');
+  svg.appendChild(defs);
+
+  function makeMarker(id, color) {
+    const m = document.createElementNS(NS, 'marker');
+    m.setAttribute('id', id);
+    m.setAttribute('viewBox', '0 0 10 10');
+    m.setAttribute('refX', '9');
+    m.setAttribute('refY', '5');
+    m.setAttribute('markerWidth', '7');
+    m.setAttribute('markerHeight', '7');
+    m.setAttribute('orient', 'auto');
+    const p = document.createElementNS(NS, 'path');
+    p.setAttribute('d', 'M0,0 L10,5 L0,10 z');
+    p.setAttribute('fill', color);
+    m.appendChild(p);
+    defs.appendChild(m);
+  }
+  makeMarker('vgt-arrow-gray', '#cbd2d9');
+  makeMarker('vgt-arrow-blue', '#3b82c4');
+  makeMarker('vgt-arrow-gold', '#e09b00');
+  makeMarker('vgt-arrow-green', '#2f7a34');
+  makeMarker('vgt-arrow-red', '#d64545');
+
+  function markerFor(state) {
+    if (state === 'tree') return 'url(#vgt-arrow-blue)';
+    if (state === 'processing') return 'url(#vgt-arrow-gold)';
+    if (state === 'merged') return 'url(#vgt-arrow-green)';
+    if (state === 'redundant' || state === 'bridge' || state === 'back' || state === 'negative') return 'url(#vgt-arrow-red)';
+    if (state === 'positive') return 'url(#vgt-arrow-green)';
+    return 'url(#vgt-arrow-gray)';
+  }
+
+  const edgeLayer = document.createElementNS(NS, 'g');
+  const nodeLayer = document.createElementNS(NS, 'g');
+  svg.appendChild(edgeLayer);
+  svg.appendChild(nodeLayer);
+
+  /* =========================================================
+     变体定义
+     ========================================================= */
+  const VARIANTS = {
+    /* ============ 1. 无向图 CC ============ */
+    undirected: {
+      type: '无向图',
+      feature: '无向边 · 简单图 · 连通性 = 等价关系',
+      tool: 'BFS/DFS 染色 · 并查集',
+      ox: 'O(V+E)',
+      nodes: [
+        { id: 'A', x: 160, y: 130 },
+        { id: 'B', x: 320, y: 130 },
+        { id: 'C', x: 240, y: 260 },
+        { id: 'D', x: 540, y: 130 },
+        { id: 'E', x: 700, y: 260 },
+        { id: 'F', x: 540, y: 380 },
+      ],
+      edges: [
+        { u: 'A', v: 'B' },
+        { u: 'B', v: 'C' },
+        { u: 'C', v: 'A' },
+        { u: 'D', v: 'E' },
+        { u: 'E', v: 'F' },
+      ],
+      explain: [
+        '无向边 <code>u—v</code>，"可达"是<b>等价关系</b>（自反/对称/传递）',
+        '连通分量 = 等价类，本图有 <b>2 个</b>：{A,B,C}、{D,E,F}',
+        '<b>范式 1</b>：BFS/DFS 染色 O(V+E)',
+        '<b>范式 2</b>：并查集 O((V+E)·α)',
+        '<b>选择</b>：一次性完整图 → 染色；边流式到达 → 并查集',
+      ],
+      buildSteps() {
+        const steps = [];
+        const visited = new Set();
+        const color = {};
+        let c = 0;
+        const snap = (msg, nodeHl = {}, edgeHl = {}) => {
+          steps.push({ msg, nodeHl: { ...nodeHl }, edgeHl: { ...edgeHl }, nodeColor: { ...color } });
+        };
+        snap('BFS 染色：从任意未染色点出发，能到达的点都染成同色');
+        for (const n of this.nodes) {
+          if (visited.has(n.id)) continue;
+          const cc = c;
+          snap(`从 ${n.id} 开始新的 BFS，颜色 ${cc}`, { [n.id]: 'current' });
+          const q = [n.id];
+          visited.add(n.id);
+          color[n.id] = cc;
+          while (q.length) {
+            const u = q.shift();
+            for (const e of this.edges) {
+              let v = null;
+              if (e.u === u) v = e.v;
+              else if (e.v === u) v = e.u;
+              if (!v || visited.has(v)) continue;
+              visited.add(v);
+              color[v] = cc;
+              q.push(v);
+              snap(`  从 ${u} 可达 ${v} → ${v} 染成颜色 ${cc}`,
+                { [v]: 'current' }, { [eKey(e.u, e.v)]: 'tree' });
+            }
+          }
+          snap(`✓ 颜色 ${cc} 的分量完成`);
+          c++;
+        }
+        snap(`🎉 完成：共 ${c} 个连通分量`);
+        return steps;
+      },
+    },
+
+    /* ============ 2. 有向图 SCC（真实 Tarjan） ============ */
+    directed: {
+      type: '有向图',
+      feature: '有向边 · 双向可达 · 缩点后必为 DAG',
+      tool: 'Tarjan / Kosaraju / Gabow',
+      ox: 'O(V+E)',
+      nodes: [
+        { id: 'A', x: 180, y: 130 },
+        { id: 'B', x: 340, y: 240 },
+        { id: 'C', x: 540, y: 130 },
+        { id: 'D', x: 700, y: 240 },
+        { id: 'E', x: 820, y: 380 },
+      ],
+      edges: [
+        { u: 'A', v: 'B', dir: true },
+        { u: 'B', v: 'A', dir: true },     /* A ↔ B 强连通 */
+        { u: 'B', v: 'C', dir: true },     /* 跨 SCC */
+        { u: 'C', v: 'D', dir: true },
+        { u: 'D', v: 'C', dir: true },     /* C ↔ D 强连通 */
+        { u: 'D', v: 'E', dir: true },     /* 跨 SCC */
+      ],
+      explain: [
+        '有向边 <code>u→v</code>，"互相可达"是等价关系',
+        '强连通分量（SCC）= 互相可达的极大子图',
+        '本图有 <b>3 个 SCC</b>：{A,B}、{C,D}、{E}',
+        '<b>Tarjan 核心</b>：<code>dfn[u]</code> 访问时间、<code>low[u]</code> 回溯最早 dfn、栈保存候选',
+        '判据 <code>dfn[u] == low[u]</code> 时 u 是 SCC 根，弹出栈中 u 及以上',
+        '缩点后得 <b>DAG</b>：{A,B} → {C,D} → {E}',
+      ],
+      buildSteps() {
+        const steps = [];
+        const dfn = {}; const low = {}; const inStk = {};
+        const stk = [];
+        let timer = 0;
+        const sccId = {}; let sccCnt = 0;
+        const adj = {};
+        for (const n of this.nodes) adj[n.id] = [];
+        for (const e of this.edges) adj[e.u].push(e.v);
+
+        const snap = (msg, nodeHl = {}, edgeHl = {}) => {
+          steps.push({ msg, nodeHl: { ...nodeHl }, edgeHl: { ...edgeHl },
+            dfn: { ...dfn }, low: { ...low }, stack: [...stk], inStk: { ...inStk },
+            sccId: { ...sccId } });
+        };
+
+        snap('Tarjan 开始：从 A 出发做 DFS，记录 dfn/low，用栈保存候选');
+
+        const dfs = (u) => {
+          dfn[u] = low[u] = timer++;
+          stk.push(u);
+          inStk[u] = true;
+          snap(`DFS(${u}): dfn[${u}]=low[${u}]=${dfn[u]}，${u} 入栈`,
+            { [u]: 'current' });
+
+          for (const v of adj[u]) {
+            const key = `${u}-${v}`;
+            if (dfn[v] === undefined) {
+              snap(`  树边 ${u}→${v}：递归`,
+                { [u]: 'current' }, { [key]: 'tree' });
+              dfs(v);
+              low[u] = Math.min(low[u], low[v]);
+              snap(`  返回 ${u}：low[${u}] = min(low[${u}], low[${v}]) = ${low[u]}`,
+                { [u]: 'current' }, { [key]: 'tree' });
+            } else if (inStk[v]) {
+              low[u] = Math.min(low[u], dfn[v]);
+              snap(`  回边 ${u}→${v}（v 在栈中）：low[${u}] = min(low[${u}], dfn[${v}]) = ${low[u]}`,
+                { [u]: 'current' }, { [key]: 'back' });
+            } else {
+              snap(`  边 ${u}→${v}：v 已出栈（属于别的 SCC），跳过`,
+                { [u]: 'current' }, { [key]: 'redundant' });
+            }
+          }
+
+          if (dfn[u] === low[u]) {
+            const members = [];
+            while (true) {
+              const x = stk.pop();
+              inStk[x] = false;
+              sccId[x] = sccCnt;
+              members.push(x);
+              if (x === u) break;
+            }
+            const nh = {};
+            for (const m of members) nh[m] = `c${sccCnt}`;
+            snap(`★ dfn[${u}] == low[${u}] = ${dfn[u]}：${u} 是 SCC 根，弹出 {${members.sort().join(',')}}`,
+              nh);
+            sccCnt++;
+          }
+        };
+
+        for (const n of this.nodes) {
+          if (dfn[n.id] === undefined) dfs(n.id);
+        }
+
+        snap(`🎉 完成：共 ${sccCnt} 个 SCC，缩点后 DAG：{A,B}→{C,D}→{E}`,
+          { A: 'c2', B: 'c2', C: 'c1', D: 'c1', E: 'c0' });
+        return steps;
+      },
+    },
+
+    /* ============ 3. 弱连通 ============ */
+    weak: {
+      type: '有向图（忽略方向）',
+      feature: '有向边 · 忽略方向 · 退化为无向 CC',
+      tool: '退化为 CC',
+      ox: 'O(V+E)',
+      nodes: [
+        { id: 'A', x: 200, y: 130 },
+        { id: 'B', x: 450, y: 260 },
+        { id: 'C', x: 700, y: 130 },
+        { id: 'D', x: 800, y: 380 },
+      ],
+      edges: [
+        { u: 'A', v: 'B', dir: true },
+        { u: 'C', v: 'B', dir: true },
+        { u: 'C', v: 'D', dir: true },
+      ],
+      explain: [
+        '<b>弱连通</b>：有向图<b>忽略方向</b>后连通',
+        '本图忽略方向后 {A,B,C,D} 全部连通 → <b>1 个弱连通分量</b>',
+        '但若看 SCC：{A},{B},{C},{D} → <b>4 个强连通分量</b>',
+        '<b>用途</b>：图算法预处理（不连通要特判）、可达性粗粒度分析',
+        '关键差异：一个弱连通分量可能含多个 SCC',
+      ],
+      buildSteps() {
+        const steps = [];
+        const snap = (msg, nodeHl = {}, edgeHl = {}) => {
+          steps.push({ msg, nodeHl: { ...nodeHl }, edgeHl: { ...edgeHl }, nodeColor: {} });
+        };
+        snap('有向图：A→B、C→B、C→D（方向被忽略前）',
+          { A: 'current', C: 'current' },
+          { 'A-B': 'processing', 'C-B': 'processing', 'C-D': 'processing' });
+        snap('忽略方向：A—B、C—B、C—D，当作无向图',
+          {}, { 'A-B': 'tree', 'C-B': 'tree', 'C-D': 'tree' });
+        snap('从 A 出发 BFS：可达 B、C、D，全部染成同一颜色',
+          { A: 'c0', B: 'c0', C: 'c0', D: 'c0' },
+          { 'A-B': 'tree', 'C-B': 'tree', 'C-D': 'tree' });
+        snap('🎉 弱连通分量数 = 1，但 SCC 数 = 4（两者不同！）',
+          { A: 'c0', B: 'c0', C: 'c0', D: 'c0' });
+        return steps;
+      },
+    },
+
+    /* ============ 4. 单侧连通 ============ */
+    unilateral: {
+      type: '有向图（单向可达）',
+      feature: '有向边 · 任意两点至少一方可达 · 存在"源头"',
+      tool: 'SCC 粗粒度合并',
+      ox: 'O(V+E)',
+      nodes: [
+        { id: 'A', x: 180, y: 260 },
+        { id: 'B', x: 400, y: 130 },
+        { id: 'C', x: 400, y: 380 },
+        { id: 'D', x: 650, y: 260 },
+      ],
+      edges: [
+        { u: 'A', v: 'B', dir: true },
+        { u: 'A', v: 'C', dir: true },
+        { u: 'B', v: 'D', dir: true },
+        { u: 'C', v: 'D', dir: true },
+      ],
+      explain: [
+        '<b>单侧连通</b>：任意两点 u、v，至少一个能到达另一个',
+        '比强连通弱：不要求双向；比弱连通强：弱连通允许"互相不可达"',
+        '本图：从 A 出发可达所有点 → A 是<b>唯一的源</b> → 单侧连通',
+        '<b>判定</b>：在缩点 DAG 上检查是否存在唯一的拓扑路径穿过所有 SCC',
+        '<b>用途</b>：路线规划中判断"是否总能从一个地方到另一个"',
+      ],
+      buildSteps() {
+        const steps = [];
+        const snap = (msg, nodeHl = {}, edgeHl = {}) => {
+          steps.push({ msg, nodeHl: { ...nodeHl }, edgeHl: { ...edgeHl }, nodeColor: {} });
+        };
+        snap('从 A 出发 BFS：A 能到达 B、C、D',
+          { A: 'current' },
+          { 'A-B': 'tree', 'A-C': 'tree' });
+        snap('继续：B→D、C→D，全部可达',
+          { A: 'c0', B: 'c0', C: 'c0', D: 'c0' },
+          { 'A-B': 'tree', 'A-C': 'tree', 'B-D': 'tree', 'C-D': 'tree' });
+        snap('从 B 出发：B→D，但 B 到不了 A、C（单向）',
+          { B: 'current' }, { 'B-D': 'tree' });
+        snap('但 A 能到所有点 → 整体满足单侧连通（A 是"源头"）',
+          { A: 'c0', B: 'c0', C: 'c0', D: 'c0' });
+        return steps;
+      },
+    },
+
+    /* ============ 5. 网格连通域 ============ */
+    grid: {
+      type: '栅格（4/8 连通）',
+      feature: '像素级 · 4/8 邻域语义不同 · 两遍扫描 + DSU',
+      tool: '两遍扫描 + 并查集',
+      ox: 'O(W·H)',
+      nodes: [],
+      edges: [],
+      grid: {
+        cols: 6, rows: 4,
+        cells: [
+          [1,1,0,0,1,0],
+          [0,1,1,0,1,0],
+          [0,0,1,1,0,0],
+          [1,0,0,1,1,0],
+        ],
+      },
+      explain: [
+        '图像处理中的<b>连通域标记</b>：像素 = 节点',
+        '<b>4 连通</b>：(上, 下, 左, 右)；<b>8 连通</b>：再加 4 个对角',
+        '<b>语义完全不同</b>：两条对角 4-连通块在 8-连通下会合并',
+        '<b>两遍扫描</b>：第一遍标候选 + 合并冲突；第二遍用 DSU 根替换',
+        '<b>用途</b>：医学图像分割、OCR、遥感地块识别',
+      ],
+      buildSteps() {
+        const steps = [];
+        const grid = this.grid;
+        const W = grid.cols, H = grid.rows;
+        const labels = Array.from({ length: H }, () => new Array(W).fill(-1));
+        const parent = {};
+        let nextLabel = 0;
+
+        const find = x => { while (parent[x] !== x) x = parent[x] = parent[parent[x]]; return x; };
+        const unite = (a, b) => {
+          const ra = find(a), rb = find(b);
+          if (ra !== rb) parent[rb] = ra;
+        };
+
+        const snap = (msg, extraCells = {}, isFinal = false) => {
+          steps.push({
+            msg,
+            gridLabels: JSON.parse(JSON.stringify(labels)),
+            extraCells,
+            isFinal,
+          });
+        };
+
+        snap('两遍扫描开始：逐格检查 (上, 左) 邻居');
+
+        for (let r = 0; r < H; r++) {
+          for (let c = 0; c < W; c++) {
+            if (!grid.cells[r][c]) continue;
+            const up = r > 0 && grid.cells[r-1][c] ? labels[r-1][c] : -1;
+            const left = c > 0 && grid.cells[r][c-1] ? labels[r][c-1] : -1;
+
+            if (up === -1 && left === -1) {
+              parent[nextLabel] = nextLabel;
+              labels[r][c] = nextLabel++;
+              snap(`格子 (${r},${c})：无邻居 → 新标签 ${labels[r][c]}`,
+                { [`${r}-${c}`]: 'filled' });
+            } else if (up !== -1 && left === -1) {
+              labels[r][c] = up;
+              snap(`格子 (${r},${c})：继承上方标签 ${up}`,
+                { [`${r}-${c}`]: 'filled' });
+            } else if (up === -1 && left !== -1) {
+              labels[r][c] = left;
+              snap(`格子 (${r},${c})：继承左侧标签 ${left}`,
+                { [`${r}-${c}`]: 'filled' });
+            } else {
+              labels[r][c] = Math.min(up, left);
+              if (up !== left) {
+                unite(up, left);
+                snap(`格子 (${r},${c})：两邻居标签不同 → 用 ${labels[r][c]} 并合并`,
+                  { [`${r}-${c}`]: 'merged' });
+              } else {
+                snap(`格子 (${r},${c})：邻居标签相同 → 沿用 ${labels[r][c]}`,
+                  { [`${r}-${c}`]: 'filled' });
+              }
+            }
+          }
+        }
+
+        snap('第 2 遍：用 DSU 的根替换每个格子的标签');
+
+        const rootMap = {};
+        let colorId = 0;
+        for (let r = 0; r < H; r++) {
+          for (let c = 0; c < W; c++) {
+            if (labels[r][c] === -1) continue;
+            const root = find(labels[r][c]);
+            if (!(root in rootMap)) rootMap[root] = colorId++;
+            labels[r][c] = rootMap[root];
+          }
+        }
+
+        snap(`🎉 完成：共 ${colorId} 个连通域`, {}, true);
+        return steps;
+      },
+    },
+
+    /* ============ 6. 超图 ============ */
+    hypergraph: {
+      type: '超图',
+      feature: '一条边连接多个点 · 转二分图后用 DSU',
+      tool: '超边 DSU / 二分图表示',
+      ox: 'O(V+E)',
+      nodes: [
+        { id: 'A', x: 160, y: 130 },
+        { id: 'B', x: 320, y: 260 },
+        { id: 'C', x: 500, y: 130 },
+        { id: 'D', x: 660, y: 260 },
+        { id: 'E', x: 820, y: 400 },
+      ],
+      edges: [],
+      hyperedges: [
+        { id: 'e1', nodes: ['A', 'B', 'C'], color: '#7c5cd6' },
+        { id: 'e2', nodes: ['C', 'D'], color: '#2f7a34' },
+        { id: 'e3', nodes: ['D', 'E'], color: '#d9713b' },
+      ],
+      explain: [
+        '<b>超图</b>：一条超边可以连接任意多个节点（不只 2 个）',
+        '本图：e₁={A,B,C}、e₂={C,D}、e₃={D,E}',
+        '通过 C 把 e₁、e₂ 连通，通过 D 把 e₂、e₃ 连通',
+        '全部节点连通 → <b>1 个连通分量</b>',
+        '<b>实现</b>：把每条超边当一个中间节点，转成二分图，用 DSU 合并',
+        '<b>用途</b>：论文合作网络、化学反应网络、知识图谱',
+      ],
+      buildSteps() {
+        const steps = [];
+        const snap = (msg, nodeHl = {}, extraHl = {}) => {
+          steps.push({ msg, nodeHl: { ...nodeHl }, extraHl: { ...extraHl }, nodeColor: {} });
+        };
+        snap('超边 e₁ = {A, B, C}：这 3 个点直接连通',
+          { A: 'c0', B: 'c0', C: 'c0' }, { e1: 'active' });
+        snap('超边 e₂ = {C, D}：通过 C 把 D 加进来',
+          { A: 'c0', B: 'c0', C: 'c0', D: 'c0' },
+          { e1: 'active', e2: 'active' });
+        snap('超边 e₃ = {D, E}：通过 D 把 E 加进来',
+          { A: 'c0', B: 'c0', C: 'c0', D: 'c0', E: 'c0' },
+          { e1: 'active', e2: 'active', e3: 'active' });
+        snap('🎉 全部节点连通，共 1 个连通分量',
+          { A: 'c0', B: 'c0', C: 'c0', D: 'c0', E: 'c0' });
+        return steps;
+      },
+    },
+
+    /* ============ 7. 带权连通 ============ */
+    weighted: {
+      type: '带权无向图',
+      feature: '边有权重 · Kruskal 顺序 · 阈值下连通',
+      tool: 'Kruskal 顺序 + DSU',
+      ox: 'O(E log E)',
+      nodes: [
+        { id: 'A', x: 160, y: 130 },
+        { id: 'B', x: 340, y: 260 },
+        { id: 'C', x: 520, y: 130 },
+        { id: 'D', x: 700, y: 260 },
+        { id: 'E', x: 840, y: 400 },
+      ],
+      edges: [
+        { u: 'A', v: 'B', w: 1 },
+        { u: 'B', v: 'C', w: 5 },
+        { u: 'C', v: 'D', w: 2 },
+        { u: 'D', v: 'E', w: 3 },
+      ],
+      explain: [
+        '<b>带权连通</b>：边有权重，只允许使用 <code>w ≤ 阈值</code> 的边',
+        '按权重排序：A-B(1) &lt; C-D(2) &lt; D-E(3) &lt; B-C(5)',
+        '阈值 t=1：只有 {A,B}；t=2：{A,B}、{C,D} 各自连通',
+        't=3：{A,B}、{C,D,E}；t=5：全部连通',
+        '<b>Kruskal</b>：按权重升序依次加边，用 DSU 判断是否合并',
+        '<b>用途</b>：最小生成树、聚类（删掉最大的几条边）',
+      ],
+      buildSteps() {
+        const steps = [];
+        const sorted = [...this.edges].sort((a, b) => a.w - b.w);
+        const parent = {};
+        for (const n of this.nodes) parent[n.id] = n.id;
+        const find = x => { while (parent[x] !== x) x = parent[x] = parent[parent[x]]; return x; };
+        const unite = (a, b) => {
+          const ra = find(a), rb = find(b);
+          if (ra === rb) return false;
+          parent[rb] = ra; return true;
+        };
+        const rootMap = {}; let cid = 0;
+        const colorMap = () => {
+          const m = {};
+          for (const n of this.nodes) {
+            const r = find(n.id);
+            if (!(r in rootMap)) rootMap[r] = cid++;
+            m[n.id] = rootMap[r];
+          }
+          return m;
+        };
+        const snap = (msg, edgeHl = {}, current = null) => {
+          const colors = colorMap();
+          const nh = {};
+          for (const n of this.nodes) nh[n.id] = `c${colors[n.id]}`;
+          if (current) nh[current] = 'current';
+          steps.push({ msg, nodeHl: nh, edgeHl, nodeColor: {} });
+        };
+
+        snap('按权重升序处理边，用并查集合并两端');
+        for (const e of sorted) {
+          const key = eKey(e.u, e.v);
+          snap(`处理边 ${e.u}—${e.v}（w=${e.w}）`, { [key]: 'processing' }, e.u);
+          if (unite(e.u, e.v)) {
+            snap(`  ✓ 合并成功：${e.u} 与 ${e.v} 连通`, { [key]: 'merged' });
+          } else {
+            snap(`  ✗ 已连通，跳过（成环）`, { [key]: 'redundant' });
+          }
+        }
+        snap('🎉 全部边处理完毕，图已连通');
+        return steps;
+      },
+    },
+
+    /* ============ 8. 带容量连通 ============ */
+    capacity: {
+      type: '有向带容量图',
+      feature: '有向边 + 容量 · 最大流 = 最小割',
+      tool: '网络流 / 最大流',
+      ox: 'O(V²E)',
+      nodes: [
+        { id: 'S', x: 140, y: 260 },
+        { id: 'A', x: 400, y: 110 },
+        { id: 'B', x: 400, y: 410 },
+        { id: 'C', x: 640, y: 260 },
+        { id: 'T', x: 820, y: 260 },
+      ],
+      edges: [
+        { u: 'S', v: 'A', cap: 10, dir: true },
+        { u: 'S', v: 'B', cap: 8, dir: true },
+        { u: 'A', v: 'C', cap: 6, dir: true },
+        { u: 'B', v: 'C', cap: 9, dir: true },
+        { u: 'C', v: 'T', cap: 12, dir: true },
+      ],
+      explain: [
+        '<b>带容量连通</b>：每条有向边有容量 c(u,v)，问最大流量',
+        '本图：S→A(10)、S→B(8)、A→C(6)、B→C(9)、C→T(12)',
+        '第 1 条路径 S→A→C→T：瓶颈 = min(10, 6, 12) = 6',
+        '第 2 条路径 S→B→C→T：瓶颈 = min(8, 9, 12−6=6) = 6',
+        '最大流 = 6 + 6 = 12，恰好等于 C→T 的容量',
+        '<b>Max-Flow Min-Cut</b>：最大流 = 最小割',
+      ],
+      buildSteps() {
+        const steps = [];
+        const snap = (msg, nodeHl = {}, edgeHl = {}) => {
+          steps.push({ msg, nodeHl: { ...nodeHl }, edgeHl: { ...edgeHl }, nodeColor: {} });
+        };
+
+        snap('网络流：源点 S、汇点 T，每条边有容量（箭头 = 流向）',
+          { S: 'current' }, { 'S-A': 'tree', 'S-B': 'tree' });
+        snap('第 1 条增广路径 S→A→C→T：瓶颈 = min(10, 6, 12) = 6',
+          { S: 'c0', A: 'c0', C: 'c0', T: 'c0' },
+          { 'S-A': 'merged', 'A-C': 'merged', 'C-T': 'merged' });
+        snap('第 2 条增广路径 S→B→C→T：瓶颈 = min(8, 9, 12−6=6) = 6',
+          { S: 'c0', A: 'c0', B: 'c0', C: 'c0', T: 'c0' },
+          { 'S-A': 'merged', 'S-B': 'merged', 'A-C': 'merged', 'B-C': 'merged', 'C-T': 'merged' });
+        snap('C→T 已用满（12/12），S→B 还剩 2 但无法再流出 → 达到上限',
+          { S: 'c0', A: 'c0', B: 'c0', C: 'c0', T: 'c0' },
+          { 'S-A': 'merged', 'S-B': 'merged', 'A-C': 'merged', 'B-C': 'merged', 'C-T': 'merged' });
+        snap('🎉 最大流 = 12 = 最小割 {C→T} 的容量（Max-Flow Min-Cut）',
+          { S: 'c0', A: 'c0', B: 'c0', C: 'c0', T: 'c0' });
+        return steps;
+      },
+    },
+
+    /* ============ 9. 多重图 ============ */
+    multigraph: {
+      type: '多重图',
+      feature: '允许平行边 · 桥判据必须用边编号',
+      tool: 'lowlink + 边编号',
+      ox: 'O(V+E)',
+      nodes: [
+        { id: 'A', x: 200, y: 260 },
+        { id: 'B', x: 480, y: 260 },
+        { id: 'C', x: 750, y: 260 },
+      ],
+      edges: [
+        { u: 'A', v: 'B', id: 0, offset: -20 },
+        { u: 'A', v: 'B', id: 1, offset: 0 },
+        { u: 'A', v: 'B', id: 2, offset: 20 },
+        { u: 'B', v: 'C', id: 3, offset: 0 },
+      ],
+      explain: [
+        '<b>多重图</b>：允许两点之间有多条边',
+        '本图 A—B 之间有 <b>3 条平行边</b>，B—C 之间有 1 条',
+        '删掉任意一条 A—B，还有两条连通 → <b>这 3 条都不是桥</b>',
+        'B—C 只有 1 条 → 删掉就断开 → <b>是桥</b>',
+        '<b>关键陷阱</b>：跳过父边必须用<b>边编号</b>而非 <code>v != fa</code>',
+        '用 <code>v != fa</code> 时会把第 2、3 条 A-B 边当回边 → 错误判断',
+      ],
+      buildSteps() {
+        const steps = [];
+        const snap = (msg, nodeHl = {}, edgeHl = {}) => {
+          steps.push({ msg, nodeHl: { ...nodeHl }, edgeHl: { ...edgeHl }, nodeColor: {} });
+        };
+        snap('DFS 从 A 出发，A→B 走边 id=0（第 1 条平行边）',
+          { A: 'current', B: 'current' }, { 'A-B': 'tree' });
+        snap('从 B 回看 A：id=1、id=2 是回边（不是父边）→ low[B] 降到 dfn[A]',
+          {}, { 'A-B': 'tree' });
+        snap('B 继续访问 C：B→C（边 id=3）',
+          { C: 'current' }, { 'A-B': 'tree', 'B-C': 'tree' });
+        snap('返回 B：low[C] > dfn[B] → B-C 是桥',
+          {}, { 'A-B': 'tree', 'B-C': 'bridge' });
+        snap('A-B 三条平行边互相构成回边 → 每条都不是桥',
+          {}, { 'A-B': 'tree', 'B-C': 'bridge' });
+        snap('🎉 结果：只有 B-C 是桥，A-B 三条边都不是',
+          {}, { 'B-C': 'bridge' });
+        return steps;
+      },
+    },
+
+    /* ============ 10. 符号图 ============ */
+    signed: {
+      type: '符号图',
+      feature: '边带 +/- 号 · 平衡性判定（环上负边偶数）',
+      tool: 'BFS 涂色 / 平衡判定',
+      ox: 'O(V+E)',
+      nodes: [
+        { id: 'A', x: 220, y: 130 },
+        { id: 'B', x: 440, y: 130 },
+        { id: 'C', x: 330, y: 320 },
+        { id: 'D', x: 700, y: 260 },
+      ],
+      edges: [
+        { u: 'A', v: 'B', sign: '+' },
+        { u: 'B', v: 'C', sign: '+' },
+        { u: 'C', v: 'A', sign: '-' },
+        { u: 'C', v: 'D', sign: '+' },
+      ],
+      explain: [
+        '<b>符号图</b>：每条边标记 + 或 −（朋友/敌人、相似/不同）',
+        '<b>平衡</b>：任意环上负边数为<b>偶数</b>',
+        '本图三角形 A-B-C：+、+、− → 负边数 = 1（奇数）→ <b>不平衡</b>',
+        '<b>判定</b>：BFS 涂两色，异号边要求异色、同号边要求同色',
+        '<b>用途</b>：社交网络阵营分析、国际关系、推荐系统',
+      ],
+      buildSteps() {
+        const steps = [];
+        const snap = (msg, nodeHl = {}, edgeHl = {}) => {
+          steps.push({ msg, nodeHl: { ...nodeHl }, edgeHl: { ...edgeHl }, nodeColor: {} });
+        };
+        snap('从 A 开始涂两色（c0 / c1）',
+          { A: 'c0' }, { 'A-B': 'positive', 'A-C': 'negative' });
+        snap('A—B 是 + 边：要求同色 → B 涂 c0',
+          { A: 'c0', B: 'c0' }, { 'A-B': 'positive' });
+        snap('A—C 是 − 边：要求异色 → C 涂 c1',
+          { A: 'c0', B: 'c0', C: 'c1' },
+          { 'A-B': 'positive', 'A-C': 'negative' });
+        snap('检查 B—C（+ 边）：要求同色，但 B=c0、C=c1 → 矛盾！',
+          { A: 'c0', B: 'c0', C: 'c1' },
+          { 'A-B': 'positive', 'A-C': 'negative', 'B-C': 'negative' });
+        snap('★ 三角形负边数 = 1（奇数）→ 不平衡',
+          { A: 'c0', B: 'c0', C: 'c1' },
+          { 'A-B': 'positive', 'A-C': 'negative', 'B-C': 'negative' });
+        return steps;
+      },
+    },
+  };
+
+  /* =========================================================
+     工具函数
+     ========================================================= */
+  function eKey(u, v) { return [u, v].sort().join('-'); }
+  const NODE_R = 28;
+
+  /* =========================================================
+     渲染
+     ========================================================= */
+  let currentVariantId = 'undirected';
+  let currentSteps = [];
+  let currentStepIdx = 0;
+  let playTimer = null;
+
+  function getVariant() { return VARIANTS[currentVariantId]; }
+
+  function renderVariant() {
+    const v = getVariant();
+    edgeLayer.innerHTML = '';
+    nodeLayer.innerHTML = '';
+    const step = currentSteps[currentStepIdx] || {};
+
+    if (v.grid) { renderGrid(v, step); return; }
+    if (v.hyperedges) { renderHypergraph(v, step); return; }
+
+    /* 边 */
+    for (const e of v.edges || []) {
+      const a = v.nodes.find(n => n.id === e.u);
+      const b = v.nodes.find(n => n.id === e.v);
+      if (!a || !b) continue;
+      const dx = b.x - a.x, dy = b.y - a.y;
+      const len = Math.hypot(dx, dy) || 1;
+
+      /* 端点缩进：考虑箭头 */
+      const isDir = e.dir;
+      const endR = NODE_R + (isDir ? 4 : 0);
+      const nx = -dy / len * (e.offset || 0);
+      const ny = dx / len * (e.offset || 0);
+
+      const x1 = a.x + dx / len * NODE_R + nx;
+      const y1 = a.y + dy / len * NODE_R + ny;
+      const x2 = b.x - dx / len * endR + nx;
+      const y2 = b.y - dy / len * endR + ny;
+
+      const key = eKey(e.u, e.v);
+      const st = step.edgeHl?.[key] || '';
+
+      const line = document.createElementNS(NS, 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+
+      let cls = 'vg-edge';
+      if (isDir) cls += ' directed';
+      if (st) cls += ' ' + st;
+      line.setAttribute('class', cls);
+
+      /* 有向图：加箭头 */
+      if (isDir) {
+        line.setAttribute('marker-end', markerFor(st));
+      }
+
+      edgeLayer.appendChild(line);
+
+      /* 标签 */
+      if (e.w !== undefined || e.cap !== undefined || e.sign !== undefined) {
+        const midX = (a.x + b.x) / 2 + nx;
+        const midY = (a.y + b.y) / 2 + ny;
+        const label = document.createElementNS(NS, 'text');
+        label.setAttribute('class', 'vg-edge-label');
+        label.setAttribute('text-anchor', 'middle');
+        label.setAttribute('dominant-baseline', 'central');
+        label.setAttribute('x', midX);
+        label.setAttribute('y', midY);
+        label.textContent =
+          e.sign !== undefined ? e.sign :
+          e.cap !== undefined ? String(e.cap) :
+          String(e.w);
+        edgeLayer.appendChild(label);
+      }
+    }
+
+    /* 节点 */
+    for (const n of v.nodes) {
+      const g = document.createElementNS(NS, 'g');
+      let cls = 'vg-node';
+      const st = step.nodeHl?.[n.id];
+      if (st) cls += ' ' + st;
+      if (step.nodeColor && step.nodeColor[n.id] !== undefined) cls += ' c' + step.nodeColor[n.id];
+      /* Tarjan 在栈中着色 */
+      if (step.inStk && step.inStk[n.id] && !st) cls += ' on-stack';
+      /* SCC 分组着色 */
+      if (step.sccId && step.sccId[n.id] !== undefined && !st) {
+        cls += ' c' + step.sccId[n.id];
+      }
+      g.setAttribute('class', cls);
+
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('cx', n.x); c.setAttribute('cy', n.y);
+      c.setAttribute('r', NODE_R); c.setAttribute('class', 'vn-bg');
+      g.appendChild(c);
+
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('class', 'vn-id');
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('dominant-baseline', 'central');
+      t.setAttribute('x', n.x); t.setAttribute('y', n.y);
+      t.textContent = n.id;
+      g.appendChild(t);
+
+      /* dfn/low 小标签（SCC 变体专属） */
+      if (step.dfn && step.dfn[n.id] !== undefined) {
+        const lbBg = document.createElementNS(NS, 'rect');
+        lbBg.setAttribute('x', n.x - 40);
+        lbBg.setAttribute('y', n.y + NODE_R + 6);
+        lbBg.setAttribute('width', 80);
+        lbBg.setAttribute('height', 15);
+        lbBg.setAttribute('rx', '4');
+        lbBg.setAttribute('class', 'vn-sub-bg');
+        g.appendChild(lbBg);
+
+        const lbT = document.createElementNS(NS, 'text');
+        lbT.setAttribute('class', 'vn-sub-txt');
+        lbT.setAttribute('text-anchor', 'middle');
+        lbT.setAttribute('dominant-baseline', 'central');
+        lbT.setAttribute('x', n.x);
+        lbT.setAttribute('y', n.y + NODE_R + 14);
+        lbT.textContent = `d=${step.dfn[n.id]},l=${step.low[n.id]}`;
+        g.appendChild(lbT);
+      }
+
+      nodeLayer.appendChild(g);
+    }
+  }
+
+  function renderGrid(v, step) {
+    const grid = v.grid;
+    const W = grid.cols, H = grid.rows;
+    const cellSize = 80;
+    const startX = (900 - W * cellSize) / 2;
+    const startY = (500 - H * cellSize) / 2;
+
+    for (let r = 0; r < H; r++) {
+      for (let c = 0; c < W; c++) {
+        const x = startX + c * cellSize;
+        const y = startY + r * cellSize;
+
+        const rect = document.createElementNS(NS, 'rect');
+        rect.setAttribute('x', x + 2);
+        rect.setAttribute('y', y + 2);
+        rect.setAttribute('width', cellSize - 4);
+        rect.setAttribute('height', cellSize - 4);
+        rect.setAttribute('rx', '6');
+
+        const label = step.gridLabels ? step.gridLabels[r][c] : -1;
+        let cls = 'vg-cell';
+        if (grid.cells[r][c]) {
+          if (step.isFinal && label >= 0) cls += ' labeled';
+          else if (label >= 0) cls += ' filled';
+        }
+        if (step.extraCells && step.extraCells[`${r}-${c}`] === 'merged') cls += ' merged';
+        rect.setAttribute('class', cls);
+        edgeLayer.appendChild(rect);
+
+        if (label >= 0) {
+          const t = document.createElementNS(NS, 'text');
+          t.setAttribute('class', 'vn-id');
+          t.setAttribute('text-anchor', 'middle');
+          t.setAttribute('dominant-baseline', 'central');
+          t.setAttribute('x', x + cellSize / 2);
+          t.setAttribute('y', y + cellSize / 2);
+          t.setAttribute('font-size', '20');
+          t.textContent = label;
+          edgeLayer.appendChild(t);
+        }
+      }
+    }
+  }
+
+  function renderHypergraph(v, step) {
+    for (const he of v.hyperedges) {
+      const isActive = step.extraHl?.[he.id] === 'active';
+      const points = he.nodes.map(id => v.nodes.find(n => n.id === id));
+      if (points.length < 2) continue;
+
+      let cx = 0, cy = 0;
+      for (const p of points) { cx += p.x; cy += p.y; }
+      cx /= points.length; cy /= points.length;
+
+      const pad = NODE_R + 22;
+      const ell = document.createElementNS(NS, 'ellipse');
+      ell.setAttribute('cx', cx); ell.setAttribute('cy', cy);
+      ell.setAttribute('rx', pad + 20);
+      ell.setAttribute('ry', pad);
+      ell.setAttribute('class', 'vg-hyper' + (isActive ? ' active' : ''));
+      edgeLayer.appendChild(ell);
+
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('class', 'vg-edge-label');
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('x', cx);
+      t.setAttribute('y', cy - pad - 6);
+      t.textContent = he.id;
+      edgeLayer.appendChild(t);
+    }
+
+    for (const n of v.nodes) {
+      const g = document.createElementNS(NS, 'g');
+      let cls = 'vg-node';
+      const st = step.nodeHl?.[n.id];
+      if (st) cls += ' ' + st;
+      g.setAttribute('class', cls);
+
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('cx', n.x); c.setAttribute('cy', n.y);
+      c.setAttribute('r', NODE_R); c.setAttribute('class', 'vn-bg');
+      g.appendChild(c);
+
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('class', 'vn-id');
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('dominant-baseline', 'central');
+      t.setAttribute('x', n.x); t.setAttribute('y', n.y);
+      t.textContent = n.id;
+      g.appendChild(t);
+
+      nodeLayer.appendChild(g);
+    }
+  }
+
+  /* =========================================================
+     加载
+     ========================================================= */
+  function loadVariant(id) {
+    currentVariantId = id;
+    const v = getVariant();
+
+    document.querySelectorAll('.vgt-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.id === id);
+    });
+
+    document.getElementById('vgtType').textContent = v.type;
+    document.getElementById('vgtTool').textContent = v.tool;
+    document.getElementById('vgtOx').textContent = v.ox;
+
+    currentSteps = v.buildSteps();
+    currentStepIdx = 0;
+
+    renderVariant();
+    updateStepLabel();
+    updateStatus(currentSteps[0]?.msg || '');
+
+    renderExplain(v);
+  }
+
+  function renderExplain(v) {
+    const el = document.getElementById('vgtExplain');
+    el.innerHTML = `
+      <div class="head">
+        ${v.type}
+        <span class="badge tool">${v.tool}</span>
+        <span class="badge ox">${v.ox}</span>
+      </div>
+      <div class="feature">🎯 核心特征：${v.feature}</div>
+      <ul>
+        ${v.explain.map(line => `<li>${line}</li>`).join('')}
+      </ul>
+    `;
+  }
+
+  function updateStepLabel() {
+    document.getElementById('vgtStepLabel').textContent =
+      `${currentStepIdx + 1} / ${currentSteps.length}`;
+  }
+  function updateStatus(msg) {
+    document.getElementById('vgtStatus').textContent = msg;
+  }
+
+  /* =========================================================
+     播放控制
+     ========================================================= */
+  function nextStep() {
+    if (currentStepIdx >= currentSteps.length - 1) { stopPlay(); return false; }
+    currentStepIdx++;
+    const step = currentSteps[currentStepIdx];
+    renderVariant();
+    updateStepLabel();
+    updateStatus(step.msg);
+    return true;
+  }
+  function startPlay() {
+    if (playTimer) return;
+    if (currentStepIdx >= currentSteps.length - 1) {
+      currentStepIdx = 0;
+      renderVariant();
+      updateStepLabel();
+      updateStatus(currentSteps[0].msg);
+    }
+    document.getElementById('vgtPlay').textContent = '⏸ 暂停';
+    playTimer = setInterval(() => {
+      if (!nextStep()) stopPlay();
+    }, 900);
+  }
+  function stopPlay() {
+    if (playTimer) { clearInterval(playTimer); playTimer = null; }
+    document.getElementById('vgtPlay').textContent = '▶ 开始演示';
+  }
+
+  document.getElementById('vgtSelector').addEventListener('click', e => {
+    const tab = e.target.closest('.vgt-tab');
+    if (!tab) return;
+    stopPlay();
+    loadVariant(tab.dataset.id);
+  });
+  document.getElementById('vgtPlay').addEventListener('click', () => {
+    if (playTimer) stopPlay();
+    else startPlay();
+  });
+  document.getElementById('vgtReset').addEventListener('click', () => {
+    stopPlay();
+    loadVariant(currentVariantId);
+  });
+
+  loadVariant('undirected');
+})();
+</script>

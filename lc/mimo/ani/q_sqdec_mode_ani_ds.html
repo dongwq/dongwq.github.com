@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>区间众数 · 分块（平方分解）动画</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1100px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead {
+    font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px;
+  }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  /* 数组格子 */
+  .cell .cell-bg {
+    fill: #ffffff; stroke: #cbd2d9; stroke-width: 2;
+    transition: fill .25s, stroke .25s, stroke-width .25s;
+  }
+  .cell .cell-val {
+    font-size: 22px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .cell .cell-idx {
+    font-family: ui-monospace, monospace;
+    font-size: 11px; font-weight: 600; fill: #829ab1;
+    pointer-events: none; user-select: none;
+  }
+  .cell.v1 .cell-bg { fill: #d5e8ff; }
+  .cell.v2 .cell-bg { fill: #c9efc9; }
+  .cell.v3 .cell-bg { fill: #ffe9c9; }
+  .cell.v1 .cell-val { fill: #2369ad; }
+  .cell.v2 .cell-val { fill: #2f7a34; }
+  .cell.v3 .cell-val { fill: #a35e00; }
+
+  .cell.hl-inrange .cell-bg { stroke: #7c5cd6; stroke-width: 3.5; }
+  .cell.hl-left   .cell-bg { fill: #ffd0b8; stroke: #d9713b; stroke-width: 3.5; }
+  .cell.hl-right  .cell-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3.5; }
+  .cell.hl-mid    .cell-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3; }
+  .cell.hl-cand   .cell-bg { stroke: #e09b00; stroke-width: 3.5; }
+  .cell.hl-mode   .cell-bg { fill: #ffd98a; stroke: #e09b00; stroke-width: 4; }
+
+  .block-bg { opacity: 0.55; }
+  .block-bg.b0 { fill: #f5f9ff; }
+  .block-bg.b1 { fill: #f7fbf5; }
+  .block-bg.b2 { fill: #fff9f0; }
+  .block-bg.b3 { fill: #f8f5ff; }
+
+  .block-label {
+    font-family: ui-monospace, monospace;
+    font-size: 12px; font-weight: 700; fill: #829ab1;
+    pointer-events: none; user-select: none;
+  }
+
+  .lbl-overlay {
+    font-size: 13px; font-weight: 700; fill: #4a5568;
+    pointer-events: none; user-select: none;
+    paint-order: stroke;
+    stroke: #ffffff;
+    stroke-width: 5;
+    stroke-linejoin: round;
+  }
+
+  /* 频率面板 */
+  .freq-panel {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .freq-panel .freq-header {
+    font-size: 13px; font-weight: 700; color: #243b53;
+  }
+  .freq-items {
+    display: flex; flex-wrap: wrap; gap: 10px;
+  }
+  .freq-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 8px;
+    background: #f0f4f8; border: 1.5px solid #dbe4ec;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px;
+    transition: background .25s, border-color .25s;
+  }
+  .freq-item .freq-val {
+    font-weight: 800; font-size: 15px; color: #4a5568;
+    min-width: 18px; text-align: center;
+  }
+  .freq-item .freq-cnt {
+    font-weight: 700; font-size: 13px; color: #627d98;
+  }
+  .freq-item.v1 { background: #eef6ff; border-color: #c7defa; }
+  .freq-item.v1 .freq-val { color: #2369ad; }
+  .freq-item.v2 { background: #effcf1; border-color: #b8e0bf; }
+  .freq-item.v2 .freq-val { color: #2f7a34; }
+  .freq-item.v3 { background: #fff7ed; border-color: #ffd0b8; }
+  .freq-item.v3 .freq-val { color: #a35e00; }
+  .freq-item.hl { border-color: #e09b00; box-shadow: 0 0 0 3px rgba(224,155,0,.15); }
+  .freq-item.best { background: #d4f4dd; border-color: #2f7a34; }
+  .freq-item.best .freq-cnt { color: #1c5e28; font-weight: 800; }
+  .freq-empty {
+    font-size: 12px; color: #829ab1; font-style: italic;
+  }
+
+  /* mode 表 */
+  .mode-wrap {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-direction: column; gap: 8px;
+    overflow-x: auto;
+  }
+  .mode-wrap .title {
+    font-size: 13px; font-weight: 700; color: #243b53;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .mode-wrap .title .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1;
+  }
+  table.mode-table {
+    border-collapse: separate; border-spacing: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+  }
+  table.mode-table th {
+    background: #eef4fa; color: #2369ad;
+    padding: 4px 10px; border-radius: 5px;
+    font-weight: 700; font-size: 11.5px;
+    text-align: center; white-space: nowrap;
+  }
+  table.mode-table td {
+    background: #f8fafc; color: #4a5568;
+    padding: 4px 10px; border-radius: 5px;
+    text-align: center; min-width: 60px;
+    border: 1px solid #dbe4ec;
+    transition: background .25s, color .25s, border-color .25s, transform .2s;
+  }
+  table.mode-table td.empty { background: #f2f4f7; color: #cbd2d9; }
+  table.mode-table td.building { background: #fffbf2; color: #a35e00; border-color: #ffd98a; transform: scale(1.08); }
+  table.mode-table td.computed { background: #eaf9ee; color: #2f7a34; border-color: #b8e0bf; }
+  table.mode-table td.highlight { background: #ffd0b8; color: #a34d1a; border-color: #d9713b; font-weight: 800; }
+  table.mode-table td.answer { background: #b0e8c2; color: #1c5e28; border-color: #2f7a34; font-weight: 800; }
+
+  /* 面板 */
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.pre    { color: #2f7a34; }
+  .row-label.query  { color: #7c5cd6; }
+
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  .stat-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #f0f7ff; color: #2369ad;
+    padding: 4px 12px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600;
+    border: 1px solid #c7defa;
+  }
+  .stat-badge .num {
+    font-family: ui-monospace, monospace;
+    font-size: 14px; font-weight: 800; color: #2a7fd0;
+  }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.purple  { background: #7c5cd6; border-color: #7c5cd6; color: #fff; }
+  button.purple:hover { background: #634ab0; border-color: #634ab0; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.danger:hover { background: #b33232; border-color: #b33232; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost   { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+  button.ghost:hover { background: #f0f7ff; }
+  button.orange  { background: #d9713b; border-color: #d9713b; color: #fff; }
+  button.orange:hover { background: #b95a28; border-color: #b95a28; }
+
+  input[type="number"] {
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border-radius: 7px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    width: 68px;
+  }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 640px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>区间众数 · 分块（平方分解）动画</h1>
+  <p class="subtitle" id="subtitle">
+    块大小 <code>B ≈ √N</code> · 预处理 <code>mode[i][j]</code> = 第 i 块到第 j 块的众数 · 单次查询 <b>O(√N)</b>
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · 分块如何把区间众数查询降到 O(√N)？</h2>
+    <p class="intro-lead">
+      区间众数（出现次数最多的值）是个经典难题，因为"众数"不像"最大值"那样可合并——
+      两段的众数合并后不一定是整体的众数。分块的做法是：
+      把数组按 <code>B ≈ √N</code> 切成若干块，先 <b>O(N√N)</b> 预处理出每一对"起始块到结束块"的众数 <code>mode[i][j]</code>。
+      查询 <code>[l, r]</code> 时，把区间拆成"左碎片 + 中间整块 + 右碎片"。
+      由于最优解要么落在中间整块里（此时它一定是 <code>mode[左块+1][右块-1]</code>），要么落在两端碎片里，
+      所以只需对 <b>两端碎片中的每个值 + 中间块的众数</b> 这几个候选值统计它们在 <code>[l, r]</code> 内的真实频率即可。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">核心 1</div>
+        <div class="title">块大小 B ≈ √N</div>
+        <div class="desc">
+          N 个元素分成 <code>N/B</code> 块。<br>
+          · 预处理 <code>O(N²/B) = O(N√N)</code><br>
+          · 单次查询 <code>O(B + 候选数) = O(√N)</code><br>
+          块太大预处理慢，块太小查询慢——√N 是平衡点。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 2</div>
+        <div class="title">mode[i][j] 预计算</div>
+        <div class="desc">
+          <code>mode[i][j]</code> = 从第 i 块到第 j 块的众数。<br>
+          固定 i，逐步增加 j：每次把第 j 块加入计数，<br>
+          更新当前众数即可。<br>
+          共 <code>O(N/B)²</code> 个状态，每个状态均摊 O(B)，总 <code>O(N²/B)</code>。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 3</div>
+        <div class="title">查询：两端暴力 + 中间查表</div>
+        <div class="desc">
+          区间 <code>[l, r]</code> 拆成：<br>
+          · 左碎片（l 到左块末尾）<br>
+          · 中间整块（直接查 <code>mode</code> 表）<br>
+          · 右碎片（右块开头到 r）<br>
+          候选值 = 左碎片 ∪ 右碎片 ∪ {中间块的众数}
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">证明</div>
+        <div class="title">候选集合为什么够用？</div>
+        <div class="desc">
+          设 v* 是 <code>[l, r]</code> 的众数。<br>
+          · 若 v* 出现在中间块 → 它在中间块的频率 ≤ <code>mode</code> 的频率，<br> 而 <code>mode</code> 也在候选里，所以 v* 不会漏。<br>
+          · 若 v* 不出现在中间块 → 它必然出现在两端碎片中，也在候选里。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">复杂度</div>
+        <div class="title">O(N√N) 预处理 + O(√N) 查询</div>
+        <div class="desc">
+          预处理：<code>O(N²/B) = O(N√N)</code><br>
+          每次查询：<br>
+          · 枚举候选：<code>O(B)</code><br>
+          · 每个候选统计频率：<code>O(1)</code>（用位置列表 + 二分）<br>
+          总计 <code>O(√N log N)</code> 或 <code>O(√N)</code>（用前缀频率表）
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">对比</div>
+        <div class="title">分块 vs 其他做法</div>
+        <div class="desc">
+          · <b>暴力</b>：每次 <code>O(r−l+1)</code><br>
+          · <b>莫队</b>：<code>O((N+Q)√N)</code>，需离线<br>
+          · <b>分块</b>：<code>O(N√N + Q√N)</code>，可在线<br>
+          · <b>可持久化线段树</b>：只能求"出现次数"，求众数做不到
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 380" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="freq-panel">
+    <div class="freq-header">候选值频率统计（在区间 [l, r] 内）</div>
+    <div class="freq-items" id="freqItems">
+      <span class="freq-empty">（尚未查询）</span>
+    </div>
+  </div>
+
+  <div class="mode-wrap">
+    <div class="title">
+      mode 表 · mode[i][j] = 第 i 块到第 j 块的众数
+      <span class="hint" id="modeStat">N=16 · B=4 · 4 块</span>
+    </div>
+    <table class="mode-table" id="modeTable"></table>
+  </div>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label pre">预处理</span>
+      <button id="btnBuild" class="primary">构建 mode 表</button>
+      <span class="stat-badge">
+        数组长度 N = <span class="num" id="nStat">16</span>
+      </span>
+      <span class="stat-badge">
+        块大小 B = <span class="num" id="bStat">4</span>
+      </span>
+      <span class="stat-badge">
+        块数 = <span class="num" id="nbStat">4</span>
+      </span>
+      <span class="row-hint">
+        预处理出所有 <code>mode[i][j]</code>，<b>只做一次</b>，供后续查询使用
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label query">区间查询</span>
+      <span class="label">[</span>
+      <input id="qryL" type="number" value="2" min="0" max="15">
+      <span class="label">..</span>
+      <input id="qryR" type="number" value="13" min="0" max="15">
+      <span class="label">]</span>
+      <button id="btnQuery" class="purple">query(l, r)</button>
+      <span class="row-hint">
+        演示：区间分解 → 候选收集 → 频率统计 → 输出众数
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label pre">快捷</span>
+      <button id="btnReset" class="ghost">重置</button>
+      <span class="row-hint">
+        建议查询：<code>[2, 13]</code>、<code>[1, 10]</code>、<code>[0, 15]</code>、<code>[5, 7]</code>（同块内）
+      </span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 先点「构建 mode 表」，再选区间查众数，或点击「开始演示」</div>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 分块求区间众数 <span class="hint">平方分解的经典应用</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · 分块求区间众数
+      <span class="badge">预处理 O(N√N) + 查询 O(√N)</span>
+      <span class="hint">支持在线查询</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyCode"></pre></div>
+  </details>
+</div>
+
+<!-- ============ Python 源码 ============ -->
+<script type="text/plain" id="pySrc">
+"""
+区间众数查询（Range Mode Query）—— 分块（平方分解）。
+
+问题：
+    给定数组 a[0..n-1]，多次询问区间 [l, r]（闭区间，0-based），
+    求区间内出现次数最多的值（众数）及其出现次数。
+
+分块做法：
+    1. 令 B = ⌊√n⌋，把数组切成 nb = ⌈n/B⌉ 块
+    2. 预处理 mode[i][j] = 从第 i 块到第 j 块的众数（含出现次数）
+       · 固定 i，向右扩展 j；每次把第 j 块加入计数，更新众数
+       · 总复杂度 O(n²/B) = O(n√n)
+    3. 查询 [l, r]：
+       · 若 l、r 在同一块 → 直接暴力统计
+       · 否则把区间拆成：
+           - 左碎片：[l, 左块右边界]
+           - 中间整块：直接查 mode[左块+1][右块-1]
+           - 右碎片：[右块左边界, r]
+         候选值 = 左碎片 ∪ 右碎片 ∪ {中间块的众数}
+         对每个候选值，统计它在整个 [l, r] 内的真实出现次数，取最大者。
+
+为什么候选集合够用？
+    设 v* 是 [l, r] 的真正众数。
+    · 若 v* 只出现在中间块：它在中间块的频率 ≤ mode 的频率，
+      而 mode 也在候选集合中，所以 v* 不会漏。
+    · 若 v* 出现在两端碎片：v* 已加入候选集合。
+
+复杂度：
+    预处理 O(n√n)
+    单次查询 O(√n log n)（用位置列表 + 二分）或 O(√n)（用前缀频率）
+"""
+
+import math
+from collections import defaultdict
+from bisect import bisect_left, bisect_right
+
+
+# ============================================================
+# 模块 1：预处理
+# ============================================================
+class RangeMode:
+    def __init__(self, a):
+        self.a = a
+        self.n = len(a)
+        self.B = max(1, int(math.isqrt(self.n)))          # 块大小 ≈ √n
+        self.nb = (self.n + self.B - 1) // self.B          # 块数
+
+        # 每个值出现的位置列表（升序），用于 O(log n) 统计区间频率
+        self.pos = defaultdict(list)
+        for i, v in enumerate(a):
+            self.pos[v].append(i)
+
+        # 预计算 mode[i][j] = (众数值, 出现次数)
+        # mode[i][j] 表示从块 i 到块 j 的众数
+        self.mode = [[None] * self.nb for _ in range(self.nb)]
+        for i in range(self.nb):
+            cnt = defaultdict(int)
+            best_v, best_c = None, 0
+            for j in range(i, self.nb):
+                lo = j * self.B
+                hi = min(self.n, (j + 1) * self.B)
+                for k in range(lo, hi):
+                    v = a[k]
+                    cnt[v] += 1
+                    if cnt[v] > best_c or (cnt[v] == best_c and (best_v is None or v < best_v)):
+                        best_c = cnt[v]
+                        best_v = v
+                self.mode[i][j] = (best_v, best_c)
+
+    # --------------------------------------------------------
+    # 在区间 [l, r] 内统计值 v 的出现次数
+    # --------------------------------------------------------
+    def _count(self, v, l, r):
+        lst = self.pos[v]
+        return bisect_right(lst, r) - bisect_left(lst, l)
+
+    # --------------------------------------------------------
+    # 查询
+    # --------------------------------------------------------
+    def query(self, l, r):
+        """返回 (众数, 出现次数)。区间为闭区间 [l, r]，0-based。"""
+        if l > r:
+            return (None, 0)
+
+        bl = l // self.B
+        br = r // self.B
+
+        # 情况 1：同一块内，直接暴力
+        if bl == br:
+            cnt = defaultdict(int)
+            best_v, best_c = None, 0
+            for k in range(l, r + 1):
+                v = self.a[k]
+                cnt[v] += 1
+                if cnt[v] > best_c or (cnt[v] == best_c and (best_v is None or v < best_v)):
+                    best_c = cnt[v]
+                    best_v = v
+            return (best_v, best_c)
+
+        # 情况 2：跨块
+        # 2.1 收集候选值：左碎片 + 右碎片 + 中间整块的众数
+        candidates = set()
+        left_end = min(r, (bl + 1) * self.B - 1)
+        for k in range(l, left_end + 1):
+            candidates.add(self.a[k])
+        right_start = br * self.B
+        for k in range(right_start, r + 1):
+            candidates.add(self.a[k])
+        if bl + 1 <= br - 1:
+            mid_v, _ = self.mode[bl + 1][br - 1]
+            candidates.add(mid_v)
+
+        # 2.2 对每个候选值统计真实频率
+        best_v, best_c = None, 0
+        for v in candidates:
+            c = self._count(v, l, r)
+            if c > best_c or (c == best_c and (best_v is None or v < best_v)):
+                best_c = c
+                best_v = v
+        return (best_v, best_c)
+
+
+# ============================================================
+# 模块 2：演示
+# ============================================================
+if __name__ == '__main__':
+    a = [1, 2, 2, 1, 2, 3, 1, 2, 3, 3, 2, 2, 1, 2, 3, 2]
+    rm = RangeMode(a)
+    print(f'n = {rm.n}, B = {rm.B}, 块数 = {rm.nb}')
+    print()
+
+    print('mode 表（行 = 起始块，列 = 结束块）：')
+    for i in range(rm.nb):
+        row = []
+        for j in range(i, rm.nb):
+            v, c = rm.mode[i][j]
+            row.append(f'[{i},{j}]=({v},{c})')
+        print('  ', '  '.join(row))
+    print()
+
+    for (l, r) in [(2, 13), (1, 10), (0, 15), (5, 7), (3, 12)]:
+        v, c = rm.query(l, r)
+        print(f'query({l:>2}, {r:>2}) = ({v}, {c})')
+</script>
+
+<script>
+/* =========================================================
+   1. 数据与状态
+   ========================================================= */
+const A = [1, 2, 2, 1, 2, 3, 1, 2, 3, 3, 2, 2, 1, 2, 3, 2];
+const N = A.length;
+const B = Math.max(1, Math.floor(Math.sqrt(N)));
+const NB = Math.ceil(N / B);
+
+let mode = [];          /* mode[i][j] = { v, c } */
+let built = false;
+let busy = false;
+let inDemo = false;
+
+let cellHl = {};        /* i -> '' | 'inrange' | 'left' | 'right' | 'mid' | 'cand' | 'mode' */
+let cellState = {};     /* "i-j" -> '' | 'building' | 'computed' | 'highlight' | 'answer' */
+
+/* 频率面板内容 */
+let freqState = [];     /* [{ v, c, best }] */
+
+/* =========================================================
+   2. 坐标布局
+   ========================================================= */
+const SVG_W = 900, SVG_H = 380;
+const CELL_W = 48, CELL_H = 60, CELL_GAP = 5;
+const TOTAL_W = N * CELL_W + (N - 1) * CELL_GAP;
+const START_X = (SVG_W - TOTAL_W) / 2;
+const CELL_Y = 110;
+
+const cellX = i => START_X + i * (CELL_W + CELL_GAP);
+const cellCx = i => cellX(i) + CELL_W / 2;
+const cellCy = CELL_Y + CELL_H / 2;
+
+/* 块背景的边界 */
+function blockRange(b) {
+  const lo = b * B;
+  const hi = Math.min(N, (b + 1) * B) - 1;
+  return [lo, hi];
+}
+
+/* =========================================================
+   3. SVG 构建
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const defs = document.createElementNS(NS, 'defs');
+svg.appendChild(defs);
+const bgLayer   = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+const lblLayer  = document.createElementNS(NS, 'g');
+svg.appendChild(bgLayer);
+svg.appendChild(nodeLayer);
+svg.appendChild(lblLayer);
+
+/* =========================================================
+   4. 渲染
+   ========================================================= */
+function render() {
+  bgLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+  lblLayer.innerHTML = '';
+
+  /* ---------- 块背景 ---------- */
+  for (let b = 0; b < NB; b++) {
+    const [lo, hi] = blockRange(b);
+    const x1 = cellX(lo) - 6;
+    const x2 = cellX(hi) + CELL_W + 6;
+    const rect = document.createElementNS(NS, 'rect');
+    rect.setAttribute('x', x1);
+    rect.setAttribute('y', CELL_Y - 16);
+    rect.setAttribute('width', x2 - x1);
+    rect.setAttribute('height', CELL_H + 32);
+    rect.setAttribute('rx', '10');
+    rect.setAttribute('class', 'block-bg b' + (b % 4));
+    bgLayer.appendChild(rect);
+
+    /* 块编号 */
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('class', 'block-label');
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('x', (x1 + x2) / 2);
+    t.setAttribute('y', CELL_Y - 22);
+    t.setAttribute('dominant-baseline', 'central');
+    t.textContent = '块 ' + b;
+    lblLayer.appendChild(t);
+  }
+
+  /* ---------- 数组格子 ---------- */
+  for (let i = 0; i < N; i++) {
+    const v = A[i];
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'cell v' + v;
+    if (cellHl[i]) cls += ' hl-' + cellHl[i];
+    g.setAttribute('class', cls);
+
+    /* 底框 */
+    const rect = document.createElementNS(NS, 'rect');
+    rect.setAttribute('class', 'cell-bg');
+    rect.setAttribute('x', cellX(i));
+    rect.setAttribute('y', CELL_Y);
+    rect.setAttribute('width', CELL_W);
+    rect.setAttribute('height', CELL_H);
+    rect.setAttribute('rx', '8');
+    g.appendChild(rect);
+
+    /* 索引（上方） */
+    const idx = document.createElementNS(NS, 'text');
+    idx.setAttribute('class', 'cell-idx');
+    idx.setAttribute('text-anchor', 'middle');
+    idx.setAttribute('x', cellCx(i));
+    idx.setAttribute('y', CELL_Y - 6);
+    idx.setAttribute('dominant-baseline', 'central');
+    idx.textContent = i;
+    g.appendChild(idx);
+
+    /* 值（中间） */
+    const val = document.createElementNS(NS, 'text');
+    val.setAttribute('class', 'cell-val');
+    val.setAttribute('text-anchor', 'middle');
+    val.setAttribute('x', cellCx(i));
+    val.setAttribute('y', cellCy);
+    val.setAttribute('dominant-baseline', 'central');
+    val.textContent = v;
+    g.appendChild(val);
+
+    nodeLayer.appendChild(g);
+  }
+
+  /* ---------- 区间标注（如果设置了 l、r） ---------- */
+  if (typeof render._lr !== 'undefined' && render._lr !== null) {
+    const { l, r, txt } = render._lr;
+    /* 用箭头标注 l 和 r */
+    if (typeof l === 'number') {
+      const arr = document.createElementNS(NS, 'path');
+      const x = cellCx(l);
+      const y1 = CELL_Y - 28;
+      const y2 = CELL_Y - 16;
+      arr.setAttribute('d', `M ${x} ${y1} L ${x} ${y2}`);
+      arr.setAttribute('stroke', '#d9713b');
+      arr.setAttribute('stroke-width', '2.5');
+      arr.setAttribute('fill', 'none');
+      lblLayer.appendChild(arr);
+
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('class', 'lbl-overlay');
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('x', x);
+      t.setAttribute('y', y1 - 4);
+      t.setAttribute('dominant-baseline', 'central');
+      t.textContent = txt === 'l' ? `l=${l}` : 'l';
+      lblLayer.appendChild(t);
+    }
+    if (typeof r === 'number') {
+      const arr = document.createElementNS(NS, 'path');
+      const x = cellCx(r);
+      const y1 = CELL_Y - 28;
+      const y2 = CELL_Y - 16;
+      arr.setAttribute('d', `M ${x} ${y1} L ${x} ${y2}`);
+      arr.setAttribute('stroke', '#7c5cd6');
+      arr.setAttribute('stroke-width', '2.5');
+      arr.setAttribute('fill', 'none');
+      lblLayer.appendChild(arr);
+
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('class', 'lbl-overlay');
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('x', x);
+      t.setAttribute('y', y1 - 4);
+      t.setAttribute('dominant-baseline', 'central');
+      t.textContent = txt === 'r' ? `r=${r}` : 'r';
+      lblLayer.appendChild(t);
+    }
+  }
+
+  renderModeTable();
+  renderFreqPanel();
+}
+
+function setLR(l, r, txt) {
+  render._lr = { l, r, txt };
+}
+
+function clearLR() {
+  render._lr = null;
+}
+
+/* =========================================================
+   5. mode 表渲染
+   ========================================================= */
+function renderModeTable() {
+  const tbl = document.getElementById('modeTable');
+  tbl.innerHTML = '';
+
+  /* 表头 */
+  const thead = document.createElement('thead');
+  const trh = document.createElement('tr');
+  trh.innerHTML = '<th>i \\ j</th>' +
+    Array.from({ length: NB }, (_, j) => `<th>j=${j}</th>`).join('');
+  thead.appendChild(trh);
+  tbl.appendChild(thead);
+
+  /* 表体 */
+  const tbody = document.createElement('tbody');
+  for (let i = 0; i < NB; i++) {
+    const tr = document.createElement('tr');
+    const tdId = document.createElement('td');
+    tdId.textContent = 'i=' + i;
+    tdId.style.background = '#d5e8ff';
+    tdId.style.color = '#2369ad';
+    tdId.style.fontWeight = '800';
+    tr.appendChild(tdId);
+
+    for (let j = 0; j < NB; j++) {
+      const td = document.createElement('td');
+      if (j < i) {
+        td.className = 'empty';
+        td.textContent = '—';
+      } else if (mode[i] && mode[i][j]) {
+        const key = i + '-' + j;
+        const st = cellState[key] || '';
+        const { v, c } = mode[i][j];
+        td.textContent = `(${v},${c})`;
+        if (st === 'computed')   td.classList.add('computed');
+        if (st === 'building')   td.classList.add('building');
+        if (st === 'highlight')  td.classList.add('highlight');
+        if (st === 'answer')     td.classList.add('answer');
+      } else {
+        td.className = 'empty';
+        td.textContent = '·';
+      }
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  tbl.appendChild(tbody);
+}
+
+/* =========================================================
+   6. 频率面板渲染
+   ========================================================= */
+function renderFreqPanel() {
+  const el = document.getElementById('freqItems');
+  if (freqState.length === 0) {
+    el.innerHTML = '<span class="freq-empty">（尚未查询）</span>';
+    return;
+  }
+  el.innerHTML = '';
+  for (const it of freqState) {
+    const div = document.createElement('div');
+    let cls = 'freq-item v' + it.v;
+    if (it.hl)   cls += ' hl';
+    if (it.best) cls += ' best';
+    div.className = cls;
+    div.innerHTML = `<span class="freq-val">${it.v}</span><span class="freq-cnt">×${it.c}</span>`;
+    el.appendChild(div);
+  }
+}
+
+/* =========================================================
+   7. 状态工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+function clearHl() {
+  cellHl = {};
+  cellState = {};
+  freqState = [];
+}
+
+function setButtonsDisabled(d) {
+  if (inDemo) d = true;
+  for (const id of ['btnBuild', 'btnQuery', 'btnReset', 'btnDemoStart']) {
+    const el = document.getElementById(id);
+    if (el) el.disabled = d;
+  }
+  for (const id of ['qryL', 'qryR']) {
+    const el = document.getElementById(id);
+    if (el) el.disabled = d;
+  }
+}
+
+/* 显示某值在区间内的所有位置 */
+function markValueOccurrences(v, l, r, state) {
+  for (let i = l; i <= r; i++) {
+    if (A[i] === v) cellHl[i] = state;
+  }
+}
+
+/* =========================================================
+   8. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   9. 预处理动画
+   ========================================================= */
+async function animatedBuild() {
+  if (busy && !inDemo) return;
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+  mode = [];
+  built = false;
+  setLR(null);
+  render();
+
+  setStatus(`预处理开始：把数组分成 ${NB} 块，每块大小 B = ${B}，逐对块计算 mode[i][j]`);
+  await tick(700);
+
+  for (let i = 0; i < NB; i++) {
+    /* 高亮起始块 */
+    for (let k = 0; k < N; k++) {
+      if (Math.floor(k / B) === i) cellHl[k] = 'left';
+    }
+    setStatus(`固定起始块 i = ${i}，向右逐步扩展 j 并维护众数`);
+    render();
+    await tick(500);
+
+    /* 清掉上次的临时高亮 */
+    for (let k = 0; k < N; k++) {
+      if (cellHl[k] === 'mid' || cellHl[k] === 'right') cellHl[k] = '';
+    }
+
+    const cnt = {};
+    let bestV = null, bestC = 0;
+
+    for (let j = i; j < NB; j++) {
+      /* 高亮当前块 j */
+      const [lo, hi] = blockRange(j);
+      for (let k = lo; k <= hi; k++) {
+        cellHl[k] = (j === i ? 'left' : 'right');
+      }
+      render();
+      setStatus(`  j = ${j}：把块 ${j}（索引 ${lo}..${hi}）加入计数`);
+      await tick(500);
+
+      /* 把整块加入计数 */
+      for (let k = lo; k <= hi; k++) {
+        const v = A[k];
+        cnt[v] = (cnt[v] || 0) + 1;
+        if (cnt[v] > bestC || (cnt[v] === bestC && (bestV === null || v < bestV))) {
+          bestC = cnt[v];
+          bestV = v;
+        }
+      }
+
+      if (!mode[i]) mode[i] = [];
+      mode[i][j] = { v: bestV, c: bestC };
+      cellState[i + '-' + j] = 'building';
+      render();
+      setStatus(`  mode[${i}][${j}] = (${bestV}, ${bestC})`);
+      await tick(500);
+
+      cellState[i + '-' + j] = 'computed';
+      render();
+      await tick(200);
+    }
+
+    /* 清掉左侧高亮 */
+    for (let k = 0; k < N; k++) {
+      if (cellHl[k] === 'left' || cellHl[k] === 'right') cellHl[k] = '';
+    }
+    render();
+    await tick(300);
+  }
+
+  clearHl();
+  render();
+  setStatus(`✔ 预处理完成：mode 表共 ${NB * (NB + 1) / 2} 个状态`);
+  built = true;
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   10. 查询动画
+   ========================================================= */
+function countInRange(v, l, r) {
+  let c = 0;
+  for (let i = l; i <= r; i++) if (A[i] === v) c++;
+  return c;
+}
+
+async function animatedQuery(l, r) {
+  if (busy && !inDemo) return;
+  if (!built) {
+    /* 兜底：没建就自动建 */
+    buildSync();
+    render();
+  }
+  if (l < 0 || r >= N || l > r) {
+    setStatus(`✘ 区间不合法，需要 0 ≤ l ≤ r ≤ ${N - 1}`);
+    return;
+  }
+
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+  setLR(l, r, 'lr');
+  render();
+
+  setStatus(`query(${l}, ${r})：目标区间 a[${l}..${r}] = [${A.slice(l, r + 1).join(', ')}]`);
+  await tick(800);
+
+  const bl = Math.floor(l / B);
+  const br = Math.floor(r / B);
+
+  /* ---------- 情况 1：同一块 ---------- */
+  if (bl === br) {
+    setStatus(`l 和 r 都在块 ${bl} 内 → 直接暴力统计`);
+    await tick(600);
+
+    for (let i = l; i <= r; i++) cellHl[i] = 'inrange';
+    render();
+    await tick(400);
+
+    const cnt = {};
+    let bestV = null, bestC = 0;
+    for (let i = l; i <= r; i++) {
+      const v = A[i];
+      cnt[v] = (cnt[v] || 0) + 1;
+      if (cnt[v] > bestC) { bestC = cnt[v]; bestV = v; }
+    }
+
+    freqState = Object.keys(cnt).map(k => ({
+      v: +k, c: cnt[k], hl: false, best: false
+    })).sort((a, b) => a.v - b.v);
+    const bestItem = freqState.find(x => x.v === bestV);
+    if (bestItem) bestItem.best = true;
+    render();
+    setStatus(`  → 众数 = ${bestV}，出现 ${bestC} 次`);
+    await tick(1200);
+
+    clearHl();
+    clearLR();
+    render();
+    busy = false;
+    if (!inDemo) setButtonsDisabled(false);
+    return;
+  }
+
+  /* ---------- 情况 2：跨块 ---------- */
+  const leftEnd = Math.min(r, (bl + 1) * B - 1);
+  const rightStart = br * B;
+
+  setStatus(`左块 = ${bl}，右块 = ${br} → 拆成「左碎片 + 中间整块 + 右碎片」`);
+  await tick(700);
+
+  /* 高亮左碎片 */
+  for (let i = l; i <= leftEnd; i++) cellHl[i] = 'left';
+  render();
+  setStatus(`① 左碎片：a[${l}..${leftEnd}] = [${A.slice(l, leftEnd + 1).join(', ')}]`);
+  await tick(700);
+
+  /* 高亮右碎片 */
+  for (let i = rightStart; i <= r; i++) cellHl[i] = 'right';
+  render();
+  setStatus(`② 右碎片：a[${rightStart}..${r}] = [${A.slice(rightStart, r + 1).join(', ')}]`);
+  await tick(700);
+
+  /* 中间整块 */
+  let midV = null;
+  if (bl + 1 <= br - 1) {
+    for (let i = (bl + 1) * B; i <= br * B - 1; i++) cellHl[i] = 'mid';
+    midV = mode[bl + 1][br - 1].v;
+    cellState[bl + 1 + '-' + (br - 1)] = 'highlight';
+    render();
+    setStatus(`③ 中间整块：块 ${bl + 1}..${br - 1}，查 mode 表 → mode[${bl + 1}][${br - 1}] = (${midV}, ${mode[bl + 1][br - 1].c})`);
+    await tick(900);
+  } else {
+    setStatus(`③ 中间没有整块（左块和右块相邻）`);
+    await tick(600);
+  }
+
+  /* 收集候选值 */
+  const candidates = new Set();
+  for (let i = l; i <= leftEnd; i++) candidates.add(A[i]);
+  for (let i = rightStart; i <= r; i++) candidates.add(A[i]);
+  if (midV !== null) candidates.add(midV);
+
+  const candList = Array.from(candidates).sort((a, b) => a - b);
+  setStatus(`候选集合 = {${candList.join(', ')}}（左碎片 ∪ 右碎片 ∪ {中间块众数}）`);
+  await tick(900);
+
+  /* 对每个候选值统计频率 */
+  freqState = [];
+  let bestV = null, bestC = 0;
+
+  for (const v of candList) {
+    /* 高亮当前候选的格子 */
+    for (let i = l; i <= r; i++) cellHl[i] = 'inrange';
+    for (let i = l; i <= r; i++) {
+      if (A[i] === v) cellHl[i] = 'cand';
+    }
+    render();
+
+    const c = countInRange(v, l, r);
+    freqState.push({ v, c, hl: true, best: false });
+    render();
+    setStatus(`  候选值 ${v}：在 [${l}, ${r}] 内出现 ${c} 次`);
+    await tick(650);
+
+    if (c > bestC || (c === bestC && (bestV === null || v < bestV))) {
+      bestC = c;
+      bestV = v;
+    }
+
+    /* 关闭 hl 状态，保留计数 */
+    const item = freqState.find(x => x.v === v);
+    if (item) item.hl = false;
+    render();
+    await tick(200);
+  }
+
+  /* 高亮最终众数 */
+  const bestItem = freqState.find(x => x.v === bestV);
+  if (bestItem) bestItem.best = true;
+  for (let i = l; i <= r; i++) cellHl[i] = 'inrange';
+  markValueOccurrences(bestV, l, r, 'mode');
+  render();
+  setStatus(`✔ query(${l}, ${r}) = (${bestV}, ${bestC})`);
+  await tick(1500);
+
+  clearHl();
+  clearLR();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* 同步构建（用于兜底） */
+function buildSync() {
+  mode = [];
+  for (let i = 0; i < NB; i++) {
+    const cnt = {};
+    let bestV = null, bestC = 0;
+    for (let j = i; j < NB; j++) {
+      const [lo, hi] = blockRange(j);
+      for (let k = lo; k <= hi; k++) {
+        const v = A[k];
+        cnt[v] = (cnt[v] || 0) + 1;
+        if (cnt[v] > bestC || (cnt[v] === bestC && (bestV === null || v < bestV))) {
+          bestC = cnt[v];
+          bestV = v;
+        }
+      }
+      if (!mode[i]) mode[i] = [];
+      mode[i][j] = { v: bestV, c: bestC };
+      cellState[i + '-' + j] = 'computed';
+    }
+  }
+  built = true;
+}
+
+/* =========================================================
+   11. 自动演示
+   ========================================================= */
+async function autoDemo() {
+  clearHl();
+  mode = [];
+  built = false;
+  setLR(null);
+  render();
+  await tick(400);
+
+  await animatedBuild();
+  await tick(500);
+
+  setStatus('① 查询 [2, 13] —— 跨越 4 个块，中间有整块');
+  await tick(400);
+  await animatedQuery(2, 13);
+  await tick(500);
+
+  setStatus('② 查询 [1, 10] —— 另一个跨块区间');
+  await tick(400);
+  await animatedQuery(1, 10);
+  await tick(500);
+
+  setStatus('③ 查询 [0, 15] —— 整个数组');
+  await tick(400);
+  await animatedQuery(0, 15);
+  await tick(500);
+
+  setStatus('④ 查询 [5, 7] —— 同一块内，退化到暴力');
+  await tick(400);
+  await animatedQuery(5, 7);
+  await tick(400);
+
+  setStatus('✔ 演示结束：跨块、同块、整段都覆盖了');
+}
+
+/* =========================================================
+   12. 演示控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const demoModeGroup = document.getElementById('demoModeGroup');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  }
+}
+
+async function startDemo(mode_) {
+  if (demoRunning) return;
+  demoRunning = true;
+  inDemo = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode_ === 'step');
+  setButtonsDisabled(true);
+  updateDemoUI();
+
+  if (mode_ === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await autoDemo();
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  inDemo = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  busy = false;
+  setButtonsDisabled(false);
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+/* =========================================================
+   13. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: '区间众数问题', key: true, lines: [
+    '给定数组 a[0..n-1]，多次询问区间 <code>[l, r]</code>',
+    '求区间内<b>出现次数最多的值</b>及其出现次数',
+    '难点：众数<b>不可合并</b>——两段的众数合起来不一定是整体的众数',
+    '所以线段树 / 树状数组都失效，需要别的思路',
+  ]},
+  { icon: '🧱', title: '分块的基本框架', key: true, lines: [
+    '把数组按 <code>B ≈ √n</code> 切成若干块',
+    '预处理 <code>mode[i][j]</code>：从块 i 到块 j 的众数',
+    '查询时把 <code>[l, r]</code> 拆成<b>左碎片 + 中间整块 + 右碎片</b>',
+    '中间整块直接查表，两端碎片暴力统计',
+  ]},
+  { icon: '📊', title: 'mode 表的预计算', key: true, lines: [
+    '对每个起始块 i，从 i 开始向右扩展 j',
+    '维护一个计数数组，每次把第 j 块整体加入',
+    '把当前众数存入 <code>mode[i][j]</code>',
+    '固定 i 的一趟是 <code>O(n)</code>，共 <code>O(n/B)</code> 个 i，总 <code>O(n²/B) = O(n√n)</code>',
+  ]},
+  { icon: '🔍', title: '查询的三个步骤', key: true, lines: [
+    '① 定位左右块 <code>bl = l/B</code>, <code>br = r/B</code>',
+    '② 收集候选值：左碎片 ∪ 右碎片 ∪ {mode[bl+1][br-1]}',
+    '③ 对每个候选值统计它在 <code>[l, r]</code> 内的真实频率',
+    '取频率最大者作为答案',
+  ]},
+  { icon: '💡', title: '为什么候选集合够用？', key: true, lines: [
+    '设 v* 是 <code>[l, r]</code> 的真正众数：',
+    '<b>情况 A</b>：v* 只出现在中间块 → 它在中间块的频率 ≤ mode 的频率，<br> 而 mode 也是候选，所以 v* 不可能是唯一的众数',
+    '<b>情况 B</b>：v* 出现在两端碎片 → 它已经在候选集合里',
+    '两种情况都覆盖，证明完毕',
+  ]},
+  { icon: '⏱️', title: '复杂度分析', key: false, lines: [
+    '<b>预处理</b>：<code>O(n²/B) = O(n√n)</code>',
+    '<b>单次查询</b>：<br> · 枚举候选：<code>O(B)</code>（左右碎片长度）<br> · 每个候选统计频率：用位置列表 + 二分 <code>O(log n)</code><br> 合计 <code>O(√n log n)</code>',
+    '也可以用前缀频率表做到 <code>O(√n)</code>',
+  ]},
+  { icon: '⚖️', title: '分块 vs 其他做法', key: false, lines: [
+    '<b>暴力</b>：单次 <code>O(r−l+1)</code>，最坏 O(n)',
+    '<b>莫队</b>：<code>O((n+q)√n)</code>，但<b>必须离线</b>',
+    '<b>分块</b>：<code>O(n√n + q√n)</code>，<b>在线</b>，通用',
+    '<b>可持久化线段树</b>：只能求"某值的出现次数"，求众数做不到',
+    '分块是最常用的"通用中等复杂度"方法',
+  ]},
+  { icon: '🧩', title: '典型应用与扩展', key: false, lines: [
+    '<b>区间众数</b>：本页面的问题',
+    '<b>区间出现次数 ≥ k 的值</b>：类似分块',
+    '<b>区间第 k 小</b>：块内排序 + 二分',
+    '<b>区间内不同值个数</b>：块内预处理 + 离线',
+    '<b>带修改的区间众数</b>：需要更复杂的分块 / 莫队修改版',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    el.className = 'k-card' + (card.key ? ' key-point' : '');
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   14. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue','assert',
+    'property','staticmethod'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','len','range','float','int','str','list','dict',
+    'set','tuple','sum','isinstance','enumerate','math','isqrt','defaultdict',
+    'bisect_left','bisect_right','RangeMode'
+  ]);
+  let html = '', i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '#') {
+      let j = i; while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1;
+      while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_.]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+      if (word === 'self') html += '<span class="tok-self">self</span>';
+      else if (KEYWORDS.has(word)) html += '<span class="tok-keyword">' + word + '</span>';
+      else if (BUILTINS.has(word)) html += '<span class="tok-builtin">' + word + '</span>';
+      else if (code[j] === '(') html += '<span class="tok-func">' + word + '</span>';
+      else html += word;
+      i = j; continue;
+    }
+    if (/\d/.test(c)) {
+      let j = i; while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j; continue;
+    }
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+}
+
+/* =========================================================
+   15. 初始化 & 事件
+   ========================================================= */
+renderKnowledge();
+renderPythonCode();
+
+document.getElementById('nStat').textContent = N;
+document.getElementById('bStat').textContent = B;
+document.getElementById('nbStat').textContent = NB;
+document.getElementById('modeStat').textContent = `N=${N} · B=${B} · ${NB} 块`;
+
+clearHl();
+render();
+updateDemoUI();
+
+document.getElementById('btnBuild').addEventListener('click', () => {
+  animatedBuild();
+});
+
+document.getElementById('btnQuery').addEventListener('click', () => {
+  const l = +document.getElementById('qryL').value;
+  const r = +document.getElementById('qryR').value;
+  animatedQuery(l, r);
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (busy) return;
+  clearHl();
+  mode = [];
+  built = false;
+  setLR(null);
+  render();
+  setStatus('已重置，请重新构建 mode 表');
+});
+</script>
+</body>
+</html>

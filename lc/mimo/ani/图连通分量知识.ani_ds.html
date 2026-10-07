@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>图的连通性 · 三大范式 动画</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1100px, 100%); }
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead { font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px; }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  /* ===== 节点 ===== */
+  .g-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.5;
+    transition: fill .3s, stroke .3s, stroke-width .3s;
+  }
+  .g-node .node-id {
+    font-size: 20px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .g-node .dfn-bg { fill: #829ab1; }
+  .g-node .dfn-txt {
+    font-family: ui-monospace, monospace;
+    font-size: 10px; font-weight: 800; fill: #ffffff;
+    pointer-events: none; user-select: none;
+  }
+  /* 通用状态 */
+  .g-node.visited .node-bg { fill: #eeeeee; stroke: #999999; stroke-dasharray: 4 3; }
+  .g-node.visited .node-id { fill: #666666; }
+  .g-node.current .node-bg { fill: #ffd98a; stroke: #e09b00; stroke-width: 4; }
+  .g-node.current .node-id { fill: #a35e00; }
+  .g-node.in-progress .node-bg { fill: #ffd0b8; stroke: #d9713b; stroke-width: 3.4; }
+  .g-node.in-progress .node-id { fill: #a34d1a; }
+  /* 连通分量颜色 */
+  .g-node.cc-0 .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.6; }
+  .g-node.cc-0 .node-id { fill: #1c5e28; }
+  .g-node.cc-0 .dfn-bg { fill: #2f7a34; }
+  .g-node.cc-1 .node-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3.6; }
+  .g-node.cc-1 .node-id { fill: #5b3db8; }
+  .g-node.cc-1 .dfn-bg { fill: #7c5cd6; }
+  .g-node.cc-2 .node-bg { fill: #ffd0d0; stroke: #d64545; stroke-width: 3.6; }
+  .g-node.cc-2 .node-id { fill: #b33232; }
+  .g-node.cc-2 .dfn-bg { fill: #d64545; }
+  .g-node.cc-3 .node-bg { fill: #c9e0ff; stroke: #2369ad; stroke-width: 3.6; }
+  .g-node.cc-3 .node-id { fill: #1c5e98; }
+  .g-node.cc-3 .dfn-bg { fill: #2369ad; }
+  /* 割点 */
+  .g-node.articulation .node-bg { fill: #ffd0d0; stroke: #d64545; stroke-width: 4; }
+  .g-node.articulation .node-id { fill: #b33232; }
+  .g-node.articulation .dfn-bg { fill: #d64545; }
+
+  /* ===== 边 ===== */
+  .g-edge {
+    stroke: #cbd2d9; stroke-width: 2.4;
+    fill: none;
+    transition: stroke .3s, stroke-width .3s;
+  }
+  .g-edge.tree { stroke: #3b82c4; stroke-width: 3.2; }
+  .g-edge.processing {
+    stroke: #e09b00; stroke-width: 4;
+    stroke-dasharray: 8 5;
+    animation: dashflow .9s linear infinite;
+  }
+  .g-edge.merged { stroke: #2f7a34; stroke-width: 3.2; }
+  .g-edge.redundant {
+    stroke: #d64545; stroke-width: 2.5;
+    stroke-dasharray: 6 4;
+    opacity: 0.7;
+  }
+  .g-edge.back {
+    stroke: #d64545; stroke-width: 3.2;
+    stroke-dasharray: 6 4;
+  }
+  .g-edge.bridge {
+    stroke: #d64545; stroke-width: 5.5;
+  }
+  .g-edge.in-cc { stroke: #2f7a34; stroke-width: 3.2; }
+  @keyframes dashflow { to { stroke-dashoffset: -14; } }
+
+  /* ===== 面板 ===== */
+  .panel {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 10px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.algo { color: #7c5cd6; }
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  select {
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border-radius: 7px; border: 1px solid #d8c8ff;
+    background: #f9f6ff; color: #7c5cd6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    min-width: 380px; font-weight: 700;
+  }
+  select:disabled { opacity: .6; }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+
+  .info-panel {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 24px; align-items: center;
+    font-size: 13.5px;
+  }
+  .info-panel .item { display: flex; align-items: center; gap: 8px; }
+  .info-panel .item .title { color: #627d98; font-weight: 600; }
+  .info-panel .item .stat {
+    font-family: ui-monospace, monospace;
+    font-size: 15px; font-weight: 800;
+    background: #eaf9ee; color: #2f7a34;
+    padding: 3px 12px; border-radius: 6px;
+  }
+  .info-panel .item .stat.timer { background: #fffbf2; color: #a35e00; }
+  .info-panel .item .stat.cnt { background: #f2ecff; color: #5b3db8; }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .log-module {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .log-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .log-module > summary::-webkit-details-marker { display: none; }
+  .log-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .log-module[open] > summary::before { transform: rotate(90deg); }
+  .log-module > summary:hover { background: #f8fafc; }
+  .log-module > summary .count {
+    font-size: 11.5px; font-weight: 600;
+    background: #eef4fa; color: #2369ad;
+    padding: 2px 8px; border-radius: 5px;
+    font-family: ui-monospace, monospace;
+    margin-left: auto;
+  }
+  .log-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1;
+  }
+  .log-body {
+    max-height: 460px; overflow-y: auto;
+    padding: 10px 20px 16px;
+    background: #fbfdff;
+  }
+  .log-line {
+    display: grid; grid-template-columns: 56px 1fr;
+    gap: 12px; padding: 6px 0;
+    border-bottom: 1px dashed #eef2f7;
+    font-size: 12.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    transition: background .15s;
+  }
+  .log-line:hover { background: #f0f7ff; }
+  .log-line:last-child { border-bottom: none; }
+  .log-line .idx { color: #829ab1; font-weight: 700; text-align: right; }
+  .log-line .msg { color: #334e68; word-break: break-word; }
+  .log-line.cur {
+    background: #fffbf2;
+    border-left: 3px solid #e09b00;
+    margin-left: -3px; padding-left: 3px;
+  }
+  .log-line.cur .idx { color: #b45a12; }
+  .log-line.cur .msg { color: #8a5a00; font-weight: 600; }
+  .log-empty {
+    font-size: 12.5px; color: #829ab1; font-style: italic;
+    padding: 16px 0; text-align: center;
+  }
+
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-card.compare-point { border-color: #7c5cd6; background: #f9f6ff; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-card.compare-point .k-icon { background: linear-gradient(135deg, #e0d5ff 0%, #c9b8ff 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-card.compare-point .k-title { color: #5b3db8; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-card.compare-point .k-lines li::before { color: #7c5cd6; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 640px; overflow: auto;
+  }
+  .code-body pre { margin: 0; }
+  .code-body code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.7;
+    background: transparent;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>图的连通性 · 三大范式 动画</h1>
+  <p class="subtitle">
+    无向图 · 连通分量 = 路径诱导的<b>等价类</b> · 三种算法：<b>BFS/DFS 染色</b> · <b>并查集</b> · <b>lowlink</b>
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · 连通性问题到底在问什么？</h2>
+    <p class="intro-lead">
+      无向图上定义关系 <code>u ~ v ⇔ 存在 u 到 v 的路径</code>。它是<b>自反、对称、传递</b>的，所以是一个<b>等价关系</b>，
+      而连通分量正是它的<b>等价类</b>。这个抽象立刻告诉我们所有算法的本质任务：
+      <b>判定两点是否同属一类</b> + <b>把两个类合并</b>。
+      由此长出三大范式：<b>BFS/DFS 染色</b>（从源点扩散染色）、<b>并查集</b>（边一条条并类）、<b>lowlink</b>（用 dfn/low 识别割点和桥）。
+      它们是静态连通性问题的三把钥匙，分别对应"一次性全图""流式加边""脆弱性分析"三类场景。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">范式 1</div>
+        <div class="title">BFS/DFS 染色 — O(V+E)</div>
+        <div class="desc">
+          任取未染色点 s，从它能到达的所有点必与它同类，<br>
+          一次性染成颜色 k，再找下一个未染色点。<br>
+          <b>特点</b>：一次拿到完整分量信息；<b>迭代版防爆栈</b>。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">范式 2</div>
+        <div class="title">并查集 — O((V+E)α)</div>
+        <div class="desc">
+          每看到一条边就合并两端所在集合。<br>
+          <b>按秩合并</b> + <b>路径压缩</b> → 均摊 <code>O(α(n))</code>，α ≤ 4。<br>
+          <b>特点</b>：边可流式输入，<b>不必存图</b>。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">范式 3</div>
+        <div class="title">lowlink — O(V+E)</div>
+        <div class="desc">
+          <code>dfn[u]</code> 记录访问时间，<code>low[u]</code> 记录能回溯到的最早 dfn。<br>
+          <b>割点</b>判据：根需 ≥ 2 孩子；非根需 <code>low[v] ≥ dfn[u]</code>。<br>
+          <b>桥</b>判据：<code>low[v] > dfn[u]</code>。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">统一</div>
+        <div class="title">两大范式的根本区别</div>
+        <div class="desc">
+          <b>BFS/DFS</b>：先看到完整图，一次性求出答案<br>
+          <b>并查集</b>：边一条条来，在线维护"谁和谁连通"<br>
+          <b>选型</b>：静态、要每个点的归属 → 染色；<br>
+          流式、只看"是否连通 + 个数" → 并查集
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">数学</div>
+        <div class="title">三个等价视角</div>
+        <div class="desc">
+          <b>环秩</b>：<code>m − n + c</code>，其中 c = 分量个数<br>
+          <b>拉普拉斯</b>：特征值 0 的重数 = 分量个数<br>
+          <b>闭包</b>：连通分量 = 边集生成的传递闭包
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">教学图</div>
+        <div class="title">本页面用图</div>
+        <div class="desc">
+          7 节点 7 边，2 个连通分量：<br>
+          · 三角形 A-B-C + 三角形 D-E-F<br>
+          · 桥 C-D 连接两个三角形<br>
+          · 孤立点 G<br>
+          结果：<b>桥 = {C-D}</b>，<b>割点 = {C, D}</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="info-panel">
+    <div class="item">
+      <span class="title">当前算法</span>
+      <span class="stat cnt" id="infoAlgo">—</span>
+    </div>
+    <div class="item">
+      <span class="title" id="infoLabel">进度</span>
+      <span class="stat timer" id="infoStat">—</span>
+    </div>
+    <div class="item">
+      <span class="title">结果</span>
+      <span class="stat" id="infoResult">—</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label algo">算法选择</span>
+      <select id="algoSel">
+        <option value="cc">BFS 染色 —— 求连通分量（CC）</option>
+        <option value="dsu">并查集 —— 按边合并集合</option>
+        <option value="bridge">lowlink —— 求桥 &amp; 割点</option>
+      </select>
+    </div>
+    <div class="panel-row">
+      <span class="row-label algo">颜色说明</span>
+      <span class="row-hint" id="colorHint">
+        <b>不同底色</b>=不同连通分量 · <b>金色</b>=当前访问
+      </span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 选择算法后点击「开始演示」</div>
+
+  <details class="log-module" id="logModule" open>
+    <summary>
+      📋 演示记录
+      <span class="hint">（点击展开 / 折叠，可全量查看每步）</span>
+      <span class="count" id="logCount">0 步</span>
+    </summary>
+    <div class="log-body" id="logBody">
+      <div class="log-empty">点击「开始演示」后，每一步操作都会记录在这里</div>
+    </div>
+  </details>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 连通性全景地图 <span class="hint">从静态到动态，从无向到有向</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · 连通性三件套
+      <span class="badge">BFS + DSU + lowlink</span>
+    </summary>
+    <div class="code-body">
+<pre><code class="language-python">"""
+图的连通性 · 三大范式。
+
+无向图连通分量 = 路径诱导的等价类。
+求它主要有三条路：
+    1. BFS/DFS 染色  O(V+E)
+    2. 并查集 DSU     O((V+E)α)
+    3. lowlink        O(V+E)（求桥 / 割点）
+
+另附：有向图 SCC（Tarjan，一次 DFS）。
+"""
+
+from collections import deque
+
+
+# ============================================================
+# 范式 1：BFS 染色求连通分量
+# ============================================================
+def connected_components_bfs(n, adj):
+    """返回 comp[v] = v 所属分量编号（0-based），以及分量个数。"""
+    comp = [-1] * n
+    cnt = 0
+    for s in range(n):
+        if comp[s] != -1:
+            continue
+        comp[s] = cnt
+        q = deque([s])
+        while q:
+            u = q.popleft()
+            for v in adj[u]:
+                if comp[v] == -1:
+                    comp[v] = cnt
+                    q.append(v)
+        cnt += 1
+    return comp, cnt
+
+
+# ============================================================
+# 范式 2：并查集
+# ============================================================
+class DSU:
+    """
+    按秩合并 + 路径压缩的并查集。
+    均摊 O(α(n))，α 是 Ackermann 反函数，α(n) ≤ 4。
+    """
+
+    def __init__(self, n):
+        self.p = list(range(n))
+        self.r = [0] * n
+        self.count = n               # 当前集合个数
+
+    def find(self, x):
+        while self.p[x] != x:
+            self.p[x] = self.p[self.p[x]]     # 路径减半
+            x = self.p[x]
+        return x
+
+    def union(self, a, b):
+        ra, rb = self.find(a), self.find(b)
+        if ra == rb:
+            return False
+        if self.r[ra] < self.r[rb]:
+            ra, rb = rb, ra
+        self.p[rb] = ra
+        if self.r[ra] == self.r[rb]:
+            self.r[ra] += 1
+        self.count -= 1
+        return True
+
+    def num_components(self):
+        return self.count
+
+
+def connected_components_dsu(n, edges):
+    """
+    returns (comp, cnt)
+    最后按根归类；n - 成功合并次数 = 分量数（环秩相关的核心恒等式）。
+    """
+    dsu = DSU(n)
+    for u, v in edges:
+        dsu.union(u, v)
+
+    root_to_id = {}
+    comp = [-1] * n
+    for v in range(n):
+        r = dsu.find(v)
+        if r not in root_to_id:
+            root_to_id[r] = len(root_to_id)
+        comp[v] = root_to_id[r]
+    return comp, dsu.num_components()
+
+
+# ============================================================
+# 范式 3：lowlink 求桥 & 割点
+# ============================================================
+def tarjan_bridges_articulations(n, edges):
+    """
+    求无向图的桥和割点。
+    返回 (bridges, articulations)，bridges 是边列表，articulations 是点列表。
+    """
+    adj = [[] for _ in range(n)]
+    for eid, (u, v) in enumerate(edges):
+        adj[u].append((v, eid))
+        adj[v].append((u, eid))
+
+    dfn = [-1] * n
+    low = [0] * n
+    timer = [0]
+    bridges = []
+    art = [False] * n
+
+    def dfs(u, pe):
+        dfn[u] = low[u] = timer[0]
+        timer[0] += 1
+        children = 0
+        for v, eid in adj[u]:
+            if eid == pe:            # 用边编号跳过父边 —— 重边关键
+                continue
+            if dfn[v] == -1:
+                children += 1
+                dfs(v, eid)
+                low[u] = min(low[u], low[v])
+                if low[v] > dfn[u]:
+                    bridges.append((u, v))
+                if pe != -1 and low[v] >= dfn[u]:
+                    art[u] = True
+            else:
+                low[u] = min(low[u], dfn[v])
+        if pe == -1 and children >= 2:
+            art[u] = True
+
+    for s in range(n):
+        if dfn[s] == -1:
+            dfs(s, -1)
+    return bridges, [i for i in range(n) if art[i]]
+
+
+# ============================================================
+# 附加：有向图 SCC（Tarjan，一次 DFS）
+# ============================================================
+def tarjan_scc(n, adj):
+    dfn = [-1] * n
+    low = [0] * n
+    in_stk = [False] * n
+    stk = []
+    timer = [0]
+    scc_id = [-1] * n
+    scc_cnt = [0]
+
+    def dfs(u):
+        dfn[u] = low[u] = timer[0]
+        timer[0] += 1
+        stk.append(u)
+        in_stk[u] = True
+        for v in adj[u]:
+            if dfn[v] == -1:
+                dfs(v)
+                low[u] = min(low[u], low[v])
+            elif in_stk[v]:
+                low[u] = min(low[u], dfn[v])   # 用 dfn[v] 而非 low[v]
+        if dfn[u] == low[u]:
+            while True:
+                x = stk.pop()
+                in_stk[x] = False
+                scc_id[x] = scc_cnt[0]
+                if x == u:
+                    break
+            scc_cnt[0] += 1
+
+    for s in range(n):
+        if dfn[s] == -1:
+            dfs(s)
+    return scc_id, scc_cnt[0]
+
+
+# ============================================================
+# 演示：教学图
+# ============================================================
+if __name__ == '__main__':
+    # 7 节点：三角形 ABC + 桥 C-D + 三角形 DEF + 孤立点 G
+    n = 7
+    edges = [(0, 1), (1, 2), (2, 0),   # 三角形 1: A-B-C
+             (2, 3),                   # 桥: C-D
+             (3, 4), (4, 5), (5, 3)]   # 三角形 2: D-E-F
+    # 节点编号: 0=A, 1=B, 2=C, 3=D, 4=E, 5=F, 6=G
+    adj = [[] for _ in range(n)]
+    for u, v in edges:
+        adj[u].append(v)
+        adj[v].append(u)
+
+    print('=== BFS 染色 ===')
+    comp, c = connected_components_bfs(n, adj)
+    print('分量数 =', c)
+    for i in range(c):
+        print(f'  分量 {i}:', [chr(65+v) for v in range(n) if comp[v] == i])
+
+    print()
+    print('=== 并查集 ===')
+    comp2, c2 = connected_components_dsu(n, edges)
+    print('分量数 =', c2)
+    print('  n - 成功合并 = 7 - 5 = 2 ✓')
+
+    print()
+    print('=== lowlink 桥 & 割点 ===')
+    bridges, art = tarjan_bridges_articulations(n, edges)
+    print('桥 =', [(chr(65+u), chr(65+v)) for u, v in bridges])
+    print('割点 =', [chr(65+v) for v in art])
+
+    print()
+    print('=== 附：有向图 SCC ===')
+    adj_d = [[] for _ in range(5)]
+    for u, v in [(0,1),(1,0),(1,2),(2,3),(3,2),(3,4)]:
+        adj_d[u].append(v)
+    scc_id, cnt = tarjan_scc(5, adj_d)
+    print('SCC 数量 =', cnt)
+    for i in range(cnt):
+        print(f'  SCC{i}:', [v for v in range(5) if scc_id[v] == i])
+</code></pre>
+    </div>
+  </details>
+</div>
+
+<script>
+/* =========================================================
+   1. 教学图
+   ========================================================= */
+const NODES = [
+  { id: 'A', x: 180, y: 120 },
+  { id: 'B', x: 340, y: 120 },
+  { id: 'C', x: 260, y: 240 },
+  { id: 'D', x: 560, y: 240 },
+  { id: 'E', x: 700, y: 120 },
+  { id: 'F', x: 700, y: 360 },
+  { id: 'G', x: 830, y: 240 },
+];
+const NODE_POS = {};
+for (const n of NODES) NODE_POS[n.id] = { x: n.x, y: n.y };
+
+/* 无向边：三角形 ABC + 桥 C-D + 三角形 DEF */
+const EDGES = [
+  { u: 'A', v: 'B' },
+  { u: 'B', v: 'C' },
+  { u: 'C', v: 'A' },
+  { u: 'C', v: 'D' },   // 桥
+  { u: 'D', v: 'E' },
+  { u: 'E', v: 'F' },
+  { u: 'F', v: 'D' },
+];
+const NODE_R = 30;
+
+/* 邻接表 */
+const ADJ = {};
+for (const n of NODES) ADJ[n.id] = [];
+for (const e of EDGES) {
+  ADJ[e.u].push(e.v);
+  ADJ[e.v].push(e.u);
+}
+
+function eKey(u, v) { return [u, v].sort().join('-'); }
+
+/* =========================================================
+   2. 状态
+   ========================================================= */
+let nodeHl = {};   /* id -> 'visited' | 'current' | 'in-progress' | 'cc-0' | ... | 'articulation' */
+let edgeHl = {};   /* key -> 'tree' | 'processing' | 'merged' | 'redundant' | 'back' | 'bridge' | 'in-cc' */
+let dfn = {};      /* lowlink 模式用 */
+let low = {};
+
+/* =========================================================
+   3. SVG 图层
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+/* =========================================================
+   4. 渲染
+   ========================================================= */
+function render() {
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+
+  /* 边 */
+  for (const e of EDGES) {
+    const a = NODE_POS[e.u], b = NODE_POS[e.v];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const x1 = a.x + dx / len * NODE_R;
+    const y1 = a.y + dy / len * NODE_R;
+    const x2 = b.x - dx / len * NODE_R;
+    const y2 = b.y - dy / len * NODE_R;
+
+    const key = eKey(e.u, e.v);
+    const st = edgeHl[key] || '';
+
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('class', 'g-edge' + (st ? ' ' + st : ''));
+    edgeLayer.appendChild(line);
+  }
+
+  /* 节点 */
+  for (const n of NODES) {
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'g-node';
+    const st = nodeHl[n.id] || '';
+    if (st) cls += ' ' + st;
+    g.setAttribute('class', cls);
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', n.x); c.setAttribute('cy', n.y);
+    c.setAttribute('r', NODE_R); c.setAttribute('class', 'node-bg');
+    g.appendChild(c);
+
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('class', 'node-id');
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('dominant-baseline', 'central');
+    t.setAttribute('x', n.x); t.setAttribute('y', n.y);
+    t.textContent = n.id;
+    g.appendChild(t);
+
+    /* dfn/low 标签（仅 lowlink 模式显示） */
+    if (dfn[n.id] !== undefined && dfn[n.id] !== -1) {
+      const lbBg = document.createElementNS(NS, 'rect');
+      lbBg.setAttribute('class', 'dfn-bg');
+      lbBg.setAttribute('x', n.x - 36);
+      lbBg.setAttribute('y', n.y + NODE_R + 6);
+      lbBg.setAttribute('width', 72);
+      lbBg.setAttribute('height', 15);
+      lbBg.setAttribute('rx', 4);
+      g.appendChild(lbBg);
+
+      const lbT = document.createElementNS(NS, 'text');
+      lbT.setAttribute('class', 'dfn-txt');
+      lbT.setAttribute('text-anchor', 'middle');
+      lbT.setAttribute('dominant-baseline', 'central');
+      lbT.setAttribute('x', n.x);
+      lbT.setAttribute('y', n.y + NODE_R + 14);
+      lbT.textContent = `d=${dfn[n.id]},l=${low[n.id]}`;
+      g.appendChild(lbT);
+    }
+
+    nodeLayer.appendChild(g);
+  }
+}
+
+/* =========================================================
+   5. 步骤生成：BFS 染色
+   ========================================================= */
+function buildCCSteps() {
+  const steps = [];
+  const visited = new Set();
+  const color = {};
+  let colorCnt = 0;
+
+  function snap(msg, opts) {
+    const o = opts || {};
+    steps.push({
+      msg,
+      visited: new Set(visited),
+      color: { ...color },
+      colorCnt,
+      nodeHl: { ...(o.nodeHl || {}) },
+      edgeHl: { ...(o.edgeHl || {}) },
+      dfn: {}, low: {},
+    });
+  }
+
+  snap('BFS 染色开始：从 A 出发，把 A 能到达的所有点染成同一颜色', {});
+
+  for (const n of NODES) {
+    if (visited.has(n.id)) continue;
+    const cc = colorCnt;
+    const nh = { ...makeBaseNodeColor() };
+    nh[n.id] = 'current';
+    snap(`从 ${n.id} 开始新的 BFS，分配颜色 ${cc}`, { nodeHl: nh });
+
+    /* BFS */
+    const q = [n.id];
+    visited.add(n.id);
+    color[n.id] = cc;
+
+    while (q.length > 0) {
+      const u = q.shift();
+      for (const v of ADJ[u]) {
+        if (visited.has(v)) continue;
+        visited.add(v);
+        color[v] = cc;
+        q.push(v);
+
+        const base = makeBaseNodeColor();
+        base[v] = 'current';
+        const eh = makeBaseEdgeCC();
+        eh[eKey(u, v)] = 'tree';
+        snap(`  从 ${u} 可达 ${v} → ${v} 染成颜色 ${cc}`, {
+          nodeHl: base,
+          edgeHl: eh,
+        });
+      }
+    }
+
+    snap(`✓ 颜色 ${cc} 的分量：${[...visited].filter(x => color[x] === cc).join(', ')}`, {});
+    colorCnt++;
+  }
+
+  snap(`🎉 BFS 染色完成：共 ${colorCnt} 个连通分量`, {});
+
+  return steps;
+}
+
+function makeBaseNodeColor() {
+  const h = {};
+  for (const id in nodeHl) if (nodeHl[id]) h[id] = nodeHl[id];
+  return h;
+}
+function makeBaseEdgeCC() {
+  return { ...edgeHl };
+}
+
+/* =========================================================
+   6. 步骤生成：并查集
+   ========================================================= */
+function buildDSUSteps() {
+  const steps = [];
+  const parent = {};
+  const rank = {};
+  for (const n of NODES) { parent[n.id] = n.id; rank[n.id] = 0; }
+  let mergeCount = 0;
+
+  function find(x) {
+    while (parent[x] !== x) {
+      parent[x] = parent[parent[x]];
+      x = parent[x];
+    }
+    return x;
+  }
+
+  /* 计算每个节点到分量的颜色编号 */
+  function nodeColors() {
+    const rootIdx = {};
+    let idx = 0;
+    const c = {};
+    for (const n of NODES) {
+      const r = find(n.id);
+      if (rootIdx[r] === undefined) rootIdx[r] = idx++;
+      c[n.id] = rootIdx[r];
+    }
+    return c;
+  }
+
+  function snap(msg, opts) {
+    const o = opts || {};
+    const colors = nodeColors();
+    const nh = {};
+    for (const n of NODES) nh[n.id] = 'cc-' + colors[n.id];
+    for (const id in o.nodeHl) nh[id] = o.nodeHl[id];
+
+    steps.push({
+      msg,
+      mergeCount,
+      nodeHl: nh,
+      edgeHl: { ...(o.edgeHl || {}) },
+      dfn: {}, low: {},
+    });
+  }
+
+  snap('并查集初始化：每个节点独立成一个集合（相同颜色 = 同一集合）', {});
+
+  for (let i = 0; i < EDGES.length; i++) {
+    const e = EDGES[i];
+    const key = eKey(e.u, e.v);
+    const ru = find(e.u), rv = find(e.v);
+
+    const eh1 = { ...makeBaseEdgeDSU() };
+    eh1[key] = 'processing';
+
+    snap(`处理边 ${e.u}-${e.v}：find(${e.u}) = ${ru}，find(${e.v}) = ${rv}`, {
+      edgeHl: eh1,
+      nodeHl: { [e.u]: 'current', [e.v]: 'current' },
+    });
+
+    if (ru === rv) {
+      const eh2 = { ...makeBaseEdgeDSU() };
+      eh2[key] = 'redundant';
+      snap(`  两端已在同一集合 → 冗余边（成环），不合并`, {
+        edgeHl: eh2,
+      });
+    } else {
+      /* 按秩合并 */
+      let newRoot, oldRoot;
+      if (rank[ru] < rank[rv]) {
+        parent[ru] = rv; newRoot = rv; oldRoot = ru;
+      } else {
+        parent[rv] = ru; newRoot = ru; oldRoot = rv;
+        if (rank[ru] === rank[rv]) rank[ru]++;
+      }
+      mergeCount++;
+
+      const eh2 = { ...makeBaseEdgeDSU() };
+      eh2[key] = 'merged';
+      snap(`  ✓ 合并：把 ${oldRoot} 挂到 ${newRoot} 下（成功合并次数 = ${mergeCount}）`, {
+        edgeHl: eh2,
+      });
+    }
+  }
+
+  const c = NODES.length - mergeCount;
+  snap(`🎉 完成：共合并 ${mergeCount} 次，剩下 ${NODES.length} − ${mergeCount} = ${c} 个连通分量`, {});
+
+  return steps;
+}
+
+function makeBaseEdgeDSU() {
+  return { ...edgeHl };
+}
+
+/* =========================================================
+   7. 步骤生成：lowlink 求桥 & 割点
+   ========================================================= */
+function buildBridgeSteps() {
+  const steps = [];
+  const dfnMap = {};
+  const lowMap = {};
+  let timer = 0;
+  const bridges = new Set();
+  const arts = new Set();
+
+  function snap(msg, opts) {
+    const o = opts || {};
+    steps.push({
+      msg,
+      mergeCount: undefined,
+      nodeHl: { ...(o.nodeHl || {}) },
+      edgeHl: { ...(o.edgeHl || {}) },
+      dfn: { ...dfnMap },
+      low: { ...lowMap },
+      bridges: new Set(bridges),
+      arts: new Set(arts),
+    });
+  }
+
+  function makeBaseNode() {
+    const h = {};
+    for (const n of NODES) {
+      if (arts.has(n.id)) h[n.id] = 'articulation';
+      else if (dfnMap[n.id] !== undefined) h[n.id] = 'in-progress';
+      else h[n.id] = 'visited';
+    }
+    return h;
+  }
+  function makeBaseEdge() {
+    const h = {};
+    for (const key of bridges) h[key] = 'bridge';
+    return h;
+  }
+
+  snap('lowlink 开始：从 A 出发做 DFS，同时记录 dfn 和 low', {});
+
+  function dfs(u, parent) {
+    dfnMap[u] = lowMap[u] = timer++;
+    const nh0 = makeBaseNode();
+    nh0[u] = 'current';
+    snap(`DFS(${u})：dfn[${u}] = low[${u}] = ${dfnMap[u]}`, {
+      nodeHl: nh0,
+      edgeHl: makeBaseEdge(),
+    });
+
+    let children = 0;
+    for (const v of ADJ[u]) {
+      if (v === parent) continue;
+      const key = eKey(u, v);
+
+      if (dfnMap[v] === undefined) {
+        /* 树边 */
+        children++;
+        const nh1 = makeBaseNode();
+        nh1[u] = 'current';
+        const eh1 = makeBaseEdge();
+        eh1[key] = 'tree';
+        snap(`  树边 ${u}-${v}：递归 DFS(${v})`, {
+          nodeHl: nh1,
+          edgeHl: eh1,
+        });
+
+        dfs(v, u);
+
+        lowMap[u] = Math.min(lowMap[u], lowMap[v]);
+        const nh2 = makeBaseNode();
+        nh2[u] = 'current';
+
+        /* 判断桥 */
+        if (lowMap[v] > dfnMap[u]) {
+          bridges.add(key);
+          const eh2 = makeBaseEdge();
+          eh2[key] = 'bridge';
+          snap(`  ★ low[${v}] = ${lowMap[v]} > dfn[${u}] = ${dfnMap[u]} → ${u}-${v} 是桥！`, {
+            nodeHl: nh2,
+            edgeHl: eh2,
+          });
+        }
+
+        /* 判断割点（非根） */
+        if (parent !== null && lowMap[v] >= dfnMap[u] && !arts.has(u)) {
+          arts.add(u);
+          const nh3 = makeBaseNode();
+          nh3[u] = 'articulation';
+          snap(`  ★ low[${v}] = ${lowMap[v]} >= dfn[${u}] = ${dfnMap[u]} → ${u} 是割点！`, {
+            nodeHl: nh3,
+            edgeHl: makeBaseEdge(),
+          });
+        } else if (parent !== null) {
+          snap(`  返回 ${u}：low[${u}] = min(low[${u}], low[${v}]) = ${lowMap[u]}`, {
+            nodeHl: nh2,
+            edgeHl: makeBaseEdge(),
+          });
+        }
+      } else if (dfnMap[v] < dfnMap[u]) {
+        /* 回边：指向祖先 */
+        lowMap[u] = Math.min(lowMap[u], dfnMap[v]);
+        const nh4 = makeBaseNode();
+        nh4[u] = 'current';
+        const eh4 = makeBaseEdge();
+        eh4[key] = 'back';
+        snap(`  回边 ${u}-${v}：low[${u}] = min(${lowMap[u]}, dfn[${v}] = ${dfnMap[v]}) = ${lowMap[u]}`, {
+          nodeHl: nh4,
+          edgeHl: eh4,
+        });
+      }
+    }
+
+    /* 根特判 */
+    if (parent === null && children >= 2 && !arts.has(u)) {
+      arts.add(u);
+      const nh5 = makeBaseNode();
+      nh5[u] = 'articulation';
+      snap(`  ★ 根节点 ${u} 有 ${children} 个 DFS 孩子（≥ 2）→ 是割点！`, {
+        nodeHl: nh5,
+        edgeHl: makeBaseEdge(),
+      });
+    }
+  }
+
+  for (const n of NODES) {
+    if (dfnMap[n.id] === undefined) {
+      dfs(n.id, null);
+    }
+  }
+
+  const brList = [...bridges].map(k => k.split('-').join('—'));
+  const artList = [...arts];
+  snap(`🎉 完成：桥 = {${brList.join(', ')}}，割点 = {${artList.join(', ')}}`, {
+    nodeHl: (() => {
+      const h = {};
+      for (const n of NODES) {
+        h[n.id] = arts.has(n.id) ? 'articulation' : 'in-progress';
+      }
+      return h;
+    })(),
+    edgeHl: makeBaseEdge(),
+  });
+
+  return steps;
+}
+
+/* =========================================================
+   8. 应用步骤
+   ========================================================= */
+let curBridges = new Set();
+let curArts = new Set();
+
+function applyStep(step) {
+  nodeHl = { ...step.nodeHl };
+  edgeHl = { ...step.edgeHl };
+  dfn = step.dfn || {};
+  low = step.low || {};
+  curBridges = step.bridges || new Set();
+  curArts = step.arts || new Set();
+  render();
+  updateInfo(step);
+}
+
+function updateInfo(step) {
+  const algoName = algoSel.options[algoSel.selectedIndex].text.split(' ')[0];
+  document.getElementById('infoAlgo').textContent = algoName;
+
+  if (currentAlgo() === 'bridge') {
+    document.getElementById('infoLabel').textContent = '桥 / 割点';
+    const br = [...curBridges].map(k => k.split('-').join('-'));
+    document.getElementById('infoStat').textContent = `${br.length} 桥 / ${curArts.size} 割点`;
+    document.getElementById('infoResult').textContent = br.join(', ') || '—';
+  } else if (currentAlgo() === 'dsu') {
+    document.getElementById('infoLabel').textContent = '合并次数';
+    document.getElementById('infoStat').textContent = step.mergeCount !== undefined ? step.mergeCount : 0;
+    document.getElementById('infoResult').textContent = `分量 = 7 − 合并数`;
+  } else {
+    /* CC 模式 */
+    document.getElementById('infoLabel').textContent = '颜色数';
+    let maxColor = -1;
+    for (const id in step.color) if (step.color[id] > maxColor) maxColor = step.color[id];
+    document.getElementById('infoStat').textContent = maxColor + 1;
+    document.getElementById('infoResult').textContent = `分量 = ${maxColor + 1}`;
+  }
+}
+
+/* =========================================================
+   9. 演示记录
+   ========================================================= */
+const logBody = document.getElementById('logBody');
+const logCount = document.getElementById('logCount');
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+let logLines = [];
+function clearLog() {
+  logLines = [];
+  logBody.innerHTML = '<div class="log-empty">点击「开始演示」后，每一步操作都会记录在这里</div>';
+  logCount.textContent = '0 步';
+}
+function addLog(msg) {
+  logLines.push(msg);
+  logCount.textContent = logLines.length + ' 步';
+  if (logLines.length === 1) logBody.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  div.dataset.idx = logLines.length - 1;
+  div.innerHTML = `<div class="idx">#${logLines.length}</div><div class="msg">${escapeHtml(msg)}</div>`;
+  logBody.appendChild(div);
+}
+function highlightLog(idx) {
+  document.querySelectorAll('.log-line.cur').forEach(el => el.classList.remove('cur'));
+  const el = document.querySelector(`.log-line[data-idx="${idx}"]`);
+  if (el) { el.classList.add('cur'); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* =========================================================
+   10. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   11. 主流程
+   ========================================================= */
+async function runDemo(algo) {
+  /* 重置 */
+  nodeHl = {}; edgeHl = {}; dfn = {}; low = {};
+  curBridges = new Set(); curArts = new Set();
+  for (const n of NODES) dfn[n.id] = -1;
+  render();
+  clearLog();
+  logLines = [];
+
+  let steps, name;
+  if (algo === 'cc') { steps = buildCCSteps(); name = 'BFS 染色'; }
+  else if (algo === 'dsu') { steps = buildDSUSteps(); name = '并查集'; }
+  else { steps = buildBridgeSteps(); name = 'lowlink'; }
+
+  setStatus(`准备 ${name} 演示，共 ${steps.length} 步`);
+  await tick(500);
+
+  for (let i = 0; i < steps.length; i++) {
+    applyStep(steps[i]);
+    setStatus(`[${i+1}/${steps.length}] ${steps[i].msg}`);
+    addLog(steps[i].msg);
+    highlightLog(i);
+    await tick(900);
+  }
+
+  setStatus(`✔ ${name} 演示结束`);
+  await tick(700);
+}
+
+/* =========================================================
+   12. 演示 UI 控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const algoSel      = document.getElementById('algoSel');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+function currentAlgo() { return algoSel.value; }
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+    algoSel.disabled = false;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+    algoSel.disabled = true;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+    algoSel.disabled = true;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+    algoSel.disabled = true;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await runDemo(currentAlgo());
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  demoAborted = false; demoPaused = false; demoStepMode = false;
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) { startDemo('step'); setTimeout(() => releaseStep(), 30); return; }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false; releaseStep(); updateDemoUI();
+});
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto' ? '已选择「自动播放」' : '已选择「逐步演示」');
+    }
+  });
+});
+
+/* 算法切换 */
+algoSel.addEventListener('change', () => {
+  if (demoRunning) return;
+  nodeHl = {}; edgeHl = {}; dfn = {}; low = {};
+  curBridges = new Set(); curArts = new Set();
+  for (const n of NODES) dfn[n.id] = -1;
+  render();
+  clearLog();
+  updateColorHint();
+
+  const algo = currentAlgo();
+  if (algo === 'cc') {
+    document.getElementById('infoAlgo').textContent = 'BFS';
+    document.getElementById('infoLabel').textContent = '颜色数';
+    document.getElementById('infoStat').textContent = '0';
+    document.getElementById('infoResult').textContent = '分量 = 0';
+  } else if (algo === 'dsu') {
+    document.getElementById('infoAlgo').textContent = 'DSU';
+    document.getElementById('infoLabel').textContent = '合并次数';
+    document.getElementById('infoStat').textContent = '0';
+    document.getElementById('infoResult').textContent = '分量 = 7';
+  } else {
+    document.getElementById('infoAlgo').textContent = 'lowlink';
+    document.getElementById('infoLabel').textContent = '桥 / 割点';
+    document.getElementById('infoStat').textContent = '0 桥 / 0 割点';
+    document.getElementById('infoResult').textContent = '—';
+  }
+  setStatus('已切换算法，点击「开始演示」');
+});
+
+function updateColorHint() {
+  const algo = currentAlgo();
+  const hintEl = document.getElementById('colorHint');
+  if (algo === 'cc') {
+    hintEl.innerHTML = '<b>不同底色</b>=不同连通分量 · <b>金色</b>=当前访问 · <b>蓝色边</b>=BFS 树边';
+  } else if (algo === 'dsu') {
+    hintEl.innerHTML = '<b>不同底色</b>=不同集合 · <b>金色</b>=当前处理的两端 · <b>绿色边</b>=成功合并 · <b>红色虚线</b>=冗余边（成环）';
+  } else {
+    hintEl.innerHTML = '<b>蓝色边</b>=DFS 树边 · <b>红色虚线边</b>=回边 · <b>红色粗线</b>=桥 · <b>红色节点</b>=割点 · 节点下方显示 <code>d=dfn,l=low</code>';
+  }
+}
+
+/* =========================================================
+   13. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: '连通性的统一抽象', key: true, lines: [
+    '无向图定义 <code>u ~ v ⇔ 存在 u 到 v 的路径</code>',
+    '它满足<b>自反 / 对称 / 传递</b>，是一个<b>等价关系</b>',
+    '连通分量 = 这个等价关系的<b>等价类</b>',
+    '抽象的两大动作：判定同类 + 合并类',
+  ]},
+  { icon: '🎨', title: '范式 1：BFS/DFS 染色', key: true, lines: [
+    '任取未染色点 s，从 s 能到达的所有点必与 s 同类',
+    '一次扩散，整片区域染成一个颜色',
+    '<b>时间</b> <code>O(V+E)</code>；<b>空间</b> <code>O(V+E)</code>（需邻接表）',
+    '<b>典型场景</b>：静态图一次性求解、网格连通域标记',
+    '<b>注意</b>：递归 DFS 在长链上会爆栈，<b>一律用迭代</b>',
+  ]},
+  { icon: '🔗', title: '范式 2：并查集 DSU', key: true, lines: [
+    '每看到一条边 (u, v)，就合并 u、v 所在集合',
+    '<b>按秩合并</b> + <b>路径压缩</b> → 均摊 <code>O(α(n))</code>',
+    'α 是 Ackermann 反函数，对任何现实规模 α ≤ 4',
+    '<b>空间</b> <code>O(V)</code>——<b>不必存图，边可流式输入</b>',
+    '<b>典型场景</b>：Kruskal、连通性查询、离线动态问题',
+  ]},
+  { icon: '✂️', title: '范式 3：lowlink', key: true, lines: [
+    '<code>dfn[u]</code>：访问时间戳；<code>low[u]</code>：子树能回溯的最早 dfn',
+    '<b>桥</b>：树边 (u,v) 满足 <code>low[v] > dfn[u]</code>',
+    '<b>割点</b>：非根 <code>low[v] ≥ dfn[u]</code>；根需 ≥ 2 个 DFS 孩子',
+    '<b>重边关键</b>：跳过父边必须用<b>边编号</b>而非 <code>v != fa</code>',
+    '<b>典型场景</b>：脆弱性分析、点双 / 边双缩点、必经点/边',
+  ]},
+  { icon: '⚖️', title: '三范式对比', key: false, lines: [
+    '<b>时间</b>：BFS/DFS <code>O(V+E)</code>；DSU <code>O((V+E)α)</code>；lowlink <code>O(V+E)</code>',
+    '<b>空间</b>：DFS <code>O(V+E)</code>；DSU <code>O(V)</code>；lowlink <code>O(V+E)</code>',
+    '<b>增量加边</b>：DSU 天然支持；BFS/DFS 需重跑',
+    '<b>删除点/边</b>：lowlink 可分析；DSU 不支持',
+    '<b>输出分量内点集</b>：BFS/DFS 自然；DSU 需按根归组',
+  ]},
+  { icon: '🧭', title: '选型决策树', key: true, lines: [
+    '有向图要强连通 → <b>Tarjan SCC</b>',
+    '无向图，边陆续来 / 只看是否连通 → <b>并查集</b>',
+    '无向图，一次性完整图，要每个点归属 → <b>BFS/DFS</b>',
+    '问删除点/边后连通性 → <b>lowlink</b>（桥/割点）',
+    '有时间维度加删 → <b>回滚 DSU + 分治</b>（离线）',
+    '超大图 → 并行 label propagation',
+  ]},
+  { icon: '🔬', title: '更细的粒度', key: false, lines: [
+    '<b>边双 e-DCC</b>：删掉所有桥后剩下的连通块，缩点成<b>树</b>',
+    '<b>点双 v-DCC</b>：不含割点的极大子图，缩点成<b>块割树</b>（二分树）',
+    '<b>缩点 → 树</b>：很多"加边使双连通"的题 = 树上配对叶子',
+    '<b>块割树</b>：解决"两点间路径是否必经某点"',
+  ]},
+  { icon: '🚀', title: '进阶话题', key: false, lines: [
+    '<b>动态连通性</b>：增量用 DSU；全动态用 ETT / HLT',
+    '<b>回滚并查集</b>：去掉路径压缩，保留按秩合并 + 改动栈',
+    '<b>线段树分治</b>：边按时间轴挂到线段树，DFS 时合并 / 回滚',
+    '<b>网格连通域</b>：两遍扫描 + DSU，注意 4/8 连通语义不同',
+    '<b>并行连通分量</b>：Shiloach-Vishkin、Afforest、Label Propagation',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    let cls = 'k-card';
+    if (card.key) cls += ' key-point';
+    if (card.title === '三范式对比' || card.title === '选型决策树') cls = 'k-card compare-point';
+    el.className = cls;
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   14. 初始化
+   ========================================================= */
+renderKnowledge();
+if (window.hljs) hljs.highlightAll();
+
+/* 初始状态 */
+nodeHl = {}; edgeHl = {}; dfn = {}; low = {};
+for (const n of NODES) dfn[n.id] = -1;
+render();
+clearLog();
+updateColorHint();
+updateDemoUI();
+</script>
+</body>
+</html>

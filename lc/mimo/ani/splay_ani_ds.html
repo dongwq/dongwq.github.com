@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Splay 树 · 自平衡二叉搜索树 动画</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1080px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead {
+    font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px;
+  }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  /* ===== Splay 节点 ===== */
+  .sp-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.4;
+    transition: fill .25s, stroke .25s, stroke-width .25s;
+  }
+  .sp-node .node-val {
+    font-size: 20px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .sp-node .node-size {
+    font-family: ui-monospace, monospace;
+    font-size: 10px; font-weight: 700; fill: #ffffff;
+    pointer-events: none; user-select: none;
+  }
+  .sp-node .size-bg { fill: #829ab1; transition: fill .25s; }
+
+  /* splay 三个角色 */
+  .sp-node.splay-x .node-bg { fill: #ffe9a8; stroke: #e09b00; stroke-width: 3.6; }
+  .sp-node.splay-x .node-val { fill: #a35e00; }
+  .sp-node.splay-x .size-bg { fill: #e09b00; }
+  .sp-node.splay-p .node-bg { fill: #ffd0b8; stroke: #d9713b; stroke-width: 3.2; }
+  .sp-node.splay-p .node-val { fill: #a34d1a; }
+  .sp-node.splay-p .size-bg { fill: #d9713b; }
+  .sp-node.splay-g .node-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3.2; }
+  .sp-node.splay-g .node-val { fill: #5b3db8; }
+  .sp-node.splay-g .size-bg { fill: #7c5cd6; }
+
+  .sp-node.visit .node-bg { fill: #ffe9a8; stroke: #e09b00; stroke-width: 3.2; }
+  .sp-node.visit .node-val { fill: #a35e00; }
+  .sp-node.visit .size-bg { fill: #e09b00; }
+
+  .sp-node.found .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.4; }
+  .sp-node.found .node-val { fill: #1c5e28; }
+  .sp-node.found .size-bg { fill: #2f7a34; }
+
+  .sp-node.new .node-bg { fill: #c9efc9; stroke: #57a957; stroke-width: 3.4; }
+  .sp-node.new .node-val { fill: #2f7a34; }
+  .sp-node.new .size-bg { fill: #57a957; }
+
+  .sp-node.removing .node-bg { fill: #ffcccc; stroke: #d64545; stroke-width: 3; }
+  .sp-node.removing .node-val { fill: #b33232; }
+  .sp-node.removing .size-bg { fill: #d64545; }
+
+  .sp-edge {
+    stroke: #cbd2d9; stroke-width: 1.8; fill: none;
+    transition: stroke .25s, stroke-width .25s;
+  }
+  .sp-edge.active {
+    stroke: #e09b00; stroke-width: 2.8;
+    stroke-dasharray: 6 4;
+    animation: dashflow .75s linear infinite;
+  }
+  .sp-edge.rotate {
+    stroke: #7c5cd6; stroke-width: 3;
+    stroke-dasharray: 6 4;
+    animation: dashflow .75s linear infinite;
+  }
+  @keyframes dashflow { to { stroke-dashoffset: -10; } }
+
+  /* 面板 */
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.base  { color: #2f7a34; }
+  .row-label.find  { color: #2369ad; }
+  .row-label.ins   { color: #7c5cd6; }
+  .row-label.del   { color: #d64545; }
+
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  .stat-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #f0f7ff; color: #2369ad;
+    padding: 4px 12px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600;
+    border: 1px solid #c7defa;
+  }
+  .stat-badge .num {
+    font-family: ui-monospace, monospace;
+    font-size: 14px; font-weight: 800; color: #2a7fd0;
+  }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.purple  { background: #7c5cd6; border-color: #7c5cd6; color: #fff; }
+  button.purple:hover { background: #634ab0; border-color: #634ab0; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.danger:hover { background: #b33232; border-color: #b33232; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost   { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+  button.ghost:hover { background: #f0f7ff; }
+  button.orange  { background: #d9713b; border-color: #d9713b; color: #fff; }
+  button.orange:hover { background: #b95a28; border-color: #b95a28; }
+
+  input[type="number"] {
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border-radius: 7px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    width: 76px;
+  }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* 树的中序序列 */
+  .inorder-table {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    font-size: 12.5px;
+  }
+  .inorder-table .title {
+    font-weight: 700; color: #243b53; margin-right: 8px;
+  }
+  .inorder-cell {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 4px 12px; border-radius: 6px;
+    background: #f0f4f8; color: #4a5568;
+    font-family: ui-monospace, monospace; font-size: 12.5px;
+    font-weight: 800;
+    border: 1px solid #dbe4ec; min-width: 34px;
+    transition: background .25s, color .25s;
+  }
+  .inorder-cell.hl { background: #fffbf2; color: #a35e00; border-color: #ffd98a; }
+
+  /* 知识模块 */
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 640px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Splay 树 · 自平衡二叉搜索树 动画</h1>
+  <p class="subtitle" id="subtitle">
+    每次访问后把节点旋转到根（<b>splay</b>）· 三种旋转 Zig / Zig-Zig / Zig-Zag · 分摊复杂度 <b>O(log N)</b>
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · 为什么"访问即提升到根"能自平衡？</h2>
+    <p class="intro-lead">
+      Splay 树的核心思想只有一句话：<b>每次访问（查找 / 插入 / 删除）后，都把被访问的节点通过旋转一路送到根</b>。
+      这个把节点提升到根的过程叫 <b>splay</b>。它带来两个关键好处：
+      （1）被频繁访问的节点会停留在离根很近的地方，所以<b>有访问局部性</b>的场景下 Splay 树极快；
+      （2）虽然<b>单次操作最坏可能 O(N)</b>，但所有这些"贵操作"是摊销的——<b>分摊复杂度 O(log N)</b>。
+      Splay 只有三种旋转情形：<code>Zig</code>、<code>Zig-Zig</code>、<code>Zig-Zag</code>。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">核心 1</div>
+        <div class="title">Zig：x 的父是根</div>
+        <div class="desc">
+          x 的父 p 已是根，直接对 p 做一次单旋。<br>
+          · x 是 p 的左孩子 → 右旋 p<br>
+          · x 是 p 的右孩子 → 左旋 p<br>
+          <b>结束</b>——x 就位。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 2</div>
+        <div class="title">Zig-Zig：同向双旋</div>
+        <div class="desc">
+          x 和 p 同为"左-左"或"右-右"。<br>
+          <b>先旋 g，再旋 p</b>（从下往上走）。<br>
+          注意顺序：和 AVL 的双旋不同，<b>不是先旋 x</b>。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 3</div>
+        <div class="title">Zig-Zag：异向双旋</div>
+        <div class="desc">
+          x 和 p 异向（"左-右"或"右-左"）。<br>
+          <b>先旋 p，再旋 g</b>——实际上是对 x 连续做两次单旋。<br>
+          最终 x 会升到 g 的位置。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">find(x)：查完就 splay</div>
+        <div class="desc">
+          按 BST 规则找到 x，<br>
+          然后 <code>splay(x)</code> 把 x 提到根。<br>
+          下次再查 x 就是 <b>O(1)</b>。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">insert(x)：插入后 splay</div>
+        <div class="desc">
+          按 BST 规则插入到叶子位置，<br>
+          然后 <code>splay(新节点)</code> 把它提到根。<br>
+          最近插入的元素访问最快。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">delete(x)：先 splay 再合并</div>
+        <div class="desc">
+          <code>splay(x)</code> 到根，<br>
+          找左子树最大值 splay 到左子树根，<br>
+          把右子树挂上去即可。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 640" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label base">基本</span>
+      <button id="btnReset" class="ghost">重置</button>
+      <button id="btnRandom" class="ghost">随机建树</button>
+      <span class="stat-badge">
+        节点数 N = <span class="num" id="nodeCount">0</span>
+      </span>
+      <span class="row-hint">
+        蓝色圆形是节点，下方小徽章是 <code>size</code>（子树节点数），用于第 k 小 / 区间操作
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label find">查找</span>
+      <span class="label">key =</span>
+      <input id="findKey" type="number" value="1" min="0" max="99">
+      <button id="btnFind" class="primary">find</button>
+      <span class="row-hint">
+        找到后把目标节点<b>旋转到根</b>
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label ins">插入</span>
+      <span class="label">key =</span>
+      <input id="insKey" type="number" value="10" min="0" max="99">
+      <button id="btnInsert" class="purple">insert</button>
+      <span class="row-hint">
+        按 BST 插入到叶子，然后 splay 到根
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label del">删除</span>
+      <span class="label">key =</span>
+      <input id="delKey" type="number" value="3" min="0" max="99">
+      <button id="btnDelete" class="danger">delete</button>
+      <span class="row-hint">
+        splay 到根 → 找左子树最大值 splay → 挂右子树
+      </span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 试试 find / insert / delete，或点击「开始演示」</div>
+
+  <div class="inorder-table" id="inorderTable">
+    <span class="title">中序序列</span>
+  </div>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · Splay 树核心要点 <span class="hint">访问即提升到根</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · Splay 树
+      <span class="badge">splay / find / insert / delete / kth</span>
+      <span class="hint">分摊 O(log N)</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyCode"></pre></div>
+  </details>
+</div>
+
+<!-- ============ Python 源码 ============ -->
+<script type="text/plain" id="pySrc">
+"""
+Splay 树 —— 每次访问后把节点旋转到根的自平衡 BST。
+
+核心思想：
+    每次 find / insert / delete 之后，把访问到的节点 x 通过旋转
+    一路送到根。这个操作叫 splay(x)。
+
+三种旋转情形：
+    Zig       —— x 的父就是根，一次单旋
+    Zig-Zig   —— x 与父同向（左-左 或 右-右），先旋 g 再旋 p
+    Zig-Zag   —— x 与父异向（左-右 或 右-左），先旋 p 再旋 g
+
+复杂度：
+    单次最坏 O(N)，但分摊复杂度 O(log N)。
+"""
+
+
+# ============================================================
+# 模块 1：节点定义
+# ============================================================
+class SplayNode:
+    __slots__ = ('key', 'left', 'right', 'parent', 'size')
+
+    def __init__(self, key):
+        self.key = key
+        self.left = None
+        self.right = None
+        self.parent = None
+        self.size = 1
+
+
+def _size(n):
+    return n.size if n else 0
+
+
+def _update(n):
+    if n:
+        n.size = 1 + _size(n.left) + _size(n.right)
+
+
+# ============================================================
+# 模块 2：Splay 树
+# ============================================================
+class SplayTree:
+    """
+    支持：find / insert / delete / kth / rank / predecessor / successor
+
+    所有公开操作的最后一步都是 splay(访问到的节点)，把它带到根。
+    """
+
+    def __init__(self, keys=None):
+        self.root = None
+        if keys:
+            for k in keys:
+                self.insert(k)
+
+    # --------------------------------------------------------
+    # 旋转（内部）
+    # --------------------------------------------------------
+    def _rotate_left(self, p):
+        """左旋：p 的右孩子 q 上升为 p 的父，p 成为 q 的左孩子。"""
+        q = p.right
+        g = p.parent
+        p.right = q.left
+        if q.left:
+            q.left.parent = p
+        q.left = p
+        p.parent = q
+        q.parent = g
+        if g:
+            if g.left is p: g.left = q
+            else:            g.right = q
+        else:
+            self.root = q
+        _update(p)
+        _update(q)
+
+    def _rotate_right(self, p):
+        """右旋：p 的左孩子 q 上升为 p 的父，p 成为 q 的右孩子。"""
+        q = p.left
+        g = p.parent
+        p.left = q.right
+        if q.right:
+            q.right.parent = p
+        q.right = p
+        p.parent = q
+        q.parent = g
+        if g:
+            if g.left is p: g.left = q
+            else:            g.right = q
+        else:
+            self.root = q
+        _update(p)
+        _update(q)
+
+    # --------------------------------------------------------
+    # splay：把 x 一路旋转到根
+    # --------------------------------------------------------
+    def splay(self, x):
+        """
+        把 x 旋转到根，保持 BST 性质不变。
+        每轮根据 x、parent(x)、grandparent(x) 的关系分三种情形。
+        """
+        while x.parent:
+            p = x.parent
+            g = p.parent
+
+            if g is None:
+                # Zig：x 的父是根
+                if x is p.left:
+                    self._rotate_right(p)
+                else:
+                    self._rotate_left(p)
+
+            elif x is p.left and p is g.left:
+                # Zig-Zig：左-左 → 先旋 g，再旋 p
+                self._rotate_right(g)
+                self._rotate_right(p)
+
+            elif x is p.right and p is g.right:
+                # Zig-Zig：右-右 → 先旋 g，再旋 p
+                self._rotate_left(g)
+                self._rotate_left(p)
+
+            elif x is p.left and p is g.right:
+                # Zig-Zag：右-左 → 先旋 p，再旋 g
+                self._rotate_right(p)
+                self._rotate_left(g)
+
+            else:
+                # Zig-Zag：左-右 → 先旋 p，再旋 g
+                self._rotate_left(p)
+                self._rotate_right(g)
+
+        return x
+
+    # --------------------------------------------------------
+    # 查找：找到后 splay 到根
+    # --------------------------------------------------------
+    def find(self, key):
+        cur = self.root
+        while cur:
+            if key == cur.key:
+                self.splay(cur)
+                return cur
+            cur = cur.left if key < cur.key else cur.right
+        # 没找到：把最后一个访问的节点 splay 到根（可选）
+        return None
+
+    # --------------------------------------------------------
+    # 插入：BST 插入 → splay 新节点
+    # --------------------------------------------------------
+    def insert(self, key):
+        if self.root is None:
+            self.root = SplayNode(key)
+            return self.root
+
+        cur = self.root
+        prev = None
+        while cur:
+            prev = cur
+            if key == cur.key:
+                # 已存在，直接 splay
+                self.splay(cur)
+                return cur
+            cur = cur.left if key < cur.key else cur.right
+
+        n = SplayNode(key)
+        n.parent = prev
+        if key < prev.key: prev.left = n
+        else:              prev.right = n
+
+        # 从下到上更新 size
+        p = prev
+        while p:
+            _update(p)
+            p = p.parent
+
+        self.splay(n)     # 新节点 splay 到根
+        return n
+
+    # --------------------------------------------------------
+    # 删除：splay → 合并左右子树
+    # --------------------------------------------------------
+    def delete(self, key):
+        x = self.find(key)             # find 顺带 splay(x) 到根
+        if x is None:
+            return False
+
+        L, R = x.left, x.right
+        if L: L.parent = None
+        if R: R.parent = None
+
+        if L is None:
+            self.root = R
+        else:
+            # 找 L 的最大值（最右节点），splay 到 L 的根
+            m = L
+            while m.right: m = m.right
+            # 直接在 L 上做 splay，把 m 提到 L 的根
+            self._splay_within(L_root_holder := [L], m)
+            new_root = L
+            new_root.right = R
+            if R: R.parent = new_root
+            self.root = new_root
+
+        x.left = x.right = x.parent = None
+        _update(self.root)
+        return True
+
+    def _splay_within(self, L_holder, x):
+        """
+        把 x 在其所在子树内 splay 到子树根。
+        为了复用代码，我先临时把子树当成完整树来跑 splay：
+        简单做法是直接调用 self.splay，但要把根指针切到 L。
+        """
+        saved_root = self.root
+        self.root = L_holder[0]
+        # 断开 L 与 x 原来父链上的联系（这里简化处理）
+        # 直接调用 splay，splay 内部会更新 self.root
+        self.splay(x)
+        L_holder[0] = self.root
+        self.root = saved_root
+
+    # --------------------------------------------------------
+    # 第 k 小 / 排名（利用 size）
+    # --------------------------------------------------------
+    def kth(self, k):
+        """返回第 k 小的 key（1 <= k <= size）。"""
+        cur = self.root
+        while cur:
+            ls = _size(cur.left)
+            if k == ls + 1:
+                self.splay(cur)
+                return cur.key
+            elif k <= ls:
+                cur = cur.left
+            else:
+                k -= ls + 1
+                cur = cur.right
+        return None
+
+    def rank(self, key):
+        """返回 key 的排名（1-based），不存在返回 0。"""
+        x = self.find(key)
+        if x is None:
+            return 0
+        return _size(x.left) + 1
+
+
+# ============================================================
+# 模块 3：演示
+# ============================================================
+if __name__ == '__main__':
+    keys = [4, 2, 6, 1, 3, 5, 7]
+    t = SplayTree(keys)
+    print('中序 =', end=' ')
+    def inorder(n):
+        if not n: return
+        inorder(n.left); print(n.key, end=' '); inorder(n.right)
+    inorder(t.root); print()
+
+    # 查找会触发 splay
+    print('find(1):')
+    t.find(1)
+    print('  根 =', t.root.key)     # 1 应该到根
+    print('  中序 =', end=' ')
+    inorder(t.root); print()
+
+    print('find(5):')
+    t.find(5)
+    print('  根 =', t.root.key)     # 5 应该到根
+    print('  中序 =', end=' ')
+    inorder(t.root); print()
+
+    # 插入
+    t.insert(8)
+    print('insert(8) 后，根 =', t.root.key)
+
+    # 删除
+    t.delete(5)
+    print('delete(5) 后，根 =', t.root.key)
+
+    # 第 k 小
+    print('kth(1) =', t.kth(1))
+    print('kth(3) =', t.kth(3))
+</script>
+
+<script>
+/* =========================================================
+   1. 状态
+   ========================================================= */
+const SVG_W = 900, SVG_H = 640;
+const TOP_Y = 90, LEVEL_H = 92;
+const SLOT_W = 68;
+const NODE_R = 26;
+
+let root = null;
+let busy = false;
+let inDemo = false;
+
+/* =========================================================
+   2. 节点定义
+   ========================================================= */
+function newNode(key) {
+  return {
+    key, left: null, right: null, parent: null,
+    size: 1,
+    x: SVG_W / 2, y: TOP_Y,
+    targetX: SVG_W / 2, targetY: TOP_Y,
+    hl: '',
+  };
+}
+
+const sizeOf = n => n ? n.size : 0;
+function updateSize(n) {
+  if (!n) return;
+  n.size = 1 + sizeOf(n.left) + sizeOf(n.right);
+}
+
+/* =========================================================
+   3. SVG 构建
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const defs = document.createElementNS(NS, 'defs');
+svg.appendChild(defs);
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+/* =========================================================
+   4. 旋转（同步）
+   ========================================================= */
+function rotateLeftSync(p) {
+  const q = p.right;
+  const g = p.parent;
+  p.right = q.left;
+  if (q.left) q.left.parent = p;
+  q.left = p;
+  p.parent = q;
+  q.parent = g;
+  if (g) {
+    if (g.left === p) g.left = q;
+    else              g.right = q;
+  } else {
+    root = q;
+  }
+  updateSize(p);
+  updateSize(q);
+  return q;
+}
+
+function rotateRightSync(p) {
+  const q = p.left;
+  const g = p.parent;
+  p.left = q.right;
+  if (q.right) q.right.parent = p;
+  q.right = p;
+  p.parent = q;
+  q.parent = g;
+  if (g) {
+    if (g.left === p) g.left = q;
+    else              g.right = q;
+  } else {
+    root = q;
+  }
+  updateSize(p);
+  updateSize(q);
+  return q;
+}
+
+/* =========================================================
+   5. splay（同步版，仅用于初始化）
+   ========================================================= */
+function splaySync(x) {
+  while (x.parent) {
+    const p = x.parent;
+    const g = p.parent;
+    if (!g) {
+      if (x === p.left) rotateRightSync(p);
+      else              rotateLeftSync(p);
+    } else if (x === p.left && p === g.left) {
+      rotateRightSync(g);
+      rotateRightSync(p);
+    } else if (x === p.right && p === g.right) {
+      rotateLeftSync(g);
+      rotateLeftSync(p);
+    } else if (x === p.left && p === g.right) {
+      rotateRightSync(p);
+      rotateLeftSync(g);
+    } else {
+      rotateLeftSync(p);
+      rotateRightSync(g);
+    }
+  }
+}
+
+/* =========================================================
+   6. 构建初始树
+   ========================================================= */
+function buildInitial() {
+  root = null;
+  /* 手工构造平衡 BST：
+            4
+           / \
+          2   6
+         / \ / \
+        1  3 5  7
+  */
+  const k = [4, 2, 6, 1, 3, 5, 7];
+  for (const key of k) insertSync(key);
+}
+
+function insertSync(key) {
+  if (!root) { root = newNode(key); return root; }
+  let cur = root, prev = null;
+  while (cur) {
+    prev = cur;
+    if (key === cur.key) return cur;
+    cur = key < cur.key ? cur.left : cur.right;
+  }
+  const n = newNode(key);
+  n.parent = prev;
+  if (key < prev.key) prev.left = n;
+  else                prev.right = n;
+  let p = prev;
+  while (p) { updateSize(p); p = p.parent; }
+  return n;
+}
+
+/* =========================================================
+   7. 布局（中序占位）
+   ========================================================= */
+function collectAll(n = root, out = []) {
+  if (!n) return out;
+  out.push(n);
+  collectAll(n.left, out);
+  collectAll(n.right, out);
+  return out;
+}
+
+function relayout() {
+  if (!root) return;
+  let slot = 0;
+  function assign(n, depth) {
+    if (!n) return;
+    assign(n.left, depth + 1);
+    n._slot = slot++;
+    n._depth = depth;
+    assign(n.right, depth + 1);
+  }
+  assign(root, 0);
+
+  const totalSlots = slot;
+  const totalW = Math.max(0, (totalSlots - 1) * SLOT_W);
+  const offsetX = (SVG_W - totalW) / 2 - 40;
+
+  function pos(n) {
+    if (!n) return;
+    n.targetX = offsetX + n._slot * SLOT_W;
+    n.targetY = TOP_Y + n._depth * LEVEL_H;
+    pos(n.left);
+    pos(n.right);
+  }
+  pos(root);
+}
+
+/* =========================================================
+   8. 渲染
+   ========================================================= */
+function render() {
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+
+  /* 边 */
+  (function draw(n) {
+    if (!n) return;
+    for (const c of [n.left, n.right]) {
+      if (!c) continue;
+      const dx = c.x - n.x, dy = c.y - n.y;
+      const len = Math.hypot(dx, dy) || 1;
+      const r = NODE_R;
+      const x1 = n.x + dx / len * r;
+      const y1 = n.y + dy / len * r;
+      const x2 = c.x - dx / len * r;
+      const y2 = c.y - dy / len * r;
+
+      const line = document.createElementNS(NS, 'line');
+      line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+      let cls = 'sp-edge';
+      if (c.hl === 'active') cls += ' active';
+      if (c.hl === 'rotate') cls += ' rotate';
+      line.setAttribute('class', cls);
+      edgeLayer.appendChild(line);
+    }
+    draw(n.left);
+    draw(n.right);
+  })(root);
+
+  /* 节点 */
+  (function drawNode(n) {
+    if (!n) return;
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'sp-node';
+    if (n.hl) cls += ' ' + n.hl;
+    g.setAttribute('class', cls);
+    g.setAttribute('transform', `translate(${n.x}, ${n.y})`);
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('r', NODE_R);
+    c.setAttribute('class', 'node-bg');
+    g.appendChild(c);
+
+    const val = document.createElementNS(NS, 'text');
+    val.setAttribute('class', 'node-val');
+    val.setAttribute('text-anchor', 'middle');
+    val.setAttribute('dominant-baseline', 'central');
+    val.setAttribute('y', -4);
+    val.textContent = n.key;
+    g.appendChild(val);
+
+    /* size 徽章 */
+    const szBg = document.createElementNS(NS, 'rect');
+    szBg.setAttribute('class', 'size-bg');
+    szBg.setAttribute('x', -14);
+    szBg.setAttribute('y', 8);
+    szBg.setAttribute('width', 28);
+    szBg.setAttribute('height', 14);
+    szBg.setAttribute('rx', 4);
+    g.appendChild(szBg);
+
+    const szTxt = document.createElementNS(NS, 'text');
+    szTxt.setAttribute('class', 'node-size');
+    szTxt.setAttribute('text-anchor', 'middle');
+    szTxt.setAttribute('dominant-baseline', 'central');
+    szTxt.setAttribute('y', 15);
+    szTxt.textContent = 'n=' + n.size;
+    g.appendChild(szTxt);
+
+    nodeLayer.appendChild(g);
+    drawNode(n.left);
+    drawNode(n.right);
+  })(root);
+
+  updateInorderTable();
+  updateNodeCount();
+}
+
+/* =========================================================
+   9. 中序表 / 节点数
+   ========================================================= */
+function updateInorderTable() {
+  const el = document.getElementById('inorderTable');
+  if (!el) return;
+  el.innerHTML = '<span class="title">中序序列</span>';
+  const arr = [];
+  (function inorder(n) {
+    if (!n) return;
+    inorder(n.left);
+    arr.push(n);
+    inorder(n.right);
+  })(root);
+  if (arr.length === 0) {
+    el.innerHTML += '<span style="color:#829ab1;font-style:italic;font-size:12px;">（空）</span>';
+    return;
+  }
+  for (const n of arr) {
+    const cell = document.createElement('span');
+    cell.className = 'inorder-cell' + (n.hl ? ' hl' : '');
+    cell.textContent = n.key;
+    el.appendChild(cell);
+  }
+}
+
+function updateNodeCount() {
+  let cnt = 0;
+  (function cnt_(n) { if (!n) return; cnt++; cnt_(n.left); cnt_(n.right); })(root);
+  const el = document.getElementById('nodeCount');
+  if (el) el.textContent = cnt;
+}
+
+/* =========================================================
+   10. 动画
+   ========================================================= */
+const easeInOut = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+function animateLayout(duration = 550) {
+  return new Promise(resolve => {
+    const all = collectAll();
+    if (all.length === 0) { resolve(); return; }
+    const starts = all.map(n => ({ x: n.x, y: n.y }));
+    const t0 = performance.now();
+    function frame(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      const e = easeInOut(t);
+      for (let i = 0; i < all.length; i++) {
+        all[i].x = starts[i].x + (all[i].targetX - starts[i].x) * e;
+        all[i].y = starts[i].y + (all[i].targetY - starts[i].y) * e;
+      }
+      render();
+      if (t < 1) requestAnimationFrame(frame);
+      else resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+function snapToTargets() {
+  for (const n of collectAll()) { n.x = n.targetX; n.y = n.targetY; }
+  render();
+}
+
+/* =========================================================
+   11. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   12. 状态工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+function clearHl() {
+  for (const n of collectAll()) n.hl = '';
+}
+
+function setButtonsDisabled(d) {
+  if (inDemo) d = true;
+  for (const id of ['btnReset', 'btnRandom', 'btnFind', 'btnInsert', 'btnDelete', 'btnDemoStart']) {
+    document.getElementById(id).disabled = d;
+  }
+}
+
+function findNode(key) {
+  let cur = root;
+  while (cur) {
+    if (key === cur.key) return cur;
+    cur = key < cur.key ? cur.left : cur.right;
+  }
+  return null;
+}
+
+/* =========================================================
+   13. splay 动画
+   ========================================================= */
+async function animatedSplay(x, label = 'splay') {
+  let step = 1;
+  while (x.parent) {
+    if (demoAborted) throw new Error('aborted');
+    const p = x.parent;
+    const g = p.parent;
+
+    let kind;
+    if (!g) kind = 'Zig（单旋）';
+    else if ((x === p.left && p === g.left) || (x === p.right && p === g.right)) kind = 'Zig-Zig（同向双旋）';
+    else kind = 'Zig-Zag（异向双旋）';
+
+    /* 高亮三个角色 */
+    x.hl = 'splay-x';
+    p.hl = 'splay-p';
+    if (g) g.hl = 'splay-g';
+    render();
+    setStatus(`${label} 第 ${step} 步：${kind}　(x=${x.key}, p=${p.key}${g ? ', g=' + g.key : ''})`);
+    await tick(750);
+
+    /* 旋转 */
+    if (!g) {
+      if (x === p.left) rotateRightSync(p);
+      else              rotateLeftSync(p);
+    } else if (x === p.left && p === g.left) {
+      rotateRightSync(g);
+      rotateRightSync(p);
+    } else if (x === p.right && p === g.right) {
+      rotateLeftSync(g);
+      rotateLeftSync(p);
+    } else if (x === p.left && p === g.right) {
+      rotateRightSync(p);
+      rotateLeftSync(g);
+    } else {
+      rotateLeftSync(p);
+      rotateRightSync(g);
+    }
+
+    relayout();
+    render();
+    await animateLayout(550);
+
+    clearHl();
+    render();
+    await tick(180);
+    step++;
+  }
+  setStatus(`${label} 完成：${x.key} 已在根`);
+  await tick(500);
+}
+
+/* =========================================================
+   14. find 动画
+   ========================================================= */
+async function animatedFind(key) {
+  if (busy && !inDemo) return;
+  if (!root) { setStatus('树为空'); return; }
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  setStatus(`find(${key})：从根按 BST 规则向下`);
+  await tick(500);
+
+  /* 沿 BST 路径向下，逐节点高亮 */
+  let cur = root;
+  const path = [];
+  while (cur) {
+    path.push(cur);
+    cur.hl = 'visit';
+    render();
+    setStatus(`访问节点 ${cur.key}（比较 ${key} ${key < cur.key ? '<' : key > cur.key ? '>' : '='} ${cur.key}）`);
+    await tick(450);
+
+    if (key === cur.key) break;
+    cur = key < cur.key ? cur.left : cur.right;
+  }
+
+  if (!cur) {
+    setStatus(`✘ 未找到 ${key}`);
+    await tick(900);
+    clearHl(); render();
+    busy = false;
+    if (!inDemo) setButtonsDisabled(false);
+    return;
+  }
+
+  /* 找到后清掉路径高亮，开始 splay */
+  clearHl();
+  render();
+  setStatus(`找到 ${key}，接下来 splay 到根`);
+  await tick(500);
+
+  await animatedSplay(cur, `splay(${key})`);
+
+  cur.hl = 'found';
+  render();
+  setStatus(`✔ find(${key}) 完成：${key} 现在是根`);
+  await tick(1100);
+
+  clearHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   15. insert 动画
+   ========================================================= */
+async function animatedInsert(key) {
+  if (busy && !inDemo) return;
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  if (!root) {
+    root = newNode(key);
+    relayout();
+    snapToTargets();
+    root.hl = 'new';
+    render();
+    setStatus(`空树，新节点 ${key} 成为根`);
+    await tick(1000);
+    root.hl = '';
+    render();
+    busy = false;
+    if (!inDemo) setButtonsDisabled(false);
+    return;
+  }
+
+  /* BST 向下找位置 */
+  let cur = root, prev = null;
+  while (cur) {
+    cur.hl = 'visit';
+    render();
+    setStatus(`insert(${key})：访问 ${cur.key}`);
+    await tick(400);
+    if (key === cur.key) {
+      setStatus(`key = ${key} 已存在，直接 splay 到根`);
+      clearHl(); render();
+      await animatedSplay(cur, `splay(${key})`);
+      cur.hl = 'found'; render();
+      await tick(1000);
+      clearHl(); render();
+      busy = false;
+      if (!inDemo) setButtonsDisabled(false);
+      return;
+    }
+    prev = cur;
+    cur = key < cur.key ? cur.left : cur.right;
+  }
+
+  /* 挂新节点 */
+  const n = newNode(key);
+  n.parent = prev;
+  if (key < prev.key) prev.left = n;
+  else                prev.right = n;
+
+  /* 更新祖先的 size */
+  let p = prev;
+  while (p) { updateSize(p); p = p.parent; }
+
+  /* 新节点初始位置 = 父节点位置 */
+  n.x = prev.x;
+  n.y = prev.y;
+
+  clearHl();
+  relayout();
+  render();
+  n.hl = 'new';
+  render();
+  setStatus(`按 BST 规则挂到 ${prev.key} 的${key < prev.key ? '左' : '右'}边`);
+  await tick(500);
+  await animateLayout(600);
+
+  /* splay 新节点到根 */
+  await animatedSplay(n, `splay(${key})`);
+
+  n.hl = 'new';
+  render();
+  setStatus(`✔ insert(${key}) 完成：新节点现在是根`);
+  await tick(1100);
+
+  clearHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   16. delete 动画
+   ========================================================= */
+async function animatedDelete(key) {
+  if (busy && !inDemo) return;
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  /* 找到目标 */
+  let x = findNode(key);
+  if (!x) {
+    setStatus(`✘ 未找到 ${key}，无法删除`);
+    await tick(1000);
+    clearHl(); render();
+    busy = false;
+    if (!inDemo) setButtonsDisabled(false);
+    return;
+  }
+
+  /* 先 splay x 到根 */
+  await animatedSplay(x, `splay(${key})`);
+
+  x.hl = 'removing';
+  render();
+  setStatus(`delete(${key})：${key} 已在根，准备删除`);
+  await tick(800);
+
+  const L = x.left, R = x.right;
+
+  /* 无左子树：直接用右子树作为新根 */
+  if (!L) {
+    if (R) R.parent = null;
+    root = R;
+    x.left = x.right = x.parent = null;
+    relayout();
+    render();
+    await animateLayout(600);
+    setStatus(`左子树为空，用右子树取代根`);
+    await tick(900);
+    clearHl(); render();
+    busy = false;
+    if (!inDemo) setButtonsDisabled(false);
+    return;
+  }
+
+  /* 有左子树：找 L 的最大值 splay 到 L 的根 */
+  setStatus(`找左子树最大值（最右节点），splay 到左子树的根`);
+  await tick(600);
+
+  /* 保存原 root，让 splay 只在 L 子树内进行 */
+  const savedRoot = root;
+  root = L;
+  L.parent = null;
+
+  let maxL = L;
+  while (maxL.right) {
+    maxL.hl = 'visit';
+    render();
+    setStatus(`沿右链向下：${maxL.key}`);
+    await tick(300);
+    maxL = maxL.right;
+  }
+  maxL.hl = '';
+  render();
+
+  await animatedSplay(maxL, `splay(左子树最大)`);
+
+  /* 现在 maxL 是 L 子树的根，把 R 挂到它右边 */
+  maxL.right = R;
+  if (R) R.parent = maxL;
+  root = maxL;
+  x.left = x.right = x.parent = null;
+  updateSize(root);
+
+  relayout();
+  render();
+  await animateLayout(600);
+
+  setStatus(`✔ delete(${key}) 完成：${maxL.key} 成为新根`);
+  await tick(1100);
+
+  clearHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   17. 重置 / 随机
+   ========================================================= */
+function resetTree() {
+  buildInitial();
+  relayout();
+  snapToTargets();
+  clearHl();
+  render();
+}
+
+function randomTree() {
+  const n = 7 + Math.floor(Math.random() * 4);  /* 7..10 */
+  const keys = new Set();
+  while (keys.size < n) keys.add(Math.floor(Math.random() * 30) + 1);
+  root = null;
+  /* 依次插入并 splay，模拟真实插入过程 */
+  for (const k of keys) {
+    insertSync(k);
+  }
+  /* 不 splay，保持 BST 形状 */
+  relayout();
+  snapToTargets();
+  clearHl();
+  render();
+}
+
+/* =========================================================
+   18. 自动演示
+   ========================================================= */
+async function autoDemo() {
+  resetTree();
+  setStatus('① 初始树（平衡）');
+  await tick(700);
+
+  setStatus('② find(1) —— 触发 Zig-Zig（左-左）');
+  await tick(400);
+  await animatedFind(1);
+  await tick(400);
+
+  setStatus('③ find(7) —— 触发 Zig-Zig（右-右）');
+  await tick(400);
+  await animatedFind(7);
+  await tick(400);
+
+  setStatus('④ find(3) —— 触发 Zig-Zag（左-右 或 右-左）');
+  await tick(400);
+  await animatedFind(3);
+  await tick(400);
+
+  setStatus('⑤ find(2) —— 可能触发 Zig');
+  await tick(400);
+  await animatedFind(2);
+  await tick(400);
+
+  setStatus('⑥ insert(10) —— 新节点 splay 到根');
+  await tick(400);
+  await animatedInsert(10);
+  await tick(400);
+
+  setStatus('⑦ delete(4) —— splay 到根后删除');
+  await tick(400);
+  await animatedDelete(4);
+  await tick(400);
+
+  setStatus('✔ 演示结束：观察节点如何随访问位置不断调整');
+}
+
+/* =========================================================
+   19. 演示控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const demoModeGroup = document.getElementById('demoModeGroup');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  inDemo = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  setButtonsDisabled(true);
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await autoDemo();
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  inDemo = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  busy = false;
+  setButtonsDisabled(false);
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+/* =========================================================
+   20. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: 'Splay 树是什么', key: true, lines: [
+    '一种<b>自平衡二叉搜索树</b>，不需要额外的平衡因子',
+    '核心操作：每次访问后把节点 <b>splay 到根</b>',
+    '访问局部性好时非常快，被频繁访问的节点会留在根附近',
+    '单次最坏 O(N)，但<b>分摊复杂度 O(log N)</b>',
+  ]},
+  { icon: '🔄', title: '三种旋转情形', key: true, lines: [
+    '<b>Zig</b>：父是根，对父做一次单旋',
+    '<b>Zig-Zig</b>：x 与父同向，<b>先旋 g 再旋 p</b>',
+    '<b>Zig-Zag</b>：x 与父异向，<b>先旋 p 再旋 g</b>',
+    'Zig-Zig 和 Zig-Zag 是 splay 能摊销 O(log N) 的关键',
+  ]},
+  { icon: '⚖️', title: '为什么不是一路单旋到根？', key: true, lines: [
+    '如果只做单旋（一直把 x 转上去），<br> 某些访问序列会让树退化成链，<br> 分摊复杂度变成 <b>O(N)</b>',
+    'Zig-Zig / Zig-Zag 的"先旋父再旋 x"策略<br> 会把路径上的节点成对压缩，<br> 才能保证 <b>O(log N)</b> 的摊销',
+  ]},
+  { icon: '🔍', title: 'find(x)：查完就 splay', key: true, lines: [
+    '按 BST 规则向下找到 x',
+    '把 x 一路旋转到根',
+    '下次再访问 x 就是 O(1)',
+    '如果没找到，可以把<b>最后访问的节点</b> splay（可选）',
+  ]},
+  { icon: '➕', title: 'insert(x)：插入后 splay', key: true, lines: [
+    '按 BST 规则找到插入位置，挂到叶子',
+    '把新节点 splay 到根',
+    '最近插入的元素访问最快——符合"刚用过就很热"的直觉',
+  ]},
+  { icon: '🗑️', title: 'delete(x)：splay 后合并', key: true, lines: [
+    '先 <code>splay(x)</code> 到根',
+    '若 x 无左子树，用右子树替代',
+    '否则：找左子树最大值 splay 到左子树根，把右子树挂上去',
+    '整个过程也是 O(log N) 分摊',
+  ]},
+  { icon: '📊', title: '复杂度与性质', key: false, lines: [
+    '单次操作最坏：<code>O(N)</code>（例如访问最深节点）',
+    '<b>分摊复杂度：O(log N)</b>（可以严格证明）',
+    '空间：<code>O(N)</code>',
+    '不需要存储平衡因子或高度',
+    '对"访问局部性"好的序列，实际性能非常好',
+  ]},
+  { icon: '🧩', title: '典型应用', key: false, lines: [
+    '<b>缓存 / 热点数据</b>：频繁访问的元素会浮到根附近',
+    '<b>区间操作</b>：把序列按"中序"存入 Splay，<br> splay(l-1)、splay(r+1) 隔离出区间 [l, r]，<br> 可以打区间翻转 / 区间加等标记',
+    '<b>Link-Cut Tree</b>：每个 splay 维护一条路径，<br> LCT 的动态树操作依赖 splay',
+    '<b>并查集路径压缩</b>：思想类似——把访问过的节点"拉近"',
+    '<b>在线算法</b>：不需要预先知道访问模式',
+  ]},
+  { icon: '⚖️', title: '与 Treap / AVL 对比', key: false, lines: [
+    '<b>Treap</b>：随机化，期望 O(log N)，代码短',
+    '<b>AVL</b>：严格平衡，查找快但插入删除代价大',
+    '<b>Splay</b>：不维持严格平衡，靠"访问即 splay"自平衡',
+    'Splay 单次可能很慢，但<b>长期看很快</b>',
+    'Splay 独有优势：天然的"访问局部性"和区间操作',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    el.className = 'k-card' + (card.key ? ' key-point' : '');
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   21. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue','assert',
+    'property','staticmethod'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','len','range','float','int','str','list','dict',
+    'set','tuple','sum','isinstance','SplayTree','SplayNode'
+  ]);
+  let html = '', i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '#') {
+      let j = i; while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1;
+      while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_.]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+      if (word === 'self') html += '<span class="tok-self">self</span>';
+      else if (KEYWORDS.has(word)) html += '<span class="tok-keyword">' + word + '</span>';
+      else if (BUILTINS.has(word)) html += '<span class="tok-builtin">' + word + '</span>';
+      else if (code[j] === '(') html += '<span class="tok-func">' + word + '</span>';
+      else html += word;
+      i = j; continue;
+    }
+    if (/\d/.test(c)) {
+      let j = i; while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j; continue;
+    }
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+}
+
+/* =========================================================
+   22. 初始化 & 事件
+   ========================================================= */
+renderKnowledge();
+renderPythonCode();
+resetTree();
+updateDemoUI();
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (busy) return;
+  resetTree();
+  setStatus('已重置为初始树');
+});
+
+document.getElementById('btnRandom').addEventListener('click', () => {
+  if (busy) return;
+  randomTree();
+  setStatus('已随机生成一棵树');
+});
+
+document.getElementById('btnFind').addEventListener('click', () => {
+  const k = +document.getElementById('findKey').value;
+  animatedFind(k);
+});
+
+document.getElementById('btnInsert').addEventListener('click', () => {
+  const k = +document.getElementById('insKey').value;
+  animatedInsert(k);
+});
+
+document.getElementById('btnDelete').addEventListener('click', () => {
+  const k = +document.getElementById('delKey').value;
+  animatedDelete(k);
+});
+</script>
+</body>
+</html>

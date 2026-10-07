@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>二叉堆 · 上浮 / 下沉 / 建堆 动画</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1080px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead {
+    font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px;
+  }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  /* ===== 堆节点 ===== */
+  .hp-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.4;
+    transition: fill .25s, stroke .25s, stroke-width .25s;
+  }
+  .hp-node .node-val {
+    font-size: 20px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .hp-node .node-idx {
+    font-family: ui-monospace, monospace;
+    font-size: 10px; font-weight: 600; fill: #829ab1;
+    pointer-events: none; user-select: none;
+  }
+  /* 各种状态 */
+  .hp-node.root .node-bg { stroke: #2369ad; stroke-width: 3; }
+  .hp-node.visit .node-bg { fill: #ffe9a8; stroke: #e09b00; stroke-width: 3.4; }
+  .hp-node.visit .node-val { fill: #a35e00; }
+  .hp-node.compare .node-bg { fill: #ffd0b8; stroke: #d9713b; stroke-width: 3.4; }
+  .hp-node.compare .node-val { fill: #a34d1a; }
+  .hp-node.swap .node-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3.6; }
+  .hp-node.swap .node-val { fill: #5b3db8; }
+  .hp-node.new .node-bg { fill: #c9efc9; stroke: #57a957; stroke-width: 3.4; }
+  .hp-node.new .node-val { fill: #2f7a34; }
+  .hp-node.remove .node-bg { fill: #ffcccc; stroke: #d64545; stroke-width: 3.4; }
+  .hp-node.remove .node-val { fill: #b33232; }
+  .hp-node.settled .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3; }
+  .hp-node.settled .node-val { fill: #1c5e28; }
+
+  .hp-edge {
+    stroke: #cbd2d9; stroke-width: 2; fill: none;
+    transition: stroke .25s, stroke-width .25s;
+  }
+  .hp-edge.active { stroke: #e09b00; stroke-width: 3; stroke-dasharray: 6 4; animation: dashflow .75s linear infinite; }
+  .hp-edge.swap   { stroke: #7c5cd6; stroke-width: 3; stroke-dasharray: 6 4; animation: dashflow .75s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -10; } }
+
+  /* ===== 数组视图 ===== */
+  .arr-view .node-bg {
+    fill: #f1f3f6; stroke: #829ab1; stroke-width: 2;
+    transition: fill .25s, stroke .25s;
+  }
+  .arr-view .node-val {
+    font-size: 16px; font-weight: 800; fill: #334e68;
+    pointer-events: none; user-select: none;
+  }
+  .arr-view .node-idx {
+    font-family: ui-monospace, monospace;
+    font-size: 10px; font-weight: 700; fill: #5a6068;
+    pointer-events: none; user-select: none;
+  }
+  .arr-view.visit .node-bg { fill: #ffe9a8; stroke: #e09b00; stroke-width: 2.8; }
+  .arr-view.visit .node-val { fill: #a35e00; }
+  .arr-view.swap .node-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3; }
+  .arr-view.swap .node-val { fill: #5b3db8; }
+  .arr-view.new .node-bg { fill: #c9efc9; stroke: #57a957; stroke-width: 3; }
+  .arr-view.new .node-val { fill: #2f7a34; }
+  .arr-view.remove .node-bg { fill: #ffcccc; stroke: #d64545; stroke-width: 3; }
+  .arr-view.remove .node-val { fill: #b33232; }
+
+  /* ===== 面板 ===== */
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.base   { color: #2f7a34; }
+  .row-label.insert { color: #2369ad; }
+  .row-label.extract { color: #d64545; }
+
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  .stat-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #f0f7ff; color: #2369ad;
+    padding: 4px 12px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600;
+    border: 1px solid #c7defa;
+  }
+  .stat-badge .num {
+    font-family: ui-monospace, monospace;
+    font-size: 14px; font-weight: 800; color: #2a7fd0;
+  }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.purple  { background: #7c5cd6; border-color: #7c5cd6; color: #fff; }
+  button.purple:hover { background: #634ab0; border-color: #634ab0; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.danger:hover { background: #b33232; border-color: #b33232; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost   { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+  button.ghost:hover { background: #f0f7ff; }
+  button.orange  { background: #d9713b; border-color: #d9713b; color: #fff; }
+  button.orange:hover { background: #b95a28; border-color: #b95a28; }
+
+  input[type="number"], select {
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border-radius: 7px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  input[type="number"] { width: 76px; }
+  select { min-width: 130px; }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* 数组视图表 */
+  .arr-table {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    font-size: 12.5px;
+  }
+  .arr-table .title {
+    font-weight: 700; color: #243b53; margin-right: 8px;
+  }
+  .arr-cell {
+    display: inline-flex; flex-direction: column; align-items: center;
+    padding: 4px 8px; border-radius: 6px;
+    background: #f0f4f8; color: #4a5568;
+    font-family: ui-monospace, monospace; font-size: 12px;
+    border: 1px solid #dbe4ec; min-width: 46px;
+    transition: background .25s, color .25s, border-color .25s;
+  }
+  .arr-cell .i { font-size: 10px; color: #829ab1; }
+  .arr-cell .v { font-weight: 800; }
+  .arr-cell.visit  { background: #fffbf2; color: #a35e00; border-color: #ffd98a; }
+  .arr-cell.swap   { background: #f2ecff; color: #5b3db8; border-color: #d8c8ff; }
+  .arr-cell.settled { background: #eaf9ee; color: #2f7a34; border-color: #b8e0bf; }
+
+  /* 知识模块 */
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  /* 代码模块 */
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 640px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>二叉堆 (Binary Heap) · 插入 / 弹出 / 建堆 动画</h1>
+  <p class="subtitle" id="subtitle">
+    用数组存储 · <code>parent(i) = ⌊i/2⌋</code> · <code>left(i) = 2i</code> · <code>right(i) = 2i+1</code> · 插入和弹出都是 <b>O(log N)</b>
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · 二叉堆为什么能用数组存？</h2>
+    <p class="intro-lead">
+      二叉堆是一棵<b>完全二叉树</b>，除了最后一层外每一层都填满，最后一层从左到右连续填。
+      这个结构上的约束使得它可以用<b>数组</b>存储：下标 <code>i</code> 的父节点是 <code>⌊i/2⌋</code>，
+      左孩子是 <code>2i</code>，右孩子是 <code>2i+1</code>。堆同时满足<b>堆性质</b>：大根堆中
+      <code>a[parent] ≥ a[i]</code>，小根堆反之。所有操作都只沿一条从根到叶的路径修改，
+      路径长度就是树高 <code>O(log N)</code>，所以插入和弹出都是 <b>O(log N)</b>。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">核心 1</div>
+        <div class="title">完全二叉树 = 数组</div>
+        <div class="desc">
+          用数组 <code>a[1..N]</code> 存储，父子关系由下标算出：<br>
+          · <code>parent(i) = ⌊i/2⌋</code><br>
+          · <code>left(i) = 2i</code>，<code>right(i) = 2i+1</code><br>
+          不需要显式指针，省空间也快。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 2</div>
+        <div class="title">堆性质：父 ≥ 子（或 ≤）</div>
+        <div class="desc">
+          <b>大根堆</b>：<code>a[parent] ≥ a[i]</code>，堆顶最大<br>
+          <b>小根堆</b>：<code>a[parent] ≤ a[i]</code>，堆顶最小<br>
+          只约束父子关系，兄弟之间没有顺序要求。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 3</div>
+        <div class="title">上浮 sift-up 与 下沉 sift-down</div>
+        <div class="desc">
+          <b>上浮</b>：与父节点比较，违反堆性质就交换，一路向上。<br>
+          <b>下沉</b>：与较小的孩子比较，违反就交换，一路向下。<br>
+          两者都是 <code>O(log N)</code>，是堆所有操作的基础。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">插入：先放末尾，再上浮</div>
+        <div class="desc">
+          1. 把新元素放到数组末尾 <code>a[++n]</code><br>
+          2. 沿父链向上：若 <code>a[i]</code> 违反堆性质，与 <code>a[parent]</code> 交换<br>
+          3. 直到根或满足堆性质
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">操作</div>
+        <div class="title">弹出堆顶：末尾顶上，再下沉</div>
+        <div class="desc">
+          1. 记录 <code>a[1]</code>，把 <code>a[n]</code> 移到堆顶，<code>n--</code><br>
+          2. 沿较小孩子向下：若违反堆性质就交换<br>
+          3. 直到叶子或满足堆性质
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">进阶</div>
+        <div class="title">建堆 O(N) 与堆排序</div>
+        <div class="desc">
+          <b>建堆</b>：从最后一个非叶节点开始，逐个下沉，<b>O(N)</b><br>
+          <b>堆排序</b>：建堆 + n 次弹出，<code>O(N log N)</code>，原地排序<br>
+          <b>优先队列</b>：堆的典型应用
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 640" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label base">基本</span>
+      <button id="btnReset" class="ghost">重置</button>
+      <span class="label" style="margin-left:12px;">类型</span>
+      <select id="typeSel">
+        <option value="min">小根堆 (min-heap)</option>
+        <option value="max">大根堆 (max-heap)</option>
+      </select>
+      <button id="btnRandom" class="ghost">随机数组</button>
+      <button id="btnBuild" class="primary">从数组建堆 O(N)</button>
+      <span class="stat-badge">
+        堆大小 N = <span class="num" id="heapSize">0</span>
+      </span>
+      <span class="row-hint">
+        蓝色圆形是树视图，下方灰色条带是数组视图 a[1..n]
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label insert">插入</span>
+      <span class="label">值</span>
+      <input id="insVal" type="number" value="1" min="0" max="99">
+      <button id="btnInsert" class="success">push</button>
+      <span class="row-hint">
+        先放到数组末尾，再沿父链<b>上浮</b>，直到满足堆性质
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label extract">弹出堆顶</span>
+      <button id="btnExtract" class="danger">pop</button>
+      <span class="row-hint">
+        先取出堆顶，把末尾元素移到堆顶，再<b>下沉</b>到合适位置
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label base">快速操作</span>
+      <button id="btnInsRand" class="ghost">随机插入</button>
+      <button id="btnPopAll" class="ghost">连续弹出</button>
+      <span class="row-hint">
+        连续弹出会依次输出堆顶，得到的就是<b>堆排序</b>的结果
+      </span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 试试 push / pop / 建堆，或点击「开始演示」</div>
+
+  <div class="arr-table" id="arrTable">
+    <span class="title">数组 a[]</span>
+  </div>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 二叉堆核心要点 <span class="hint">数组实现的完全二叉树</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · 二叉堆
+      <span class="badge">插入 / 弹出 / 建堆 / 堆排序 / 优先队列</span>
+      <span class="hint">O(log N) 单次操作</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyCode"></pre></div>
+  </details>
+</div>
+
+<!-- ============ Python 源码 ============ -->
+<script type="text/plain" id="pySrc">
+"""
+二叉堆（Binary Heap）—— 用数组存储的完全二叉树。
+
+两种常见变体：
+    小根堆 min-heap：a[parent] <= a[i]
+    大根堆 max-heap：a[parent] >= a[i]
+
+核心操作：
+    push(val)      插入，O(log N)
+    pop()          弹出堆顶，O(log N)
+    heapify()      从数组原地建堆，O(N)
+    heap_sort()    堆排序，O(N log N)
+
+数组存储（1-based）：
+    parent(i) = i // 2
+    left(i)   = 2 * i
+    right(i)  = 2 * i + 1
+"""
+
+
+# ============================================================
+# 模块 1：小根堆
+# ============================================================
+class MinHeap:
+    """
+    小根堆。
+
+    内部数组 a[1..n]，a[0] 不用（1-based 更容易算父子关系）。
+    heapify 使用 Floyd 算法，从最后一个非叶节点开始逐个下沉，O(N)。
+    """
+
+    def __init__(self, arr=None):
+        if arr:
+            self.a = [None] + list(arr)     # 1-based
+            self._heapify()
+        else:
+            self.a = [None]
+
+    # ---------- 基础访问 ----------
+    @property
+    def n(self):
+        return len(self.a) - 1
+
+    def parent(self, i): return i // 2
+    def left(self, i):   return 2 * i
+    def right(self, i):  return 2 * i + 1
+
+    def _swap(self, i, j):
+        self.a[i], self.a[j] = self.a[j], self.a[i]
+
+    # ---------- 上浮 sift-up ----------
+    def _sift_up(self, i):
+        """
+        沿父链向上，若 a[i] < a[parent] 就交换。
+        直到 i 到根或满足堆性质。
+        """
+        while i > 1 and self.a[i] < self.a[self.parent(i)]:
+            p = self.parent(i)
+            self._swap(i, p)
+            i = p
+
+    # ---------- 下沉 sift-down ----------
+    def _sift_down(self, i):
+        """
+        沿较小孩子向下，若 a[i] > 较小孩子就交换。
+        直到 i 是叶子或满足堆性质。
+        """
+        while True:
+            l, r = self.left(i), self.right(i)
+            smallest = i
+            if l <= self.n and self.a[l] < self.a[smallest]:
+                smallest = l
+            if r <= self.n and self.a[r] < self.a[smallest]:
+                smallest = r
+            if smallest == i:
+                break
+            self._swap(i, smallest)
+            i = smallest
+
+    # ---------- 插入 ----------
+    def push(self, val):
+        """
+        1. 放到数组末尾
+        2. 上浮到合适位置
+        """
+        self.a.append(val)
+        self._sift_up(self.n)
+
+    # ---------- 弹出堆顶 ----------
+    def pop(self):
+        """
+        1. 记录 a[1]
+        2. 把 a[n] 移到堆顶，n--
+        3. 下沉到合适位置
+        """
+        if self.n == 0:
+            return None
+        top = self.a[1]
+        last = self.a.pop()             # 取末尾
+        if self.n > 0:
+            self.a[1] = last
+            self._sift_down(1)
+        return top
+
+    def peek(self):
+        return self.a[1] if self.n > 0 else None
+
+    # ---------- 建堆 ----------
+    def _heapify(self):
+        """
+        Floyd 建堆：
+        从最后一个非叶节点 n//2 开始，逐个向前下沉。
+        总复杂度 O(N)（比逐个 push 的 O(N log N) 快）。
+        """
+        for i in range(self.n // 2, 0, -1):
+            self._sift_down(i)
+
+    # ---------- 堆排序 ----------
+    @staticmethod
+    def heap_sort(arr):
+        """
+        堆排序：
+        1. 建堆 O(N)
+        2. 依次弹出堆顶，得到升序序列
+        """
+        h = MinHeap(arr)
+        result = []
+        while h.n > 0:
+            result.append(h.pop())
+        return result
+
+
+# ============================================================
+# 模块 2：大根堆（与小根堆结构对称）
+# ============================================================
+class MaxHeap:
+    """大根堆。与小根堆只有比较符号相反。"""
+
+    def __init__(self, arr=None):
+        if arr:
+            self.a = [None] + list(arr)
+            self._heapify()
+        else:
+            self.a = [None]
+
+    @property
+    def n(self):
+        return len(self.a) - 1
+
+    def parent(self, i): return i // 2
+    def left(self, i):   return 2 * i
+    def right(self, i):  return 2 * i + 1
+
+    def _swap(self, i, j):
+        self.a[i], self.a[j] = self.a[j], self.a[i]
+
+    def _sift_up(self, i):
+        while i > 1 and self.a[i] > self.a[self.parent(i)]:
+            p = self.parent(i)
+            self._swap(i, p)
+            i = p
+
+    def _sift_down(self, i):
+        while True:
+            l, r = self.left(i), self.right(i)
+            largest = i
+            if l <= self.n and self.a[l] > self.a[largest]:
+                largest = l
+            if r <= self.n and self.a[r] > self.a[largest]:
+                largest = r
+            if largest == i:
+                break
+            self._swap(i, largest)
+            i = largest
+
+    def push(self, val):
+        self.a.append(val)
+        self._sift_up(self.n)
+
+    def pop(self):
+        if self.n == 0:
+            return None
+        top = self.a[1]
+        last = self.a.pop()
+        if self.n > 0:
+            self.a[1] = last
+            self._sift_down(1)
+        return top
+
+    def _heapify(self):
+        for i in range(self.n // 2, 0, -1):
+            self._sift_down(i)
+
+
+# ============================================================
+# 模块 3：应用示例
+# ============================================================
+def kth_largest(nums, k):
+    """
+    求第 k 大元素：用大小为 k 的小根堆维护"当前最大的 k 个"。
+    时间 O(N log k)，空间 O(k)。
+    """
+    h = MinHeap()
+    for x in nums:
+        h.push(x)
+        if h.n > k:
+            h.pop()
+    return h.peek()
+
+
+def merge_k_sorted(lists):
+    """
+    合并 k 个有序数组：小根堆保存每个数组的当前首元素。
+    时间 O(N log k)，N 为总元素数。
+    """
+    import heapq
+    h = []
+    for i, lst in enumerate(lists):
+        if lst:
+            heapq.heappush(h, (lst[0], i, 0))
+    result = []
+    while h:
+        val, i, j = heapq.heappop(h)
+        result.append(val)
+        if j + 1 < len(lists[i]):
+            heapq.heappush(h, (lists[i][j + 1], i, j + 1))
+    return result
+
+
+if __name__ == '__main__':
+    # 建堆 + 排序
+    arr = [9, 4, 7, 1, -2, 6, 5]
+    print('原始数组:', arr)
+    print('建堆后:', MinHeap(arr).a[1:])
+    print('堆排序:', MinHeap.heap_sort(arr))
+
+    # 逐个 push
+    h = MinHeap()
+    for x in [5, 3, 8, 1, 4]:
+        h.push(x)
+        print(f'push({x}) → {h.a[1:]}')
+    while h.n > 0:
+        print('pop →', h.pop())
+
+    # 第 k 大
+    print('第 2 大:', kth_largest([3, 1, 4, 1, 5, 9, 2, 6], 2))
+
+    # k 路归并
+    print('k 路归并:',
+          merge_k_sorted([[1, 4, 7], [2, 5, 8], [3, 6, 9]]))
+</script>
+
+<script>
+/* =========================================================
+   1. 状态
+   ========================================================= */
+const N_MAX = 15;                    /* 最多 15 个节点，正好 4 层 */
+const INIT_A = [9, 4, 7, 1, -2, 6, 5];
+
+let arr = [null];                    /* 1-based，arr[0] = null */
+let TYPE = 'min';                    /* 'min' 或 'max' */
+let busy = false;
+let inDemo = false;
+
+/* 每个下标的状态 */
+let idxState = {};                   /* i -> '' | 'visit' | 'compare' | 'swap' | 'new' | 'remove' | 'settled' */
+let edgeState = {};                  /* i -> '' | 'active' | 'swap' */
+
+/* =========================================================
+   2. 堆工具
+   ========================================================= */
+const parentOf = i => Math.floor(i / 2);
+const leftOf   = i => 2 * i;
+const rightOf  = i => 2 * i + 1;
+
+const cmp = (a, b) => TYPE === 'min' ? (a < b) : (a > b);
+const cmpVal = (a, b) => TYPE === 'min' ? (a - b) : (b - a);
+
+function heapN() { return arr.length - 1; }
+
+/* 从数组原地建堆（Floyd，O(N)） */
+function buildHeapFromArray() {
+  for (let i = Math.floor(heapN() / 2); i >= 1; i--) {
+    siftDownSync(i);
+  }
+}
+
+function siftDownSync(i) {
+  while (true) {
+    const l = leftOf(i), r = rightOf(i);
+    let best = i;
+    if (l <= heapN() && cmp(arr[l], arr[best])) best = l;
+    if (r <= heapN() && cmp(arr[r], arr[best])) best = r;
+    if (best === i) break;
+    [arr[i], arr[best]] = [arr[best], arr[i]];
+    i = best;
+  }
+}
+
+function siftUpSync(i) {
+  while (i > 1 && cmp(arr[i], arr[parentOf(i)])) {
+    const p = parentOf(i);
+    [arr[i], arr[p]] = [arr[p], arr[i]];
+    i = p;
+  }
+}
+
+/* =========================================================
+   3. 布局：树视图（完全二叉树）
+   ========================================================= */
+const SVG_W = 900, SVG_H = 640;
+
+/* 树的层 y 和每个位置的 x */
+const TREE_TOP = 90;
+const TREE_LEVEL_H = 90;
+const NODE_R = 28;
+
+/* 完全二叉树里，n 个节点的树，每个节点在树中的 x 位置 */
+function treePositions(n) {
+  const pos = {};     /* i -> {x, y} */
+
+  /* 用"中序占位"方式：叶子按顺序占 slot，内部节点取中点 */
+  let slot = 0;
+  function assign(i) {
+    if (i > n) return null;
+    const l = assign(leftOf(i));
+    const x = slot; slot += 1;
+    const r = assign(rightOf(i));
+    const depth = Math.floor(Math.log2(i));
+    pos[i] = { slot: x, y: TREE_TOP + depth * TREE_LEVEL_H, depth };
+    /* 内部节点取两个孩子的中点 */
+    if (l !== null && r !== null) {
+      /* 再中序取中点，其实就是自己 slot，不用改 */
+    }
+  }
+  /* 换一种方式：用二叉堆的"标准数组位置" 直接递归 */
+  const positions = {};
+  const totalSlots = 2 * Math.floor(Math.pow(2, Math.floor(Math.log2(n)))) - 1;
+
+  /* 用更简单的方式：每个节点在"完美二叉树"里的位置 */
+  const totalDepth = Math.floor(Math.log2(n));
+  const perfectN = Math.pow(2, totalDepth + 1) - 1;
+  const baseGap = SVG_W / (perfectN + 1);
+
+  function posOf(i) {
+    /* 在完美二叉树里，节点 i 的位置 = 根在中心，越往下越宽 */
+    const depth = Math.floor(Math.log2(i));
+    const width = Math.pow(2, depth);            /* 该层的节点数 */
+    const idx = i - Math.pow(2, depth);          /* 该层从 0 开始的编号 */
+    const layerSpan = SVG_W / width;
+    const x = layerSpan * idx + layerSpan / 2;
+    const y = TREE_TOP + depth * TREE_LEVEL_H;
+    return { x, y, depth };
+  }
+  for (let i = 1; i <= n; i++) posOf && (positions[i] = posOf(i));
+  return positions;
+}
+
+/* =========================================================
+   4. 数组视图布局
+   ========================================================= */
+const A_W = 50, A_H = 44, A_GAP = 8;
+const A_Y = 510;
+
+/* 数组视图：从左到右 */
+const aLeft = j => 60 + (j - 1) * (A_W + A_GAP);
+const aCx   = j => aLeft(j) + A_W / 2;
+
+/* =========================================================
+   5. SVG 构建
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const defs = document.createElementNS(NS, 'defs');
+svg.appendChild(defs);
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+const arrLayer  = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+svg.appendChild(arrLayer);
+
+/* =========================================================
+   6. 渲染
+   ========================================================= */
+let treePos = {};
+
+function render() {
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+  arrLayer.innerHTML = '';
+
+  const n = heapN();
+  treePos = treePositions(n);
+
+  /* ---------- 树边 ---------- */
+  for (let i = 2; i <= n; i++) {
+    const p = parentOf(i);
+    const c = treePos[i], pp = treePos[p];
+    if (!c || !pp) continue;
+
+    const dx = c.x - pp.x, dy = c.y - pp.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const r = NODE_R;
+    const x1 = pp.x + dx / len * r;
+    const y1 = pp.y + dy / len * r;
+    const x2 = c.x - dx / len * r;
+    const y2 = c.y - dy / len * r;
+
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    let cls = 'hp-edge';
+    if (edgeState[i] === 'active') cls += ' active';
+    if (edgeState[i] === 'swap')   cls += ' swap';
+    line.setAttribute('class', cls);
+    edgeLayer.appendChild(line);
+  }
+
+  /* ---------- 树节点 ---------- */
+  for (let i = 1; i <= n; i++) {
+    const { x, y } = treePos[i];
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'hp-node';
+    if (i === 1) cls += ' root';
+    if (idxState[i]) cls += ' ' + idxState[i];
+    g.setAttribute('class', cls);
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y); c.setAttribute('r', NODE_R);
+    c.setAttribute('class', 'node-bg');
+    g.appendChild(c);
+
+    const txt = document.createElementNS(NS, 'text');
+    txt.setAttribute('class', 'node-val');
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('dominant-baseline', 'central');
+    txt.setAttribute('x', x);
+    txt.setAttribute('y', y);
+    txt.textContent = arr[i];
+    g.appendChild(txt);
+
+    const idx = document.createElementNS(NS, 'text');
+    idx.setAttribute('class', 'node-idx');
+    idx.setAttribute('text-anchor', 'middle');
+    idx.setAttribute('dominant-baseline', 'central');
+    idx.setAttribute('x', x);
+    idx.setAttribute('y', y + NODE_R + 11);
+    idx.textContent = 'i=' + i;
+    g.appendChild(idx);
+
+    nodeLayer.appendChild(g);
+  }
+
+  /* ---------- 数组视图 ---------- */
+  for (let j = 1; j <= n; j++) {
+    const cx = aCx(j);
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'arr-view';
+    if (idxState[j]) cls += ' ' + idxState[j];
+    g.setAttribute('class', cls);
+
+    const rect = document.createElementNS(NS, 'rect');
+    rect.setAttribute('x', aLeft(j));
+    rect.setAttribute('y', A_Y - A_H / 2);
+    rect.setAttribute('width', A_W);
+    rect.setAttribute('height', A_H);
+    rect.setAttribute('rx', '7');
+    rect.setAttribute('class', 'node-bg');
+    g.appendChild(rect);
+
+    const idx = document.createElementNS(NS, 'text');
+    idx.setAttribute('class', 'node-idx');
+    idx.setAttribute('text-anchor', 'middle');
+    idx.setAttribute('dominant-baseline', 'central');
+    idx.setAttribute('x', cx);
+    idx.setAttribute('y', A_Y - A_H / 2 - 8);
+    idx.textContent = j;
+    g.appendChild(idx);
+
+    const val = document.createElementNS(NS, 'text');
+    val.setAttribute('class', 'node-val');
+    val.setAttribute('text-anchor', 'middle');
+    val.setAttribute('dominant-baseline', 'central');
+    val.setAttribute('x', cx);
+    val.setAttribute('y', A_Y);
+    val.textContent = arr[j];
+    g.appendChild(val);
+
+    arrLayer.appendChild(g);
+  }
+
+  updateArrTable();
+  updateHeapSize();
+}
+
+/* =========================================================
+   7. 状态表 / 堆大小
+   ========================================================= */
+function updateArrTable() {
+  const el = document.getElementById('arrTable');
+  if (!el) return;
+  el.innerHTML = '<span class="title">数组 a[]（1-based）</span>';
+  for (let i = 1; i <= heapN(); i++) {
+    const cell = document.createElement('span');
+    let cls = 'arr-cell';
+    if (idxState[i]) cls += ' ' + idxState[i];
+    cell.className = cls;
+    cell.innerHTML = `<span class="i">i=${i}</span><span class="v">${arr[i]}</span>`;
+    el.appendChild(cell);
+  }
+}
+
+function updateHeapSize() {
+  const el = document.getElementById('heapSize');
+  if (el) el.textContent = heapN();
+}
+
+/* =========================================================
+   8. 状态工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+function clearHl() {
+  idxState = {};
+  edgeState = {};
+}
+
+function setButtonsDisabled(d) {
+  if (inDemo) d = true;
+  for (const id of ['btnReset', 'btnInsert', 'btnExtract', 'btnBuild', 'btnRandom',
+                    'btnInsRand', 'btnPopAll']) {
+    document.getElementById(id).disabled = d;
+  }
+  document.getElementById('typeSel').disabled = d;
+}
+
+/* =========================================================
+   9. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   10. 插入动画：先放到末尾，再上浮
+   ========================================================= */
+async function animatedPush(val) {
+  if (busy && !inDemo) return;
+  if (heapN() >= N_MAX) {
+    setStatus(`✘ 堆已满（最多 ${N_MAX} 个节点）`);
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  arr.push(val);
+  let i = heapN();
+
+  setStatus(`push(${val})：先放到数组末尾，a[${i}] = ${val}`);
+  idxState[i] = 'new';
+  render();
+  await tick(700);
+
+  /* 上浮 */
+  let step = 1;
+  while (i > 1) {
+    const p = parentOf(i);
+    idxState[i] = 'visit';
+    idxState[p] = 'compare';
+    edgeState[i] = 'active';
+    render();
+    setStatus(
+      `第 ${step} 步：比较 a[${i}] = ${arr[i]} 与父 a[${p}] = ${arr[p]}` +
+      `（${TYPE === 'min' ? '小根堆要求父 ≤ 子' : '大根堆要求父 ≥ 子'}）`
+    );
+    await tick(800);
+
+    if (cmp(arr[i], arr[p])) {
+      setStatus(`  ${arr[i]} ${TYPE === 'min' ? '<' : '>'} ${arr[p]}，违反堆性质 → 交换`);
+      idxState[i] = 'swap';
+      idxState[p] = 'swap';
+      edgeState[i] = 'swap';
+      render();
+      await tick(700);
+
+      [arr[i], arr[p]] = [arr[p], arr[i]];
+      render();
+      setStatus(`  ✔ 交换后 a[${i}] = ${arr[i]}，a[${p}] = ${arr[p]}`);
+      await tick(500);
+
+      idxState[i] = '';
+      idxState[p] = '';
+      edgeState[i] = '';
+      i = p;
+      step++;
+    } else {
+      setStatus(`  已满足堆性质，停止上浮`);
+      idxState[i] = '';
+      idxState[p] = '';
+      edgeState[i] = '';
+      render();
+      await tick(600);
+      break;
+    }
+  }
+
+  idxState[i] = 'settled';
+  render();
+  setStatus(`✔ push(${val}) 完成：堆大小 = ${heapN()}`);
+  await tick(900);
+
+  clearHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   11. 弹出堆顶：末尾顶上，再下沉
+   ========================================================= */
+async function animatedPop() {
+  if (busy && !inDemo) return;
+  if (heapN() === 0) {
+    setStatus('✘ 堆为空，无法弹出');
+    return;
+  }
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  const n = heapN();
+  const topVal = arr[1];
+
+  /* 先高亮堆顶 */
+  idxState[1] = 'remove';
+  render();
+  setStatus(`pop()：取出堆顶 a[1] = ${topVal}`);
+  await tick(700);
+
+  /* 只有一个元素 */
+  if (n === 1) {
+    arr.pop();
+    idxState = {};
+    render();
+    setStatus(`✔ pop() 返回 ${topVal}，堆已空`);
+    await tick(900);
+    busy = false;
+    if (!inDemo) setButtonsDisabled(false);
+    return;
+  }
+
+  /* 把末尾元素移到堆顶 */
+  const lastVal = arr[n];
+  arr.pop();
+  arr[1] = lastVal;
+  idxState[1] = 'new';
+  render();
+  setStatus(`把末尾 a[${n}] = ${lastVal} 移到堆顶 a[1]，堆大小 ${n} → ${n - 1}`);
+  await tick(900);
+
+  /* 下沉 */
+  let i = 1;
+  let step = 1;
+  while (true) {
+    const l = leftOf(i), r = rightOf(i);
+    let best = i;
+    if (l <= heapN() && cmp(arr[l], arr[best])) best = l;
+    if (r <= heapN() && cmp(arr[r], arr[best])) best = r;
+
+    idxState[i] = 'visit';
+    if (l <= heapN()) idxState[l] = 'compare';
+    if (r <= heapN()) idxState[r] = 'compare';
+    if (l <= heapN()) edgeState[l] = 'active';
+    if (r <= heapN()) edgeState[r] = 'active';
+    render();
+
+    const children = [];
+    if (l <= heapN()) children.push(`a[${l}]=${arr[l]}`);
+    if (r <= heapN()) children.push(`a[${r}]=${arr[r]}`);
+    setStatus(
+      `第 ${step} 步：比较 a[${i}] = ${arr[i]} 与孩子 ${children.join(', ')}` +
+      (children.length ? '' : '（没有孩子）')
+    );
+    await tick(800);
+
+    if (best === i) {
+      setStatus(`  已满足堆性质，停止下沉`);
+      idxState[i] = 'settled';
+      if (l <= heapN()) idxState[l] = '';
+      if (r <= heapN()) idxState[r] = '';
+      if (l <= heapN()) edgeState[l] = '';
+      if (r <= heapN()) edgeState[r] = '';
+      render();
+      await tick(700);
+      break;
+    } else {
+      setStatus(`  a[${best}] = ${arr[best]} ${TYPE === 'min' ? '<' : '>'} a[${i}] = ${arr[i]}，违反堆性质 → 交换`);
+      idxState[i] = 'swap';
+      idxState[best] = 'swap';
+      if (l <= heapN()) edgeState[l] = 'swap';
+      if (r <= heapN()) edgeState[r] = 'swap';
+      render();
+      await tick(700);
+
+      [arr[i], arr[best]] = [arr[best], arr[i]];
+      render();
+      setStatus(`  ✔ 交换后 a[${i}] = ${arr[i]}，a[${best}] = ${arr[best]}`);
+      await tick(500);
+
+      idxState[i] = '';
+      idxState[best] = '';
+      if (l <= heapN()) edgeState[l] = '';
+      if (r <= heapN()) edgeState[r] = '';
+      i = best;
+      step++;
+    }
+  }
+
+  setStatus(`✔ pop() 返回 ${topVal}，堆大小 = ${heapN()}`);
+  await tick(1100);
+
+  clearHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   12. 从数组建堆 O(N)
+   ========================================================= */
+async function animatedBuild(arrIn) {
+  if (busy && !inDemo) return;
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  /* 先填数组 */
+  arr = [null, ...arrIn];
+  render();
+  setStatus(`建堆开始：先把数组 ${arrIn.join(', ')} 放入 a[1..${arrIn.length}]`);
+  await tick(800);
+
+  /* 从最后一个非叶节点开始，逐个下沉 */
+  const start = Math.floor(heapN() / 2);
+  setStatus(`从最后一个非叶节点 i = ${start} 开始，逐个向前 sift-down`);
+  await tick(700);
+
+  for (let i = start; i >= 1; i--) {
+    idxState[i] = 'visit';
+    render();
+    setStatus(`处理 i = ${i}（值 = ${arr[i]}），准备 sift-down`);
+    await tick(450);
+
+    /* 动画版 sift-down */
+    let j = i;
+    while (true) {
+      const l = leftOf(j), r = rightOf(j);
+      let best = j;
+      if (l <= heapN() && cmp(arr[l], arr[best])) best = l;
+      if (r <= heapN() && cmp(arr[r], arr[best])) best = r;
+      if (best === j) break;
+
+      idxState[best] = 'compare';
+      edgeState[best] = 'active';
+      render();
+      setStatus(`  ${arr[best]} ${TYPE === 'min' ? '<' : '>'} ${arr[j]} → 交换`);
+      await tick(500);
+
+      idxState[j] = 'swap';
+      idxState[best] = 'swap';
+      edgeState[best] = 'swap';
+      render();
+      await tick(500);
+
+      [arr[j], arr[best]] = [arr[best], arr[j]];
+      render();
+      await tick(400);
+
+      idxState[best] = '';
+      edgeState[best] = '';
+      j = best;
+    }
+    idxState[i] = 'settled';
+    render();
+    await tick(350);
+    idxState[i] = '';
+    render();
+  }
+
+  clearHl();
+  render();
+  setStatus(`✔ 建堆完成（O(N)）`);
+  await tick(800);
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   13. 重置 / 随机
+   ========================================================= */
+function resetHeap() {
+  arr = [null, ...INIT_A];
+  clearHl();
+  buildHeapFromArray();
+  render();
+}
+
+function randomHeap() {
+  const n = 7 + Math.floor(Math.random() * 4);   /* 7..10 */
+  const vals = [];
+  for (let i = 0; i < n; i++) vals.push(Math.floor(Math.random() * 50));
+  arr = [null, ...vals];
+  clearHl();
+  buildHeapFromArray();
+  render();
+}
+
+/* =========================================================
+   14. 自动演示
+   ========================================================= */
+async function autoDemo() {
+  resetHeap();
+  render();
+  setStatus('① 初始数组已建堆（从小根堆开始）');
+  await tick(700);
+
+  setStatus('② push(1)：末尾放 1，然后上浮');
+  await tick(400);
+  await animatedPush(1);
+  await tick(300);
+
+  setStatus('③ push(3)：连续上浮');
+  await tick(400);
+  await animatedPush(3);
+  await tick(300);
+
+  setStatus('④ pop()：弹出堆顶，末尾顶上，下沉');
+  await tick(400);
+  await animatedPop();
+  await tick(300);
+
+  setStatus('⑤ 从随机数组 O(N) 建堆');
+  await tick(400);
+  const rand = [];
+  for (let i = 0; i < 9; i++) rand.push(Math.floor(Math.random() * 50));
+  await animatedBuild(rand);
+  await tick(300);
+
+  setStatus('⑥ 连续弹出所有元素 → 得到排序结果');
+  await tick(400);
+  const sorted = [];
+  while (heapN() > 0) {
+    const v = arr[1];
+    sorted.push(v);
+    await animatedPop();
+    await tick(200);
+  }
+  setStatus(`✔ 弹出序列 = [${sorted.join(', ')}]` + (TYPE === 'min' ? '（升序）' : '（降序）'));
+  await tick(1200);
+}
+
+/* =========================================================
+   15. 演示控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const demoModeGroup = document.getElementById('demoModeGroup');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  inDemo = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  setButtonsDisabled(true);
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await autoDemo();
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  inDemo = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  busy = false;
+  setButtonsDisabled(false);
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+/* =========================================================
+   16. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: '二叉堆是什么', key: true, lines: [
+    '一棵<b>完全二叉树</b>：除最后一层外全满，最后一层从左到右连续填',
+    '<b>大根堆</b>：任意节点 ≥ 其孩子，堆顶最大',
+    '<b>小根堆</b>：任意节点 ≤ 其孩子，堆顶最小',
+    '兄弟节点之间没有顺序要求，只约束"父子"关系',
+  ]},
+  { icon: '🔢', title: '数组存储：完全二叉树的红利', key: true, lines: [
+    '用 <code>a[1..N]</code>（1-based）存储，父子关系由下标算出：',
+    '<code>parent(i) = ⌊i/2⌋</code>',
+    '<code>left(i) = 2i</code>，<code>right(i) = 2i+1</code>',
+    '不需要显式指针，<b>省空间</b>且访问快',
+    '数组下标从 1 开始是常见约定；从 0 开始也能算，但公式略复杂',
+  ]},
+  { icon: '⬆️', title: '上浮 sift-up（插入）', key: true, lines: [
+    '把新元素放到数组末尾 <code>a[++n]</code>',
+    '沿父链向上：若违反堆性质就与父节点交换',
+    '直到根或满足堆性质',
+    '路径长度 = 树高 = <code>O(log N)</code>',
+  ]},
+  { icon: '⬇️', title: '下沉 sift-down（弹出）', key: true, lines: [
+    '记录 <code>a[1]</code>，把 <code>a[n]</code> 移到堆顶，<code>n--</code>',
+    '沿<b>较小（或较大）孩子</b>向下：若违反堆性质就交换',
+    '直到叶子或满足堆性质',
+    '路径长度 = 树高 = <code>O(log N)</code>',
+  ]},
+  { icon: '🏗️', title: '建堆 O(N)（Floyd 算法）', key: true, lines: [
+    '从最后一个非叶节点 <code>⌊n/2⌋</code> 开始，逐个向前做 sift-down',
+    '总复杂度 <b>O(N)</b>，比逐个 push 的 O(N log N) 快',
+    '证明要点：深度越大的节点越多，但它们下沉的距离越短',
+    '堆排序第一步就是 O(N) 建堆',
+  ]},
+  { icon: '📊', title: '复杂度总结', key: false, lines: [
+    '访问堆顶（peek）：<code>O(1)</code>',
+    '插入（push）：<code>O(log N)</code>',
+    '弹出堆顶（pop）：<code>O(log N)</code>',
+    '建堆（heapify）：<code>O(N)</code>',
+    '堆排序：<code>O(N log N)</code>',
+    '空间：<code>O(N)</code>（原地）',
+  ]},
+  { icon: '⚖️', title: '与其他结构对比', key: false, lines: [
+    '<b>堆</b>：只保证堆顶是极值，O(1) 取顶、O(log N) 增删',
+    '<b>平衡 BST</b>：有序结构，能查任意值、前驱后继',
+    '<b>线段树</b>：区间操作，复杂度 O(log N)',
+    '<b>优先队列</b>：堆的抽象接口，很多语言内置',
+    '堆不支持高效任意元素删除 / 查找（除非配合索引）',
+  ]},
+  { icon: '🧩', title: '典型应用', key: false, lines: [
+    '<b>优先队列</b>：任务调度、事件驱动模拟',
+    '<b>Dijkstra</b>：用堆选距离最小的点',
+    '<b>Top-K</b>：大小为 K 的堆维护前 K 大/小',
+    '<b>第 k 大 / 第 k 小</b>：堆的经典题',
+    '<b>堆排序</b>：原地 O(N log N) 排序',
+    '<b>K 路归并</b>：多路有序流合并',
+    '<b>哈夫曼编码</b>：每次取两个最小频率',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    el.className = 'k-card' + (card.key ? ' key-point' : '');
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   17. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue','assert',
+    'property','staticmethod'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','len','range','float','int','str','list','dict',
+    'set','tuple','sum','isinstance','enumerate','MinHeap','MaxHeap','heapq',
+    'kth_largest','merge_k_sorted'
+  ]);
+  let html = '', i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '#') {
+      let j = i; while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1;
+      while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_.]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+      if (word === 'self') html += '<span class="tok-self">self</span>';
+      else if (KEYWORDS.has(word)) html += '<span class="tok-keyword">' + word + '</span>';
+      else if (BUILTINS.has(word)) html += '<span class="tok-builtin">' + word + '</span>';
+      else if (code[j] === '(') html += '<span class="tok-func">' + word + '</span>';
+      else html += word;
+      i = j; continue;
+    }
+    if (/\d/.test(c)) {
+      let j = i; while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j; continue;
+    }
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+}
+
+/* =========================================================
+   18. 初始化 & 事件
+   ========================================================= */
+renderKnowledge();
+renderPythonCode();
+resetHeap();
+updateDemoUI();
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (busy) return;
+  resetHeap();
+  setStatus('已重置为初始堆');
+});
+
+document.getElementById('typeSel').addEventListener('change', () => {
+  if (busy) return;
+  TYPE = document.getElementById('typeSel').value;
+  resetHeap();
+  setStatus(`已切换为 ${TYPE === 'min' ? '小根堆' : '大根堆'}`);
+});
+
+document.getElementById('btnRandom').addEventListener('click', () => {
+  if (busy) return;
+  randomHeap();
+  setStatus('已随机生成数组并建堆');
+});
+
+document.getElementById('btnBuild').addEventListener('click', () => {
+  if (busy) return;
+  const rand = [];
+  for (let i = 0; i < 9; i++) rand.push(Math.floor(Math.random() * 50));
+  animatedBuild(rand);
+});
+
+document.getElementById('btnInsert').addEventListener('click', () => {
+  const v = +document.getElementById('insVal').value;
+  animatedPush(v);
+});
+
+document.getElementById('btnExtract').addEventListener('click', () => {
+  animatedPop();
+});
+
+document.getElementById('btnInsRand').addEventListener('click', () => {
+  animatedPush(Math.floor(Math.random() * 50));
+});
+
+document.getElementById('btnPopAll').addEventListener('click', async () => {
+  if (busy) return;
+  setButtonsDisabled(true);
+  const sorted = [];
+  try {
+    while (heapN() > 0) {
+      const v = arr[1];
+      sorted.push(v);
+      await animatedPop();
+      await new Promise(r => setTimeout(r, 100));
+    }
+    setStatus(`✔ 弹出序列 = [${sorted.join(', ')}]` + (TYPE === 'min' ? '（升序）' : '（降序）'));
+  } catch (e) { console.error(e); }
+  setButtonsDisabled(false);
+});
+</script>
+</body>
+</html>

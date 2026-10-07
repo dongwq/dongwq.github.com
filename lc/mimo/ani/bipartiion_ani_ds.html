@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>二分图匹配 · 匈牙利算法 动画</title>
+
+<!-- ★ 引入 highlight.js CDN -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1100px, 100%); }
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead { font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px; }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+  .bg-side { fill: #f5f9ff; }
+  .bg-label {
+    font-size: 13px; font-weight: 700; fill: #829ab1;
+    pointer-events: none; user-select: none;
+    letter-spacing: 1px;
+  }
+
+  .bp-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.4;
+    transition: fill .3s, stroke .3s, stroke-width .3s;
+  }
+  .bp-node .node-id {
+    font-size: 15px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .bp-node.right .node-bg { fill: #e8e0ff; stroke: #7c5cd6; }
+  .bp-node.right .node-id { fill: #5b3db8; }
+
+  .bp-node.current .node-bg { fill: #ffe9a8; stroke: #e09b00; stroke-width: 4; }
+  .bp-node.current .node-id { fill: #a35e00; }
+  .bp-node.visiting .node-bg { fill: #ffd0b8; stroke: #d9713b; stroke-width: 3.6; }
+  .bp-node.visiting .node-id { fill: #a34d1a; }
+  .bp-node.matched .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.8; }
+  .bp-node.matched .node-id { fill: #1c5e28; }
+  .bp-node.unmatched .node-bg { fill: #eeeeee; stroke: #999999; }
+  .bp-node.unmatched .node-id { fill: #666666; }
+
+  .bp-edge {
+    stroke: #cbd2d9; stroke-width: 2; fill: none;
+    transition: stroke .3s, stroke-width .3s;
+  }
+  .bp-edge.exploring {
+    stroke: #e09b00; stroke-width: 4.5;
+    animation: dashflow .8s linear infinite;
+    stroke-dasharray: 8 6;
+  }
+  .bp-edge.matched { stroke: #2f7a34; stroke-width: 5.5; }
+  .bp-edge.failed {
+    stroke: #d64545; stroke-width: 2.5;
+    stroke-dasharray: 5 4;
+    opacity: 0.7;
+  }
+  @keyframes dashflow { to { stroke-dashoffset: -14; } }
+
+  .match-panel {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+    font-size: 13.5px;
+  }
+  .match-panel .title {
+    font-weight: 700; color: #243b53;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .match-panel .stat {
+    font-family: ui-monospace, monospace;
+    font-size: 14px; font-weight: 800;
+    background: #eaf9ee; color: #2f7a34;
+    padding: 3px 12px; border-radius: 6px;
+  }
+  .match-panel .edges {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #4a5568;
+    background: #f0f4f8; padding: 3px 10px; border-radius: 6px;
+    min-height: 26px;
+    display: flex; gap: 8px; align-items: center;
+    flex-wrap: wrap;
+  }
+  .match-panel .edges .m {
+    background: #d4f4dd; color: #1c5e28;
+    padding: 1px 7px; border-radius: 4px;
+    font-weight: 700;
+  }
+  .match-panel .edges .empty {
+    color: #829ab1; font-style: italic; font-size: 12px;
+  }
+
+  .panel {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.run { color: #2f7a34; }
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost   { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+  button.ghost:hover { background: #f0f7ff; }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* ★ 演示记录面板 */
+  .log-module {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .log-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+    transition: background .15s;
+  }
+  .log-module > summary::-webkit-details-marker { display: none; }
+  .log-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .log-module[open] > summary::before { transform: rotate(90deg); }
+  .log-module > summary:hover { background: #f8fafc; }
+  .log-module > summary .count {
+    font-size: 11.5px; font-weight: 600;
+    background: #eef4fa; color: #2369ad;
+    padding: 2px 8px; border-radius: 5px;
+    font-family: ui-monospace, monospace;
+    margin-left: auto;
+  }
+  .log-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1;
+  }
+  .log-body {
+    max-height: 480px; overflow-y: auto;
+    padding: 10px 20px 16px;
+    background: #fbfdff;
+  }
+  .log-line {
+    display: grid; grid-template-columns: 52px 1fr;
+    gap: 12px; padding: 6px 0;
+    border-bottom: 1px dashed #eef2f7;
+    font-size: 12.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    transition: background .15s;
+  }
+  .log-line:hover { background: #f0f7ff; }
+  .log-line:last-child { border-bottom: none; }
+  .log-line .idx {
+    color: #829ab1; font-weight: 700; text-align: right;
+  }
+  .log-line .msg { color: #334e68; word-break: break-word; }
+  .log-line.cur {
+    background: #fffbf2;
+    border-left: 3px solid #e09b00;
+    margin-left: -3px; padding-left: 3px;
+  }
+  .log-line.cur .idx { color: #b45a12; }
+  .log-line.cur .msg { color: #8a5a00; font-weight: 600; }
+  .log-empty {
+    font-size: 12.5px; color: #829ab1; font-style: italic;
+    padding: 16px 0; text-align: center;
+  }
+
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 640px; overflow: auto;
+  }
+  .code-body pre {
+    margin: 0;
+  }
+  .code-body code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.7;
+    background: transparent;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>二分图匹配 · 匈牙利算法 动画</h1>
+  <p class="subtitle">
+    从左部依次尝试匹配 · 每次用 DFS 找<b>增广路径</b> · 单轮 <b>O(E)</b> · 总复杂度 <b>O(V·E)</b>
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · 匈牙利算法如何找到最大匹配？</h2>
+    <p class="intro-lead">
+      二分图匹配：把左部节点和右部节点按边配对，每个节点最多与一条匹配边相邻。
+      匈牙利算法按顺序为每个左部节点 u 尝试匹配，用 DFS 找一条从 u 出发的<b>增广路径</b>——以未匹配点为起点和终点、中间边交替"未匹配/已匹配"的路径。
+      找到就<b>翻转</b>路径上的所有边，匹配数 +1；否则 u 本轮无法匹配，跳过。最终得到的就是最大匹配。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">核心 1</div>
+        <div class="title">增广路径</div>
+        <div class="desc">
+          一条从<b>未匹配左节点</b>出发、到<b>未匹配右节点</b>结束的路径，<br>
+          路径上的边交替为"未匹配 / 匹配"。<br>
+          找到一条，匹配数就能 +1。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 2</div>
+        <div class="title">DFS 递归找增广路径</div>
+        <div class="desc">
+          <code>dfs(u)</code>：枚举 u 的邻居 v<br>
+          · v 未匹配 → 匹配，返回成功<br>
+          · v 已匹配给 u' → 递归 <code>dfs(u')</code><br>
+          用 <code>visited[v]</code> 避免死循环。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 3</div>
+        <div class="title">"悔棋"—— 翻转匹配</div>
+        <div class="desc">
+          当 v 已匹配给 u'，递归让 u' 去别处，成功的话<br>
+          就把 v 从 u' 手中"抢过来"给 u。<br>
+          这就是增广路径的"翻转"。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">正确性</div>
+        <div class="title">Berge 定理</div>
+        <div class="desc">
+          匹配 M 是最大匹配 ⇔ 不存在增广路径。<br>
+          匈牙利算法反复找增广路径，直到找不到为止。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">复杂度</div>
+        <div class="title">O(V·E)</div>
+        <div class="desc">
+          每个左部节点做一次 DFS：<code>O(E)</code><br>
+          总复杂度 <code>O(V·E)</code>。<br>
+          Dinic 可做到 <code>O(E√V)</code>，但代码复杂。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">应用</div>
+        <div class="title">典型场景</div>
+        <div class="desc">
+          · <b>任务分配</b>：工人 ↔ 任务<br>
+          · <b>棋盘覆盖</b>：多米诺骨牌<br>
+          · <b>最小路径覆盖</b>：DAG 路径覆盖<br>
+          · <b>最小点覆盖</b>：= 最大匹配（König）
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 580" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="match-panel">
+    <div class="title">当前匹配数 <span class="stat" id="matchCount">0</span></div>
+    <div class="edges" id="matchEdges">
+      <span class="empty">（尚未匹配）</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label run">演示图</span>
+      <span class="row-hint">
+        <code>L1—R1,R2</code> · <code>L2—R1</code> · <code>L3—R2,R3</code> · <code>L4—R3,R4</code>
+      </span>
+    </div>
+    <div class="panel-row">
+      <span class="row-label run">颜色说明</span>
+      <span class="row-hint">
+        <b>橙黄粗线</b>=探索中 · <b>绿色粗线</b>=已匹配 · <b>红虚线</b>=失败尝试 · <b>金色节点</b>=当前处理 · <b>橙色节点</b>=DFS 栈中 · <b>绿色节点</b>=已匹配 · <b>灰色节点</b>=无法匹配
+      </span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 点击「开始演示」观看匈牙利算法逐步寻找增广路径</div>
+
+  <!-- ★ 演示记录面板 -->
+  <details class="log-module" id="logModule" open>
+    <summary>
+      📋 演示记录
+      <span class="hint">（点击展开 / 折叠，可全量查看每步）</span>
+      <span class="count" id="logCount">0 步</span>
+    </summary>
+    <div class="log-body" id="logBody">
+      <div class="log-empty">点击「开始演示」后，每一步操作都会记录在这里</div>
+    </div>
+  </details>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 二分图匹配与匈牙利算法 <span class="hint">Berge 定理 + 增广路径</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · 匈牙利算法
+      <span class="badge">邻接表 + DFS 增广路径</span>
+    </summary>
+    <div class="code-body">
+<pre><code class="language-python">"""
+二分图最大匹配 · 匈牙利算法（Kuhn's Algorithm）。
+
+问题：
+    给定二分图 G = (L ∪ R, E)，求一个匹配 M ⊆ E，
+    使得 M 中任意两条边不共享端点，且 |M| 尽可能大。
+
+核心概念：增广路径（Augmenting Path）
+    一条从"未匹配的左节点"出发，到"未匹配的右节点"结束的路径，
+    路径上的边交替为"未匹配边"和"匹配边"。
+    翻转路径上的所有边（未匹配↔匹配），匹配数 +1。
+
+Berge 定理：
+    匹配 M 是最大匹配 ⇔ G 中不存在关于 M 的增广路径。
+
+复杂度：O(V · E)
+"""
+
+
+class Hungarian:
+    def __init__(self, n_left, n_right, adj):
+        self.n_left = n_left
+        self.n_right = n_right
+        self.adj = adj
+        self.matchL = [-1] * n_left
+        self.matchR = [-1] * n_right
+        self.max_match = 0
+
+    def _dfs(self, u, visited):
+        # 从 u 出发找增广路径
+        for v in self.adj[u]:
+            if visited[v]:
+                continue
+            visited[v] = True
+
+            # v 未匹配 → 直接匹配
+            # 或 v 已匹配给 u2 → 递归让 u2 去找替代
+            if self.matchR[v] == -1 or self._dfs(self.matchR[v], visited):
+                self.matchR[v] = u
+                self.matchL[u] = v
+                return True
+        return False
+
+    def solve(self):
+        for u in range(self.n_left):
+            visited = [False] * self.n_right
+            if self._dfs(u, visited):
+                self.max_match += 1
+        return self.max_match
+
+
+if __name__ == '__main__':
+    # 需要递归回溯才能找到最大匹配的教学图
+    #   L1 - R1, R2
+    #   L2 - R1
+    #   L3 - R2, R3
+    #   L4 - R3, R4
+    n_left, n_right = 4, 4
+    adj = [
+        [0, 1],    # L1 → R1, R2
+        [0],       # L2 → R1
+        [1, 2],    # L3 → R2, R3
+        [2, 3],    # L4 → R3, R4
+    ]
+
+    h = Hungarian(n_left, n_right, adj)
+    result = h.solve()
+
+    print(f'最大匹配数 = {result}')
+    for u in range(n_left):
+        if h.matchL[u] != -1:
+            print(f'  L{u+1} — R{h.matchL[u]+1}')
+        else:
+            print(f'  L{u+1} 未匹配')</code></pre>
+    </div>
+  </details>
+</div>
+
+<script>
+/* =========================================================
+   1. 图结构
+   ========================================================= */
+const L_NODES = [
+  { id: 0, label: 'L1', x: 220, y: 110 },
+  { id: 1, label: 'L2', x: 220, y: 240 },
+  { id: 2, label: 'L3', x: 220, y: 370 },
+  { id: 3, label: 'L4', x: 220, y: 500 },
+];
+const R_NODES = [
+  { id: 0, label: 'R1', x: 680, y: 110 },
+  { id: 1, label: 'R2', x: 680, y: 240 },
+  { id: 2, label: 'R3', x: 680, y: 370 },
+  { id: 3, label: 'R4', x: 680, y: 500 },
+];
+const ADJ = [[0,1], [0], [1,2], [2,3]];
+const NODE_R = 32;
+
+const ALL_EDGES = [];
+for (let u = 0; u < L_NODES.length; u++) {
+  for (const v of ADJ[u]) ALL_EDGES.push({ u, v, key: `${u}-${v}` });
+}
+
+/* =========================================================
+   2. 状态
+   ========================================================= */
+let matchL = [-1, -1, -1, -1];
+let matchR = [-1, -1, -1, -1];
+let lNodeHl = {}, rNodeHl = {}, edgeHl = {};
+
+/* =========================================================
+   3. SVG 图层
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const bgLayer   = document.createElementNS(NS, 'g');
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(bgLayer);
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+/* =========================================================
+   4. 渲染
+   ========================================================= */
+function render() {
+  bgLayer.innerHTML = '';
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+
+  const leftBg = document.createElementNS(NS, 'rect');
+  leftBg.setAttribute('class', 'bg-side');
+  leftBg.setAttribute('x', 120); leftBg.setAttribute('y', 40);
+  leftBg.setAttribute('width', 200); leftBg.setAttribute('height', 520);
+  leftBg.setAttribute('rx', 14);
+  bgLayer.appendChild(leftBg);
+
+  const rightBg = document.createElementNS(NS, 'rect');
+  rightBg.setAttribute('class', 'bg-side');
+  rightBg.setAttribute('x', 580); rightBg.setAttribute('y', 40);
+  rightBg.setAttribute('width', 200); rightBg.setAttribute('height', 520);
+  rightBg.setAttribute('rx', 14);
+  rightBg.style.fill = '#f8f5ff';
+  bgLayer.appendChild(rightBg);
+
+  const lt = document.createElementNS(NS, 'text');
+  lt.setAttribute('class', 'bg-label');
+  lt.setAttribute('text-anchor', 'middle');
+  lt.setAttribute('x', 220); lt.setAttribute('y', 26);
+  lt.textContent = '左部 L';
+  bgLayer.appendChild(lt);
+
+  const rt = document.createElementNS(NS, 'text');
+  rt.setAttribute('class', 'bg-label');
+  rt.setAttribute('text-anchor', 'middle');
+  rt.setAttribute('x', 680); rt.setAttribute('y', 26);
+  rt.textContent = '右部 R';
+  bgLayer.appendChild(rt);
+
+  for (const e of ALL_EDGES) {
+    const l = L_NODES[e.u], r = R_NODES[e.v];
+    const dx = r.x - l.x, dy = r.y - l.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const x1 = l.x + dx / len * NODE_R;
+    const y1 = l.y + dy / len * NODE_R;
+    const x2 = r.x - dx / len * NODE_R;
+    const y2 = r.y - dy / len * NODE_R;
+
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    let cls = 'bp-edge';
+    const st = edgeHl[e.key] || '';
+    if (st === 'exploring') cls += ' exploring';
+    if (st === 'matched')   cls += ' matched';
+    if (st === 'failed')    cls += ' failed';
+    line.setAttribute('class', cls);
+    edgeLayer.appendChild(line);
+  }
+
+  for (const n of L_NODES) {
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'bp-node';
+    const st = lNodeHl[n.id] || '';
+    if (st) cls += ' ' + st;
+    g.setAttribute('class', cls);
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', n.x); c.setAttribute('cy', n.y);
+    c.setAttribute('r', NODE_R); c.setAttribute('class', 'node-bg');
+    g.appendChild(c);
+
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('class', 'node-id');
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('dominant-baseline', 'central');
+    t.setAttribute('x', n.x); t.setAttribute('y', n.y);
+    t.textContent = n.label;
+    g.appendChild(t);
+    nodeLayer.appendChild(g);
+  }
+
+  for (const n of R_NODES) {
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'bp-node right';
+    const st = rNodeHl[n.id] || '';
+    if (st) cls += ' ' + st;
+    g.setAttribute('class', cls);
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', n.x); c.setAttribute('cy', n.y);
+    c.setAttribute('r', NODE_R); c.setAttribute('class', 'node-bg');
+    g.appendChild(c);
+
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('class', 'node-id');
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('dominant-baseline', 'central');
+    t.setAttribute('x', n.x); t.setAttribute('y', n.y);
+    t.textContent = n.label;
+    g.appendChild(t);
+    nodeLayer.appendChild(g);
+  }
+
+  updateMatchPanel();
+}
+
+function updateMatchPanel() {
+  const cnt = matchL.filter(x => x !== -1).length;
+  document.getElementById('matchCount').textContent = cnt;
+
+  const el = document.getElementById('matchEdges');
+  const matched = [];
+  for (let u = 0; u < matchL.length; u++) {
+    if (matchL[u] !== -1) matched.push(`L${u+1}—R${matchL[u]+1}`);
+  }
+  if (matched.length === 0) {
+    el.innerHTML = '<span class="empty">（尚未匹配）</span>';
+  } else {
+    el.innerHTML = matched.map(s => `<span class="m">${s}</span>`).join('');
+  }
+}
+
+/* =========================================================
+   5. 状态工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+const logBody = document.getElementById('logBody');
+const logCount = document.getElementById('logCount');
+function setStatus(t) { resultEl.textContent = t; }
+
+/* ★ 演示记录 */
+let logLines = [];
+let currentLogIdx = -1;
+
+function clearLog() {
+  logLines = [];
+  currentLogIdx = -1;
+  logBody.innerHTML = '<div class="log-empty">点击「开始演示」后，每一步操作都会记录在这里</div>';
+  logCount.textContent = '0 步';
+}
+
+function addLog(msg) {
+  logLines.push(msg);
+  logCount.textContent = logLines.length + ' 步';
+  /* 首次记录时清空 empty */
+  if (logLines.length === 1) logBody.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  div.dataset.idx = logLines.length - 1;
+  div.innerHTML = `<div class="idx">#${logLines.length}</div><div class="msg">${escapeHtml(msg)}</div>`;
+  logBody.appendChild(div);
+}
+
+function highlightLog(idx) {
+  document.querySelectorAll('.log-line.cur').forEach(el => el.classList.remove('cur'));
+  const el = document.querySelector(`.log-line[data-idx="${idx}"]`);
+  if (el) {
+    el.classList.add('cur');
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+/* =========================================================
+   6. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   7. 步骤录制
+   ========================================================= */
+function recordSteps() {
+  const steps = [];
+  const mL = [-1, -1, -1, -1];
+  const mR = [-1, -1, -1, -1];
+
+  function snap(msg, opts) {
+    const o = opts || {};
+    steps.push({
+      matchL: [...mL],
+      matchR: [...mR],
+      lNodeHl: { ...(o.lNodeHl || {}) },
+      rNodeHl: { ...(o.rNodeHl || {}) },
+      edgeHl: { ...(o.edgeHl || {}) },
+      msg,
+    });
+  }
+
+  function matchedEdges() {
+    const h = {};
+    for (let u = 0; u < mL.length; u++) {
+      if (mL[u] !== -1) h[`${u}-${mL[u]}`] = 'matched';
+    }
+    return h;
+  }
+  function rightHl(visited) {
+    const h = {};
+    for (let v = 0; v < 4; v++) {
+      if (mR[v] !== -1) h[v] = 'matched';
+      else if (visited[v]) h[v] = 'visited';
+    }
+    return h;
+  }
+
+  snap('开始：所有节点未匹配。从左到右依次为 L1..L4 找增广路径', {});
+
+  for (let u0 = 0; u0 < 4; u0++) {
+    snap(`▶ 处理 L${u0+1}：准备用 DFS 找增广路径`, {
+      lNodeHl: { [u0]: 'current' },
+      edgeHl: matchedEdges(),
+    });
+
+    const visited = new Array(4).fill(false);
+
+    function dfs(u) {
+      snap(`  DFS(L${u+1}) 进入`, {
+        lNodeHl: { [u]: 'visiting' },
+        rNodeHl: rightHl(visited),
+        edgeHl: matchedEdges(),
+      });
+
+      for (const v of ADJ[u]) {
+        if (visited[v]) {
+          snap(`  R${v+1} 本轮已访问过 → 跳过`, {
+            lNodeHl: { [u]: 'visiting' },
+            rNodeHl: { ...rightHl(visited), [v]: 'visited' },
+            edgeHl: matchedEdges(),
+          });
+          continue;
+        }
+        visited[v] = true;
+
+        snap(`  尝试边 L${u+1} → R${v+1}`, {
+          lNodeHl: { [u]: 'visiting' },
+          rNodeHl: { ...rightHl(visited), [v]: 'visiting' },
+          edgeHl: { ...matchedEdges(), [`${u}-${v}`]: 'exploring' },
+        });
+
+        if (mR[v] === -1) {
+          mL[u] = v; mR[v] = u;
+          snap(`  ✓ R${v+1} 空闲 → 匹配 L${u+1}—R${v+1}，匹配数 +1`, {
+            lNodeHl: { [u]: 'matched' },
+            rNodeHl: { [v]: 'matched' },
+            edgeHl: { ...matchedEdges(), [`${u}-${v}`]: 'matched' },
+          });
+          return true;
+        }
+
+        const u2 = mR[v];
+        snap(`  R${v+1} 已匹配给 L${u2+1} → 递归尝试让 L${u2+1} 换一个`, {
+          lNodeHl: { [u]: 'visiting', [u2]: 'visiting' },
+          rNodeHl: { ...rightHl(visited), [v]: 'visiting' },
+          edgeHl: matchedEdges(),
+        });
+
+        if (dfs(u2)) {
+          mL[u] = v; mR[v] = u;
+          snap(`  ↻ 回溯成功：L${u2+1} 已换匹配，L${u+1} 接管 R${v+1}`, {
+            lNodeHl: { [u]: 'matched' },
+            rNodeHl: { [v]: 'matched' },
+            edgeHl: { ...matchedEdges(), [`${u}-${v}`]: 'matched' },
+          });
+          return true;
+        }
+
+        snap(`  ✗ L${u2+1} 找不到替代 → 边 L${u+1}→R${v+1} 失败`, {
+          lNodeHl: { [u]: 'visiting' },
+          rNodeHl: { ...rightHl(visited), [v]: 'visited' },
+          edgeHl: { ...matchedEdges(), [`${u}-${v}`]: 'failed' },
+        });
+      }
+
+      snap(`  DFS(L${u+1}) 返回 false：所有边都试过，没有增广路径`, {
+        lNodeHl: { [u]: 'unmatched' },
+        rNodeHl: rightHl(visited),
+        edgeHl: matchedEdges(),
+      });
+      return false;
+    }
+
+    const success = dfs(u0);
+
+    if (success) {
+      snap(`✓ L${u0+1} 匹配成功。当前匹配数 = ${mL.filter(x => x !== -1).length}`, {
+        edgeHl: matchedEdges(),
+      });
+    } else {
+      snap(`✗ L${u0+1} 本轮无法匹配，跳过`, {
+        lNodeHl: { [u0]: 'unmatched' },
+        edgeHl: matchedEdges(),
+      });
+    }
+  }
+
+  snap(`🎉 算法结束，最大匹配 = ${mL.filter(x => x !== -1).length}`, {
+    lNodeHl: buildFinalLHl(mL),
+    rNodeHl: buildFinalRHl(mR),
+    edgeHl: matchedEdges(),
+  });
+
+  return steps;
+}
+
+function buildFinalLHl(mL) {
+  const h = {};
+  for (let u = 0; u < 4; u++) h[u] = mL[u] !== -1 ? 'matched' : 'unmatched';
+  return h;
+}
+function buildFinalRHl(mR) {
+  const h = {};
+  for (let v = 0; v < 4; v++) h[v] = mR[v] !== -1 ? 'matched' : 'unmatched';
+  return h;
+}
+
+/* =========================================================
+   8. 播放步骤
+   ========================================================= */
+async function playSteps(steps) {
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i];
+    matchL = [...s.matchL];
+    matchR = [...s.matchR];
+    lNodeHl = { ...s.lNodeHl };
+    rNodeHl = { ...s.rNodeHl };
+    edgeHl = { ...s.edgeHl };
+    render();
+    setStatus(`[${i+1}/${steps.length}] ${s.msg}`);
+    /* ★ 记录到演示记录面板 */
+    addLog(s.msg);
+    currentLogIdx = i;
+    highlightLog(i);
+    await tick(950);
+  }
+}
+
+/* =========================================================
+   9. 自动演示
+   ========================================================= */
+async function autoDemo() {
+  matchL = [-1, -1, -1, -1];
+  matchR = [-1, -1, -1, -1];
+  lNodeHl = {}; rNodeHl = {}; edgeHl = {};
+  render();
+  clearLog();
+  setStatus('重置：所有节点未匹配');
+  await tick(600);
+
+  const steps = recordSteps();
+  await playSteps(steps);
+
+  setStatus(`✔ 演示结束：最大匹配 = ${matchL.filter(x => x !== -1).length}`);
+  await tick(800);
+}
+
+/* =========================================================
+   10. 演示控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  btnDemoStart.disabled = true;
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await autoDemo();
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+/* =========================================================
+   11. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: '二分图匹配问题', key: true, lines: [
+    '二分图 G = (L ∪ R, E)：所有边连接 L 与 R 之间的节点',
+    '匹配 M ⊆ E：任意两条边不共享端点',
+    '<b>最大匹配</b>：|M| 最大的匹配',
+    '经典应用：任务分配、棋盘覆盖、稳定婚姻',
+  ]},
+  { icon: '🔑', title: '增广路径是核心概念', key: true, lines: [
+    '一条从<b>未匹配左节点</b>出发、到<b>未匹配右节点</b>结束的路径',
+    '路径上边交替为"未匹配 / 匹配"',
+    '翻转后匹配数 +1',
+    '<b>Berge 定理</b>：M 是最大匹配 ⇔ 不存在增广路径',
+  ]},
+  { icon: '🔄', title: '匈牙利算法流程', key: true, lines: [
+    '对每个左部节点 u：',
+    '　· 重置 visited',
+    '　· 调用 <code>dfs(u)</code> 找增广路径',
+    '　· 找到则匹配数 +1',
+    '总复杂度 <code>O(V·E)</code>',
+  ]},
+  { icon: '🧠', title: 'DFS 的"悔棋"直觉', key: true, lines: [
+    '当 u 想匹配 v，但 v 属于 u\' 时',
+    '递归问 u\'："你能换一个吗？"',
+    'u\' 若成功换到别处 → u 接管 v',
+    'u\' 若失败 → u 换一个邻居试',
+    '这正是"增广路径"的递归本质',
+  ]},
+  { icon: '🎨', title: '不同算法需要不同的演示图', key: true, lines: [
+    '<b>匈牙利 O(V·E)</b>：中小规模图，展示递归回溯 —— <b>本页面 4×4</b>',
+    '<b>HK 算法 O(E√V)</b>：需要更大图，展示 BFS 分层',
+    '<b>KM 算法 O(V³)</b>：必须带<b>边权</b>，展示顶标调整',
+    '<b>Dinic</b>：需建源/汇点，展示残量网络与反向边',
+  ]},
+  { icon: '⏱️', title: '复杂度分析', key: false, lines: [
+    '<b>匈牙利</b>：<code>O(V·E)</code>，易实现，通用',
+    '<b>Dinic 网络流</b>：<code>O(E√V)</code>，更快但复杂',
+    '<b>HK 算法</b>：<code>O(E√V)</code>，BFS 分层 + DFS',
+    '<b>KM 算法</b>：带权匹配，<code>O(V³)</code>',
+  ]},
+  { icon: '🧩', title: '典型应用', key: false, lines: [
+    '<b>任务分配</b>：n 个工人 × m 个任务',
+    '<b>棋盘覆盖</b>：1×2 骨牌覆盖黑白棋盘',
+    '<b>最小路径覆盖</b>：DAG 路径覆盖 = V − 最大匹配',
+    '<b>二分图最小点覆盖</b>：= 最大匹配（König 定理）',
+    '<b>最大独立集</b>：= V − 最大匹配',
+  ]},
+  { icon: '⚖️', title: '与其他算法对比', key: false, lines: [
+    '<b>贪心</b>：只能得到极大匹配，不一定最大',
+    '<b>匈牙利</b>：DFS 找增广路径 → 最大匹配',
+    '<b>HK 算法</b>：BFS 分层 + 多条增广路径并行，更快',
+    '<b>网络流</b>：建源汇点后跑最大流，也是 <code>O(E√V)</code>',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    el.className = 'k-card' + (card.key ? ' key-point' : '');
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* =========================================================
+   12. 初始化
+   ========================================================= */
+renderKnowledge();
+/* ★ 用 highlight.js 高亮所有代码块 */
+if (window.hljs) {
+  hljs.highlightAll();
+}
+
+matchL = [-1, -1, -1, -1];
+matchR = [-1, -1, -1, -1];
+lNodeHl = {}; rNodeHl = {}; edgeHl = {};
+render();
+clearLog();
+updateDemoUI();
+</script>
+</body>
+</html>

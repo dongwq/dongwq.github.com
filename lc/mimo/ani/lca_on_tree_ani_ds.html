@@ -1,0 +1,1806 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>树上倍增求 LCA · 预处理 / 查询 / 动态增删 动画</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1100px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead {
+    font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px;
+  }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  .nd-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.2;
+    transition: fill .25s, stroke .25s, stroke-width .25s;
+  }
+  .nd-node .node-id {
+    font-size: 17px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .nd-node .node-depth {
+    font-family: ui-monospace, monospace;
+    font-size: 10px; font-weight: 700; fill: #627d98;
+    pointer-events: none; user-select: none;
+  }
+  .nd-node.root .node-bg { stroke: #d64545; stroke-width: 3; }
+  .nd-node.visit .node-bg { fill: #ffe9a8; stroke: #e09b00; stroke-width: 3.2; }
+  .nd-node.visit .node-id { fill: #a35e00; }
+  .nd-node.u .node-bg { fill: #ffd0b8; stroke: #d9713b; stroke-width: 3.6; }
+  .nd-node.u .node-id { fill: #a34d1a; }
+  .nd-node.v .node-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3.6; }
+  .nd-node.v .node-id { fill: #5b3db8; }
+  .nd-node.jumped .node-bg { fill: #c9efc9; stroke: #57a957; stroke-width: 3.2; }
+  .nd-node.jumped .node-id { fill: #2f7a34; }
+  .nd-node.lca .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.8; }
+  .nd-node.lca .node-id { fill: #1c5e28; }
+  .nd-node.new-node .node-bg { fill: #c9efc9; stroke: #57a957; stroke-width: 3.6; }
+  .nd-node.new-node .node-id { fill: #2f7a34; }
+  .nd-node.deleting .node-bg { fill: #ffcccc; stroke: #d64545; stroke-width: 3.2; }
+  .nd-node.deleting .node-id { fill: #b33232; }
+
+  .nd-edge {
+    stroke: #cbd2d9; stroke-width: 2; fill: none;
+    transition: stroke .25s, stroke-width .25s;
+  }
+  .nd-edge.active { stroke: #e09b00; stroke-width: 2.8; stroke-dasharray: 6 4; animation: dashflow .75s linear infinite; }
+  .nd-edge.path   { stroke: #57a957; stroke-width: 3; stroke-dasharray: 6 4; animation: dashflow .75s linear infinite; }
+  .nd-edge.deleting { stroke: #d64545; stroke-width: 3; stroke-dasharray: 6 4; animation: dashflow .75s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -10; } }
+
+  /* up 表（移到下方后样式不变） */
+  .up-wrap {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 14px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-direction: column; gap: 8px;
+    overflow-x: auto;
+  }
+  .up-wrap .title {
+    font-size: 13px; font-weight: 700; color: #243b53;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .up-wrap .title .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1;
+  }
+  .up-wrap .title .stat {
+    font-family: ui-monospace, monospace;
+    font-size: 11.5px; color: #2369ad;
+    background: #eef4fa; padding: 1px 8px; border-radius: 4px;
+    font-weight: 700;
+  }
+  table.up-table {
+    border-collapse: separate; border-spacing: 3px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11.5px;
+  }
+  table.up-table th {
+    background: #eef4fa; color: #2369ad;
+    padding: 3px 7px; border-radius: 5px;
+    font-weight: 700; font-size: 11px;
+    text-align: center; white-space: nowrap;
+  }
+  table.up-table td {
+    background: #f8fafc; color: #4a5568;
+    padding: 3px 7px; border-radius: 5px;
+    text-align: center; min-width: 30px;
+    border: 1px solid #dbe4ec;
+    transition: background .25s, color .25s, border-color .25s, transform .2s;
+  }
+  table.up-table td.node-id {
+    background: #d5e8ff; color: #2369ad; font-weight: 800;
+    border-color: #9dc3e6;
+  }
+  table.up-table td.empty { color: #cbd2d9; }
+  table.up-table td.building { background: #fffbf2; color: #a35e00; border-color: #ffd98a; transform: scale(1.08); }
+  table.up-table td.computed { background: #eaf9ee; color: #2f7a34; border-color: #b8e0bf; }
+  table.up-table td.highlight { background: #ffd0b8; color: #a34d1a; border-color: #d9713b; font-weight: 800; }
+  table.up-table td.highlight-v { background: #e0d5ff; color: #5b3db8; border-color: #7c5cd6; font-weight: 800; }
+  table.up-table td.answer { background: #b0e8c2; color: #1c5e28; border-color: #2f7a34; font-weight: 800; }
+
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 8px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.pre    { color: #2f7a34; }
+  .row-label.query  { color: #7c5cd6; }
+  .row-label.mod    { color: #d64545; }
+
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  .stat-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #f0f7ff; color: #2369ad;
+    padding: 4px 12px; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600;
+    border: 1px solid #c7defa;
+  }
+  .stat-badge .num {
+    font-family: ui-monospace, monospace;
+    font-size: 14px; font-weight: 800; color: #2a7fd0;
+  }
+  .stat-badge.warn {
+    background: #fff7e6; color: #b45a12; border-color: #ffd98a;
+  }
+  .stat-badge.warn .num { color: #b45a12; }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.purple  { background: #7c5cd6; border-color: #7c5cd6; color: #fff; }
+  button.purple:hover { background: #634ab0; border-color: #634ab0; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.danger:hover { background: #b33232; border-color: #b33232; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost   { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+  button.ghost:hover { background: #f0f7ff; }
+
+  input[type="number"], select {
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border-radius: 7px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  input[type="number"] { width: 68px; }
+  select { min-width: 90px; }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 640px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>树上倍增 · LCA 预处理 / 查询 / 动态增删 动画</h1>
+  <p class="subtitle" id="subtitle">
+    <code>up[v][k]</code> = v 的第 <code>2^k</code> 个祖先 · 预处理 <b>O(N log N)</b> · 单次 LCA 查询 <b>O(log N)</b> · 支持动态插入 / 删除节点
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · 为什么"倍增"能把 LCA 降到 O(log N)？</h2>
+    <p class="intro-lead">
+      朴素求 LCA 是"一步一步向上跳"，最坏要走 <code>O(N)</code> 步。倍增的核心思想是：
+      <b>允许一次跳 2 的幂步</b>。如果 <code>up[v][k]</code> 表示 v 的第 <code>2^k</code> 个祖先，
+      那么任意一次"向上 d 步"都能被拆成 O(log d) 次跳跃——就像用二进制表示 d 一样。
+      预处理阶段先用 BFS 算出每个节点的 <code>depth</code> 和 <code>up[v][0] = parent[v]</code>，
+      再用递推式 <code>up[v][k] = up[up[v][k-1]][k-1]</code> 把表填满。
+      本页面示例树有 <b>6 层</b>，就是为了展示 <code>depth</code> 对 LCA 查询的关键作用。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">核心 1</div>
+        <div class="title">up 表的递推定义</div>
+        <div class="desc">
+          <code>up[v][0] = parent[v]</code><br>
+          <code>up[v][k] = up[up[v][k-1]][k-1]</code><br>
+          含义：v 的第 2^k 个祖先 = <b>v 的第 2^(k-1) 个祖先</b> 的第 2^(k-1) 个祖先。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 2</div>
+        <div class="title">深度差决定跳跃次数</div>
+        <div class="desc">
+          LCA 查询分两阶段，<b>阶段一</b>是"把深的节点跳到与浅的节点同深度"。<br>
+          跳跃次数 = <code>popcount(depth 差)</code>，最多 <code>log₂N</code> 次。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 3</div>
+        <div class="title">查询：两个阶段</div>
+        <div class="desc">
+          <b>阶段一</b>：把深的节点向上跳，直到两节点同深度。<br>
+          <b>阶段二</b>：若已相同 → 它就是 LCA；<br>
+          否则从高到低尝试跳，<b>若跳完后的祖先不同就跳</b>，<br>
+          最后两人的父节点就是 LCA。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">预处理</div>
+        <div class="title">两次遍历</div>
+        <div class="desc">
+          1. 从根 BFS / DFS：算出 <code>depth[v]</code> 和 <code>up[v][0]</code><br>
+          2. 枚举 <code>k = 1..LOG-1</code>，对每个 v：<br>
+          　<code>up[v][k] = up[up[v][k-1]][k-1]</code>
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">动态</div>
+        <div class="title">插入 / 删除节点</div>
+        <div class="desc">
+          插入：把新节点挂到某个父节点下，<br>
+          <b>depth 和 up 表都要重新计算</b>。<br>
+          删除：把节点及它<b>整棵子树</b>一起删掉，再重算。<br>
+          两者都是 <code>O(N log N)</code>（重建代价）。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">扩展</div>
+        <div class="title">倍增还能做什么</div>
+        <div class="desc">
+          · <b>求两点距离</b>：<code>depth[u]+depth[v]−2·depth[lca]</code><br>
+          · <b>k 级祖先</b>：把 k 拆成二进制跳<br>
+          · <b>严格次小生成树</b>：倍增维护路径上的最大/次大边<br>
+          · <b>树上区间 mex</b> / 路径统计等
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 720" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <!-- ★ 操作面板：紧贴 SVG，与动画相邻 -->
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label pre">预处理</span>
+      <button id="btnBuild" class="primary">构建深度 + up 表</button>
+      <span class="stat-badge">
+        节点数 N = <span class="num" id="nodeStat">14</span>
+      </span>
+      <span class="stat-badge">
+        树层数 = <span class="num" id="depthStat">6</span>
+      </span>
+      <span class="stat-badge warn">
+        LOG = <span class="num" id="logStat">4</span>
+      </span>
+      <span class="row-hint">
+        先 BFS 算出 <code>depth</code> 与 <code>up[v][0]</code>，再递推填 <code>k ≥ 1</code>
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label query">LCA 查询</span>
+      <span class="label">u =</span>
+      <select id="uSel"></select>
+      <span class="label">v =</span>
+      <select id="vSel"></select>
+      <button id="btnLCA" class="purple">lca(u, v)</button>
+      <span class="row-hint">
+        依次演示：对齐深度 → 同步上跳 → 定位 LCA
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label mod">插入节点</span>
+      <span class="label">作为</span>
+      <select id="insParentSel"></select>
+      <span class="label">的子节点</span>
+      <button id="btnInsert" class="success">插入</button>
+      <span class="row-hint">
+        新节点 id 自动分配为当前最大 id + 1，<b>depth 会变深 1 层</b>
+      </span>
+    </div>
+
+    <div class="panel-row">
+      <span class="row-label mod">删除节点</span>
+      <span class="label">删除</span>
+      <select id="delNodeSel"></select>
+      <span class="label">及其子树</span>
+      <button id="btnDelete" class="danger">删除</button>
+      <button id="btnReset" class="ghost" style="margin-left:12px;">重置为初始树</button>
+      <span class="row-hint">
+        <b>不能删根</b>；删除后会一并删除该节点的所有子孙
+      </span>
+    </div>
+  </div>
+
+  <!-- ★ 演示控制条 -->
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <!-- ★ 结果状态 -->
+  <div class="result" id="result">就绪 · 先点「构建深度 + up 表」，再选两个节点查 LCA，或点击「开始演示」</div>
+
+  <!-- ★ up 表：移到下方 -->
+  <div class="up-wrap">
+    <div class="title">
+      up 表 · up[v][k] = v 的第 2^k 个祖先
+      <span class="stat" id="upStat">N=14 · 层数=6 · LOG=4</span>
+      <span class="hint">「-」表示不存在这样的祖先</span>
+    </div>
+    <table class="up-table" id="upTable"></table>
+  </div>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 树上倍增求 LCA <span class="hint">O(N log N) 预处理 · O(log N) 查询</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · 树上倍增 LCA
+      <span class="badge">BFS 预处理 + 倍增查询 + 动态重建</span>
+      <span class="hint">O(N log N) / O(log N)</span>
+    </summary>
+    <div class="code-body"><pre class="py-code" id="pyCode"></pre></div>
+  </details>
+</div>
+
+<!-- ============ Python 源码 ============ -->
+<script type="text/plain" id="pySrc">
+"""
+树上倍增求 LCA（最近公共祖先）—— 支持动态增删节点。
+
+预处理：
+    1. 从根做一次 BFS / DFS，算出每个节点的 depth[v] 和 parent[v]
+    2. up[v][0] = parent[v]
+    3. up[v][k] = up[ up[v][k-1] ][k-1]
+
+查询 LCA(u, v)：
+    1. 保证 depth[u] >= depth[v]
+    2. u 向上跳到和 v 同深度
+    3. 若 u == v，返回 u
+    4. 从 k = LOG-1 递减到 0：
+           若 up[u][k] != up[v][k]，两人一起上跳
+    5. 返回 up[u][0]
+
+动态增删：
+    insert(parent, new_id)   把新节点挂到 parent 下，重建 depth / up
+    delete(id)               删除 id 及其整棵子树，重建
+"""
+
+from collections import deque
+
+
+class DynamicLCA:
+    def __init__(self, edges, root=1):
+        ids = set()
+        for u, v in edges:
+            ids.add(u); ids.add(v)
+        self.n = max(ids)
+        self.root = root
+        self.children = {i: [] for i in ids}
+        self.parent = {i: 0 for i in ids}
+        for u, v in edges:
+            self.children[u].append(v)
+            self.parent[v] = u
+        self.parent[root] = 0
+        self._rebuild()
+
+    def _rebuild(self):
+        n = self.n
+        self.LOG = max(1, n.bit_length() + 1)
+        self.depth = {i: 0 for i in self.parent}
+        self.up = {i: [0] * self.LOG for i in self.parent}
+        for i in self.parent:
+            self.up[i][0] = self.parent[i]
+
+        visited = {i: False for i in self.parent}
+        q = deque([self.root])
+        visited[self.root] = True
+        while q:
+            u = q.popleft()
+            for v in self.children[u]:
+                if not visited[v]:
+                    visited[v] = True
+                    self.depth[v] = self.depth[u] + 1
+                    self.up[v][0] = u
+                    q.append(v)
+
+        for k in range(1, self.LOG):
+            for v in self.parent:
+                mid = self.up[v][k - 1]
+                self.up[v][k] = self.up[mid][k - 1] if mid != 0 else 0
+
+    def lca(self, u, v):
+        if self.depth[u] < self.depth[v]:
+            u, v = v, u
+        diff = self.depth[u] - self.depth[v]
+        for k in range(self.LOG):
+            if (diff >> k) & 1:
+                u = self.up[u][k]
+        if u == v:
+            return u
+        for k in range(self.LOG - 1, -1, -1):
+            if self.up[u][k] != self.up[v][k]:
+                u = self.up[u][k]
+                v = self.up[v][k]
+        return self.up[u][0]
+
+    def insert(self, parent, new_id):
+        self.children.setdefault(parent, []).append(new_id)
+        self.children.setdefault(new_id, [])
+        self.parent[new_id] = parent
+        self.n = max(self.n, new_id)
+        self._rebuild()
+        return new_id
+
+    def delete(self, id):
+        if id == self.root:
+            return False
+        to_delete = []
+        stack = [id]
+        while stack:
+            x = stack.pop()
+            to_delete.append(x)
+            stack.extend(self.children.get(x, []))
+        p = self.parent[id]
+        if p and id in self.children[p]:
+            self.children[p].remove(id)
+        for x in to_delete:
+            self.children.pop(x, None)
+            self.parent.pop(x, None)
+            if hasattr(self, 'depth'):
+                self.depth.pop(x, None)
+                self.up.pop(x, None)
+        self._rebuild()
+        return True
+
+    def kth_ancestor(self, v, k):
+        for i in range(self.LOG):
+            if (k >> i) & 1:
+                v = self.up[v][i]
+                if v == 0:
+                    return 0
+        return v
+
+    def tree_distance(self, u, v):
+        w = self.lca(u, v)
+        return self.depth[u] + self.depth[v] - 2 * self.depth[w]
+
+
+if __name__ == '__main__':
+    edges = [
+        (1, 2), (1, 3),
+        (2, 4), (2, 5), (3, 6), (3, 7),
+        (4, 8), (4, 9), (5, 10), (6, 11), (7, 12),
+        (8, 13),
+        (13, 14),
+    ]
+    t = DynamicLCA(edges)
+    print('N =', t.n, ' 层数 =', max(t.depth.values()) + 1, ' LOG =', t.LOG)
+    print('LCA(14, 9)   =', t.lca(14, 9))     # 4
+    print('LCA(13, 12)  =', t.lca(13, 12))    # 1
+
+    t.insert(14, 15)
+    print('after insert 15 under 14: N =', t.n)
+    print('LCA(15, 13)  =', t.lca(15, 13))    # 13
+
+    t.delete(4)
+    print('after delete subtree(4): N =', t.n)
+    print('LCA(5, 6)    =', t.lca(5, 6))      # 1
+</script>
+
+<script>
+/* =========================================================
+   1. 全局状态
+   ========================================================= */
+const SVG_W = 900, SVG_H = 720;
+const TOP_Y = 70, LEVEL_H = 80;
+const NODE_R = 22;
+const MAX_NODES = 20;
+
+const INIT_EDGES = [
+  [1, 2], [1, 3],
+  [2, 4], [2, 5], [3, 6], [3, 7],
+  [4, 8], [4, 9], [5, 10], [6, 11], [7, 12],
+  [8, 13],
+  [13, 14],
+];
+const ROOT = 1;
+
+let nodes = {};
+let nodeIds = [];
+let up = {};
+let LOG = 4;
+let built = false;
+
+let busy = false;
+let inDemo = false;
+
+let cellState = {};
+
+/* =========================================================
+   2. 节点初始化
+   ========================================================= */
+function initNodes() {
+  nodes = {};
+  const ids = new Set();
+  for (const [u, v] of INIT_EDGES) { ids.add(u); ids.add(v); }
+  for (const id of ids) {
+    nodes[id] = {
+      id, parent: 0, depth: 0,
+      x: SVG_W / 2, y: TOP_Y,
+      targetX: SVG_W / 2, targetY: TOP_Y,
+      _slot: 0, hl: '',
+    };
+  }
+  for (const [u, v] of INIT_EDGES) nodes[v].parent = u;
+  nodes[ROOT].parent = 0;
+  refreshIds();
+  relayout();
+}
+
+function refreshIds() {
+  nodeIds = Object.keys(nodes).map(Number).sort((a, b) => a - b);
+}
+function getChildren(id) {
+  return nodeIds.filter(i => nodes[i].parent === id);
+}
+function getMaxId() {
+  let m = 0;
+  for (const i of nodeIds) if (i > m) m = i;
+  return m;
+}
+
+function computeDepths() {
+  const visited = {};
+  const q = [ROOT];
+  visited[ROOT] = true;
+  nodes[ROOT].depth = 0;
+  while (q.length) {
+    const u = q.shift();
+    for (const v of getChildren(u)) {
+      visited[v] = true;
+      nodes[v].depth = nodes[u].depth + 1;
+      q.push(v);
+    }
+  }
+  let maxD = 0;
+  for (const i of nodeIds) if (nodes[i].depth > maxD) maxD = nodes[i].depth;
+  return maxD + 1;
+}
+
+/* =========================================================
+   3. 布局
+   ========================================================= */
+function relayout() {
+  if (!nodes[ROOT]) return;
+  computeDepths();
+
+  let slot = 0;
+  function assign(id) {
+    const ch = getChildren(id);
+    if (ch.length === 0) {
+      nodes[id]._slot = slot++;
+    } else {
+      for (const c of ch) assign(c);
+      const first = nodes[ch[0]]._slot;
+      const last = nodes[ch[ch.length - 1]]._slot;
+      nodes[id]._slot = (first + last) / 2;
+    }
+  }
+  assign(ROOT);
+
+  const totalSlots = Math.max(slot - 1, 1);
+  const totalW = totalSlots * Math.min(60, (SVG_W - 120) / totalSlots);
+  const SLOT_W = totalSlots > 0 ? totalW / totalSlots : 60;
+  const offsetX = (SVG_W - totalW) / 2;
+
+  for (const id of nodeIds) {
+    nodes[id].targetX = offsetX + nodes[id]._slot * SLOT_W;
+    nodes[id].targetY = TOP_Y + nodes[id].depth * LEVEL_H;
+  }
+}
+
+function snapToTargets() {
+  for (const id of nodeIds) {
+    nodes[id].x = nodes[id].targetX;
+    nodes[id].y = nodes[id].targetY;
+  }
+  render();
+}
+
+/* =========================================================
+   4. up 表构建（★ 末尾设 built = true）
+   ========================================================= */
+function rebuildUpSync() {
+  const n = nodeIds.length;
+  LOG = Math.max(2, Math.max(...nodeIds.map(i => nodes[i].depth)).toString(2).length + 1);
+  while ((1 << LOG) <= n) LOG++;
+
+  up = {};
+  for (const id of nodeIds) {
+    up[id] = new Array(LOG).fill(null);
+    up[id][0] = nodes[id].parent === 0 ? null : nodes[id].parent;
+  }
+  for (let k = 1; k < LOG; k++) {
+    for (const id of nodeIds) {
+      const mid = up[id][k - 1];
+      up[id][k] = mid === null ? null : up[mid][k - 1];
+    }
+  }
+  /* ★ 关键修复：up 表已经建好，立即置 built 为 true，
+     否则 animatedLCA 会因 !built 直接返回，看不到任何动画。 */
+  built = true;
+}
+
+/* =========================================================
+   5. 状态工具
+   ========================================================= */
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+function clearHl() {
+  for (const id of nodeIds) {
+    if (nodes[id]) nodes[id].hl = '';
+  }
+  cellState = {};
+}
+
+function setButtonsDisabled(d) {
+  if (inDemo) d = true;
+  for (const id of ['btnBuild', 'btnLCA', 'btnDemoStart', 'btnInsert', 'btnDelete', 'btnReset']) {
+    const el = document.getElementById(id);
+    if (el) el.disabled = d;
+  }
+  for (const id of ['uSel', 'vSel', 'insParentSel', 'delNodeSel']) {
+    const el = document.getElementById(id);
+    if (el) el.disabled = d;
+  }
+}
+
+/* =========================================================
+   6. 下拉框刷新
+   ========================================================= */
+function refreshSelects() {
+  const uSel = document.getElementById('uSel');
+  const vSel = document.getElementById('vSel');
+  const insSel = document.getElementById('insParentSel');
+  const delSel = document.getElementById('delNodeSel');
+
+  const prevU = uSel.value, prevV = vSel.value;
+  const prevIns = insSel.value, prevDel = delSel.value;
+
+  uSel.innerHTML = '';
+  vSel.innerHTML = '';
+  insSel.innerHTML = '';
+  delSel.innerHTML = '';
+
+  for (const id of nodeIds) {
+    uSel.appendChild(new Option(id, id));
+    vSel.appendChild(new Option(id, id));
+    insSel.appendChild(new Option(id, id));
+    if (id !== ROOT) delSel.appendChild(new Option(id, id));
+  }
+
+  if (nodeIds.includes(+prevU)) uSel.value = prevU;
+  if (nodeIds.includes(+prevV)) vSel.value = prevV;
+  if (nodeIds.includes(+prevIns)) insSel.value = prevIns;
+  if (nodeIds.includes(+prevDel)) delSel.value = prevDel;
+
+  if (!uSel.value && nodeIds.length >= 2) uSel.value = nodeIds[nodeIds.length - 1];
+  if (!vSel.value && nodeIds.length >= 2) vSel.value = nodeIds[Math.max(0, nodeIds.length - 2)];
+  if (!insSel.value) insSel.value = nodeIds[0];
+  if (!delSel.value && delSel.options.length > 0) delSel.value = delSel.options[0].value;
+}
+
+/* =========================================================
+   7. SVG 渲染
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const defs = document.createElementNS(NS, 'defs');
+svg.appendChild(defs);
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+function render() {
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+
+  for (const id of nodeIds) {
+    const n = nodes[id];
+    if (!n || n.parent === 0) continue;
+    const p = nodes[n.parent];
+    if (!p) continue;
+    const dx = p.x - n.x, dy = p.y - n.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const r = NODE_R;
+    const x1 = n.x + dx / len * r;
+    const y1 = n.y + dy / len * r;
+    const x2 = p.x - dx / len * r;
+    const y2 = p.y - dy / len * r;
+
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    let cls = 'nd-edge';
+    if (n.hl === 'active-edge')  cls += ' active';
+    if (n.hl === 'path-edge')    cls += ' path';
+    if (n.hl === 'deleting-edge')cls += ' deleting';
+    line.setAttribute('class', cls);
+    edgeLayer.appendChild(line);
+  }
+
+  for (const id of nodeIds) {
+    const n = nodes[id];
+    if (!n) continue;
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'nd-node';
+    if (id === ROOT) cls += ' root';
+    if (n.hl) cls += ' ' + n.hl;
+    g.setAttribute('class', cls);
+    g.setAttribute('transform', `translate(${n.x}, ${n.y})`);
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('r', NODE_R);
+    c.setAttribute('class', 'node-bg');
+    g.appendChild(c);
+
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('class', 'node-id');
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('dominant-baseline', 'central');
+    t.setAttribute('y', -2);
+    t.textContent = id;
+    g.appendChild(t);
+
+    const d = document.createElementNS(NS, 'text');
+    d.setAttribute('class', 'node-depth');
+    d.setAttribute('text-anchor', 'middle');
+    d.setAttribute('dominant-baseline', 'central');
+    d.setAttribute('y', NODE_R + 11);
+    d.textContent = 'd=' + n.depth;
+    g.appendChild(d);
+
+    nodeLayer.appendChild(g);
+  }
+
+  renderUpTable();
+  updateStats();
+}
+
+/* =========================================================
+   8. up 表渲染
+   ========================================================= */
+function renderUpTable() {
+  const tbl = document.getElementById('upTable');
+  tbl.innerHTML = '';
+
+  const thead = document.createElement('thead');
+  const trh = document.createElement('tr');
+  trh.innerHTML = `<th>v\\k</th>` +
+    Array.from({ length: LOG }, (_, k) =>
+      `<th>k=${k}<br><small>2<sup>${k}</sup>=${1 << k}</small></th>`
+    ).join('');
+  thead.appendChild(trh);
+  tbl.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  for (const id of nodeIds) {
+    const tr = document.createElement('tr');
+    const tdId = document.createElement('td');
+    tdId.className = 'node-id';
+    tdId.textContent = id;
+    tr.appendChild(tdId);
+
+    for (let k = 0; k < LOG; k++) {
+      const td = document.createElement('td');
+      const v = up[id] ? up[id][k] : null;
+      const key = id + '-' + k;
+      const st = cellState[key] || '';
+
+      if (v === null || v === undefined) {
+        td.className = 'empty';
+        td.textContent = '-';
+      } else {
+        td.textContent = v;
+        if (st === 'computed')   td.classList.add('computed');
+        if (st === 'building')   td.classList.add('building');
+        if (st === 'highlight')  td.classList.add('highlight');
+        if (st === 'highlight-v')td.classList.add('highlight-v');
+        if (st === 'answer')     td.classList.add('answer');
+      }
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  tbl.appendChild(tbody);
+}
+
+/* =========================================================
+   9. 统计信息
+   ========================================================= */
+function updateStats() {
+  const n = nodeIds.length;
+  let maxDepth = 0;
+  for (const id of nodeIds) if (nodes[id].depth > maxDepth) maxDepth = nodes[id].depth;
+
+  document.getElementById('nodeStat').textContent = n;
+  document.getElementById('depthStat').textContent = maxDepth + 1;
+  document.getElementById('logStat').textContent = LOG;
+  document.getElementById('upStat').textContent =
+    `N=${n} · 层数=${maxDepth + 1} · LOG=${LOG}`;
+}
+
+/* =========================================================
+   10. 动画
+   ========================================================= */
+const easeInOut = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+function animateLayout(duration = 550) {
+  return new Promise(resolve => {
+    if (nodeIds.length === 0) { resolve(); return; }
+    const starts = {};
+    for (const id of nodeIds) starts[id] = { x: nodes[id].x, y: nodes[id].y };
+    const t0 = performance.now();
+    function frame(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      const e = easeInOut(t);
+      for (const id of nodeIds) {
+        const s = starts[id];
+        nodes[id].x = s.x + (nodes[id].targetX - s.x) * e;
+        nodes[id].y = s.y + (nodes[id].targetY - s.y) * e;
+      }
+      render();
+      if (t < 1) requestAnimationFrame(frame);
+      else resolve();
+    }
+    requestAnimationFrame(frame);
+  });
+}
+
+/* =========================================================
+   11. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   12. 预处理动画
+   ========================================================= */
+async function animatedBuild() {
+  if (busy && !inDemo) return;
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+  up = {};
+  for (const id of nodeIds) up[id] = new Array(LOG).fill(null);
+  built = false;
+  render();
+
+  setStatus('预处理 ①：从根 BFS，计算每个节点的 depth 和 up[v][0]');
+  await tick(700);
+
+  const order = [...nodeIds].sort((a, b) => nodes[a].depth - nodes[b].depth || a - b);
+
+  for (const id of order) {
+    nodes[id].hl = 'visit';
+    render();
+    setStatus(`访问节点 ${id}：depth = ${nodes[id].depth}，父节点 = ${nodes[id].parent || '（无，它是根）'}`);
+    await tick(400);
+
+    if (nodes[id].parent !== 0) {
+      up[id][0] = nodes[id].parent;
+      cellState[id + '-0'] = 'computed';
+    } else {
+      up[id][0] = null;
+      cellState[id + '-0'] = 'computed';
+    }
+    render();
+    setStatus(`  → up[${id}][0] = ${up[id][0] || '-'}`);
+    await tick(350);
+
+    nodes[id].hl = '';
+    render();
+  }
+
+  setStatus('预处理 ②：按递推式填 k ≥ 1，up[v][k] = up[up[v][k-1]][k-1]');
+  await tick(700);
+
+  for (let k = 1; k < LOG; k++) {
+    setStatus(`开始填 k = ${k}（2^${k} = ${1 << k} 级祖先）`);
+    await tick(500);
+
+    for (const id of nodeIds) {
+      const mid = up[id][k - 1];
+      const val = mid === null ? null : up[mid][k - 1];
+      up[id][k] = val;
+
+      cellState[id + '-' + k] = 'building';
+      render();
+      setStatus(
+        `up[${id}][${k}] = up[ up[${id}][${k - 1}] ][${k - 1}]` +
+        (mid === null ? ` —— up[${id}][${k - 1}] 不存在，记为 -`
+                     : ` = up[${mid}][${k - 1}] = ${val === null ? '-' : val}`)
+      );
+      await tick(280);
+
+      cellState[id + '-' + k] = 'computed';
+      render();
+      await tick(60);
+    }
+  }
+
+  setStatus(`✔ 预处理完成：LOG = ${LOG}，up 表已填满`);
+  await tick(800);
+
+  clearHl();
+  render();
+  built = true;
+
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   13. LCA 查询动画（★ 加兜底：如果 built 为 false，立即补建）
+   ========================================================= */
+async function animatedLCA(uInit, vInit) {
+  if (busy && !inDemo) return;
+
+  /* 兜底：万一 built 还是 false，补建一次，保证动画能跑起来 */
+  if (!built || !up[uInit] || !up[vInit]) {
+    rebuildUpSync();
+    render();
+  }
+
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+  render();
+
+  let u = uInit, v = vInit;
+
+  setStatus(`查询 LCA(${uInit}, ${vInit})`);
+  await tick(600);
+
+  nodes[u].hl = 'u';
+  nodes[v].hl = 'v';
+  render();
+  setStatus(`起点：u = ${u}（depth=${nodes[u].depth}），v = ${v}（depth=${nodes[v].depth}）`);
+  await tick(800);
+
+  if (nodes[u].depth < nodes[v].depth) {
+    [u, v] = [v, u];
+    nodes[u].hl = 'u';
+    nodes[v].hl = 'v';
+    render();
+    setStatus(`depth[${uInit}] < depth[${vInit}]，交换：现在 u = ${u}（较深），v = ${v}`);
+    await tick(800);
+  }
+
+  const diff = nodes[u].depth - nodes[v].depth;
+  if (diff > 0) {
+    setStatus(`阶段一：把 u = ${u} 向上跳 ${diff} 步，与 v = ${v} 对齐深度`);
+    await tick(700);
+
+    for (let k = LOG - 1; k >= 0; k--) {
+      const anc = up[u][k];
+      if (anc !== null && nodes[anc] && nodes[anc].depth >= nodes[v].depth) {
+        cellState[u + '-' + k] = 'highlight';
+        render();
+        setStatus(`  尝试 k = ${k}：up[${u}][${k}] = ${anc}（depth=${nodes[anc].depth} ≥ ${nodes[v].depth}）→ 可以跳`);
+        await tick(550);
+
+        nodes[u].hl = 'jumped';
+        const oldU = u;
+        u = anc;
+        nodes[u].hl = 'u';
+        render();
+        await tick(450);
+
+        cellState[oldU + '-' + k] = 'computed';
+        await tick(150);
+      } else {
+        cellState[u + '-' + k] = 'highlight';
+        render();
+        setStatus(`  尝试 k = ${k}：` +
+          (anc === null ? `up[${u}][${k}] 不存在 → 跳过`
+                        : `up[${u}][${k}] = ${anc}（depth=${nodes[anc].depth} < ${nodes[v].depth}）→ 跳过头，跳过`));
+        await tick(450);
+        cellState[u + '-' + k] = 'computed';
+        render();
+      }
+    }
+
+    setStatus(`对齐后：u = ${u}（depth=${nodes[u].depth}），v = ${v}（depth=${nodes[v].depth}）`);
+    await tick(800);
+  } else {
+    setStatus(`阶段一：两节点深度相同，无需对齐`);
+    await tick(700);
+  }
+
+  if (u === v) {
+    nodes[u].hl = 'lca';
+    render();
+    setStatus(`✔ 对齐后 u == v，LCA = ${u}`);
+    await tick(1300);
+    clearHl();
+    render();
+    busy = false;
+    if (!inDemo) setButtonsDisabled(false);
+    return;
+  }
+
+  setStatus(`阶段二：从 k = ${LOG - 1} 递减到 0，尝试 u、v 同时上跳`);
+  await tick(800);
+
+  for (let k = LOG - 1; k >= 0; k--) {
+    const ua = up[u][k];
+    const vb = up[v][k];
+
+    cellState[u + '-' + k] = 'highlight';
+    cellState[v + '-' + k] = 'highlight-v';
+    render();
+
+    if (ua !== null && vb !== null && ua !== vb) {
+      setStatus(`  k = ${k}：up[${u}][${k}] = ${ua}，up[${v}][${k}] = ${vb} → 不同，两人同时跳`);
+      await tick(650);
+
+      nodes[u].hl = 'jumped';
+      nodes[v].hl = 'jumped';
+      const oldU = u, oldV = v;
+      u = ua;
+      v = vb;
+      nodes[u].hl = 'u';
+      nodes[v].hl = 'v';
+      render();
+      await tick(550);
+
+      cellState[oldU + '-' + k] = 'computed';
+      cellState[oldV + '-' + k] = 'computed';
+      await tick(150);
+    } else {
+      setStatus(`  k = ${k}：` +
+        (ua === null || vb === null
+          ? `有祖先不存在 → 不能跳`
+          : `up[${u}][${k}] = ${ua}，up[${v}][${k}] = ${vb} → 相同，跳过去就会跳过 LCA，不跳`));
+      await tick(550);
+
+      cellState[u + '-' + k] = 'computed';
+      cellState[v + '-' + k] = 'computed';
+      render();
+    }
+  }
+
+  const ans = up[u][0];
+  if (ans !== null) {
+    cellState[u + '-0'] = 'answer';
+    if (up[v] && up[v][0] === ans) cellState[v + '-0'] = 'answer';
+    nodes[u].hl = 'jumped';
+    nodes[v].hl = 'jumped';
+    nodes[ans].hl = 'lca';
+    render();
+    setStatus(`  u = ${u}，v = ${v} 是 LCA 的两个孩子 → 返回 up[${u}][0] = ${ans}`);
+    await tick(1000);
+
+    setStatus(`✔ LCA(${uInit}, ${vInit}) = ${ans}`);
+    await tick(1300);
+  }
+
+  clearHl();
+  render();
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   14. 插入动画
+   ========================================================= */
+async function animatedInsert(parentId) {
+  if (busy && !inDemo) return;
+  if (nodeIds.length >= MAX_NODES) {
+    setStatus(`✘ 节点数已达上限 ${MAX_NODES}，请先删除一些节点`);
+    return;
+  }
+  if (!nodes[parentId]) {
+    setStatus(`✘ 父节点 ${parentId} 不存在`);
+    return;
+  }
+
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  const newId = getMaxId() + 1;
+
+  nodes[parentId].hl = 'visit';
+  render();
+  setStatus(`准备把新节点 ${newId} 挂到父节点 ${parentId} 下（parentId.depth=${nodes[parentId].depth}）`);
+  await tick(700);
+
+  nodes[newId] = {
+    id: newId,
+    parent: parentId,
+    depth: nodes[parentId].depth + 1,
+    x: nodes[parentId].x,
+    y: nodes[parentId].y,
+    targetX: nodes[parentId].x,
+    targetY: nodes[parentId].y,
+    _slot: 0,
+    hl: 'new-node',
+  };
+  refreshIds();
+
+  relayout();
+  render();
+  setStatus(`新节点 ${newId} 的 depth = ${nodes[newId].depth}（比父节点深 1 层）`);
+  await tick(600);
+
+  await animateLayout(700);
+
+  setStatus(`✔ 插入完成：节点数 ${nodeIds.length - 1} → ${nodeIds.length}，树层数 = ${Math.max(...nodeIds.map(i => nodes[i].depth)) + 1}`);
+  await tick(700);
+
+  setStatus(`结构变化 → 重新构建 depth 和 up 表`);
+  await tick(500);
+  rebuildUpSync();
+  clearHl();
+  render();
+  setStatus(`✔ up 表已重建（LOG = ${LOG}）`);
+  await tick(700);
+
+  refreshSelects();
+
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   15. 删除动画
+   ========================================================= */
+async function animatedDelete(id) {
+  if (busy && !inDemo) return;
+  if (id === ROOT) {
+    setStatus(`✘ 不能删除根节点`);
+    return;
+  }
+  if (!nodes[id]) {
+    setStatus(`✘ 节点 ${id} 不存在`);
+    return;
+  }
+
+  busy = true;
+  setButtonsDisabled(true);
+  clearHl();
+
+  const toDelete = [];
+  (function collect(x) {
+    toDelete.push(x);
+    for (const c of getChildren(x)) collect(c);
+  })(id);
+
+  for (const x of toDelete) nodes[x].hl = 'deleting';
+  render();
+  setStatus(`删除节点 ${id} 及其整棵子树：将删除 ${toDelete.length} 个节点 [${toDelete.join(', ')}]`);
+  await tick(1100);
+
+  for (const x of toDelete) delete nodes[x];
+  refreshIds();
+
+  relayout();
+  render();
+  await animateLayout(600);
+
+  setStatus(`✔ 删除完成：节点数 ${nodeIds.length + toDelete.length} → ${nodeIds.length}，树层数 = ${Math.max(...nodeIds.map(i => nodes[i].depth)) + 1}`);
+  await tick(800);
+
+  setStatus(`结构变化 → 重新构建 depth 和 up 表`);
+  await tick(500);
+  rebuildUpSync();
+  clearHl();
+  render();
+  setStatus(`✔ up 表已重建（LOG = ${LOG}）`);
+  await tick(700);
+
+  refreshSelects();
+
+  busy = false;
+  if (!inDemo) setButtonsDisabled(false);
+}
+
+/* =========================================================
+   16. 重置
+   ========================================================= */
+function resetTree() {
+  initNodes();
+  rebuildUpSync();
+  refreshSelects();
+  clearHl();
+  snapToTargets();
+  setStatus('已重置为初始 6 层树');
+}
+
+/* =========================================================
+   17. 自动演示
+   ========================================================= */
+async function autoDemo() {
+  initNodes();
+  rebuildUpSync();
+  refreshSelects();
+  clearHl();
+  snapToTargets();
+  await tick(500);
+
+  await animatedBuild();
+  await tick(500);
+
+  await animatedLCA(14, 9);
+  await tick(400);
+
+  await animatedLCA(13, 12);
+  await tick(400);
+
+  await animatedLCA(14, 4);
+  await tick(400);
+
+  setStatus('④ 动态插入：把 15 挂到 14 下（树变深到 7 层）');
+  await tick(500);
+  await animatedInsert(14);
+  await tick(400);
+
+  setStatus('⑤ 查询 LCA(15, 13) —— 深度差更大，观察倍增跳得更远');
+  await tick(400);
+  await animatedLCA(15, 13);
+  await tick(400);
+
+  setStatus('⑥ 动态删除：删 4 的整棵子树');
+  await tick(500);
+  await animatedDelete(4);
+  await tick(400);
+
+  setStatus('⑦ 重建后再查 LCA(5, 6)');
+  await tick(400);
+  await animatedLCA(5, 6);
+  await tick(400);
+
+  setStatus('✔ 演示结束：深度、up 表、增删都已覆盖');
+}
+
+/* =========================================================
+   18. 演示控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const demoModeGroup = document.getElementById('demoModeGroup');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  inDemo = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  setButtonsDisabled(true);
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await autoDemo();
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  inDemo = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  busy = false;
+  setButtonsDisabled(false);
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+/* =========================================================
+   19. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: '树上倍增求 LCA 是什么', key: true, lines: [
+    'LCA = Lowest Common Ancestor，两节点的最近公共祖先',
+    '朴素做法：不断向上爬，最坏 <code>O(N)</code>',
+    '倍增：允许一次跳 <code>2^k</code> 步，<code>O(log N)</code> 查询',
+    '预处理 <code>O(N log N)</code>，空间 <code>O(N log N)</code>',
+  ]},
+  { icon: '🌲', title: '为什么树的深度很关键', key: true, lines: [
+    'LCA 查询的第一步是<b>把深的节点跳到与浅的节点同深度</b>',
+    '跳跃次数 = <code>popcount(深度差)</code>，最多 <code>log₂N</code>',
+    '本页面示例树有 6 层，能清楚展示"深度差大 → 跳得远"的效果',
+    '插入节点后如果深度增加，LOG 也要相应增加',
+  ]},
+  { icon: '🔢', title: 'up 表的递推定义', key: true, lines: [
+    '<code>up[v][0] = parent[v]</code>',
+    '<code>up[v][k] = up[ up[v][k-1] ][k-1]</code>',
+    '含义：v 的第 2^k 个祖先 = v 的第 2^(k-1) 个祖先的<br> 第 2^(k-1) 个祖先',
+    '不存在的祖先用 <code>None</code>（或 0）表示',
+  ]},
+  { icon: '📋', title: '预处理：两趟', key: true, lines: [
+    '<b>第一趟</b>（BFS / DFS）：算 <code>depth[v]</code> 和 <code>up[v][0]</code>',
+    '<b>第二趟</b>：枚举 <code>k = 1..LOG-1</code>，<br> 对每个 v 用递推式填 <code>up[v][k]</code>',
+    'LOG 取 <code>⌈log₂N⌉ + 1</code> 就足够',
+  ]},
+  { icon: '🔍', title: '查询：两阶段', key: true, lines: [
+    '<b>阶段一</b>：把深的那个节点向上跳，直到两节点同深度',
+    '<b>阶段二</b>：<br> · 若已相同 → 它就是 LCA<br> · 否则从 k = LOG-1 递减到 0：<br> 　若 <code>up[u][k] != up[v][k]</code>，两人一起跳<br> · 最后 <code>up[u][0]</code> 就是 LCA',
+  ]},
+  { icon: '➕', title: '动态插入节点', key: true, lines: [
+    '把新节点挂到某个父节点下：<code>parent[new] = p</code>',
+    '新节点的 <code>depth = depth[p] + 1</code>',
+    '<b>必须重建 depth 和 up 表</b>，因为新节点<br> 可能出现在任意位置，会影响很多节点的祖先关系',
+    '重建代价 <code>O(N log N)</code>',
+  ]},
+  { icon: '🗑️', title: '动态删除节点', key: true, lines: [
+    '本页面删除时<b>连子树一起删</b>，保证树结构合法',
+    '从 parent 的 children 中移除，再清空所有子孙的数据',
+    '删除后重建 depth 和 up 表，<code>O(N log N)</code>',
+    '<b>不能删根</b>，因为根是整棵树的起点',
+  ]},
+  { icon: '⚖️', title: '与其他 LCA 算法对比', key: false, lines: [
+    '<b>倍增</b>：O(N log N) 预处理，O(log N) 查询，最通用',
+    '<b>Tarjan 离线</b>：O(N + Q) 一次性处理所有查询，需离线',
+    '<b>RMQ + 欧拉序</b>：O(N log N) 预处理，O(1) 查询',
+    '<b>树链剖分</b>：O(log N) 查询，可同时做路径修改',
+    '倍增代码最短，面试/竞赛首选',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    el.className = 'k-card' + (card.key ? ' key-point' : '');
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   20. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue','assert',
+    'property','staticmethod'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','len','range','float','int','str','list','dict',
+    'set','tuple','sum','isinstance','enumerate','deque','setdefault','DynamicLCA',
+    'hasattr'
+  ]);
+  let html = '', i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    if (c === '#') {
+      let j = i; while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (c === '"' || c === "'") {
+      const q = c; let j = i + 1;
+      while (j < code.length && code[j] !== q) { if (code[j] === '\\') j++; j++; }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j; continue;
+    }
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_.]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+      if (word === 'self') html += '<span class="tok-self">self</span>';
+      else if (KEYWORDS.has(word)) html += '<span class="tok-keyword">' + word + '</span>';
+      else if (BUILTINS.has(word)) html += '<span class="tok-builtin">' + word + '</span>';
+      else if (code[j] === '(') html += '<span class="tok-func">' + word + '</span>';
+      else html += word;
+      i = j; continue;
+    }
+    if (/\d/.test(c)) {
+      let j = i; while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j; continue;
+    }
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+}
+
+/* =========================================================
+   21. 初始化 & 事件
+   ========================================================= */
+renderKnowledge();
+renderPythonCode();
+
+/* 初始化树（rebuildUpSync 会把 built 设为 true，所以用户可以直接点 LCA） */
+initNodes();
+rebuildUpSync();
+refreshSelects();
+snapToTargets();
+updateDemoUI();
+
+document.getElementById('btnBuild').addEventListener('click', () => {
+  animatedBuild();
+});
+
+document.getElementById('btnLCA').addEventListener('click', () => {
+  const u = +document.getElementById('uSel').value;
+  const v = +document.getElementById('vSel').value;
+  if (u === v) {
+    setStatus(`u 和 v 相同，LCA 就是 ${u}`);
+    return;
+  }
+  animatedLCA(u, v);
+});
+
+document.getElementById('btnInsert').addEventListener('click', () => {
+  const p = +document.getElementById('insParentSel').value;
+  animatedInsert(p);
+});
+
+document.getElementById('btnDelete').addEventListener('click', () => {
+  const sel = document.getElementById('delNodeSel');
+  if (!sel.value) {
+    setStatus('没有可删除的节点（只能删非根节点）');
+    return;
+  }
+  const id = +sel.value;
+  animatedDelete(id);
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (busy) return;
+  resetTree();
+});
+</script>
+</body>
+</html>

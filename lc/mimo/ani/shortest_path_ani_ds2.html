@@ -1,0 +1,1592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>最短路 · Dijkstra / Bellman-Ford / SPFA 动画</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1100px, 100%); }
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead { font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px; }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  /* 图节点 */
+  .sp-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.5;
+    transition: fill .3s, stroke .3s, stroke-width .3s;
+  }
+  .sp-node .node-id {
+    font-size: 18px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .sp-node .node-dist {
+    font-family: ui-monospace, monospace;
+    font-size: 11.5px; font-weight: 700; fill: #627d98;
+    pointer-events: none; user-select: none;
+  }
+  .sp-node.source .node-bg { stroke: #d64545; stroke-width: 3.8; }
+  .sp-node.done .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.6; }
+  .sp-node.done .node-id { fill: #1c5e28; }
+  .sp-node.done .node-dist { fill: #2f7a34; font-weight: 800; }
+  .sp-node.current .node-bg { fill: #ffd98a; stroke: #e09b00; stroke-width: 4; }
+  .sp-node.current .node-id { fill: #a35e00; }
+  .sp-node.current .node-dist { fill: #a35e00; font-weight: 800; }
+  .sp-node.in-queue .node-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3.4; }
+  .sp-node.in-queue .node-id { fill: #5b3db8; }
+  .sp-node.in-queue .node-dist { fill: #5b3db8; }
+  .sp-node.path .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 4; }
+  .sp-node.path .node-id { fill: #1c5e28; }
+  .sp-node.path .node-dist { fill: #1c5e28; font-weight: 800; }
+  .sp-node.visited .node-bg { fill: #eeeeee; stroke: #999999; stroke-dasharray: 4 3; }
+  .sp-node.visited .node-id { fill: #666666; }
+
+  /* 图边 */
+  .sp-edge {
+    stroke: #cbd2d9; stroke-width: 2.4;
+    fill: none;
+    transition: stroke .3s, stroke-width .3s;
+  }
+  .sp-edge.exploring {
+    stroke: #e09b00; stroke-width: 3.6;
+    stroke-dasharray: 8 5;
+    animation: dashflow .9s linear infinite;
+  }
+  .sp-edge.relaxed {
+    stroke: #f0a500; stroke-width: 5;
+    stroke-dasharray: 10 6;
+    animation: dashflow .7s linear infinite;
+  }
+  .sp-edge.path {
+    stroke: #2f7a34; stroke-width: 5.5;
+  }
+  .sp-edge.dim {
+    stroke: #e5e9ed; stroke-width: 1.8;
+  }
+  @keyframes dashflow { to { stroke-dashoffset: -14; } }
+
+  .edge-w {
+    font-family: ui-monospace, monospace;
+    font-size: 13px; font-weight: 800;
+    fill: #4a5568;
+    pointer-events: none; user-select: none;
+    paint-order: stroke;
+    stroke: #ffffff; stroke-width: 6;
+    stroke-linejoin: round;
+  }
+  .edge-w.exploring { fill: #b45a12; }
+  .edge-w.relaxed   { fill: #8a5a00; }
+  .edge-w.path      { fill: #1c5e28; }
+  .edge-w.dim       { fill: #cbd2d9; }
+
+  /* 通用面板 */
+  .panel {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 10px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.algo { color: #7c5cd6; }
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  select {
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border-radius: 7px; border: 1px solid #d8c8ff;
+    background: #f9f6ff; color: #7c5cd6;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    min-width: 320px;
+    font-weight: 700;
+  }
+  select:disabled { opacity: .6; }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* 距离表 + 队列显示 */
+  .info-panel {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .info-row {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    font-size: 12.5px;
+  }
+  .info-row .title {
+    font-weight: 700; color: #243b53; margin-right: 4px;
+    min-width: 76px;
+  }
+  .dist-cell {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 6px;
+    background: #f0f4f8; color: #4a5568;
+    font-family: ui-monospace, monospace; font-size: 12.5px;
+    border: 1.5px solid #dbe4ec;
+    transition: background .25s, color .25s, border-color .25s;
+  }
+  .dist-cell .k { font-weight: 700; }
+  .dist-cell .v { font-weight: 800; }
+  .dist-cell.source { background: #ffd0d0; color: #b33232; border-color: #d64545; }
+  .dist-cell.done   { background: #eaf9ee; color: #2f7a34; border-color: #b8e0bf; }
+  .dist-cell.current { background: #fffbf2; color: #a35e00; border-color: #ffd98a; }
+  .dist-cell.in-queue { background: #f2ecff; color: #5b3db8; border-color: #d8c8ff; }
+  .dist-cell.path { background: #d4f4dd; color: #1c5e28; border-color: #7ec88e; }
+  .queue-item {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 3px 12px; border-radius: 6px;
+    background: #f2ecff; color: #5b3db8;
+    font-family: ui-monospace, monospace; font-size: 12.5px;
+    font-weight: 800; border: 1.5px solid #d8c8ff;
+  }
+  .queue-item.front { background: #7c5cd6; color: #fff; border-color: #7c5cd6; }
+  .queue-empty {
+    color: #829ab1; font-style: italic; font-size: 12px;
+  }
+  .round-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 3px 12px; border-radius: 6px;
+    background: #fffbf2; color: #a35e00;
+    font-family: ui-monospace, monospace; font-size: 12.5px;
+    font-weight: 800; border: 1.5px solid #ffd98a;
+  }
+
+  /* 演示记录 */
+  .log-module {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .log-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .log-module > summary::-webkit-details-marker { display: none; }
+  .log-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .log-module[open] > summary::before { transform: rotate(90deg); }
+  .log-module > summary:hover { background: #f8fafc; }
+  .log-module > summary .count {
+    font-size: 11.5px; font-weight: 600;
+    background: #eef4fa; color: #2369ad;
+    padding: 2px 8px; border-radius: 5px;
+    font-family: ui-monospace, monospace;
+    margin-left: auto;
+  }
+  .log-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1;
+  }
+  .log-body {
+    max-height: 460px; overflow-y: auto;
+    padding: 10px 20px 16px;
+    background: #fbfdff;
+  }
+  .log-line {
+    display: grid; grid-template-columns: 56px 1fr;
+    gap: 12px; padding: 6px 0;
+    border-bottom: 1px dashed #eef2f7;
+    font-size: 12.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    transition: background .15s;
+  }
+  .log-line:hover { background: #f0f7ff; }
+  .log-line:last-child { border-bottom: none; }
+  .log-line .idx {
+    color: #829ab1; font-weight: 700; text-align: right;
+  }
+  .log-line .msg { color: #334e68; word-break: break-word; }
+  .log-line.cur {
+    background: #fffbf2;
+    border-left: 3px solid #e09b00;
+    margin-left: -3px; padding-left: 3px;
+  }
+  .log-line.cur .idx { color: #b45a12; }
+  .log-line.cur .msg { color: #8a5a00; font-weight: 600; }
+  .log-empty {
+    font-size: 12.5px; color: #829ab1; font-style: italic;
+    padding: 16px 0; text-align: center;
+  }
+
+  /* 知识模块 */
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-card.compare-point { border-color: #7c5cd6; background: #f9f6ff; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-card.compare-point .k-icon { background: linear-gradient(135deg, #e0d5ff 0%, #c9b8ff 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-card.compare-point .k-title { color: #5b3db8; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-card.compare-point .k-lines li::before { color: #7c5cd6; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  /* 代码模块 */
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 640px; overflow: auto;
+  }
+  .code-body pre { margin: 0; }
+  .code-body code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.7;
+    background: transparent;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>最短路 · Dijkstra / Bellman-Ford / SPFA 动画</h1>
+  <p class="subtitle">
+    源点 A · 三种算法求单源最短路 · <b>Dijkstra</b> 贪心取最小 · <b>Bellman-Ford</b> 逐轮全局松弛 · <b>SPFA</b> 队列优化
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · 三种最短路算法对比</h2>
+    <p class="intro-lead">
+      三种算法都围绕<b>松弛操作</b>展开：对边 <code>(u, v, w)</code>，若 <code>dist[u] + w &lt; dist[v]</code> 就更新 <code>dist[v]</code>。
+      区别在于<b>谁来发起松弛、按什么顺序发起</b>。Dijkstra 用优先队列，每次只处理当前最近的点；Bellman-Ford 每轮遍历全部边，做 V−1 轮；
+      SPFA 用普通队列，只把"被更新过的点"重新入队。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">算法 1</div>
+        <div class="title">Dijkstra（堆优化）</div>
+        <div class="desc">
+          <b>贪心</b>：每次取出 <code>dist</code> 最小的未确定节点 u，<br>
+          用它松弛所有邻居。<br>
+          复杂度 <code>O((V+E) log V)</code>，要求边权 <b>非负</b>。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">算法 2</div>
+        <div class="title">Bellman-Ford</div>
+        <div class="desc">
+          每轮遍历<b>全部边</b>，全部尝试松弛一次。<br>
+          重复 <code>V−1</code> 轮，最多能让最短路"边长"增加 V−1。<br>
+          复杂度 <code>O(VE)</code>，可处理<b>负权</b>，能检测负环。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">算法 3</div>
+        <div class="title">SPFA（队列优化）</div>
+        <div class="desc">
+          只把"刚被更新过的点"重新入队，去松弛它的邻居。<br>
+          队列空 → 结束。平均 <code>O(kE)</code>，k 一般很小。<br>
+          <b>最坏 <code>O(VE)</code></b>，被恶意数据可退化。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">对比</div>
+        <div class="title">核心区别</div>
+        <div class="desc">
+          <b>Dijkstra</b>：一次处理一个确定的点，快但只能非负权<br>
+          <b>Bellman-Ford</b>：每轮全局扫描，慢但可负权<br>
+          <b>SPFA</b>：只对"有变化"的点做松弛，兼顾速度与负权
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">本质</div>
+        <div class="title">松弛操作 Relax</div>
+        <div class="desc">
+          对边 <code>(u, v, w)</code>：<br>
+          <code>if dist[u] + w &lt; dist[v]</code>：<br>
+          　　<code>dist[v] = dist[u] + w</code>；<br>
+          　　<code>prev[v] = u</code>
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">教学图</div>
+        <div class="title">本页面用图</div>
+        <div class="desc">
+          6 节点 8 边，从源点 A 出发。<br>
+          关键教学点：<br>
+          A→D 不能走 A-B-D(4+5=9)，<br>
+          而应走 A-C-E-D(2+3+2=7)，<b>绕路更短</b>。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 660" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <!-- 距离表 + 队列 -->
+  <div class="info-panel">
+    <div class="info-row">
+      <span class="title">dist 距离表</span>
+      <div id="distRow" style="display:flex; flex-wrap:wrap; gap:8px;"></div>
+    </div>
+    <div class="info-row">
+      <span class="title" id="queueLabel">优先队列</span>
+      <div id="queueRow" style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label algo">算法选择</span>
+      <select id="algoSel">
+        <option value="dijkstra">Dijkstra —— 堆优化，每次取 dist 最小</option>
+        <option value="bellman">Bellman-Ford —— V−1 轮全局松弛</option>
+        <option value="spfa">SPFA —— 队列优化，只松弛"被更新"的点</option>
+      </select>
+    </div>
+    <div class="panel-row">
+      <span class="row-label algo">颜色说明</span>
+      <span class="row-hint">
+        <b>橙色虚线</b>=正在检查 · <b>金色粗线</b>=刚松弛成功 · <b>绿色粗线</b>=最终最短路 · <b>金色节点</b>=当前处理 · <b>绿色节点</b>=已确定 · <b>紫色节点</b>=在队列中
+      </span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 选择算法后点击「开始演示」</div>
+
+  <details class="log-module" id="logModule" open>
+    <summary>
+      📋 演示记录
+      <span class="hint">（点击展开 / 折叠，可全量查看每步）</span>
+      <span class="count" id="logCount">0 步</span>
+    </summary>
+    <div class="log-body" id="logBody">
+      <div class="log-empty">点击「开始演示」后，每一步操作都会记录在这里</div>
+    </div>
+  </details>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 最短路算法 <span class="hint">三种算法 + 应用场景</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · Dijkstra / Bellman-Ford / SPFA
+      <span class="badge">三种单源最短路</span>
+    </summary>
+    <div class="code-body">
+<pre><code class="language-python">"""
+单源最短路 —— Dijkstra / Bellman-Ford / SPFA。
+
+给定带权图 G = (V, E) 和源点 s，求 s 到每个点的最短距离。
+
+三种算法都围绕"松弛操作"：
+    对边 (u, v, w)，若 dist[u] + w < dist[v] 就更新 dist[v]。
+
+区别在于"谁来发起松弛、按什么顺序发起"：
+    Dijkstra     —— 每次取 dist 最小的未确定点，非负权 O((V+E) log V)
+    Bellman-Ford —— 每轮遍历所有边，V-1 轮，可负权 O(VE)
+    SPFA         —— Bellman-Ford 的队列优化，平均 O(kE)
+"""
+
+import heapq
+from collections import deque
+
+
+# ============================================================
+# 算法 1：Dijkstra（堆优化）—— 非负权，O((V+E) log V)
+# ============================================================
+def dijkstra(n, adj, src):
+    """
+    每次从优先队列取出 dist 最小的未确定节点 u，
+    用它松弛所有邻居 v。
+
+    关键性质：所有边权非负 → "取出即确定"。
+    """
+    INF = float('inf')
+    dist = [INF] * n
+    prev = [-1] * n
+    done = [False] * n
+    dist[src] = 0
+
+    pq = [(0, src)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if done[u]:
+            continue                # 堆里可能有旧版本
+        done[u] = True
+
+        for v, w in adj[u]:
+            if not done[v] and d + w < dist[v]:
+                dist[v] = d + w
+                prev[v] = u
+                heapq.heappush(pq, (dist[v], v))
+
+    return dist, prev
+
+
+# ============================================================
+# 算法 2：Bellman-Ford —— 可负权，O(VE)
+# ============================================================
+def bellman_ford(n, edges, src):
+    """
+    对所有边做 V-1 轮松弛。每轮至少让最短路的"边数"增加 1 层。
+
+    返回 (dist, prev, has_negative_cycle)。
+    第 V 轮若还能松弛，说明存在负环。
+    """
+    INF = float('inf')
+    dist = [INF] * n
+    prev = [-1] * n
+    dist[src] = 0
+
+    for _ in range(n - 1):
+        updated = False
+        for u, v, w in edges:
+            if dist[u] != INF and dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                prev[v] = u
+                updated = True
+        if not updated:
+            break                   # 提前结束
+
+    # 第 V 轮：还能松弛 → 存在负环
+    has_neg = False
+    for u, v, w in edges:
+        if dist[u] != INF and dist[u] + w < dist[v]:
+            has_neg = True
+            break
+
+    return dist, prev, has_neg
+
+
+# ============================================================
+# 算法 3：SPFA —— 队列优化，平均 O(kE)
+# ============================================================
+def spfa(n, adj, src):
+    """
+    用队列存"刚被更新过"的节点。
+    出队时松弛它的所有邻居，若邻居被更新且不在队列中 → 入队。
+
+    队列空 → 结束。
+    """
+    INF = float('inf')
+    dist = [INF] * n
+    prev = [-1] * n
+    in_queue = [False] * n
+    dist[src] = 0
+
+    q = deque([src])
+    in_queue[src] = True
+
+    while q:
+        u = q.popleft()
+        in_queue[u] = False
+
+        for v, w in adj[u]:
+            if dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                prev[v] = u
+                if not in_queue[v]:
+                    q.append(v)
+                    in_queue[v] = True
+
+    return dist, prev
+
+
+# ============================================================
+# 路径还原
+# ============================================================
+def reconstruct_path(prev, src, dst):
+    """从 dst 沿 prev 回溯到 src。"""
+    path = []
+    cur = dst
+    while cur != -1:
+        path.append(cur)
+        if cur == src:
+            break
+        cur = prev[cur]
+    if not path or path[-1] != src:
+        return []
+    return list(reversed(path))
+
+
+# ============================================================
+# 演示
+# ============================================================
+if __name__ == '__main__':
+    # 6 节点教学图
+    # A - B(4)   A - C(2)
+    # B - C(5)   B - D(5)
+    # C - E(3)   D - E(2)
+    # D - F(6)   E - F(7)
+    n = 6
+    edges = [
+        (0, 1, 4), (0, 2, 2),
+        (1, 2, 5), (1, 3, 5),
+        (2, 4, 3), (3, 4, 2),
+        (3, 5, 6), (4, 5, 7),
+    ]
+    adj = [[] for _ in range(n)]
+    for u, v, w in edges:
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+
+    print('=== Dijkstra from A ===')
+    d1, p1 = dijkstra(n, adj, 0)
+    print('dist =', d1)
+    print('A→F 路径 =', reconstruct_path(p1, 0, 5))
+
+    print()
+    print('=== Bellman-Ford from A ===')
+    d2, p2, neg = bellman_ford(n, edges, 0)
+    print('dist =', d2, ' 负环 =', neg)
+
+    print()
+    print('=== SPFA from A ===')
+    d3, p3 = spfa(n, adj, 0)
+    print('dist =', d3)
+
+    assert d1 == d2 == d3, '三种算法应得到相同的 dist'
+    print('\n✔ 三种算法结果一致')
+</code></pre>
+    </div>
+  </details>
+</div>
+
+<script>
+/* =========================================================
+   1. 图结构
+   ========================================================= */
+const NODES = [
+  { id: 'A', x: 450, y: 80 },
+  { id: 'B', x: 180, y: 240 },
+  { id: 'C', x: 720, y: 240 },
+  { id: 'D', x: 180, y: 420 },
+  { id: 'E', x: 720, y: 420 },
+  { id: 'F', x: 450, y: 580 },
+];
+const NODE_POS = {};
+for (const n of NODES) NODE_POS[n.id] = { x: n.x, y: n.y };
+
+const EDGES = [
+  { u: 'A', v: 'B', w: 4 },
+  { u: 'A', v: 'C', w: 2 },
+  { u: 'B', v: 'C', w: 5 },
+  { u: 'B', v: 'D', w: 5 },
+  { u: 'C', v: 'E', w: 3 },
+  { u: 'D', v: 'E', w: 2 },
+  { u: 'D', v: 'F', w: 6 },
+  { u: 'E', v: 'F', w: 7 },
+];
+
+const NODE_R = 34;
+const SRC = 'A';
+
+/* 邻接表 */
+const ADJ = {};
+for (const n of NODES) ADJ[n.id] = [];
+for (const e of EDGES) {
+  ADJ[e.u].push({ v: e.v, w: e.w });
+  ADJ[e.v].push({ v: e.u, w: e.w });
+}
+
+function eKey(u, v) { return [u, v].sort().join('-'); }
+
+/* =========================================================
+   2. 渲染状态
+   ========================================================= */
+let edgeHl = {};      /* key -> '' | 'exploring' | 'relaxed' | 'path' | 'dim' */
+let nodeHl = {};      /* id -> '' | 'source' | 'done' | 'current' | 'in-queue' | 'path' | 'visited' */
+let curDist = {};     /* id -> number */
+
+/* =========================================================
+   3. SVG 图层
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+/* =========================================================
+   4. 渲染
+   ========================================================= */
+function render() {
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+
+  /* 边 */
+  for (const e of EDGES) {
+    const a = NODE_POS[e.u];
+    const b = NODE_POS[e.v];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const x1 = a.x + dx / len * NODE_R;
+    const y1 = a.y + dy / len * NODE_R;
+    const x2 = b.x - dx / len * NODE_R;
+    const y2 = b.y - dy / len * NODE_R;
+
+    const key = eKey(e.u, e.v);
+    const st = edgeHl[key] || '';
+
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('class', 'sp-edge' + (st ? ' ' + st : ''));
+    edgeLayer.appendChild(line);
+
+    /* 权重标签 */
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    const ox = -dy / len * 13;
+    const oy = dx / len * 13;
+
+    const w = document.createElementNS(NS, 'text');
+    w.setAttribute('class', 'edge-w' + (st ? ' ' + st : ''));
+    w.setAttribute('text-anchor', 'middle');
+    w.setAttribute('dominant-baseline', 'central');
+    w.setAttribute('x', mx + ox);
+    w.setAttribute('y', my + oy);
+    w.textContent = e.w;
+    edgeLayer.appendChild(w);
+  }
+
+  /* 节点 */
+  for (const n of NODES) {
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'sp-node';
+    const st = nodeHl[n.id] || '';
+    if (st) cls += ' ' + st;
+    g.setAttribute('class', cls);
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', n.x); c.setAttribute('cy', n.y);
+    c.setAttribute('r', NODE_R);
+    c.setAttribute('class', 'node-bg');
+    g.appendChild(c);
+
+    const idT = document.createElementNS(NS, 'text');
+    idT.setAttribute('class', 'node-id');
+    idT.setAttribute('text-anchor', 'middle');
+    idT.setAttribute('dominant-baseline', 'central');
+    idT.setAttribute('x', n.x); idT.setAttribute('y', n.y - 6);
+    idT.textContent = n.id;
+    g.appendChild(idT);
+
+    const dT = document.createElementNS(NS, 'text');
+    dT.setAttribute('class', 'node-dist');
+    dT.setAttribute('text-anchor', 'middle');
+    dT.setAttribute('dominant-baseline', 'central');
+    dT.setAttribute('x', n.x); dT.setAttribute('y', n.y + 15);
+    const d = curDist[n.id];
+    dT.textContent = 'd=' + (d === undefined || d === Infinity ? '∞' : d);
+    g.appendChild(dT);
+
+    nodeLayer.appendChild(g);
+  }
+
+  updateDistRow();
+}
+
+/* =========================================================
+   5. 距离表 / 队列显示
+   ========================================================= */
+function updateDistRow() {
+  const el = document.getElementById('distRow');
+  el.innerHTML = '';
+  for (const n of NODES) {
+    const cell = document.createElement('span');
+    let cls = 'dist-cell';
+    const st = nodeHl[n.id] || '';
+    if (st) cls += ' ' + st;
+    cell.className = cls;
+    const d = curDist[n.id];
+    const val = (d === undefined || d === Infinity) ? '∞' : d;
+    cell.innerHTML = `<span class="k">${n.id}</span>=<span class="v">${val}</span>`;
+    el.appendChild(cell);
+  }
+}
+
+function updateQueueRow(items, isFrontHighlight) {
+  const el = document.getElementById('queueRow');
+  el.innerHTML = '';
+  if (!items || items.length === 0) {
+    el.innerHTML = '<span class="queue-empty">（空）</span>';
+    return;
+  }
+  for (let i = 0; i < items.length; i++) {
+    const item = document.createElement('span');
+    item.className = 'queue-item' + (i === 0 && isFrontHighlight ? ' front' : '');
+    item.textContent = items[i];
+    el.appendChild(item);
+  }
+}
+
+function updateRoundRow(text) {
+  const el = document.getElementById('queueRow');
+  el.innerHTML = '';
+  const badge = document.createElement('span');
+  badge.className = 'round-badge';
+  badge.textContent = text;
+  el.appendChild(badge);
+}
+
+/* =========================================================
+   6. 步骤生成：Dijkstra
+   ========================================================= */
+function buildDijkstraSteps() {
+  const steps = [];
+  const dist = {};
+  const prev = {};
+  for (const n of NODES) { dist[n.id] = Infinity; prev[n.id] = null; }
+  dist[SRC] = 0;
+
+  const done = new Set();
+  let pq = [{ id: SRC, d: 0 }];
+
+  function snap(msg, opts) {
+    const o = opts || {};
+    steps.push({
+      msg,
+      dist: { ...dist },
+      done: new Set(done),
+      current: o.current || null,
+      exploring: o.exploring || [],
+      relaxed: o.relaxed || null,
+      pathEdges: o.pathEdges || null,
+      nodeState: { ...(o.nodeState || {}) },
+      queueItems: pq.slice().sort((a, b) => a.d - b.d).map(x => `${x.id}(${x.d})`),
+      queueFrontHighlight: true,
+    });
+  }
+
+  snap('Dijkstra 开始：dist[A] = 0，其余为 ∞，优先队列 = [A(0)]', {});
+
+  while (pq.length > 0) {
+    pq.sort((a, b) => a.d - b.d);
+    const u = pq.shift();
+
+    if (done.has(u.id)) continue;
+    done.add(u.id);
+
+    snap(`弹出最小 ${u.id}(d=${u.d})，标记为已确定`, {
+      current: u.id,
+    });
+
+    for (const { v, w } of ADJ[u.id]) {
+      if (done.has(v)) continue;
+      const key = eKey(u.id, v);
+      const newD = u.d + w;
+
+      if (newD < dist[v]) {
+        dist[v] = newD;
+        prev[v] = u.id;
+        pq.push({ id: v, d: newD });
+        snap(`  松弛 ${u.id}-${v}(${w}): dist[${v}] = ${newD}`, {
+          current: u.id,
+          exploring: [key],
+          relaxed: key,
+        });
+      } else {
+        snap(`  检查 ${u.id}-${v}(${w}): ${newD} ≥ dist[${v}] → 不更新`, {
+          current: u.id,
+          exploring: [key],
+        });
+      }
+    }
+  }
+
+  /* 最终最短路树 */
+  const pathEdges = new Set();
+  for (const n of NODES) {
+    if (prev[n.id] !== null) pathEdges.add(eKey(n.id, prev[n.id]));
+  }
+  const pathNodes = new Set(Object.keys(prev).filter(k => prev[k] !== null || k === SRC));
+  const ns = {};
+  for (const id of pathNodes) ns[id] = 'path';
+
+  snap(`✔ Dijkstra 完成：dist = ${NODES.map(n => `${n.id}:${dist[n.id]}`).join(', ')}`, {
+    pathEdges,
+    nodeState: ns,
+    current: null,
+  });
+
+  return steps;
+}
+
+/* =========================================================
+   7. 步骤生成：Bellman-Ford
+   ========================================================= */
+function buildBellmanSteps() {
+  const steps = [];
+  const dist = {};
+  const prev = {};
+  for (const n of NODES) { dist[n.id] = Infinity; prev[n.id] = null; }
+  dist[SRC] = 0;
+
+  let curRound = 0;
+
+  function snap(msg, opts) {
+    const o = opts || {};
+    steps.push({
+      msg,
+      dist: { ...dist },
+      done: new Set(o.done || []),
+      current: o.current || null,
+      exploring: o.exploring || [],
+      relaxed: o.relaxed || null,
+      pathEdges: o.pathEdges || null,
+      nodeState: { ...(o.nodeState || {}) },
+      roundText: `第 ${curRound} 轮 / 最多 ${NODES.length - 1} 轮`,
+    });
+  }
+
+  snap('Bellman-Ford 开始：dist[A] = 0，其余为 ∞，准备做 V-1 = 5 轮全局松弛', {});
+
+  const V = NODES.length;
+
+  for (let round = 1; round <= V - 1; round++) {
+    curRound = round;
+    let updated = false;
+
+    snap(`▶ 第 ${round} 轮：遍历全部 ${EDGES.length} 条边`, {});
+
+    for (const e of EDGES) {
+      /* 双向遍历（无向图） */
+      for (const [a, b] of [[e.u, e.v], [e.v, e.u]]) {
+        const key = eKey(a, b);
+        if (dist[a] === Infinity) continue;
+        const newD = dist[a] + e.w;
+        const curD = dist[b];
+
+        if (newD < curD) {
+          dist[b] = newD;
+          prev[b] = a;
+          updated = true;
+          snap(`  松弛 ${a}-${b}(${e.w}): dist[${b}] = ${newD}`, {
+            exploring: [key],
+            relaxed: key,
+          });
+        } else {
+          const curStr = curD === Infinity ? '∞' : curD;
+          snap(`  检查 ${a}-${b}(${e.w}): ${newD} ≥ ${curStr} → 不更新`, {
+            exploring: [key],
+          });
+        }
+      }
+    }
+
+    if (!updated) {
+      snap(`✔ 第 ${round} 轮没有任何更新 → 提前结束`, {});
+      break;
+    }
+
+    snap(`第 ${round} 轮结束`, {});
+  }
+
+  /* 最终路径 */
+  const pathEdges = new Set();
+  for (const n of NODES) {
+    if (prev[n.id] !== null) pathEdges.add(eKey(n.id, prev[n.id]));
+  }
+  const pathNodes = new Set(Object.keys(prev).filter(k => prev[k] !== null || k === SRC));
+  const ns = {};
+  for (const id of pathNodes) ns[id] = 'path';
+
+  snap(`✔ Bellman-Ford 完成：dist = ${NODES.map(n => `${n.id}:${dist[n.id]}`).join(', ')}`, {
+    pathEdges,
+    nodeState: ns,
+  });
+
+  return steps;
+}
+
+/* =========================================================
+   8. 步骤生成：SPFA
+   ========================================================= */
+function buildSPFASteps() {
+  const steps = [];
+  const dist = {};
+  const prev = {};
+  for (const n of NODES) { dist[n.id] = Infinity; prev[n.id] = null; }
+  dist[SRC] = 0;
+
+  const inQueue = new Set([SRC]);
+  const queue = [SRC];
+
+  function snap(msg, opts) {
+    const o = opts || {};
+    steps.push({
+      msg,
+      dist: { ...dist },
+      done: new Set(),
+      current: o.current || null,
+      exploring: o.exploring || [],
+      relaxed: o.relaxed || null,
+      pathEdges: o.pathEdges || null,
+      nodeState: { ...(o.nodeState || {}) },
+      queueItems: queue.map(id => `${id}(${dist[id] === Infinity ? '∞' : dist[id]})`),
+      queueFrontHighlight: true,
+    });
+  }
+
+  snap('SPFA 开始：dist[A] = 0，A 入队', {});
+
+  while (queue.length > 0) {
+    const u = queue.shift();
+    inQueue.delete(u);
+
+    snap(`出队 ${u}（dist = ${dist[u]}），准备松弛它的所有邻居`, {
+      current: u,
+    });
+
+    for (const { v, w } of ADJ[u]) {
+      const key = eKey(u, v);
+      const newD = dist[u] + w;
+      const curD = dist[v];
+
+      if (newD < curD) {
+        dist[v] = newD;
+        prev[v] = u;
+        let queued = false;
+        if (!inQueue.has(v)) {
+          queue.push(v);
+          inQueue.add(v);
+          queued = true;
+        }
+        snap(
+          `  松弛 ${u}-${v}(${w}): dist[${v}] = ${newD}` +
+          (queued ? `，${v} 入队` : `（${v} 已在队列中）`),
+          { exploring: [key], relaxed: key, current: u }
+        );
+      } else {
+        const curStr = curD === Infinity ? '∞' : curD;
+        snap(`  检查 ${u}-${v}(${w}): ${newD} ≥ ${curStr} → 不更新`, {
+          exploring: [key],
+          current: u,
+        });
+      }
+    }
+  }
+
+  /* 最终路径 */
+  const pathEdges = new Set();
+  for (const n of NODES) {
+    if (prev[n.id] !== null) pathEdges.add(eKey(n.id, prev[n.id]));
+  }
+  const pathNodes = new Set(Object.keys(prev).filter(k => prev[k] !== null || k === SRC));
+  const ns = {};
+  for (const id of pathNodes) ns[id] = 'path';
+
+  snap(`✔ SPFA 完成：dist = ${NODES.map(n => `${n.id}:${dist[n.id]}`).join(', ')}`, {
+    pathEdges,
+    nodeState: ns,
+  });
+
+  return steps;
+}
+
+/* =========================================================
+   9. 应用步骤
+   ========================================================= */
+function applyStep(step, algo) {
+  /* 计算当前节点状态 */
+  nodeHl = {};
+  edgeHl = {};
+
+  /* 源点始终红框 */
+  nodeHl[SRC] = 'source';
+
+  if (step.nodeState) {
+    for (const id in step.nodeState) {
+      nodeHl[id] = step.nodeState[id];
+    }
+  }
+
+  if (step.done) {
+    for (const id of step.done) {
+      if (!nodeHl[id]) nodeHl[id] = 'done';
+    }
+  }
+
+  if (algo === 'spfa') {
+    /* SPFA 显示在队列中的点 */
+    if (step.queueItems) {
+      for (const item of step.queueItems) {
+        const id = item.split('(')[0];
+        if (!nodeHl[id] || nodeHl[id] === 'source') {
+          if (!nodeHl[id] || nodeHl[id] !== 'current') nodeHl[id] = 'in-queue';
+        }
+      }
+    }
+  } else if (algo === 'dijkstra') {
+    if (step.queueItems) {
+      for (const item of step.queueItems) {
+        const id = item.split('(')[0];
+        if (!nodeHl[id] || nodeHl[id] === 'source') {
+          if (!nodeHl[id] || nodeHl[id] !== 'done') nodeHl[id] = 'in-queue';
+        }
+      }
+    }
+  }
+
+  /* current 优先级最高 */
+  if (step.current) nodeHl[step.current] = 'current';
+
+  /* 边状态 */
+  if (step.pathEdges) {
+    for (const k of step.pathEdges) edgeHl[k] = 'path';
+  }
+  if (step.exploring) {
+    for (const k of step.exploring) {
+      if (edgeHl[k] !== 'path') edgeHl[k] = 'exploring';
+    }
+  }
+  if (step.relaxed) {
+    edgeHl[step.relaxed] = 'relaxed';
+  }
+
+  curDist = { ...step.dist };
+  render();
+
+  /* 更新队列 */
+  if (algo === 'bellman') {
+    updateRoundRow(step.roundText || '');
+  } else {
+    updateQueueRow(step.queueItems || [], step.queueFrontHighlight !== false);
+  }
+}
+
+/* =========================================================
+   10. 演示记录
+   ========================================================= */
+const logBody = document.getElementById('logBody');
+const logCount = document.getElementById('logCount');
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+let logLines = [];
+function clearLog() {
+  logLines = [];
+  logBody.innerHTML = '<div class="log-empty">点击「开始演示」后，每一步操作都会记录在这里</div>';
+  logCount.textContent = '0 步';
+}
+function addLog(msg) {
+  logLines.push(msg);
+  logCount.textContent = logLines.length + ' 步';
+  if (logLines.length === 1) logBody.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  div.dataset.idx = logLines.length - 1;
+  div.innerHTML = `<div class="idx">#${logLines.length}</div><div class="msg">${escapeHtml(msg)}</div>`;
+  logBody.appendChild(div);
+}
+function highlightLog(idx) {
+  document.querySelectorAll('.log-line.cur').forEach(el => el.classList.remove('cur'));
+  const el = document.querySelector(`.log-line[data-idx="${idx}"]`);
+  if (el) {
+    el.classList.add('cur');
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* =========================================================
+   11. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   12. 主流程
+   ========================================================= */
+async function runDemo(algo) {
+  edgeHl = {};
+  nodeHl = {};
+  curDist = {};
+  for (const n of NODES) curDist[n.id] = Infinity;
+  render();
+  clearLog();
+  logLines = [];
+
+  let steps;
+  let algoName;
+  if (algo === 'dijkstra') { steps = buildDijkstraSteps(); algoName = 'Dijkstra'; }
+  else if (algo === 'bellman') { steps = buildBellmanSteps(); algoName = 'Bellman-Ford'; }
+  else { steps = buildSPFASteps(); algoName = 'SPFA'; }
+
+  setStatus(`准备 ${algoName} 演示，共 ${steps.length} 步`);
+  await tick(500);
+
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i];
+    applyStep(s, algo);
+    setStatus(`[${i+1}/${steps.length}] ${s.msg}`);
+    addLog(s.msg);
+    highlightLog(i);
+    await tick(900);
+  }
+
+  setStatus(`✔ ${algoName} 演示结束`);
+  await tick(700);
+}
+
+/* =========================================================
+   13. 演示 UI 控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const algoSel      = document.getElementById('algoSel');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+function currentAlgo() { return algoSel.value; }
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+    algoSel.disabled = false;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+    algoSel.disabled = true;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+    algoSel.disabled = true;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+    algoSel.disabled = true;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await runDemo(currentAlgo());
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+algoSel.addEventListener('change', () => {
+  if (demoRunning) return;
+  edgeHl = {};
+  nodeHl = {};
+  curDist = {};
+  for (const n of NODES) curDist[n.id] = Infinity;
+  render();
+  clearLog();
+  const name = algoSel.options[algoSel.selectedIndex].text.split(' ')[0];
+  setStatus(`已切换到 ${name}，点击「开始演示」`);
+  updateQueueRow([], false);
+});
+
+/* =========================================================
+   14. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: '最短路问题', key: true, lines: [
+    '给定带权图和源点 s，求 s 到每个点的最短距离',
+    '路径长度 = 路径上所有边权之和',
+    '若有负环 → 最短路无定义（可绕负环无穷小）',
+    '实际应用：地图导航、网络路由、任务调度',
+  ]},
+  { icon: '⚡', title: 'Dijkstra：贪心取最小', key: true, lines: [
+    '每次从优先队列取出 <b>dist 最小</b>的未确定节点 u',
+    'u 一旦取出，<code>dist[u]</code> 就是最终答案',
+    '然后用 u 松弛它的所有邻居',
+    '复杂度 <code>O((V+E) log V)</code>',
+    '<b>要求：所有边权 &gt;= 0</b>',
+  ]},
+  { icon: '🔄', title: 'Bellman-Ford：全局扫描', key: true, lines: [
+    '每轮遍历<b>所有边</b>，全部尝试松弛一次',
+    '重复 <code>V−1</code> 轮，最短路"边数"每轮最多 +1',
+    '若某轮完全没有更新 → <b>提前结束</b>',
+    '复杂度 <code>O(VE)</code>',
+    '<b>支持负权边</b>，可检测负环',
+  ]},
+  { icon: '📬', title: 'SPFA：队列优化', key: true, lines: [
+    '用一个 <b>FIFO 队列</b>存"刚被更新过的点"',
+    '每次取出队首 u，松弛它的邻居',
+    '若邻居 v 被更新 且 v 不在队列中 → v 入队',
+    '队列空 → 结束',
+    '平均 <code>O(kE)</code>，最坏 <code>O(VE)</code>',
+  ]},
+  { icon: '🚫', title: '为什么 Dijkstra 不能有负权边', key: true, lines: [
+    'Dijkstra 的核心假设：<b>取出即确定</b>',
+    '若存在负权边，一个已确定的节点可能被更短路径刷新',
+    '例：A-B=1，A-C=2，B-C=-5',
+    '确定 B(dist=1) 后经 B 到 C 得 -4 < 2',
+    '→ C 的 dist 被刷新，但 C 早就"确定"了',
+  ]},
+  { icon: '⚖️', title: '三种算法对比', key: true, lines: [
+    '<b>Dijkstra</b>：<code>O((V+E) log V)</code>，非负权，稀疏图最佳',
+    '<b>Bellman-Ford</b>：<code>O(VE)</code>，可负权，能测负环',
+    '<b>SPFA</b>：平均 <code>O(kE)</code>，最坏 <code>O(VE)</code>',
+    '<b>选择</b>：非负权用 Dijkstra；有负权用 SPFA/BF',
+  ]},
+  { icon: '🧩', title: '典型应用', key: false, lines: [
+    '<b>地图导航</b>：最短路径规划',
+    '<b>网络路由</b>：OSPF 用 Dijkstra，RIP 用 Bellman-Ford',
+    '<b>游戏 AI</b>：网格寻路 / A* 启发式',
+    '<b>社交网络</b>：六度分隔 / 最短关系链',
+    '<b>货币套利</b>：Bellman-Ford 检测负环',
+    '<b>差分约束</b>：转化为最短路 / 最长路',
+  ]},
+  { icon: '🎓', title: '进阶话题', key: false, lines: [
+    '<b>A*</b>：Dijkstra + 启发式估价函数，适合单点到单点',
+    '<b>Johnson</b>：全源最短路，稀疏图 <code>O(VE + V²log V)</code>',
+    '<b>Floyd</b>：全源最短路，<code>O(V³)</code>，代码最短',
+    '<b>0-1 BFS</b>：边权只有 0/1 时用双端队列 <code>O(V+E)</code>',
+    '<b>K 短路</b>：A* 或可持久化左偏树',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    let cls = 'k-card';
+    if (card.key) cls += ' key-point';
+    if (card.title === '三种算法对比') cls = 'k-card compare-point';
+    el.className = cls;
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   15. 初始化
+   ========================================================= */
+renderKnowledge();
+if (window.hljs) hljs.highlightAll();
+
+edgeHl = {};
+nodeHl = {};
+curDist = {};
+for (const n of NODES) curDist[n.id] = Infinity;
+render();
+clearLog();
+updateQueueRow([], false);
+updateDemoUI();
+</script>
+</body>
+</html>

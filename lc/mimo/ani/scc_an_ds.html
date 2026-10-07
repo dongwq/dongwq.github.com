@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tarjan 算法 · 强连通分量 动画</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1100px, 100%); }
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead { font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px; }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  /* 图节点 */
+  .tj-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.5;
+    transition: fill .3s, stroke .3s, stroke-width .3s;
+  }
+  .tj-node .node-id {
+    font-size: 20px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .tj-node .dfn-bg { fill: #829ab1; }
+  .tj-node .dfn-txt {
+    font-family: ui-monospace, monospace;
+    font-size: 10px; font-weight: 800; fill: #ffffff;
+    pointer-events: none; user-select: none;
+  }
+  .tj-node.in-stack .node-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3.4; }
+  .tj-node.in-stack .node-id { fill: #5b3db8; }
+  .tj-node.in-stack .dfn-bg { fill: #7c5cd6; }
+  .tj-node.visiting .node-bg { fill: #ffd0b8; stroke: #d9713b; stroke-width: 3.4; }
+  .tj-node.visiting .node-id { fill: #a34d1a; }
+  .tj-node.visiting .dfn-bg { fill: #d9713b; }
+  .tj-node.current .node-bg { fill: #ffd98a; stroke: #e09b00; stroke-width: 4; }
+  .tj-node.current .node-id { fill: #a35e00; }
+  .tj-node.current .dfn-bg { fill: #e09b00; }
+  /* 各 SCC 分组的颜色 */
+  .tj-node.scc-0 .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.6; }
+  .tj-node.scc-0 .node-id { fill: #1c5e28; }
+  .tj-node.scc-0 .dfn-bg { fill: #2f7a34; }
+  .tj-node.scc-1 .node-bg { fill: #ffd0d0; stroke: #d64545; stroke-width: 3.6; }
+  .tj-node.scc-1 .node-id { fill: #b33232; }
+  .tj-node.scc-1 .dfn-bg { fill: #d64545; }
+  .tj-node.scc-2 .node-bg { fill: #c9e0ff; stroke: #2369ad; stroke-width: 3.6; }
+  .tj-node.scc-2 .node-id { fill: #1c5e98; }
+  .tj-node.scc-2 .dfn-bg { fill: #2369ad; }
+  .tj-node.scc-3 .node-bg { fill: #fff5c9; stroke: #b45a12; stroke-width: 3.6; }
+  .tj-node.scc-3 .node-id { fill: #8a5a00; }
+  .tj-node.scc-3 .dfn-bg { fill: #b45a12; }
+  .tj-node.scc-4 .node-bg { fill: #e0d5ff; stroke: #7c5cd6; stroke-width: 3.6; }
+  .tj-node.scc-4 .node-id { fill: #5b3db8; }
+  .tj-node.scc-4 .dfn-bg { fill: #7c5cd6; }
+  .tj-node.scc-5 .node-bg { fill: #ffd0b8; stroke: #d9713b; stroke-width: 3.6; }
+  .tj-node.scc-5 .node-id { fill: #a34d1a; }
+  .tj-node.scc-5 .dfn-bg { fill: #d9713b; }
+
+  /* 图边 */
+  .tj-edge {
+    stroke: #cbd2d9; stroke-width: 2.2;
+    fill: none;
+    transition: stroke .3s, stroke-width .3s;
+  }
+  .tj-edge.tree-edge { stroke: #3b82c4; stroke-width: 3; }
+  .tj-edge.exploring {
+    stroke: #e09b00; stroke-width: 3.8;
+    stroke-dasharray: 8 5;
+    animation: dashflow .9s linear infinite;
+  }
+  .tj-edge.back-edge {
+    stroke: #d64545; stroke-width: 3.2;
+    stroke-dasharray: 6 4;
+  }
+  .tj-edge.in-scc { stroke: #2f7a34; stroke-width: 3.6; }
+  @keyframes dashflow { to { stroke-dashoffset: -14; } }
+
+  .edge-label {
+    font-family: ui-monospace, monospace;
+    font-size: 11px; font-weight: 800;
+    fill: #829ab1;
+    pointer-events: none; user-select: none;
+    paint-order: stroke;
+    stroke: #ffffff; stroke-width: 5;
+    stroke-linejoin: round;
+  }
+  .edge-label.exploring { fill: #b45a12; }
+  .edge-label.back-edge { fill: #d64545; }
+  .edge-label.in-scc { fill: #1c5e28; }
+
+  /* 面板 */
+  .panel {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 10px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.algo { color: #7c5cd6; }
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+
+  /* 状态面板 */
+  .info-panel {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 24px; align-items: center;
+    font-size: 13.5px;
+  }
+  .info-panel .item {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .info-panel .item .title {
+    color: #627d98; font-weight: 600;
+  }
+  .info-panel .item .stat {
+    font-family: ui-monospace, monospace;
+    font-size: 15px; font-weight: 800;
+    background: #eaf9ee; color: #2f7a34;
+    padding: 3px 12px; border-radius: 6px;
+  }
+  .info-panel .item .stat.timer {
+    background: #fffbf2; color: #a35e00;
+  }
+  .info-panel .item .stat.scc-count {
+    background: #f2ecff; color: #5b3db8;
+  }
+
+  .stack-box {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    font-size: 13px;
+  }
+  .stack-box .title {
+    font-weight: 700; color: #5b3db8; margin-right: 8px;
+  }
+  .stack-item {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 4px 14px; border-radius: 6px;
+    background: #f2ecff; color: #5b3db8;
+    font-family: ui-monospace, monospace; font-size: 13.5px;
+    font-weight: 800; border: 1.5px solid #d8c8ff;
+  }
+  .stack-item.top { background: #7c5cd6; color: #fff; border-color: #7c5cd6; }
+  .stack-empty {
+    color: #829ab1; font-style: italic; font-size: 12px;
+  }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* 演示记录 */
+  .log-module {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .log-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .log-module > summary::-webkit-details-marker { display: none; }
+  .log-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .log-module[open] > summary::before { transform: rotate(90deg); }
+  .log-module > summary:hover { background: #f8fafc; }
+  .log-module > summary .count {
+    font-size: 11.5px; font-weight: 600;
+    background: #eef4fa; color: #2369ad;
+    padding: 2px 8px; border-radius: 5px;
+    font-family: ui-monospace, monospace;
+    margin-left: auto;
+  }
+  .log-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1;
+  }
+  .log-body {
+    max-height: 460px; overflow-y: auto;
+    padding: 10px 20px 16px;
+    background: #fbfdff;
+  }
+  .log-line {
+    display: grid; grid-template-columns: 56px 1fr;
+    gap: 12px; padding: 6px 0;
+    border-bottom: 1px dashed #eef2f7;
+    font-size: 12.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    transition: background .15s;
+  }
+  .log-line:hover { background: #f0f7ff; }
+  .log-line:last-child { border-bottom: none; }
+  .log-line .idx { color: #829ab1; font-weight: 700; text-align: right; }
+  .log-line .msg { color: #334e68; word-break: break-word; }
+  .log-line.cur {
+    background: #fffbf2;
+    border-left: 3px solid #e09b00;
+    margin-left: -3px; padding-left: 3px;
+  }
+  .log-line.cur .idx { color: #b45a12; }
+  .log-line.cur .msg { color: #8a5a00; font-weight: 600; }
+  .log-empty {
+    font-size: 12.5px; color: #829ab1; font-style: italic;
+    padding: 16px 0; text-align: center;
+  }
+
+  /* 知识模块 */
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-card.compare-point { border-color: #7c5cd6; background: #f9f6ff; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-card.compare-point .k-icon { background: linear-gradient(135deg, #e0d5ff 0%, #c9b8ff 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-card.compare-point .k-title { color: #5b3db8; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-card.compare-point .k-lines li::before { color: #7c5cd6; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  /* 代码模块 */
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 640px; overflow: auto;
+  }
+  .code-body pre { margin: 0; }
+  .code-body code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.7;
+    background: transparent;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Tarjan 算法 · 强连通分量（SCC）动画</h1>
+  <p class="subtitle">
+    一次 DFS · <code>dfn[u]</code> 时间戳 · <code>low[u]</code> 能回溯到的最早时间 · 栈维护候选节点 · 单次 <b>O(V+E)</b>
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · dfn / low / 栈，一个 DFS 求出所有 SCC</h2>
+    <p class="intro-lead">
+      Tarjan 算法只做一次 DFS，用三个数据结构识别所有强连通分量：
+      <code>dfn[u]</code> 记录 u 第一次被访问的时间戳；<code>low[u]</code> 记录 u 及其子树能回溯到的<b>最早 dfn</b>；
+      <code>stack</code> 保存"当前还没归属任何 SCC"的节点。
+      对 u 的每条出边 <code>u→v</code>：若 v 未访问，递归后 <code>low[u] = min(low[u], low[v])</code>；
+      若 v 已访问<b>且在栈中</b>，则 <code>low[u] = min(low[u], dfn[v])</code>。
+      当 <code>dfn[u] == low[u]</code> 时，说明 u 是某个 SCC 的"根"，把栈中 u 及其以上的节点全部弹出，它们构成一个 SCC。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">核心 1</div>
+        <div class="title">dfn 与 low</div>
+        <div class="desc">
+          <code>dfn[u]</code>：u 第一次被访问的<b>时间戳</b><br>
+          <code>low[u]</code>：u 及其子树能通过<b>至多一条回边</b>到达的最早 dfn<br>
+          两者相等时，u 是 SCC 的根
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 2</div>
+        <div class="title">栈的作用</div>
+        <div class="desc">
+          按访问顺序入栈。<br>
+          只有"还在栈中"的节点才能作为 low 更新的候选（否则跨 SCC）。<br>
+          当 u 是根时，从栈顶弹出到 u，这些点构成一个 SCC。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 3</div>
+        <div class="title">三种边</div>
+        <div class="desc">
+          <b>树边</b>：u→v 且 v 未访问，递归<br>
+          <b>回边</b>：u→v 且 v 在栈中（同一 SCC 内）<br>
+          <b>横叉边</b>：u→v 且 v 已访问但不在栈中（跨 SCC）<br>
+          只有前两种会影响 low
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">为什么</div>
+        <div class="title">dfn[u] == low[u] 就是根</div>
+        <div class="desc">
+          如果 u 的子树能回到比 u 更早访问的节点，<br>
+          那 u 一定和那些节点在同一 SCC 里，u 不是根。<br>
+          反之，若 low[u] == dfn[u]，说明"回不去"更早的点 → u 是 SCC 的入口。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">复杂度</div>
+        <div class="title">O(V + E)</div>
+        <div class="desc">
+          每个点入栈出栈各一次，每条边检查一次。<br>
+          线性时间，是求 SCC 的最优算法。<br>
+          <b>Kosaraju</b> 需要两次 DFS + 反图，也是 O(V+E) 但常数更大。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">教学图</div>
+        <div class="title">本页面用图</div>
+        <div class="desc">
+          5 个节点，2 个环 + 1 个孤立点：<br>
+          · 1↔2 构成 SCC <code>{1,2}</code><br>
+          · 3↔4 构成 SCC <code>{3,4}</code><br>
+          · 2→3 连接两个 SCC<br>
+          · 4→5，5 单独成 SCC <code>{5}</code>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="info-panel">
+    <div class="item">
+      <span class="title">时间戳 timer</span>
+      <span class="stat timer" id="timerInfo">0</span>
+    </div>
+    <div class="item">
+      <span class="title">已发现 SCC</span>
+      <span class="stat scc-count" id="sccCount">0 / 3</span>
+    </div>
+    <div class="item">
+      <span class="title">找到的 SCC</span>
+      <span id="sccList" style="font-family:ui-monospace; color:#5b3db8; font-weight:800;">—</span>
+    </div>
+  </div>
+
+  <div class="stack-box">
+    <span class="title">栈 stack（栈顶在右）</span>
+    <div id="stackItems" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <span class="stack-empty">（空）</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label algo">颜色说明</span>
+      <span class="row-hint">
+        <b>蓝色边</b>=DFS 树边 · <b>橙色虚线</b>=当前探索 · <b>红色虚线</b>=回边 · <b>绿色边</b>=属于同一 SCC · <b>紫色节点</b>=在栈中 · <b>金色节点</b>=当前 · <b>各种底色</b>=已确定的 SCC 分组
+      </span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 点击「开始演示」观看 Tarjan 算法找出所有强连通分量</div>
+
+  <details class="log-module" id="logModule" open>
+    <summary>
+      📋 演示记录
+      <span class="hint">（点击展开 / 折叠，可全量查看每步）</span>
+      <span class="count" id="logCount">0 步</span>
+    </summary>
+    <div class="log-body" id="logBody">
+      <div class="log-empty">点击「开始演示」后，每一步操作都会记录在这里</div>
+    </div>
+  </details>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · Tarjan 的六大场景 <span class="hint">同一套 dfn/low 框架，不同判据</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · Tarjan 三大经典应用
+      <span class="badge">SCC + 割点 + 割边</span>
+    </summary>
+    <div class="code-body">
+<pre><code class="language-python">"""
+Tarjan 算法 · 三大经典应用。
+
+同一套 dfn / low 框架，通过不同的判断条件解决不同问题：
+
+    SCC（有向图）     dfn[u] == low[u]  → u 是 SCC 的根
+    割点（无向图）    u 是根: 有 ≥ 2 个 DFS 孩子
+                       u 非根: 存在孩子 v 使 low[v] >= dfn[u]
+    割边（无向图）    存在孩子 v 使 low[v] > dfn[u]  → 边 u-v 是桥
+
+核心变量：
+    dfn[u]   时间戳，u 第一次被访问的时间
+    low[u]   u 及其子树能回溯到的最早 dfn
+    timer    全局时间戳计数器
+"""
+
+import sys
+sys.setrecursionlimit(300000)
+
+
+# ============================================================
+# 应用 1：有向图强连通分量（SCC）
+# ============================================================
+def tarjan_scc(n, adj):
+    """
+    求有向图的所有强连通分量。
+
+    返回 scc_id[v] = v 所属的 SCC 编号（0-based），scc_count。
+    """
+    dfn = [-1] * n
+    low = [0] * n
+    scc_id = [-1] * n
+    in_stack = [False] * n
+    stack = []
+    timer = [0]
+    scc_count = [0]
+
+    def dfs(u):
+        dfn[u] = low[u] = timer[0]
+        timer[0] += 1
+        stack.append(u)
+        in_stack[u] = True
+
+        for v in adj[u]:
+            if dfn[v] == -1:                      # 树边
+                dfs(v)
+                low[u] = min(low[u], low[v])
+            elif in_stack[v]:                     # 回边（同 SCC 内）
+                low[u] = min(low[u], dfn[v])
+            # 否则是横叉边（跨 SCC），忽略
+
+        # u 是某个 SCC 的根
+        if dfn[u] == low[u]:
+            while True:
+                x = stack.pop()
+                in_stack[x] = False
+                scc_id[x] = scc_count[0]
+                if x == u:
+                    break
+            scc_count[0] += 1
+
+    for u in range(n):
+        if dfn[u] == -1:
+            dfs(u)
+
+    return scc_id, scc_count[0]
+
+
+# ============================================================
+# 应用 2：无向图割点（Articulation Point）
+# ============================================================
+def tarjan_cut_vertex(n, adj):
+    """
+    求无向图的所有割点。返回 cut[v] = True/False。
+
+    割点定义：去掉该点后，图的连通分量数增加。
+    """
+    dfn = [-1] * n
+    low = [0] * n
+    cut = [False] * n
+    timer = [0]
+
+    def dfs(u, parent):
+        dfn[u] = low[u] = timer[0]
+        timer[0] += 1
+        children = 0
+
+        for v in adj[u]:
+            if v == parent:
+                continue                          # 跳过父节点（简单图）
+            if dfn[v] == -1:
+                children += 1
+                dfs(v, u)
+                low[u] = min(low[u], low[v])
+
+                # 非根节点：孩子无法回溯到 u 之上
+                if parent != -1 and low[v] >= dfn[u]:
+                    cut[u] = True
+            else:                                 # 回边
+                low[u] = min(low[u], dfn[v])
+
+        # 根节点特判：至少 2 个孩子才是割点
+        if parent == -1 and children >= 2:
+            cut[u] = True
+
+    for u in range(n):
+        if dfn[u] == -1:
+            dfs(u, -1)
+    return cut
+
+
+# ============================================================
+# 应用 3：无向图割边 / 桥（Bridge）
+# ============================================================
+def tarjan_bridge(n, edges):
+    """
+    求无向图的所有割边（桥）。返回 list of (u, v)。
+
+    割边定义：去掉该边后，图的连通分量数增加。
+    """
+    adj = [[] for _ in range(n)]
+    for i, (u, v) in enumerate(edges):
+        adj[u].append((v, i))
+        adj[v].append((u, i))
+
+    dfn = [-1] * n
+    low = [0] * n
+    timer = [0]
+    bridges = []
+
+    def dfs(u, parent_edge):
+        dfn[u] = low[u] = timer[0]
+        timer[0] += 1
+
+        for v, eid in adj[u]:
+            if eid == parent_edge:
+                continue                          # 不走同一条边回去
+            if dfn[v] == -1:
+                dfs(v, eid)
+                low[u] = min(low[u], low[v])
+                if low[v] > dfn[u]:               # v 无法回溯到 u 或更早
+                    bridges.append((u, v))
+            else:
+                low[u] = min(low[u], dfn[v])
+
+    for u in range(n):
+        if dfn[u] == -1:
+            dfs(u, -1)
+    return bridges
+
+
+# ============================================================
+# 演示
+# ============================================================
+if __name__ == '__main__':
+    # -------- SCC 演示 --------
+    # 1 → 2 → 1 (SCC1)
+    #      ↓
+    # 3 → 4 → 3 (SCC2)
+    #      ↓
+    #      5    (SCC3)
+    n_scc = 5
+    adj_scc = [
+        [1],       # 0(1) → 1(2)
+        [0, 2],    # 1(2) → 0(1), 2(3)
+        [3],       # 2(3) → 3(4)
+        [2, 4],    # 3(4) → 2(3), 4(5)
+        [],        # 4(5) 无出边
+    ]
+    scc_id, cnt = tarjan_scc(n_scc, adj_scc)
+    print('=== Tarjan SCC ===')
+    print('SCC 数量 =', cnt)
+    for i in range(cnt):
+        members = [v + 1 for v in range(n_scc) if scc_id[v] == i]
+        print(f'  SCC{i}: {members}')
+
+    # -------- 割点演示 --------
+    n_cut = 6
+    edges_cut = [(0, 1), (1, 2), (2, 3), (3, 4), (1, 5)]
+    adj_cut = [[] for _ in range(n_cut)]
+    for u, v in edges_cut:
+        adj_cut[u].append(v)
+        adj_cut[v].append(u)
+    cut = tarjan_cut_vertex(n_cut, adj_cut)
+    print()
+    print('=== Tarjan 割点 ===')
+    print('割点 =', [i + 1 for i in range(n_cut) if cut[i]])
+
+    # -------- 割边演示 --------
+    n_br = 6
+    edges_br = [(0, 1), (1, 2), (2, 3), (3, 4), (1, 5)]
+    bridges = tarjan_bridge(n_br, edges_br)
+    print()
+    print('=== Tarjan 割边 ===')
+    print('桥 =', [(u + 1, v + 1) for u, v in bridges])
+</code></pre>
+    </div>
+  </details>
+</div>
+
+<script>
+/* =========================================================
+   1. 图结构（5 节点 SCC 教学图）
+   ========================================================= */
+const NODES = [
+  { id: 1, x: 220, y: 120 },
+  { id: 2, x: 450, y: 120 },
+  { id: 3, x: 220, y: 300 },
+  { id: 4, x: 450, y: 300 },
+  { id: 5, x: 680, y: 300 },
+];
+const NODE_POS = {};
+for (const n of NODES) NODE_POS[n.id] = { x: n.x, y: n.y };
+
+/* 有向边 */
+const EDGES = [
+  { from: 1, to: 2, arc: false },
+  { from: 2, to: 1, arc: true, arcDir: -1 },   // 上方弧线
+  { from: 2, to: 3, arc: false },
+  { from: 3, to: 4, arc: false },
+  { from: 4, to: 3, arc: true, arcDir: 1 },     // 下方弧线
+  { from: 4, to: 5, arc: false },
+];
+const NODE_R = 30;
+
+const ADJ = {};
+for (const n of NODES) ADJ[n.id] = [];
+for (const e of EDGES) ADJ[e.from].push(e.to);
+
+function eKey(u, v) { return `${u}>${v}`; }
+
+/* =========================================================
+   2. 渲染状态
+   ========================================================= */
+let dfn = {};
+let low = {};
+let inStack = {};
+let sccId = {};
+let stack = [];
+let timer = 0;
+let sccCount = 0;
+let sccList = [];
+
+let nodeHl = {};        /* id -> '' | 'visiting' | 'current' | 'in-stack' | 'scc-N' */
+let edgeHl = {};        /* key -> '' | 'tree-edge' | 'exploring' | 'back-edge' | 'in-scc' */
+
+/* =========================================================
+   3. SVG 图层
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const defs = document.createElementNS(NS, 'defs');
+svg.appendChild(defs);
+
+function makeMarker(id, color) {
+  const m = document.createElementNS(NS, 'marker');
+  m.setAttribute('id', id);
+  m.setAttribute('viewBox', '0 0 10 10');
+  m.setAttribute('refX', '9'); m.setAttribute('refY', '5');
+  m.setAttribute('markerWidth', '7'); m.setAttribute('markerHeight', '7');
+  m.setAttribute('orient', 'auto');
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', 'M0,0 L10,5 L0,10 z');
+  p.setAttribute('fill', color);
+  m.appendChild(p);
+  defs.appendChild(m);
+}
+makeMarker('arrow-gray',  '#cbd2d9');
+makeMarker('arrow-blue',  '#3b82c4');
+makeMarker('arrow-gold',  '#e09b00');
+makeMarker('arrow-red',   '#d64545');
+makeMarker('arrow-green', '#2f7a34');
+
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+/* =========================================================
+   4. 计算边的两个端点
+   ========================================================= */
+function edgeEnds(e) {
+  const a = NODE_POS[e.from];
+  const b = NODE_POS[e.to];
+
+  if (!e.arc) {
+    /* 直线 */
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    return {
+      x1: a.x + dx / len * NODE_R,
+      y1: a.y + dy / len * NODE_R,
+      x2: b.x - dx / len * NODE_R,
+      y2: b.y - dy / len * NODE_R,
+    };
+  } else {
+    /* 弧线：用偏移量的方式 */
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const offset = 50 * e.arcDir;
+    const ox = -dy / len * offset;
+    const oy = dx / len * offset;
+
+    return {
+      x1: a.x + dx / len * NODE_R,
+      y1: a.y + dy / len * NODE_R,
+      x2: b.x - dx / len * NODE_R,
+      y2: b.y - dy / len * NODE_R,
+      arc: true,
+      ox, oy,
+      midX: (a.x + b.x) / 2 + ox,
+      midY: (a.y + b.y) / 2 + oy,
+    };
+  }
+}
+
+/* =========================================================
+   5. 渲染
+   ========================================================= */
+function render() {
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+
+  /* 边 */
+  for (const e of EDGES) {
+    const pts = edgeEnds(e);
+    const key = eKey(e.from, e.to);
+    const st = edgeHl[key] || '';
+
+    let cls = 'tj-edge';
+    let marker = 'url(#arrow-gray)';
+
+    if (st === 'tree-edge') { cls = 'tj-edge tree-edge'; marker = 'url(#arrow-blue)'; }
+    if (st === 'exploring') { cls = 'tj-edge exploring'; marker = 'url(#arrow-gold)'; }
+    if (st === 'back-edge') { cls = 'tj-edge back-edge'; marker = 'url(#arrow-red)'; }
+    if (st === 'in-scc')    { cls = 'tj-edge in-scc'; marker = 'url(#arrow-green)'; }
+
+    let path;
+    if (pts.arc) {
+      path = document.createElementNS(NS, 'path');
+      path.setAttribute('d', `M ${pts.x1} ${pts.y1} Q ${pts.midX} ${pts.midY} ${pts.x2} ${pts.y2}`);
+    } else {
+      path = document.createElementNS(NS, 'line');
+      path.setAttribute('x1', pts.x1);
+      path.setAttribute('y1', pts.y1);
+      path.setAttribute('x2', pts.x2);
+      path.setAttribute('y2', pts.y2);
+    }
+    path.setAttribute('class', cls);
+    path.setAttribute('marker-end', marker);
+    edgeLayer.appendChild(path);
+  }
+
+  /* 节点 */
+  for (const n of NODES) {
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'tj-node';
+    const st = nodeHl[n.id] || '';
+    if (st) cls += ' ' + st;
+    g.setAttribute('class', cls);
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', n.x); c.setAttribute('cy', n.y);
+    c.setAttribute('r', NODE_R);
+    c.setAttribute('class', 'node-bg');
+    g.appendChild(c);
+
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('class', 'node-id');
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('dominant-baseline', 'central');
+    t.setAttribute('x', n.x); t.setAttribute('y', n.y);
+    t.textContent = n.id;
+    g.appendChild(t);
+
+    /* dfn/low 小标签 */
+    if (dfn[n.id] !== undefined && dfn[n.id] !== -1) {
+      const lbBg = document.createElementNS(NS, 'rect');
+      lbBg.setAttribute('class', 'dfn-bg');
+      lbBg.setAttribute('x', n.x - 36);
+      lbBg.setAttribute('y', n.y + NODE_R + 6);
+      lbBg.setAttribute('width', 72);
+      lbBg.setAttribute('height', 15);
+      lbBg.setAttribute('rx', 4);
+      g.appendChild(lbBg);
+
+      const lbT = document.createElementNS(NS, 'text');
+      lbT.setAttribute('class', 'dfn-txt');
+      lbT.setAttribute('text-anchor', 'middle');
+      lbT.setAttribute('dominant-baseline', 'central');
+      lbT.setAttribute('x', n.x);
+      lbT.setAttribute('y', n.y + NODE_R + 14);
+      lbT.textContent = `d=${dfn[n.id]},l=${low[n.id]}`;
+      g.appendChild(lbT);
+    }
+
+    nodeLayer.appendChild(g);
+  }
+
+  updateInfoPanel();
+}
+
+/* =========================================================
+   6. 状态面板
+   ========================================================= */
+function updateInfoPanel() {
+  document.getElementById('timerInfo').textContent = timer;
+  document.getElementById('sccCount').textContent = `${sccCount} / 3`;
+
+  const el = document.getElementById('sccList');
+  if (sccList.length === 0) {
+    el.textContent = '—';
+  } else {
+    el.innerHTML = sccList.map((s, i) => `<span style="color:#7c5cd6;">{${s.join(',')}}</span>`).join(' ');
+  }
+
+  /* 栈 */
+  const stackEl = document.getElementById('stackItems');
+  if (stack.length === 0) {
+    stackEl.innerHTML = '<span class="stack-empty">（空）</span>';
+  } else {
+    stackEl.innerHTML = stack.map((id, i) =>
+      `<span class="stack-item${i === stack.length - 1 ? ' top' : ''}">${id}</span>`
+    ).join('');
+  }
+}
+
+/* =========================================================
+   7. 步骤生成
+   ========================================================= */
+function buildSteps() {
+  const steps = [];
+  /* 重置 */
+  dfn = {}; low = {}; inStack = {}; sccId = {}; stack = []; timer = 0; sccCount = 0; sccList = [];
+  for (const n of NODES) {
+    dfn[n.id] = -1;
+    low[n.id] = 0;
+    inStack[n.id] = false;
+    sccId[n.id] = -1;
+  }
+
+  function snap(msg, opts) {
+    const o = opts || {};
+    steps.push({
+      msg,
+      dfn: { ...dfn },
+      low: { ...low },
+      inStack: { ...inStack },
+      sccId: { ...sccId },
+      stack: [...stack],
+      timer,
+      sccCount,
+      sccList: sccList.map(s => [...s]),
+      nodeHl: { ...(o.nodeHl || {}) },
+      edgeHl: { ...(o.edgeHl || {}) },
+    });
+  }
+
+  /* 辅助：根据当前状态生成节点/边的默认高亮 */
+  function makeBaseNodeHl() {
+    const h = {};
+    for (const n of NODES) {
+      if (sccId[n.id] !== -1) h[n.id] = 'scc-' + sccId[n.id];
+      else if (inStack[n.id]) h[n.id] = 'in-stack';
+      else if (dfn[n.id] !== -1) h[n.id] = 'visiting';
+    }
+    return h;
+  }
+  function makeBaseEdgeHl() {
+    const h = {};
+    for (const e of EDGES) {
+      const key = eKey(e.from, e.to);
+      if (sccId[e.from] !== -1 && sccId[e.from] === sccId[e.to]) {
+        h[key] = 'in-scc';
+      }
+    }
+    return h;
+  }
+
+  snap('Tarjan 开始：dfn/low 都未赋值，栈为空，从节点 1 开始 DFS', {});
+
+  function dfs(u) {
+    /* 1. 初始化 u */
+    dfn[u] = low[u] = timer;
+    timer += 1;
+    stack.push(u);
+    inStack[u] = true;
+
+    let baseNodeHl = makeBaseNodeHl();
+    baseNodeHl[u] = 'current';
+    snap(
+      `DFS(${u}): dfn[${u}] = low[${u}] = ${dfn[u]}，${u} 入栈`,
+      { nodeHl: baseNodeHl }
+    );
+
+    /* 2. 遍历所有出边 */
+    for (const v of ADJ[u]) {
+      const key = eKey(u, v);
+
+      if (dfn[v] === -1) {
+        /* 树边 */
+        let nh = makeBaseNodeHl();
+        nh[u] = 'current';
+        let eh = makeBaseEdgeHl();
+        eh[key] = 'tree-edge';
+        snap(
+          `  发现树边 ${u}→${v}：v 未访问，递归 DFS(${v})`,
+          { nodeHl: nh, edgeHl: eh }
+        );
+
+        dfs(v);
+
+        low[u] = Math.min(low[u], low[v]);
+        nh = makeBaseNodeHl();
+        nh[u] = 'current';
+        eh = makeBaseEdgeHl();
+        eh[key] = 'tree-edge';
+        snap(
+          `  返回 ${u}：更新 low[${u}] = min(${low[u]}, low[${v}]) = ${low[u]}`,
+          { nodeHl: nh, edgeHl: eh }
+        );
+      } else if (inStack[v]) {
+        /* 回边 */
+        low[u] = Math.min(low[u], dfn[v]);
+        let nh = makeBaseNodeHl();
+        nh[u] = 'current';
+        let eh = makeBaseEdgeHl();
+        eh[key] = 'back-edge';
+        snap(
+          `  发现回边 ${u}→${v}（v 在栈中）：low[${u}] = min(${low[u]}, dfn[${v}]) = ${low[u]}`,
+          { nodeHl: nh, edgeHl: eh }
+        );
+      } else {
+        /* 横叉边，不影响 low */
+        let nh = makeBaseNodeHl();
+        nh[u] = 'current';
+        let eh = makeBaseEdgeHl();
+        eh[key] = 'exploring';
+        snap(
+          `  检查边 ${u}→${v}：v 已访问且不在栈中（跨 SCC），跳过`,
+          { nodeHl: nh, edgeHl: eh }
+        );
+      }
+    }
+
+    /* 3. 判断 u 是不是 SCC 的根 */
+    if (dfn[u] === low[u]) {
+      const members = [];
+      while (true) {
+        const x = stack.pop();
+        inStack[x] = false;
+        sccId[x] = sccCount;
+        members.push(x);
+        if (x === u) break;
+      }
+      sccList.push([...members].sort((a, b) => a - b));
+      sccCount += 1;
+
+      let nh = makeBaseNodeHl();
+      let eh = makeBaseEdgeHl();
+      snap(
+        `★ dfn[${u}] == low[${u}] = ${dfn[u]}：${u} 是 SCC 的根！弹出栈中 ${u} 及其以上 → 新 SCC {${members.sort((a,b)=>a-b).join(',')}}`,
+        { nodeHl: nh, edgeHl: eh }
+      );
+    } else {
+      snap(
+        `  返回 DFS(${u})：dfn[${u}] = ${dfn[u]} != low[${u}] = ${low[u]}，${u} 不是根`,
+        { nodeHl: makeBaseNodeHl(), edgeHl: makeBaseEdgeHl() }
+      );
+    }
+  }
+
+  /* 主循环：每个未访问点都要 DFS */
+  for (const n of NODES) {
+    if (dfn[n.id] === -1) {
+      snap(`从节点 ${n.id} 开始新的 DFS`, {
+        nodeHl: { ...makeBaseNodeHl(), [n.id]: 'current' },
+      });
+      dfs(n.id);
+    }
+  }
+
+  snap(`🎉 Tarjan 完成！共找到 ${sccCount} 个强连通分量`, {
+    nodeHl: makeBaseNodeHl(),
+    edgeHl: makeBaseEdgeHl(),
+  });
+
+  return steps;
+}
+
+/* =========================================================
+   8. 应用步骤
+   ========================================================= */
+function applyStep(step) {
+  dfn = { ...step.dfn };
+  low = { ...step.low };
+  inStack = { ...step.inStack };
+  sccId = { ...step.sccId };
+  stack = [...step.stack];
+  timer = step.timer;
+  sccCount = step.sccCount;
+  sccList = step.sccList.map(s => [...s]);
+  nodeHl = { ...step.nodeHl };
+  edgeHl = { ...step.edgeHl };
+  render();
+}
+
+/* =========================================================
+   9. 演示记录
+   ========================================================= */
+const logBody = document.getElementById('logBody');
+const logCount = document.getElementById('logCount');
+const resultEl = document.getElementById('result');
+function setStatus(t) { resultEl.textContent = t; }
+
+let logLines = [];
+function clearLog() {
+  logLines = [];
+  logBody.innerHTML = '<div class="log-empty">点击「开始演示」后，每一步操作都会记录在这里</div>';
+  logCount.textContent = '0 步';
+}
+function addLog(msg) {
+  logLines.push(msg);
+  logCount.textContent = logLines.length + ' 步';
+  if (logLines.length === 1) logBody.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  div.dataset.idx = logLines.length - 1;
+  div.innerHTML = `<div class="idx">#${logLines.length}</div><div class="msg">${escapeHtml(msg)}</div>`;
+  logBody.appendChild(div);
+}
+function highlightLog(idx) {
+  document.querySelectorAll('.log-line.cur').forEach(el => el.classList.remove('cur'));
+  const el = document.querySelector(`.log-line[data-idx="${idx}"]`);
+  if (el) { el.classList.add('cur'); el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* =========================================================
+   10. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   11. 主流程
+   ========================================================= */
+async function runDemo() {
+  /* 重置 */
+  for (const n of NODES) {
+    dfn[n.id] = -1; low[n.id] = 0; inStack[n.id] = false; sccId[n.id] = -1;
+  }
+  stack = []; timer = 0; sccCount = 0; sccList = [];
+  nodeHl = {}; edgeHl = {};
+  render();
+  clearLog();
+  logLines = [];
+
+  const steps = buildSteps();
+
+  setStatus(`准备 Tarjan SCC 演示，共 ${steps.length} 步`);
+  await tick(500);
+
+  for (let i = 0; i < steps.length; i++) {
+    applyStep(steps[i]);
+    setStatus(`[${i+1}/${steps.length}] ${steps[i].msg}`);
+    addLog(steps[i].msg);
+    highlightLog(i);
+    await tick(900);
+  }
+
+  setStatus(`✔ Tarjan SCC 演示结束：共找到 ${sccCount} 个强连通分量`);
+  await tick(700);
+}
+
+/* =========================================================
+   12. 演示 UI 控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  updateDemoUI();
+  if (mode === 'step') setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  try {
+    await runDemo();
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+  demoRunning = false;
+  demoAborted = false; demoPaused = false; demoStepMode = false;
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) { demoStepMode = false; demoPaused = false; releaseStep(); }
+  else if (demoPaused) { demoPaused = false; }
+  else { demoPaused = true; }
+  updateDemoUI();
+});
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) { startDemo('step'); setTimeout(() => releaseStep(), 30); return; }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false; releaseStep(); updateDemoUI();
+});
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto' ? '已选择「自动播放」' : '已选择「逐步演示」');
+    }
+  });
+});
+
+/* =========================================================
+   13. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: 'Tarjan 算法的统一框架', key: true, lines: [
+    '只做一次 DFS，用 <code>dfn</code> 记录访问时间，用 <code>low</code> 记录能回溯到的最早时间',
+    '<code>low[u]</code> 的更新规则：<br> · 树边 u→v：<code>low[u] = min(low[u], low[v])</code><br> · 回边 u→v：<code>low[u] = min(low[u], dfn[v])</code>',
+    '几乎所有 Tarjan 相关算法都只是**改一下判断条件**',
+    '因为每个点只访问一次、每条边只检查一次，所以都是 <b>O(V+E)</b>',
+  ]},
+  { icon: '🔄', title: '场景 1：有向图 SCC（本页演示）', key: true, lines: [
+    '数据：有向图 + dfn/low + <b>栈</b>',
+    '<b>判据</b>：<code>dfn[u] == low[u]</code>',
+    '动作：弹出栈中 u 及以上所有节点 → 它们构成一个 SCC',
+    '应用：缩点（将每个 SCC 缩成一个点，得到 DAG）',
+    '典型题：受欢迎的牛、最大半连通子图、2-SAT',
+  ]},
+  { icon: '✂️', title: '场景 2：无向图割点', key: true, lines: [
+    '数据：无向图 + dfn/low',
+    '<b>判据</b>：<br> · 根节点：有 ≥ 2 个 DFS 孩子<br> · 非根：存在孩子 v 使 <code>low[v] >= dfn[u]</code>',
+    '直觉：如果 u 的某个孩子 v "回不去" u 之上的节点，则去掉 u 后 v 就孤立了',
+    '复杂度 <code>O(V+E)</code>',
+    '典型题：矿场搭建、嗅探器',
+  ]},
+  { icon: '🌉', title: '场景 3：无向图割边（桥）', key: true, lines: [
+    '数据：无向图 + dfn/low',
+    '<b>判据</b>：存在孩子 v 使 <code>low[v] > dfn[u]</code> → 边 u-v 是桥',
+    '与割点的区别：割点是 <code>>=</code>，桥是 <code>></code>',
+    '直觉：如果连 u 本身都回不去，那这条边是唯一的通路',
+    '应用：网络可靠性分析、边双连通分量（e-BCC）',
+    '典型题：冗余路径、圆桌骑士',
+  ]},
+  { icon: '🧩', title: '场景 4：点双连通分量（v-BCC）', key: true, lines: [
+    '数据：无向图 + dfn/low + <b>栈</b>（存边而不是点）',
+    '<b>判据</b>：当 <code>low[v] >= dfn[u]</code> 时，栈中 u-v 之上的边构成一个 v-BCC',
+    '每个割点会出现在多个 v-BCC 中，非割点只属于一个',
+    'v-BCC 内部任意两点有两条点不相交的路径',
+    '典型题：铁人两项、逃不掉的路',
+  ]},
+  { icon: '🤝', title: '场景 5：离线 LCA（Tarjan 版本）', key: true, lines: [
+    '数据：<b>并查集</b> + DFS',
+    '完全不同的思路：DFS 回溯时把已完成的子树并到父节点，用并查集找"代表元"',
+    '属于"离线算法"：需要预先知道所有查询',
+    '对比：树上倍增 LCA 是"在线"的，单次 <code>O(log N)</code>',
+    '本算法 <code>O(N + Q·α)</code>，α 是反阿克曼函数，实际近似 O(N+Q)',
+  ]},
+  { icon: '⚡', title: '场景 6：2-SAT', key: true, lines: [
+    '问题：n 个布尔变量，若干形如 <code>(a ∨ b)</code> 的约束，判断是否可满足',
+    '建模：每个变量 x 拆成两个节点 <code>x</code> 和 <code>¬x</code>，<br> 约束 <code>a ∨ b</code> 变成两条边 <code>¬a → b</code> 和 <code>¬b → a</code>',
+    '用 Tarjan 求 SCC：若 <code>x</code> 和 <code>¬x</code> 在同一 SCC → 无解',
+    '否则按 SCC 编号拓扑序分配真假值',
+    '复杂度 <code>O(V+E)</code>，是 2-SAT 的标准解法',
+  ]},
+  { icon: '🎨', title: '不同场景对应不同的图与数据', key: true, lines: [
+    '<b>SCC</b>：有向图 + 节点栈',
+    '<b>割点</b>：无向图，判据用 <code>>=</code>，根节点特判',
+    '<b>割边</b>：无向图，判据用 <code>></code>',
+    '<b>v-BCC</b>：无向图 + 边栈',
+    '<b>离线 LCA</b>：并查集 + DFS，不用 dfn/low',
+    '<b>2-SAT</b>：先建蕴含图，再跑 SCC',
+    '本页面演示 <b>SCC</b>（最经典、最能展示 dfn/low/栈 三件套）',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    let cls = 'k-card';
+    if (card.key) cls += ' key-point';
+    if (card.title === '不同场景对应不同的图与数据') cls = 'k-card compare-point';
+    el.className = cls;
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   14. 初始化
+   ========================================================= */
+renderKnowledge();
+if (window.hljs) hljs.highlightAll();
+
+/* 初始状态 */
+for (const n of NODES) {
+  dfn[n.id] = -1; low[n.id] = 0; inStack[n.id] = false; sccId[n.id] = -1;
+}
+stack = []; timer = 0; sccCount = 0; sccList = [];
+nodeHl = {}; edgeHl = {};
+render();
+clearLog();
+updateDemoUI();
+</script>
+</body>
+</html>

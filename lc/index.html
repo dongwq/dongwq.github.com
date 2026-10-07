@@ -61,15 +61,15 @@
     /* 一级分类网格 —— 清晰的两列，移动端一列 */
     .category-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 2rem 2.5rem;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem 1.5rem;
     }
 
     /* 一级分类卡片 (无边框，仅靠背景区分) */
     .category-card {
       background-color: #f9fbfd;
       border-radius: 20px;
-      padding: 1.6rem 1.8rem 1.8rem 1.8rem;
+      padding: 1.0rem 0.2rem 1.0rem 0.2rem;
       transition: background-color 0.2s ease, transform 0.15s ease;
       border: 1px solid #e9edf2;
     }
@@ -115,7 +115,7 @@
     .subcategory-item {
       display: flex;
       align-items: center;
-      padding: 0.45rem 0.5rem 0.45rem 1rem;
+      padding: 0.15rem 0.5rem 0.15rem 0.5rem;
       background-color: #ffffff;
       border-radius: 12px;
       font-size: 1rem;
@@ -234,7 +234,7 @@
           <li class="subcategory-item"><a href="./0x3f_list.html">灵神(0x3f)题单</a>
             <span class="item-meta">基础</span>
           </li>
-          <li class="subcategory-item"><a href="./luos_book.html">算法竞赛（罗永军）题单</a>
+          <li class="subcategory-item"><a href="./luos_book.html">算法竞赛[罗永军]题单</a>
             <span class="item-meta">进阶</span>
           </li>
 
@@ -248,7 +248,71 @@
 
 
 
-           <h2>算法PPT演示mimo</h2>
+           
+
+        </ul>
+      </div>
+
+      <!-- 后端开发 一级分类 -->
+      <div class="category-card">
+        <div class="category-title">
+          <span>2 项</span>
+          工具
+        </div>
+        <ul class="subcategory-list">
+          <h2>小工具</h2>
+          <li class="subcategory-item"><a href="./tools/graph_lab_v1.9.html">图论画图</a></li>
+          <li class="subcategory-item"><a href="./tools/xy.html">直角坐标</a></li>
+
+          
+
+        </ul>
+      </div>
+
+      <div class="category-card">
+        <div class="category-title">
+          <!-- <span>x 项</span> -->
+          交互动画
+        </div>
+        <ul class="subcategory-list">
+          <h2>算法动画演示</h2>
+          <!-- <li class="subcategory-item"><a href="./algo_animate/01_heap.html">堆</a></li> -->
+          <li class="subcategory-item"><a href="./mimo/ani/heap_ani_ds.html">heap_ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/bit_animi.html">bit_animi</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/trie_ani_ds.html">trie_ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/shortest_path_ani_ds.html">shortest_path_ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/bit_tree_ani_ds.html">bit_tree_ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/treap_ani_ds.html">treap_ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/segment_tree_ani_ds.html">segment_tree_ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/bit_tree_ani_ds_v2.html">bit_tree_ani_ds_v2</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/segment_tree_ani_ds_v2.html">segment_tree_ani_ds_v2</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/segment_tree_ani_mimo.html">segment_tree_ani_mimo</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/uf_ani_ds.html">uf_ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/fhq_ani_ds.html">fhq_ani_ds</a></li>
+
+          <li class="subcategory-item"><a href="./mimo/ani/mst_ani_ds.html">mst_ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/bipartiion_ani_ds.html">bipartiion_ani_ds</a></li>
+
+          <li class="subcategory-item"><a href="./mimo/ani/lca_on_tree_ani_ds.html">lca_on_tree_ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/shortest_path_ani_ds2.html">shortest_path_ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/splay_ani_ds.html">splay_ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/scc_an_ds.html">scc_an_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/q_sqdec_mode_ani_ds.html">q_sqdec_mode_ani_ds</a></li>
+        
+          <li class="subcategory-item"><a href="./mimo/ani/图连通分量知识.ani_ds.html">图连通分量知识.ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/net_flow_ani_ds.html">net_flow_ani_ds</a></li>
+          <li class="subcategory-item"><a href="./mimo/ani/图的十种类型_ani_ds.html">图的十种类型_ani_ds</a></li>
+        </ul>
+      </div>
+
+
+      <div class="category-card">
+        <div class="category-title">
+          <!-- <span>2 项</span> -->
+          演示
+        </div>
+        <ul class="subcategory-list">
+          <h2>算法PPT演示mimo</h2>
             <li class="subcategory-item"><a href="./mimo/tree_mimo.html">tree</a></li>
             <li class="subcategory-item"><a href="./mimo/树状数组图解.html">树状数组图解</a></li>
             <li class="subcategory-item"><a href="./mimo/dfs_bfs_graph_mimo.html">dfs_bfs_graph_mimo</a></li>
@@ -267,45 +331,17 @@
             <li class="subcategory-item"><a href="./mimo/ppts/greedy_mimo.html">greedy_mimo</a></li>
             <li class="subcategory-item"><a href="./mimo/ppts/uf_mimo.html">uf_mimo</a></li>
             <li class="subcategory-item"><a href="./mimo/ppts/dp_01_seq_mimo.html">dp_01_seq_mimo</a></li>
-            <li class="subcategory-item"><a href="./mimo/ppts/treap_and_balance_tree_mimo.html">treap_and_balance_tree_mimo</a></li>
+            <li class="subcategory-item"><a href="./mimo/ppts/treap_and_balance_tree_mimo.html">treap_and_balance_mimo</a></li>
             <li class="subcategory-item"><a href="./mimo/ppts/tree2.html">tree2</a></li>
             <li class="subcategory-item"><a href="./mimo/ppts/ds_fix_stack.html">ds_fix_stack</a></li>
             <li class="subcategory-item"><a href="./mimo/ppts/stack_queue.mimo.html">stack_queue.mimo</a></li>
             <li class="subcategory-item"><a href="./mimo/ppts/dp_02_range_mimo.html">dp_02_range_mimo</a></li>
             <li class="subcategory-item"><a href="./mimo/ppts/treap_2_mimo.html">treap_2_mimo</a></li>
             <li class="subcategory-item"><a href="./mimo/ppts/binary_lifting_mimo.html">binary_lifting_mimo</a></li>
-
         </ul>
       </div>
 
-      <!-- 后端开发 一级分类 -->
-      <div class="category-card">
-        <div class="category-title">
-          <span>2 项</span>
-          工具
-        </div>
-        <ul class="subcategory-list">
-          <h2>小工具</h2>
-          <li class="subcategory-item"><a href="./tools/graph_lab_v1.9.html">图论画图</a></li>
-          <li class="subcategory-item"><a href="./tools/xy.html">直角坐标</a></li>
 
-          <h2>算法动画演示</h2>
-          <li class="subcategory-item"><a href="./algo_animate/01_heap.html">堆</a></li>
-
-          <li class="subcategory-item"><a href="./mimo/ani/bit_animi.html">bit_animi</a></li>
-          <li class="subcategory-item"><a href="./mimo/ani/trie_ani_ds.html">trie_ani_ds</a></li>
-          <li class="subcategory-item"><a href="./mimo/ani/shortest_path_ani_ds.html">shortest_path_ani_ds</a></li>
-          <li class="subcategory-item"><a href="./mimo/ani/bit_tree_ani_ds.html">bit_tree_ani_ds</a></li>
-          <li class="subcategory-item"><a href="./mimo/ani/treap_ani_ds.html">treap_ani_ds</a></li>
-          <li class="subcategory-item"><a href="./mimo/ani/segment_tree_ani_ds.html">segment_tree_ani_ds</a></li>
-          <li class="subcategory-item"><a href="./mimo/ani/bit_tree_ani_ds_v2.html">bit_tree_ani_ds_v2</a></li>
-          <li class="subcategory-item"><a href="./mimo/ani/segment_tree_ani_ds_v2.html">segment_tree_ani_ds_v2</a></li>
-          <li class="subcategory-item"><a href="./mimo/ani/segment_tree_ani_mimo.html">segment_tree_ani_mimo</a></li>
-          <li class="subcategory-item"><a href="./mimo/ani/uf_ani_ds.html">uf_ani_ds</a></li>
-          <li class="subcategory-item"><a href="./mimo/ani/fhq_ani_ds.html">fhq_ani_ds</a></li>
-
-        </ul>
-      </div>
     </div>
   </div>
 </body>

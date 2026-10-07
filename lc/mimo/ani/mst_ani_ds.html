@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>最小生成树 · Prim / Kruskal 算法 动画</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-light.min.css">
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/languages/python.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .wrap { width: min(1100px, 100%); }
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 6px; color: #243b53; }
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+
+  .intro {
+    margin-bottom: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .intro h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .intro h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .intro-lead { font-size: 13px; line-height: 1.8; color: #334e68; margin: 0 0 14px; }
+  .intro-lead code {
+    background: #eef4fa; color: #2369ad; padding: 1px 6px;
+    border-radius: 3px; font-size: 12px; font-weight: 600;
+  }
+  .intro-lead b { color: #2a7fd0; }
+  .intro-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  @media (max-width: 720px) { .intro-grid { grid-template-columns: 1fr; } }
+  .intro-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+  }
+  .intro-card.highlight { border-color: #ffb84d; background: #fffbf2; }
+  .intro-card .num {
+    display: inline-block; font-size: 11px; font-weight: 800;
+    color: #2a7fd0; background: #e3edf7;
+    padding: 1px 7px; border-radius: 4px; margin-bottom: 6px;
+  }
+  .intro-card.highlight .num { color: #b45a12; background: #ffebd2; }
+  .intro-card .title { font-size: 13px; font-weight: 700; color: #243b53; margin-bottom: 5px; }
+  .intro-card .desc { font-size: 12px; color: #334e68; line-height: 1.7; }
+  .intro-card .desc code {
+    background: #eef4fa; color: #2369ad; padding: 0 4px;
+    border-radius: 3px; font-size: 11px;
+  }
+  .intro-card .desc b { color: #d64545; }
+
+  svg#stage {
+    width: 100%; height: auto; display: block;
+    background: #fff; border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  /* 图节点 */
+  .mst-node .node-bg {
+    fill: #d5e8ff; stroke: #4a90d9; stroke-width: 2.5;
+    transition: fill .3s, stroke .3s, stroke-width .3s;
+  }
+  .mst-node .node-id {
+    font-size: 16px; font-weight: 800; fill: #2369ad;
+    pointer-events: none; user-select: none;
+  }
+  .mst-node.in-tree .node-bg { fill: #b0e8c2; stroke: #2f7a34; stroke-width: 3.6; }
+  .mst-node.in-tree .node-id { fill: #1c5e28; }
+  .mst-node.current .node-bg { fill: #ffd98a; stroke: #e09b00; stroke-width: 4; }
+  .mst-node.current .node-id { fill: #a35e00; }
+  .mst-node.group-0 .node-bg { fill: #d5e8ff; stroke: #4a90d9; }
+  .mst-node.group-1 .node-bg { fill: #c9efc9; stroke: #2f7a34; }
+  .mst-node.group-2 .node-bg { fill: #ffe9c9; stroke: #d9713b; }
+  .mst-node.group-3 .node-bg { fill: #e0d5ff; stroke: #7c5cd6; }
+  .mst-node.group-4 .node-bg { fill: #ffd0d0; stroke: #d64545; }
+  .mst-node.group-5 .node-bg { fill: #d0f0ff; stroke: #2369ad; }
+  .mst-node.group-6 .node-bg { fill: #fff5c9; stroke: #b45a12; }
+  .mst-node.group-0 .node-id,
+  .mst-node.group-1 .node-id,
+  .mst-node.group-2 .node-id,
+  .mst-node.group-3 .node-id,
+  .mst-node.group-4 .node-id,
+  .mst-node.group-5 .node-id,
+  .mst-node.group-6 .node-id { fill: #1f2933; }
+
+  /* 图边 */
+  .mst-edge {
+    stroke: #cbd2d9; stroke-width: 2.4;
+    fill: none;
+    transition: stroke .3s, stroke-width .3s;
+  }
+  .mst-edge.candidate {
+    stroke: #e09b00; stroke-width: 3.4;
+    stroke-dasharray: 8 5;
+    animation: dashflow .9s linear infinite;
+  }
+  .mst-edge.selecting {
+    stroke: #f0a500; stroke-width: 5;
+    stroke-dasharray: 10 6;
+    animation: dashflow .7s linear infinite;
+  }
+  .mst-edge.in-tree {
+    stroke: #2f7a34; stroke-width: 5;
+  }
+  .mst-edge.rejected {
+    stroke: #d64545; stroke-width: 2.5;
+    stroke-dasharray: 5 4;
+    opacity: 0.65;
+  }
+  @keyframes dashflow { to { stroke-dashoffset: -14; } }
+
+  .edge-w {
+    font-family: ui-monospace, monospace;
+    font-size: 13px; font-weight: 800;
+    fill: #4a5568;
+    pointer-events: none; user-select: none;
+    paint-order: stroke;
+    stroke: #ffffff; stroke-width: 6;
+    stroke-linejoin: round;
+  }
+  .edge-w.candidate { fill: #b45a12; }
+  .edge-w.in-tree   { fill: #1c5e28; }
+  .edge-w.selecting { fill: #8a5a00; }
+  .edge-w.rejected  { fill: #d64545; }
+
+  /* 面板 */
+  .match-panel {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+    font-size: 13.5px;
+  }
+  .match-panel .title {
+    font-weight: 700; color: #243b53;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .match-panel .stat {
+    font-family: ui-monospace, monospace;
+    font-size: 14px; font-weight: 800;
+    background: #eaf9ee; color: #2f7a34;
+    padding: 3px 12px; border-radius: 6px;
+  }
+  .match-panel .edges {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #4a5568;
+    background: #f0f4f8; padding: 3px 10px; border-radius: 6px;
+    min-height: 26px;
+    display: flex; gap: 8px; align-items: center;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+  .match-panel .edges .m {
+    background: #d4f4dd; color: #1c5e28;
+    padding: 1px 7px; border-radius: 4px;
+    font-weight: 700;
+  }
+  .match-panel .edges .empty {
+    color: #829ab1; font-style: italic; font-size: 12px;
+  }
+
+  .panel {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 6px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-size: 14px;
+  }
+  .panel-row {
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 10px; padding: 10px 0;
+    border-bottom: 1px dashed #eef2f7;
+  }
+  .panel-row:last-child { border-bottom: none; }
+  .row-label {
+    display: inline-flex; align-items: center;
+    font-size: 12.5px; font-weight: 700; color: #243b53;
+    min-width: 88px;
+  }
+  .row-label.algo { color: #7c5cd6; }
+  .row-hint {
+    font-size: 11.5px; color: #829ab1; margin-left: 6px;
+    line-height: 1.5;
+  }
+  .row-hint code {
+    background: #f0f4f8; color: #4a5568;
+    padding: 0 5px; border-radius: 3px; font-size: 11px;
+  }
+  .row-hint b { color: #d64545; font-weight: 700; }
+
+  select {
+    font: inherit; font-size: 13px; padding: 5px 10px;
+    border-radius: 7px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    min-width: 200px;
+    font-weight: 700;
+    color: #7c5cd6;
+    border-color: #d8c8ff;
+    background: #f9f6ff;
+  }
+
+  button {
+    font: inherit; font-size: 13px; padding: 6px 14px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.danger  { background: #d64545; border-color: #d64545; color: #fff; }
+  button.success { background: #57a957; border-color: #57a957; color: #fff; }
+  button.success:hover { background: #3d8a3d; border-color: #3d8a3d; }
+  button.ghost   { background: #fff; color: #2369ad; border-color: #9dc3e6; }
+
+  .demo-bar {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    padding: 12px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center;
+    font-size: 13.5px;
+    border-left: 4px solid #57a957;
+  }
+  .demo-bar .title {
+    font-weight: 700; color: #2f7a34;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .demo-bar .mode-label { color: #627d98; font-size: 12.5px; }
+  .demo-bar button { font-size: 13px; padding: 6px 14px; }
+  .radio-group {
+    display: inline-flex; border: 1px solid #bcccdc;
+    border-radius: 8px; overflow: hidden; background: #f8fafc;
+  }
+  .radio-group label {
+    font-size: 12.5px; padding: 5px 12px; color: #627d98;
+    cursor: pointer; user-select: none; transition: .15s;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .radio-group label:hover { color: #243b53; }
+  .radio-group input[type="radio"] { display: none; }
+  .radio-group label.active { background: #57a957; color: #fff; }
+  .radio-group label.active:hover { color: #fff; }
+
+  .speed-wrap {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-wrap .label { color: #627d98; font-size: 12.5px; }
+  .speed-wrap input[type="range"] { width: 130px; accent-color: #2a7fd0; }
+  .speed-wrap .val {
+    font-family: ui-monospace, monospace;
+    font-size: 12.5px; color: #2369ad;
+    background: #eef4fa; padding: 2px 8px; border-radius: 5px;
+    min-width: 46px; text-align: center;
+  }
+
+  .result {
+    margin-top: 12px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* 演示记录 */
+  .log-module {
+    margin-top: 12px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .log-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .log-module > summary::-webkit-details-marker { display: none; }
+  .log-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .log-module[open] > summary::before { transform: rotate(90deg); }
+  .log-module > summary:hover { background: #f8fafc; }
+  .log-module > summary .count {
+    font-size: 11.5px; font-weight: 600;
+    background: #eef4fa; color: #2369ad;
+    padding: 2px 8px; border-radius: 5px;
+    font-family: ui-monospace, monospace;
+    margin-left: auto;
+  }
+  .log-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1;
+  }
+  .log-body {
+    max-height: 460px; overflow-y: auto;
+    padding: 10px 20px 16px;
+    background: #fbfdff;
+  }
+  .log-line {
+    display: grid; grid-template-columns: 56px 1fr;
+    gap: 12px; padding: 6px 0;
+    border-bottom: 1px dashed #eef2f7;
+    font-size: 12.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    transition: background .15s;
+  }
+  .log-line:hover { background: #f0f7ff; }
+  .log-line:last-child { border-bottom: none; }
+  .log-line .idx {
+    color: #829ab1; font-weight: 700; text-align: right;
+  }
+  .log-line .msg { color: #334e68; word-break: break-word; }
+  .log-line.cur {
+    background: #fffbf2;
+    border-left: 3px solid #e09b00;
+    margin-left: -3px; padding-left: 3px;
+  }
+  .log-line.cur .idx { color: #b45a12; }
+  .log-line.cur .msg { color: #8a5a00; font-weight: 600; }
+  .log-empty {
+    font-size: 12.5px; color: #829ab1; font-style: italic;
+    padding: 16px 0; text-align: center;
+  }
+
+  /* 知识模块 */
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  @media (max-width: 720px) { .k-grid { grid-template-columns: 1fr; } }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 12px 14px 13px; background: #fafcfe;
+  }
+  .k-card.key-point { border-color: #ffb84d; background: #fffbf2; }
+  .k-card.compare-point { border-color: #7c5cd6; background: #f9f6ff; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .k-icon {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, #d5e8ff 0%, #b9daff 100%);
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .k-card.key-point .k-icon { background: linear-gradient(135deg, #ffe9a8 0%, #ffd98a 100%); }
+  .k-card.compare-point .k-icon { background: linear-gradient(135deg, #e0d5ff 0%, #c9b8ff 100%); }
+  .k-title { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-card.key-point .k-title { color: #8a5a00; }
+  .k-card.compare-point .k-title { color: #5b3db8; }
+  .k-lines { list-style: none; margin: 0; padding: 0; }
+  .k-lines li {
+    font-size: 12px; color: #334e68; line-height: 1.7;
+    padding-left: 14px; position: relative;
+  }
+  .k-lines li::before {
+    content: '·'; position: absolute; left: 4px; top: 0;
+    color: #2a7fd0; font-weight: 700; font-size: 16px; line-height: 1.4;
+  }
+  .k-card.key-point .k-lines li::before { color: #e09b00; }
+  .k-card.compare-point .k-lines li::before { color: #7c5cd6; }
+  .k-lines li code {
+    background: #eef4fa; color: #2369ad;
+    padding: 0 4px; border-radius: 3px; font-size: 11px;
+  }
+  .k-lines li b { color: #d64545; }
+
+  /* 代码模块 */
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 640px; overflow: auto;
+  }
+  .code-body pre { margin: 0; }
+  .code-body code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.7;
+    background: transparent;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>最小生成树 · Prim / Kruskal 算法 动画</h1>
+  <p class="subtitle">
+    给定带权无向图，选 n-1 条边使所有点连通且总权最小 · <b>Prim 从点扩展</b> · <b>Kruskal 从边合并</b>
+  </p>
+
+  <div class="intro">
+    <h2>📖 原理简介 · 两种算法如何找到最小生成树？</h2>
+    <p class="intro-lead">
+      最小生成树（MST）是一棵连接图中所有节点、边权和最小的树。
+      两种经典算法都基于<b>贪心 + 割性质</b>：
+      <code>Prim</code> 从某个起点开始"长大"，每次选一条连接"树内与树外"的最小边；
+      <code>Kruskal</code> 把所有边按权排序，从小到大逐条尝试，用<b>并查集</b>避免成环。
+      两者都保证最优，但适用场景不同。
+    </p>
+    <div class="intro-grid">
+      <div class="intro-card highlight">
+        <div class="num">核心 1</div>
+        <div class="title">Prim：从点扩展 O(E log V)</div>
+        <div class="desc">
+          维护已加入树的点集 S。<br>
+          每轮从"一端在 S、另一端不在 S"的边中选最小的一条。<br>
+          适合<b>稠密图</b>（用邻接矩阵可做到 O(V²)）。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 2</div>
+        <div class="title">Kruskal：从边合并 O(E log E)</div>
+        <div class="desc">
+          所有边按权排序，逐条检查：<br>
+          · 两端不在同一集合 → 加入<br>
+          · 已连通 → 跳过（会成环）<br>
+          用<b>并查集</b>维护连通性，适合<b>稀疏图</b>。
+        </div>
+      </div>
+      <div class="intro-card highlight">
+        <div class="num">核心 3</div>
+        <div class="title">割性质：贪心为什么正确</div>
+        <div class="desc">
+          对任意割（把点集分成两部分），<br>
+          <b>横跨割的最小边一定属于某棵 MST</b>。<br>
+          Prim 每步都在"树内-树外"这个割上取最小边，Kruskal 每步都在"两集合"这个割上取最小边。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">不变量</div>
+        <div class="title">两者都保证最优</div>
+        <div class="desc">
+          Prim 维护"一棵树 + 若干未访问点"<br>
+          Kruskal 维护"森林 + 逐步合并成树"<br>
+          最终都得到 n−1 条边、总权最小、无环、连通。
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">比较</div>
+        <div class="title">什么时候用哪个</div>
+        <div class="desc">
+          · 稀疏图 / 边少 → <b>Kruskal</b>（排序方便）<br>
+          · 稠密图 / 边多 → <b>Prim</b>（堆优化或矩阵）<br>
+          · 需要中间过程查询 → <b>Prim</b> 更自然<br>
+          · 需要处理"动态加边" → <b>Kruskal</b> 更灵活
+        </div>
+      </div>
+      <div class="intro-card">
+        <div class="num">应用</div>
+        <div class="title">典型场景</div>
+        <div class="desc">
+          · <b>网络设计</b>：用最少光缆连接所有城市<br>
+          · <b>聚类分析</b>：单链接聚类<br>
+          · <b>近似 TSP</b>：MST 双倍遍历是 2-近似<br>
+          · <b>图像分割</b>：基于 MST 的区域合并<br>
+          · <b>STP 协议</b>：交换机间生成树防环
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <svg id="stage" viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <div class="match-panel">
+    <div class="title">MST 总权重 <span class="stat" id="mstWeight">0</span></div>
+    <div class="title">已选边 <span class="stat" id="mstCount">0/6</span></div>
+    <div class="edges" id="mstEdges">
+      <span class="empty">（尚未选择）</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-row">
+      <span class="row-label algo">算法选择</span>
+      <select id="algoSel">
+        <option value="prim">Prim —— 从点 A 出发，每步选最小边扩展</option>
+        <option value="kruskal">Kruskal —— 所有边排序，用并查集逐个检查</option>
+      </select>
+    </div>
+    <div class="panel-row">
+      <span class="row-label algo">颜色说明</span>
+      <span class="row-hint">
+        <b>橙色虚线</b>=候选边 · <b>金色粗线</b>=正在选 · <b>绿色粗线</b>=已加入 MST · <b>红色虚线</b>=被拒绝 · <b>绿色节点</b>=已在树中
+      </span>
+    </div>
+  </div>
+
+  <div class="demo-bar">
+    <span class="title">🎬 演示</span>
+    <span class="mode-label">模式：</span>
+    <div class="radio-group" id="demoModeGroup">
+      <label class="active"><input type="radio" name="demoMode" value="auto" checked>自动播放</label>
+      <label><input type="radio" name="demoMode" value="step">逐步演示</label>
+    </div>
+    <button id="btnDemoStart" class="success">▶ 开始演示</button>
+    <button id="btnDemoNext">⏭ 下一步</button>
+    <button id="btnDemoStop" class="danger" disabled>⏹ 停止</button>
+    <div class="speed-wrap">
+      <span class="label">速度</span>
+      <input type="range" id="speedRange" min="0.25" max="3" step="0.25" value="1">
+      <span class="val" id="speedLabel">1.00x</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪 · 选择算法后点击「开始演示」</div>
+
+  <details class="log-module" id="logModule" open>
+    <summary>
+      📋 演示记录
+      <span class="hint">（点击展开 / 折叠，可全量查看每步）</span>
+      <span class="count" id="logCount">0 步</span>
+    </summary>
+    <div class="log-body" id="logBody">
+      <div class="log-empty">点击「开始演示」后，每一步操作都会记录在这里</div>
+    </div>
+  </details>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 最小生成树 <span class="hint">两种贪心 + 应用场景</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · Prim + Kruskal
+      <span class="badge">堆优化 Prim + 并查集 Kruskal</span>
+    </summary>
+    <div class="code-body">
+<pre><code class="language-python">"""
+最小生成树（Minimum Spanning Tree）—— Prim + Kruskal。
+
+给定带权无向图 G = (V, E)，选出一棵包含所有点、
+总权重最小的树（恰好 |V|-1 条边）。
+
+两种经典算法都基于割性质（Cut Property）：
+    对任意把 V 分成两部分的割，横跨割的最小边
+    一定属于某棵最小生成树。
+
+Prim    —— 从点出发，每步把"树外最近的点"加入树
+Kruskal —— 从边出发，按权排序，用并查集避免成环
+"""
+
+import heapq
+
+
+# ============================================================
+# 算法 1：Prim（堆优化）—— O(E log V)
+# ============================================================
+def prim(n, adj, start=0):
+    """
+    adj[u] = [(v, w), ...]
+    返回 (mst_weight, mst_edges)，mst_edges 是 [(u, v, w), ...]
+    """
+    INF = float('inf')
+    in_tree = [False] * n
+    dist = [INF] * n
+    parent = [-1] * n
+
+    dist[start] = 0
+    pq = [(0, start)]
+    mst_edges = []
+    total = 0
+
+    while pq:
+        d, u = heapq.heappop(pq)
+        if in_tree[u]:
+            continue
+        in_tree[u] = True
+        total += d
+        if parent[u] != -1:
+            mst_edges.append((parent[u], u, d))
+
+        for v, w in adj[u]:
+            if not in_tree[v] and w < dist[v]:
+                dist[v] = w
+                parent[v] = u
+                heapq.heappush(pq, (w, v))
+
+    return total, mst_edges
+
+
+# ============================================================
+# 算法 2：Kruskal（并查集）—— O(E log E)
+# ============================================================
+class DSU:
+    def __init__(self, n):
+        self.parent = list(range(n))
+        self.rank = [0] * n
+
+    def find(self, x):
+        while self.parent[x] != x:
+            self.parent[x] = self.parent[self.parent[x]]
+            x = self.parent[x]
+        return x
+
+    def union(self, x, y):
+        rx, ry = self.find(x), self.find(y)
+        if rx == ry:
+            return False
+        if self.rank[rx] < self.rank[ry]:
+            rx, ry = ry, rx
+        self.parent[ry] = rx
+        if self.rank[rx] == self.rank[ry]:
+            self.rank[rx] += 1
+        return True
+
+
+def kruskal(n, edges):
+    """
+    edges = [(u, v, w), ...]
+    返回 (mst_weight, mst_edges)
+    """
+    edges_sorted = sorted(edges, key=lambda e: e[2])
+    dsu = DSU(n)
+    mst_edges = []
+    total = 0
+
+    for u, v, w in edges_sorted:
+        if dsu.union(u, v):
+            mst_edges.append((u, v, w))
+            total += w
+            if len(mst_edges) == n - 1:
+                break
+
+    return total, mst_edges
+
+
+# ============================================================
+# 演示
+# ============================================================
+if __name__ == '__main__':
+    # 7 个节点、10 条边的教学图
+    n = 7
+    edges = [
+        (0, 1, 2),  # A-B
+        (0, 3, 1),  # A-D
+        (1, 2, 3),  # B-C
+        (1, 3, 4),  # B-D
+        (1, 4, 5),  # B-E
+        (2, 4, 6),  # C-E
+        (3, 4, 7),  # D-E
+        (4, 5, 3),  # E-F
+        (4, 6, 2),  # E-G
+        (5, 6, 8),  # F-G
+    ]
+
+    # 邻接表
+    adj = [[] for _ in range(n)]
+    for u, v, w in edges:
+        adj[u].append((v, w))
+        adj[v].append((u, w))
+
+    print('=== Prim（从 A 出发） ===')
+    w1, m1 = prim(n, adj, start=0)
+    print(f'MST 总权重 = {w1}')
+    for u, v, w in m1:
+        print(f'  {chr(65+u)} — {chr(65+v)}  (w={w})')
+
+    print()
+    print('=== Kruskal ===')
+    w2, m2 = kruskal(n, edges)
+    print(f'MST 总权重 = {w2}')
+    for u, v, w in m2:
+        print(f'  {chr(65+u)} — {chr(65+v)}  (w={w})')
+
+    assert w1 == w2, '两种算法应得到相同的总权重'
+    print('\n✔ 两种算法总权重一致')
+</code></pre>
+    </div>
+  </details>
+</div>
+
+<script>
+/* =========================================================
+   1. 图结构
+   ========================================================= */
+const NODES = [
+  { id: 'A', x: 130, y: 100 },
+  { id: 'B', x: 440, y: 100 },
+  { id: 'C', x: 760, y: 100 },
+  { id: 'D', x: 130, y: 330 },
+  { id: 'E', x: 440, y: 330 },
+  { id: 'F', x: 760, y: 330 },
+  { id: 'G', x: 440, y: 520 },
+];
+
+const EDGES = [
+  { u: 'A', v: 'B', w: 2 },
+  { u: 'A', v: 'D', w: 1 },
+  { u: 'B', v: 'C', w: 3 },
+  { u: 'B', v: 'D', w: 4 },
+  { u: 'B', v: 'E', w: 5 },
+  { u: 'C', v: 'E', w: 6 },
+  { u: 'D', v: 'E', w: 7 },
+  { u: 'E', v: 'F', w: 3 },
+  { u: 'E', v: 'G', w: 2 },
+  { u: 'F', v: 'G', w: 8 },
+];
+
+const NODE_R = 30;
+const NODE_POS = {};
+for (const n of NODES) NODE_POS[n.id] = { x: n.x, y: n.y };
+
+function eKey(u, v) { return [u, v].sort().join('-'); }
+
+const EDGES_BY_KEY = {};
+for (const e of EDGES) EDGES_BY_KEY[eKey(e.u, e.v)] = e;
+
+/* =========================================================
+   2. 渲染状态
+   ========================================================= */
+let edgeState = {};   /* key -> '' | 'candidate' | 'selecting' | 'in-tree' | 'rejected' */
+let nodeState = {};   /* id -> '' | 'in-tree' | 'current' | 'group-N' */
+
+/* =========================================================
+   3. SVG 图层
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('stage');
+const edgeLayer = document.createElementNS(NS, 'g');
+const nodeLayer = document.createElementNS(NS, 'g');
+svg.appendChild(edgeLayer);
+svg.appendChild(nodeLayer);
+
+/* =========================================================
+   4. 渲染
+   ========================================================= */
+function render() {
+  edgeLayer.innerHTML = '';
+  nodeLayer.innerHTML = '';
+
+  /* 边 */
+  for (const e of EDGES) {
+    const a = NODE_POS[e.u];
+    const b = NODE_POS[e.v];
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const x1 = a.x + dx / len * NODE_R;
+    const y1 = a.y + dy / len * NODE_R;
+    const x2 = b.x - dx / len * NODE_R;
+    const y2 = b.y - dy / len * NODE_R;
+
+    const key = eKey(e.u, e.v);
+    const st = edgeState[key] || '';
+
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+    line.setAttribute('class', 'mst-edge' + (st ? ' ' + st : ''));
+    edgeLayer.appendChild(line);
+
+    /* 权重标签放在中点偏上 */
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    /* 稍微向垂直方向偏移，避免压住线 */
+    const ox = -dy / len * 12;
+    const oy = dx / len * 12;
+
+    const w = document.createElementNS(NS, 'text');
+    w.setAttribute('class', 'edge-w' + (st ? ' ' + st : ''));
+    w.setAttribute('text-anchor', 'middle');
+    w.setAttribute('dominant-baseline', 'central');
+    w.setAttribute('x', mx + ox);
+    w.setAttribute('y', my + oy);
+    w.textContent = e.w;
+    edgeLayer.appendChild(w);
+  }
+
+  /* 节点 */
+  for (const n of NODES) {
+    const g = document.createElementNS(NS, 'g');
+    let cls = 'mst-node';
+    const st = nodeState[n.id] || '';
+    if (st) cls += ' ' + st;
+    g.setAttribute('class', cls);
+
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', n.x); c.setAttribute('cy', n.y);
+    c.setAttribute('r', NODE_R);
+    c.setAttribute('class', 'node-bg');
+    g.appendChild(c);
+
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('class', 'node-id');
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('dominant-baseline', 'central');
+    t.setAttribute('x', n.x); t.setAttribute('y', n.y);
+    t.textContent = n.id;
+    g.appendChild(t);
+
+    nodeLayer.appendChild(g);
+  }
+
+  updateMstPanel();
+}
+
+function updateMstPanel() {
+  /* 统计已加入 MST 的边 */
+  const inTree = [];
+  let total = 0;
+  for (const e of EDGES) {
+    const key = eKey(e.u, e.v);
+    if (edgeState[key] === 'in-tree') {
+      inTree.push(`${e.u}—${e.v}`);
+      total += e.w;
+    }
+  }
+  document.getElementById('mstWeight').textContent = total;
+  document.getElementById('mstCount').textContent = `${inTree.length}/6`;
+
+  const el = document.getElementById('mstEdges');
+  if (inTree.length === 0) {
+    el.innerHTML = '<span class="empty">（尚未选择）</span>';
+  } else {
+    el.innerHTML = inTree.map(s => `<span class="m">${s}</span>`).join('');
+  }
+}
+
+/* =========================================================
+   5. 步骤生成：Prim
+   ========================================================= */
+function buildPrimSteps() {
+  const steps = [];
+  const inTree = new Set(['A']);
+  const treeEdges = new Set();
+  let total = 0;
+
+  function snap(msg, opts) {
+    const o = opts || {};
+    steps.push({
+      msg,
+      inTree: new Set(o.inTree || inTree),
+      treeEdges: new Set(o.treeEdges || treeEdges),
+      candidates: o.candidates ? new Set(o.candidates) : new Set(),
+      selecting: o.selecting || null,
+      totalW: o.totalW !== undefined ? o.totalW : total,
+    });
+  }
+
+  snap('Prim 开始：树 = {A}，从 A 出发，每步选一条"一端在树内、一端在树外"的最小边', {});
+
+  while (inTree.size < NODES.length) {
+    /* 收集候选边 */
+    const cands = [];
+    for (const e of EDGES) {
+      const uIn = inTree.has(e.u), vIn = inTree.has(e.v);
+      if (uIn !== vIn) cands.push(e);
+    }
+    if (cands.length === 0) break;
+
+    /* 找最小 */
+    cands.sort((a, b) => a.w - b.w);
+    const best = cands[0];
+    const bestKey = eKey(best.u, best.v);
+    const candKeys = cands.map(e => eKey(e.u, e.v));
+
+    snap(
+      `候选边 ${cands.length} 条：${cands.map(e => `${e.u}-${e.v}(${e.w})`).join(', ')}　→　选最小 ${best.u}-${best.v}(${best.w})`,
+      {
+        candidates: candKeys,
+        selecting: bestKey,
+        totalW: total,
+      }
+    );
+
+    /* 加入树 */
+    const newNode = inTree.has(best.u) ? best.v : best.u;
+    inTree.add(newNode);
+    treeEdges.add(bestKey);
+    total += best.w;
+
+    snap(
+      `✓ 加入 ${best.u}-${best.v}(${best.w})，${newNode} 加入树。当前总权重 = ${total}`,
+      {
+        candidates: [],
+        totalW: total,
+      }
+    );
+  }
+
+  snap(`🎉 Prim 完成！MST 总权重 = ${total}`, { candidates: [], totalW: total });
+
+  return steps;
+}
+
+/* =========================================================
+   6. 步骤生成：Kruskal
+   ========================================================= */
+function buildKruskalSteps() {
+  const steps = [];
+  const sorted = [...EDGES].sort((a, b) => a.w - b.w);
+  const parent = {};
+  for (const n of NODES) parent[n.id] = n.id;
+
+  function find(x) {
+    while (parent[x] !== x) {
+      parent[x] = parent[parent[x]];
+      x = parent[x];
+    }
+    return x;
+  }
+  function union(x, y) {
+    const rx = find(x), ry = find(y);
+    if (rx === ry) return false;
+    parent[ry] = rx;
+    return true;
+  }
+
+  const treeEdges = new Set();
+  let total = 0;
+
+  function snap(msg, opts) {
+    const o = opts || {};
+    steps.push({
+      msg,
+      treeEdges: new Set(o.treeEdges || treeEdges),
+      currentEdge: o.currentEdge || null,
+      rejected: o.rejected || null,
+      totalW: o.totalW !== undefined ? o.totalW : total,
+      /* Kruskal 用节点分组色 */
+      nodeGroups: computeGroups(),
+    });
+  }
+
+  function computeGroups() {
+    /* 每个节点所在连通分量的代表元 */
+    const groups = {};
+    const roots = {};
+    let cnt = 0;
+    for (const n of NODES) {
+      const r = find(n.id);
+      if (!(r in roots)) roots[r] = cnt++;
+      groups[n.id] = roots[r];
+    }
+    return groups;
+  }
+
+  snap(
+    `Kruskal 开始：按权重排序所有边　${sorted.map(e => `${e.u}${e.v}(${e.w})`).join(' < ')}`,
+    {}
+  );
+
+  for (const e of sorted) {
+    const key = eKey(e.u, e.v);
+    const ru = find(e.u), rv = find(e.v);
+
+    if (ru === rv) {
+      snap(
+        `检查 ${e.u}-${e.v}(${e.w})：${e.u} 和 ${e.v} 已在同一分量 → 跳过（会成环）`,
+        { currentEdge: key, rejected: key }
+      );
+    } else {
+      union(e.u, e.v);
+      treeEdges.add(key);
+      total += e.w;
+      snap(
+        `✓ 加入 ${e.u}-${e.v}(${e.w})：两端不连通 → 合并。总权重 = ${total}`,
+        { currentEdge: key, totalW: total }
+      );
+    }
+
+    if (treeEdges.size === NODES.length - 1) {
+      snap(`🎉 Kruskal 完成！MST 总权重 = ${total}`, { totalW: total });
+      break;
+    }
+  }
+
+  return steps;
+}
+
+/* =========================================================
+   7. 应用步骤到渲染状态
+   ========================================================= */
+function applyStep(step, algo) {
+  /* 重置 */
+  edgeState = {};
+  nodeState = {};
+
+  /* 边状态 */
+  if (step.treeEdges) {
+    for (const k of step.treeEdges) edgeState[k] = 'in-tree';
+  }
+  if (step.candidates) {
+    for (const k of step.candidates) {
+      if (edgeState[k] !== 'in-tree') edgeState[k] = 'candidate';
+    }
+  }
+  if (step.selecting) {
+    edgeState[step.selecting] = 'selecting';
+  }
+  if (step.currentEdge && !edgeState[step.currentEdge]) {
+    edgeState[step.currentEdge] = 'selecting';
+  }
+  if (step.rejected) {
+    edgeState[step.rejected] = 'rejected';
+  }
+
+  /* 节点状态 */
+  if (algo === 'prim' && step.inTree) {
+    for (const id of step.inTree) nodeState[id] = 'in-tree';
+  }
+  if (algo === 'kruskal' && step.nodeGroups) {
+    for (const id in step.nodeGroups) {
+      nodeState[id] = 'group-' + step.nodeGroups[id];
+    }
+  }
+
+  render();
+}
+
+/* =========================================================
+   8. 状态工具 / 演示记录
+   ========================================================= */
+const resultEl = document.getElementById('result');
+const logBody = document.getElementById('logBody');
+const logCount = document.getElementById('logCount');
+function setStatus(t) { resultEl.textContent = t; }
+
+function clearLog() {
+  logBody.innerHTML = '<div class="log-empty">点击「开始演示」后，每一步操作都会记录在这里</div>';
+  logCount.textContent = '0 步';
+}
+
+let logLines = [];
+function addLog(msg) {
+  logLines.push(msg);
+  logCount.textContent = logLines.length + ' 步';
+  if (logLines.length === 1) logBody.innerHTML = '';
+  const div = document.createElement('div');
+  div.className = 'log-line';
+  div.dataset.idx = logLines.length - 1;
+  div.innerHTML = `<div class="idx">#${logLines.length}</div><div class="msg">${escapeHtml(msg)}</div>`;
+  logBody.appendChild(div);
+}
+
+function highlightLog(idx) {
+  document.querySelectorAll('.log-line.cur').forEach(el => el.classList.remove('cur'));
+  const el = document.querySelector(`.log-line[data-idx="${idx}"]`);
+  if (el) {
+    el.classList.add('cur');
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* =========================================================
+   9. 演示控制器
+   ========================================================= */
+let demoSpeed = 1;
+let demoPaused = false;
+let demoAborted = false;
+let demoStepMode = false;
+let stepResolver = null;
+
+async function tick(ms = 0) {
+  if (demoAborted) throw new Error('aborted');
+  if (demoStepMode) {
+    await new Promise(resolve => { stepResolver = resolve; });
+    if (demoAborted) throw new Error('aborted');
+  }
+  while (demoPaused && !demoAborted) {
+    await new Promise(r => setTimeout(r, 60));
+  }
+  if (demoAborted) throw new Error('aborted');
+  if (ms > 0) await new Promise(r => setTimeout(r, ms / demoSpeed));
+  if (demoAborted) throw new Error('aborted');
+}
+function releaseStep() {
+  if (stepResolver) {
+    const r = stepResolver;
+    stepResolver = null;
+    r();
+  }
+}
+
+/* =========================================================
+   10. 演示主流程
+   ========================================================= */
+async function runDemo(algo) {
+  edgeState = {};
+  nodeState = {};
+  render();
+  clearLog();
+  logLines = [];
+
+  const steps = algo === 'prim' ? buildPrimSteps() : buildKruskalSteps();
+
+  setStatus(`准备 ${algo === 'prim' ? 'Prim' : 'Kruskal'} 演示，共 ${steps.length} 步`);
+  await tick(600);
+
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i];
+    applyStep(s, algo);
+    setStatus(`[${i+1}/${steps.length}] ${s.msg}`);
+    addLog(s.msg);
+    highlightLog(i);
+    await tick(900);
+  }
+
+  /* 完成 */
+  setStatus(`✔ ${algo === 'prim' ? 'Prim' : 'Kruskal'} 演示结束`);
+  await tick(700);
+}
+
+/* =========================================================
+   11. 演示控制
+   ========================================================= */
+const btnDemoStart = document.getElementById('btnDemoStart');
+const btnDemoNext  = document.getElementById('btnDemoNext');
+const btnDemoStop  = document.getElementById('btnDemoStop');
+const speedRange   = document.getElementById('speedRange');
+const speedLabel   = document.getElementById('speedLabel');
+const algoSel      = document.getElementById('algoSel');
+
+let demoRunning = false;
+
+function currentDemoMode() {
+  return document.querySelector('input[name="demoMode"]:checked').value;
+}
+function currentAlgo() { return algoSel.value; }
+
+function updateDemoUI() {
+  if (!demoRunning) {
+    btnDemoStart.textContent = '▶ 开始演示';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = true;
+    algoSel.disabled = false;
+  } else if (demoStepMode) {
+    btnDemoStart.textContent = '▶ 切到自动';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+    algoSel.disabled = true;
+  } else if (demoPaused) {
+    btnDemoStart.textContent = '▶ 继续';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+    algoSel.disabled = true;
+  } else {
+    btnDemoStart.textContent = '⏸ 暂停';
+    btnDemoStart.disabled = false;
+    btnDemoNext.disabled = false;
+    btnDemoStop.disabled = false;
+    algoSel.disabled = true;
+  }
+}
+
+async function startDemo(mode) {
+  if (demoRunning) return;
+  demoRunning = true;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = (mode === 'step');
+  updateDemoUI();
+
+  if (mode === 'step') {
+    setStatus('⏭ 逐步演示已就绪：每次点「下一步」推进一个动作');
+  }
+
+  try {
+    await runDemo(currentAlgo());
+  } catch (e) {
+    if (e.message === 'aborted') setStatus('⏹ 演示已停止');
+    else console.error(e);
+  }
+
+  demoRunning = false;
+  demoAborted = false;
+  demoPaused = false;
+  demoStepMode = false;
+  updateDemoUI();
+}
+
+btnDemoStart.addEventListener('click', () => {
+  if (!demoRunning) { startDemo(currentDemoMode()); return; }
+  if (demoStepMode) {
+    demoStepMode = false; demoPaused = false; releaseStep();
+  } else if (demoPaused) {
+    demoPaused = false;
+  } else {
+    demoPaused = true;
+  }
+  updateDemoUI();
+});
+
+btnDemoNext.addEventListener('click', () => {
+  if (!demoRunning) {
+    startDemo('step');
+    setTimeout(() => releaseStep(), 30);
+    return;
+  }
+  if (!demoStepMode) demoStepMode = true;
+  demoPaused = false;
+  releaseStep();
+  updateDemoUI();
+});
+
+btnDemoStop.addEventListener('click', () => {
+  if (!demoRunning) return;
+  demoAborted = true; demoPaused = false; demoStepMode = false; releaseStep();
+});
+
+speedRange.addEventListener('input', () => {
+  demoSpeed = parseFloat(speedRange.value);
+  speedLabel.textContent = demoSpeed.toFixed(2) + 'x';
+});
+
+document.querySelectorAll('input[name="demoMode"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#demoModeGroup label').forEach(l => l.classList.remove('active'));
+    r.parentElement.classList.add('active');
+    if (!demoRunning) {
+      const m = currentDemoMode();
+      setStatus(m === 'auto'
+        ? '已选择「自动播放」：点击「开始演示」后连续播放'
+        : '已选择「逐步演示」：点击「开始演示」后每次点「下一步」推进');
+    }
+  });
+});
+
+algoSel.addEventListener('change', () => {
+  if (demoRunning) return;
+  /* 重置渲染 */
+  edgeState = {};
+  nodeState = {};
+  render();
+  clearLog();
+  logLines = [];
+  setStatus(`已切换到 ${algoSel.options[algoSel.selectedIndex].text.split(' ')[0]}，点击「开始演示」`);
+});
+
+/* =========================================================
+   12. 知识模块
+   ========================================================= */
+const KNOWLEDGE = [
+  { icon: '🎯', title: '最小生成树是什么', key: true, lines: [
+    '给定带权无向图 G = (V, E)，选出一棵包含所有点的树',
+    '要求边数恰好 <code>|V|−1</code>，且总权重最小',
+    '等价说法：连接所有点的最便宜方案',
+    '如果边权都不同，MST <b>唯一</b>；有相同权重时可能不唯一',
+  ]},
+  { icon: '🌱', title: 'Prim：从点长大', key: true, lines: [
+    '维护一个"已在树中"的点集 S',
+    '每步：从"一端在 S、一端不在 S"的边中选<b>最小</b>的一条',
+    '把新点加入 S，重复直到 S 包含所有点',
+    '复杂度：堆优化 <code>O(E log V)</code>，矩阵版 <code>O(V²)</code>',
+    '适合<b>稠密图</b>（邻接矩阵更好）',
+  ]},
+  { icon: '🔗', title: 'Kruskal：从边合并', key: true, lines: [
+    '把所有边按权重<b>从小到大排序</b>',
+    '依次检查每条边：若两端不在同一集合 → 加入',
+    '用<b>并查集</b>（DSU）快速判断是否已连通',
+    '复杂度 <code>O(E log E)</code>（排序为主）',
+    '适合<b>稀疏图</b>（边少时排序快）',
+  ]},
+  { icon: '⚖️', title: 'Prim vs Kruskal', key: true, lines: [
+    '<b>Prim</b>：从点出发，<code>O(E log V)</code>，稀疏/稠密都行',
+    '<b>Kruskal</b>：从边出发，<code>O(E log E)</code>，稀疏图更优',
+    '<b>中间过程</b>：Prim 得到的是"逐步扩大的树"',
+    '　　　　　Kruskal 得到的是"逐步合并的森林"',
+    '<b>动态加边</b>：Kruskal 天然支持，Prim 需要重算',
+    '两种算法最终结果（总权重）<b>相同</b>',
+  ]},
+  { icon: '✂️', title: '割性质（Cut Property）', key: true, lines: [
+    '把点集 V 分成两部分，中间跨过的边叫"横跨割的边"',
+    '<b>横跨任意割的最小边，一定属于某棵 MST</b>',
+    'Prim 每步都在"树内-树外"这个割上取最小边',
+    'Kruskal 每步都在"两集合"这个割上取最小边',
+    '两者都基于这一性质，所以都正确',
+  ]},
+  { icon: '🔄', title: '为什么不会成环', key: true, lines: [
+    '<b>Prim</b>：每步加入的是一条连接"新点"的边，新点原本不在树里 → 不成环',
+    '<b>Kruskal</b>：并查集保证每条加入的边两端在不同集合 → 不成环',
+    '最终恰好 <code>|V|−1</code> 条边，构成树',
+    '若图中不连通 → 得到的是"最小生成森林"',
+  ]},
+  { icon: '🧩', title: '典型应用', key: false, lines: [
+    '<b>网络设计</b>：用最少光缆 / 线路连接所有城市',
+    '<b>聚类分析</b>：单链接聚类（删除 MST 中最长的 k 条边）',
+    '<b>近似 TSP</b>：MST 双倍遍历是 2-近似算法',
+    '<b>图像分割</b>：基于 MST 的区域合并',
+    '<b>STP 协议</b>：交换机之间生成无环拓扑（生成树协议）',
+    '<b>降维</b>：最小生成树在数据分布分析中的作用',
+  ]},
+  { icon: '⚡', title: '进阶话题', key: false, lines: [
+    '<b>次小生成树</b>：第二小的 MST，可用倍增维护',
+    '<b>最小瓶颈生成树</b>：使最大边权最小的生成树 = MST',
+    '<b>最小度限制生成树</b>：指定某点度数上限',
+    '<b>动态 MST</b>：支持加边 / 删边的动态维护',
+    '<b>MST 唯一性判断</b>：所有边权互异 ⇔ MST 唯一',
+  ]},
+];
+
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  for (const card of KNOWLEDGE) {
+    const el = document.createElement('div');
+    let cls = 'k-card';
+    if (card.key) cls += ' key-point';
+    /* 对比卡片特殊样式 */
+    if (card.title === 'Prim vs Kruskal') cls = 'k-card compare-point';
+    el.className = cls;
+    el.innerHTML = `
+      <div class="k-head">
+        <div class="k-icon">${card.icon}</div>
+        <div class="k-title">${card.title}</div>
+      </div>
+      <ul class="k-lines">
+        ${card.lines.map(l => `<li>${l}</li>`).join('')}
+      </ul>
+    `;
+    grid.appendChild(el);
+  }
+}
+
+/* =========================================================
+   13. 初始化
+   ========================================================= */
+renderKnowledge();
+if (window.hljs) hljs.highlightAll();
+
+edgeState = {};
+nodeState = {};
+render();
+clearLog();
+updateDemoUI();
+</script>
+</body>
+</html>
