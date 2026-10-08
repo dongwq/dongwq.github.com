@@ -1,0 +1,1712 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>线段树动画 · 8 种聚合 + 区间更新 + Python 实现</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 60px;
+    background: #eef2f7;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1f2933;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .wrap { width: min(1080px, 100%); }
+
+  h1 { font-size: 19px; font-weight: 600; margin: 0 0 10px; color: #243b53; }
+
+  /* ===== 顶部：一句话 + 复杂度速查（一行一个操作，名称在前）===== */
+  .summary-line {
+    margin: 0 0 10px; padding: 14px 18px;
+    background: linear-gradient(90deg, #eaf3fd, #f5faff);
+    border-left: 4px solid #2a7fd0; border-radius: 10px;
+    font-size: 13.5px; color: #334e68; line-height: 1.75;
+    box-shadow: 0 3px 12px rgba(30, 50, 80, .06);
+    display: grid; grid-template-columns: 1fr 300px; gap: 6px 28px; align-items: start;
+  }
+  .summary-line b { color: #1f6fb8; }
+  .summary-line .k {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    background: #2a7fd0; color: #fff; border-radius: 5px;
+    padding: 1px 7px; margin-right: 6px;
+  }
+  .sum-ops { display: flex; flex-direction: column; gap: 1px; }
+  .sum-op { display: flex; align-items: baseline; gap: 10px; font-size: 12.5px; line-height: 1.85; }
+  .sum-op .n {
+    width: 62px; flex: none;
+    font-weight: 700; color: #243b53; font-size: 12px;
+  }
+  .sum-op .v {
+    font-weight: 700; color: #1f6fb8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .sum-op .note { color: #7b8fa3; font-size: 11px; }
+
+  .subtitle { font-size: 13px; color: #627d98; margin: 0 0 16px; }
+  .subtitle code { background:#e3edf7; padding:1px 5px; border-radius:4px; font-size:12px; }
+  .subtitle b { color: #2a7fd0; }
+  .subtitle .tag {
+    display:inline-block; padding:1px 6px; border-radius:5px; font-size:11px; margin-left:6px;
+  }
+  .tag.rev   { background:#e2f4e2; color:#2f7a34; }
+  .tag.irrev { background:#fde7d3; color:#b45a12; }
+
+  svg#stage {
+    width: 100%;
+    height: auto;
+    display: block;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 6px 24px rgba(30, 50, 80, .10);
+  }
+
+  .green-node {
+    fill: #c9efc9; stroke: #57a957; stroke-width: 2;
+    transition: fill .3s, stroke .3s;
+    transform-box: fill-box; transform-origin: center;
+  }
+  .green-node.hl-update { fill: #ffd98a; stroke: #e09b00; stroke-width: 3; }
+  .green-node.hl-child  { fill: #ffe9c2; stroke: #e09b00; stroke-width: 2.5; }
+  .green-node.hl-query  { fill: #9fd4ff; stroke: #2a86d0; stroke-width: 3; }
+  .green-node.hl-take   { fill: #a9e6b4; stroke: #2f7a34; stroke-width: 3; }
+  .green-node.hl-skip   { fill: #eef1f4; stroke: #b6bec7; stroke-width: 2; stroke-dasharray: 5 4; }
+
+  .gray-node {
+    fill: #c9cdd2; stroke: #8b929a; stroke-width: 2;
+    transition: fill .3s, stroke .3s;
+    transform-box: fill-box; transform-origin: center;
+  }
+  .gray-node.hl-range { fill: #ffe9a8; stroke: #e09b00; }
+  .gray-node.hl-cell  { fill: #ffb0b0; stroke: #d64545; stroke-width: 3; }
+
+  .edge { stroke: #a8b3bf; stroke-width: 1.6; transition: stroke .3s, stroke-width .3s; }
+  .edge.hl { stroke: #e09b00; stroke-width: 3; }
+  .leaf-link { stroke: #c6cfd8; stroke-width: 1.4; stroke-dasharray: 4 4; }
+
+  .green-val   { font-size: 21px; font-weight: 700; fill: #20662c; pointer-events: none; user-select: none;
+                 paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; }
+  .green-idx   { font-size: 10.5px; font-weight: 700; fill: #2f6b3a; pointer-events: none; user-select: none;
+                 paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; }
+  .green-range { font-size: 10px; font-weight: 500; fill: #4d8a5a; pointer-events: none; user-select: none;
+                 paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; }
+  .gray-idx    { font-size: 11px; font-weight: 700; fill: #5a6068; pointer-events: none; user-select: none;
+                 paint-order: stroke; stroke: #fff; stroke-width: 3.5px; stroke-linejoin: round; }
+  .gray-val    { font-size: 19px; font-weight: 700; fill: #2b3138; pointer-events: none; user-select: none; }
+  .legend-txt  { font-size: 11px; fill: #627d98; user-select: none; }
+  .caption-txt { font-size: 10.5px; fill: #829ab1; user-select: none; }
+
+  .lazy-rect { fill: #fff3e0; stroke: #e09b00; stroke-width: 1.2;
+               transition: opacity .25s; }
+  .lazy-txt  { font-size: 9px; font-weight: 700; fill: #b45a12;
+               pointer-events: none; user-select: none; transition: opacity .25s; }
+
+  .path-dot { fill: #ff6b35; stroke: #fff; stroke-width: 2.5; pointer-events: none; }
+
+  /* ===== 控制面板：一行一个操作，名称在前 ===== */
+  .panel {
+    margin-top: 18px; background: #fff; border-radius: 12px;
+    padding: 4px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    display: flex; flex-direction: column;
+  }
+  .op-row {
+    display: flex; align-items: center; gap: 10px 12px;
+    flex-wrap: wrap; padding: 12px 0; font-size: 14px;
+  }
+  .op-row + .op-row { border-top: 1px solid #eef2f7; }
+  .row-name {
+    flex: none; width: 92px;
+    font-size: 13px; font-weight: 700; color: #243b53;
+  }
+  .op-row .hint-inline { font-size: 11.5px; color: #829ab1; margin-left: auto; }
+
+  button {
+    font: inherit; font-size: 13.5px; padding: 7px 16px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #f8fafc; color: #243b53; cursor: pointer; transition: .18s;
+  }
+  button:hover { background: #e8f0f8; border-color: #8faec9; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: #2a7fd0; border-color: #2a7fd0; color: #fff; }
+  button.primary:hover { background: #2369ad; border-color: #2369ad; }
+  button.small { font-size: 12px; padding: 5px 12px; }
+
+  select, input[type="number"] {
+    font: inherit; font-size: 13.5px; padding: 6px 8px;
+    border-radius: 8px; border: 1px solid #bcccdc;
+    background: #fff; color: #243b53;
+  }
+  input[type="number"] { width: 72px; }
+  select#opSel {
+    font-weight: 700; color: #2a7fd0;
+    border-color: #9dc3e6; background: #f0f7ff; min-width: 190px;
+  }
+  select#rngMode { min-width: 110px; }
+
+  .result {
+    margin-top: 14px; padding: 12px 18px;
+    background: #fff; border-radius: 12px;
+    border-left: 4px solid #2a7fd0;
+    font-size: 14px; color: #334e68;
+    min-height: 46px; display: flex; align-items: center;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+    transition: border-color .3s;
+  }
+
+  /* ===== 全量操作记录 ===== */
+  .log-toolbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .log-toolbar .tip { font-size: 11.5px; color: #829ab1; }
+  .log-list {
+    max-height: 320px; overflow: auto;
+    background: #f7fafd; border: 1px solid #e3ebf3; border-radius: 10px;
+    padding: 12px 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 11.8px; line-height: 1.85;
+  }
+  .log-list .lg-head {
+    color: #1f6fb8; font-weight: 700; margin-top: 10px;
+    border-top: 1px dashed #d3e2f0; padding-top: 8px;
+  }
+  .log-list .lg-head:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
+  .log-list .lg-step { color: #486581; white-space: pre-wrap; }
+  .log-list .lg-empty { color: #9fb3c8; }
+
+  /* ===== 知识模块 ===== */
+  .knowledge {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    padding: 16px 20px 18px; box-shadow: 0 4px 16px rgba(30, 50, 80, .07);
+  }
+  .knowledge h2 {
+    font-size: 14.5px; font-weight: 700; color: #243b53; margin: 0 0 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .knowledge h2::before {
+    content: ''; width: 4px; height: 16px; background: #2a7fd0; border-radius: 2px;
+  }
+  .knowledge h2 .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .k-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 10px;
+  }
+  .k-card {
+    border: 1.5px solid #dbe4ec; border-radius: 10px;
+    padding: 10px 12px 11px; background: #fafcfe;
+    transition: border-color .25s, background .25s, box-shadow .25s;
+    cursor: pointer;
+  }
+  .k-card:hover { border-color: #9dc3e6; background: #f5faff; }
+  .k-card.active {
+    border-color: #2a7fd0; background: #f0f7ff;
+    box-shadow: 0 0 0 3px rgba(42, 127, 208, .12);
+  }
+  .k-card.static { cursor: default; }
+  .k-card.static:hover { border-color: #dbe4ec; background: #fafcfe; }
+  .k-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .k-name { font-weight: 700; color: #243b53; font-size: 13.5px; }
+  .k-sym {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    background: #e3edf7; color: #2369ad;
+    padding: 1px 6px; border-radius: 4px; font-size: 11px;
+  }
+  .k-tag {
+    margin-left: auto; font-size: 10.5px; padding: 2px 7px;
+    border-radius: 5px; font-weight: 700; white-space: nowrap;
+  }
+  .k-tag.rev   { background:#e2f4e2; color:#2f7a34; }
+  .k-tag.irrev { background:#fde7d3; color:#b45a12; }
+  .k-tag.blue  { background:#e3edf7; color:#2369ad; }
+
+  /* 知识卡片里的复杂度：一行一个操作，名称在前 */
+  .k-meta { display: flex; flex-direction: column; gap: 2px; margin: 6px 0 8px; }
+  .km-row { display: flex; align-items: baseline; gap: 10px; font-size: 11.5px; color: #627d98; }
+  .km-row .km-name { width: 56px; flex: none; color: #829ab1; }
+  .km-row code {
+    background: #eef4fa; color: #2a7fd0; padding: 1px 5px;
+    border-radius: 3px; font-size: 11px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  .k-desc { font-size: 12px; color: #334e68; line-height: 1.55; }
+
+  .table-wrap { overflow-x: auto; }
+  .cmp-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 560px; }
+  .cmp-table th, .cmp-table td { border: 1px solid #dbe4ec; padding: 8px 11px; text-align: left; }
+  .cmp-table th { background: #eef4fa; color: #243b53; font-weight: 700; }
+  .cmp-table td:first-child { color: #627d98; width: 22%; font-weight: 600; }
+  .cmp-table tr:nth-child(even) td { background: #fafcfe; }
+  .cmp-table .seg { color: #2f7a34; font-weight: 700; }
+  .cmp-table .bit { color: #b45a12; font-weight: 700; }
+
+  /* ===== Python 代码模块 ===== */
+  .code-module {
+    margin-top: 16px; background: #fff; border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(30, 50, 80, .07); overflow: hidden;
+  }
+  .code-module > summary {
+    padding: 14px 20px; cursor: pointer; font-size: 14.5px;
+    font-weight: 700; color: #243b53; list-style: none;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none; border-bottom: 1px solid #eef2f7;
+    transition: background .15s;
+  }
+  .code-module > summary::-webkit-details-marker { display: none; }
+  .code-module > summary::before {
+    content: '▶'; font-size: 10px; color: #829ab1;
+    transition: transform .2s; display: inline-block;
+  }
+  .code-module[open] > summary::before { transform: rotate(90deg); }
+  .code-module > summary:hover { background: #f8fafc; }
+  .code-module > summary .hint {
+    font-size: 11.5px; font-weight: 400; color: #829ab1; margin-left: auto;
+  }
+  .code-module > summary .badge {
+    font-size: 11px; font-weight: 700;
+    background: #e2f4e2; color: #2f7a34;
+    padding: 2px 8px; border-radius: 5px;
+  }
+  .code-module > summary .badge.gray {
+    background: #eef2f7; color: #627d98;
+  }
+  .code-body {
+    padding: 18px 22px; background: #fbfdff;
+    max-height: 620px; overflow: auto;
+  }
+  pre.py-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12.5px; line-height: 1.7; color: #2b3138;
+    white-space: pre; tab-size: 4;
+  }
+  .tok-comment { color: #7a8a99; font-style: italic; }
+  .tok-string  { color: #2f7a34; }
+  .tok-keyword { color: #2369ad; font-weight: 700; }
+  .tok-builtin { color: #a35e00; }
+  .tok-func    { color: #6b4bb8; }
+  .tok-number  { color: #b45a12; }
+  .tok-self    { color: #b3558a; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>线段树 · 区间聚合动画</h1>
+
+  <!-- 一句话总结 + 复杂度速查（一行一个操作，名称在前） -->
+  <div class="summary-line">
+    <div class="sum-text">
+      <span class="k">一句话</span>线段树把数组折成一棵二叉树，每个节点记住「自己那段区间」的聚合值 ——
+      <b>用途</b>：任意区间查询、单点修改、区间修改；
+      <b>特征</b>：只认「可结合 + 有单位元」的运算，靠<b>懒标记</b>做区间修改，
+      空间 <b>O(4N)</b>，常数比树状数组大一点，通用性最好。
+    </div>
+    <div class="sum-ops">
+      <div class="sum-op"><span class="n">建树</span><span class="v">O(N)</span></div>
+      <div class="sum-op"><span class="n">单点更新</span><span class="v">O(log N)</span></div>
+      <div class="sum-op"><span class="n">区间查询</span><span class="v">O(log N)</span></div>
+      <div class="sum-op"><span class="n">区间修改</span><span class="v">O(log N)</span><span class="note">懒标记</span></div>
+      <div class="sum-op"><span class="n">空间</span><span class="v">O(4N)</span></div>
+    </div>
+  </div>
+
+  <p class="subtitle" id="subtitle"></p>
+
+  <svg id="stage" viewBox="0 0 824 640" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <!-- 控制面板：一行一个操作，名称在前 -->
+  <div class="panel">
+    <div class="op-row">
+      <span class="row-name">聚合操作</span>
+      <select id="opSel">
+        <optgroup label="带逆运算（树状数组也能 O(log N)）">
+          <option value="sum">求和 sum</option>
+          <option value="xor">按位异或 xor</option>
+        </optgroup>
+        <optgroup label="无逆运算（线段树才是 O(log N)）">
+          <option value="max">最大值 max</option>
+          <option value="min">最小值 min</option>
+          <option value="gcd">最大公约数 gcd</option>
+          <option value="lcm">最小公倍数 lcm</option>
+          <option value="or">按位或 or</option>
+          <option value="and">按位与 and</option>
+        </optgroup>
+      </select>
+      <span class="hint-inline">切换后自动重新构建，知识卡片会同步高亮</span>
+    </div>
+
+    <div class="op-row">
+      <span class="row-name">单点更新</span>
+      <span class="label">a[</span>
+      <select id="updIdx"></select>
+      <span class="label">] =</span>
+      <input id="updVal" type="number" value="10" min="0" max="99">
+      <button id="btnUpdate">执行更新</button>
+    </div>
+
+    <div class="op-row">
+      <span class="row-name">区间更新</span>
+      <span class="label">[</span>
+      <select id="rngL"></select>
+      <span class="label">..</span>
+      <select id="rngR"></select>
+      <span class="label">]</span>
+      <select id="rngMode">
+        <option value="assign">全部置为 =</option>
+        <option value="add">全部加 +</option>
+      </select>
+      <input id="rngVal" type="number" value="7" min="-99" max="99">
+      <button id="btnRange">执行区间更新</button>
+    </div>
+
+    <div class="op-row">
+      <span class="row-name">区间查询</span>
+      <span class="label">[</span>
+      <select id="qryL"></select>
+      <span class="label">..</span>
+      <select id="qryR"></select>
+      <span class="label">]</span>
+      <button id="btnQuery">执行查询</button>
+    </div>
+
+    <div class="op-row">
+      <span class="row-name">构建</span>
+      <button id="btnBuild" class="primary">重新构建</button>
+      <button id="btnReset">还原初始数组</button>
+      <span class="hint-inline">a[1..8] = 3, 1, 4, 1, 5, 9, 2, 6</span>
+    </div>
+  </div>
+
+  <div class="result" id="result">就绪</div>
+
+  <!-- 全量操作记录：默认折叠 -->
+  <details class="code-module" id="logModule">
+    <summary>
+      🧾 全量操作记录
+      <span class="badge gray" id="logCount">0 条</span>
+      <span class="hint">默认折叠 · 每次操作的完整步骤都会记录在此</span>
+    </summary>
+    <div class="code-body">
+      <div class="log-toolbar">
+        <span class="tip">记录内容：每次构建 / 单点更新 / 区间更新 / 区间查询的逐步过程与结果。</span>
+        <button id="btnClearLog" class="small">清空记录</button>
+      </div>
+      <div class="log-list" id="logList"></div>
+    </div>
+  </details>
+
+  <div class="knowledge">
+    <h2>📚 知识模块 · 8 种聚合操作 <span class="hint">点击卡片切换操作并重建</span></h2>
+    <div class="k-grid" id="kGrid"></div>
+  </div>
+
+  <div class="knowledge">
+    <h2>🧭 核心知识点 · 线段树是怎么工作的</h2>
+    <div class="k-grid" id="kConcepts"></div>
+  </div>
+
+  <div class="knowledge">
+    <h2>⚖️ 复杂度对比 · 线段树 vs 树状数组</h2>
+    <div class="table-wrap">
+      <table class="cmp-table">
+        <thead>
+          <tr><th>对比项</th><th>树状数组 BIT</th><th>线段树 Segment Tree</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>空间</td><td class="bit">O(N)</td><td class="seg">O(2N ~ 4N)</td></tr>
+          <tr><td>建结构</td><td class="bit">O(N)</td><td class="seg">O(N)（自底向上合并）</td></tr>
+          <tr><td>单点更新</td><td class="bit">可逆 O(log N) / 不可逆 O(log²N)</td><td class="seg">统一 O(log N)</td></tr>
+          <tr><td>区间查询</td><td class="bit">只有前缀，且需可逆才能相减</td><td class="seg">任意 [L,R]，O(log N)</td></tr>
+          <tr><td>区间修改</td><td class="bit">差分配合，能做区间加</td><td class="seg">懒标记，区间加 / 区间赋值都 O(log N)</td></tr>
+          <tr><td>常数 / 码量</td><td class="bit">小、短</td><td class="seg">略大，但模板通用</td></tr>
+          <tr><td>适用场景</td><td class="bit">求和、异或、前缀统计</td><td class="seg">任意可结合运算、区间最值、区间覆盖</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <details class="code-module" open>
+    <summary>
+      🐍 Python 实现 · 递归 + 懒标记
+      <span class="badge">build / update / query / range</span>
+      <span class="hint">区间查询与区间修改都是 O(log N)</span>
+    </summary>
+    <div class="code-body">
+      <pre class="py-code" id="pyCode"></pre>
+    </div>
+  </details>
+
+  <details class="code-module">
+    <summary>
+      ⚡ Python 实现 · 非递归（zkw 风格）
+      <span class="badge">常数更小</span>
+      <span class="hint">仅点更新 + 区间查询</span>
+    </summary>
+    <div class="code-body">
+      <pre class="py-code" id="pyCode2"></pre>
+    </div>
+  </details>
+</div>
+
+<!-- 原始 Python 代码（不执行） -->
+<script type="text/plain" id="pySrc">
+from math import gcd
+
+
+def lcm(a, b):
+    """最小公倍数"""
+    if a == 0 or b == 0:
+        return 0
+    return abs(a // gcd(a, b) * b)
+
+
+class SegTree:
+    """
+    线段树 + 懒标记（lazy propagation），支持 8 种区间聚合。
+
+    建树 O(N) · 单点更新 O(log N)
+    区间查询 O(log N) · 区间赋值 O(log N) · 区间加 O(log N)
+
+    存储：节点 1 为根，左子 2i、右子 2i+1；数组开 4n。
+    运算要求：merge 可结合，且有单位元 ident。
+    """
+
+    IDENT = {
+        'sum': 0, 'xor': 0,
+        'max': float('-inf'), 'min': float('inf'),
+        'gcd': 0, 'lcm': 1,
+        'or':  0, 'and': -1,
+    }
+
+    def __init__(self, arr, op='sum'):
+        self.n = len(arr) - 1
+        self.op = op
+        self.arr = arr[:]                       # arr[1..n]
+        self.tree = [self.IDENT[op]] * (4 * self.n)
+        self.set_tag = [None] * (4 * self.n)    # 区间赋值标记
+        self.add_tag = [0] * (4 * self.n)       # 区间加标记
+        self._build(1, 1, self.n)
+
+    # ---------- 聚合 ----------
+    def _merge(self, a, b):
+        op = self.op
+        if op == 'sum':  return a + b
+        if op == 'xor':  return a ^ b
+        if op == 'max':  return max(a, b)
+        if op == 'min':  return min(a, b)
+        if op == 'gcd':  return gcd(a, b)
+        if op == 'lcm':  return lcm(a, b)
+        if op == 'or':   return a | b
+        if op == 'and':  return a & b
+        raise ValueError(f'unknown op: {op}')
+
+    def _fold_set(self, val, length):
+        """整段区间每个元素都是 val 时的聚合值"""
+        if self.op == 'sum': return val * length
+        if self.op == 'xor': return val if length % 2 else 0
+        return val            # max / min / gcd / lcm / or / and
+
+    def _add_value(self, cur, delta, length):
+        """整段区间每个元素 +delta 后的聚合值（仅 sum/max/min 支持）"""
+        if self.op == 'sum': return cur + delta * length
+        if self.op in ('max', 'min'): return cur + delta
+        raise ValueError('该运算不支持区间加，请改用区间赋值')
+
+    # ---------- 懒标记 ----------
+    def _apply_set(self, v, l, r, val):
+        """把 [l, r] 整体置为 val"""
+        self.tree[v] = self._fold_set(val, r - l + 1)
+        if l == r:                       # 叶子不必留标记
+            self.set_tag[v] = None
+            self.add_tag[v] = 0
+        else:
+            self.set_tag[v] = val
+            self.add_tag[v] = 0
+
+    def _apply_add(self, v, l, r, delta):
+        """把 [l, r] 整体加 delta"""
+        self.tree[v] = self._add_value(self.tree[v], delta, r - l + 1)
+        if l == r:
+            self.set_tag[v] = None
+            self.add_tag[v] = 0
+        elif self.set_tag[v] is not None:
+            self.set_tag[v] += delta    # 已有赋值标记，合并进去即可
+        else:
+            self.add_tag[v] += delta
+
+    def _push_down(self, v, l, r):
+        """要下探孩子之前，必须先把标记下传，否则孩子是旧值"""
+        if self.set_tag[v] is None and self.add_tag[v] == 0:
+            return
+        mid = (l + r) // 2
+        if self.set_tag[v] is not None:
+            self._apply_set(v * 2, l, mid, self.set_tag[v])
+            self._apply_set(v * 2 + 1, mid + 1, r, self.set_tag[v])
+            self.set_tag[v] = None
+        else:
+            self._apply_add(v * 2, l, mid, self.add_tag[v])
+            self._apply_add(v * 2 + 1, mid + 1, r, self.add_tag[v])
+            self.add_tag[v] = 0
+
+    # ---------- 建树 O(N) ----------
+    def _build(self, v, l, r):
+        if l == r:
+            self.tree[v] = self.arr[l]
+            return
+        mid = (l + r) // 2
+        self._build(v * 2, l, mid)
+        self._build(v * 2 + 1, mid + 1, r)
+        self.tree[v] = self._merge(self.tree[v * 2], self.tree[v * 2 + 1])
+
+    # ---------- 单点更新 O(log N) ----------
+    def update(self, idx, val):
+        self.arr[idx] = val
+        self._update(1, 1, self.n, idx, val)
+
+    def _update(self, v, l, r, idx, val):
+        if l == r:
+            self.tree[v] = val
+            self.set_tag[v] = None
+            self.add_tag[v] = 0
+            return
+        self._push_down(v, l, r)
+        mid = (l + r) // 2
+        if idx <= mid:
+            self._update(v * 2, l, mid, idx, val)
+        else:
+            self._update(v * 2 + 1, mid + 1, r, idx, val)
+        self.tree[v] = self._merge(self.tree[v * 2], self.tree[v * 2 + 1])
+
+    # ---------- 区间赋值 O(log N) ----------
+    def range_assign(self, ql, qr, val):
+        self._range_assign(1, 1, self.n, ql, qr, val)
+
+    def _range_assign(self, v, l, r, ql, qr, val):
+        if qr < l or r < ql:
+            return
+        if ql <= l and r <= qr:
+            self._apply_set(v, l, r, val)   # 整块覆盖：只打标记
+            return
+        self._push_down(v, l, r)
+        mid = (l + r) // 2
+        self._range_assign(v * 2, l, mid, ql, qr, val)
+        self._range_assign(v * 2 + 1, mid + 1, r, ql, qr, val)
+        self.tree[v] = self._merge(self.tree[v * 2], self.tree[v * 2 + 1])
+
+    # ---------- 区间加 O(log N) ----------
+    def range_add(self, ql, qr, delta):
+        self._range_add(1, 1, self.n, ql, qr, delta)
+
+    def _range_add(self, v, l, r, ql, qr, delta):
+        if qr < l or r < ql:
+            return
+        if ql <= l and r <= qr:
+            self._apply_add(v, l, r, delta)  # 整块覆盖：只打标记
+            return
+        self._push_down(v, l, r)
+        mid = (l + r) // 2
+        self._range_add(v * 2, l, mid, ql, qr, delta)
+        self._range_add(v * 2 + 1, mid + 1, r, ql, qr, delta)
+        self.tree[v] = self._merge(self.tree[v * 2], self.tree[v * 2 + 1])
+
+    # ---------- 区间查询 O(log N) ----------
+    def query(self, ql, qr):
+        return self._query(1, 1, self.n, ql, qr)
+
+    def _query(self, v, l, r, ql, qr):
+        if qr < l or r < ql:
+            return self.IDENT[self.op]      # 无交集
+        if ql <= l and r <= qr:
+            return self.tree[v]             # 完全包含
+        self._push_down(v, l, r)            # 要下探，先推标记
+        mid = (l + r) // 2
+        left = self._query(v * 2, l, mid, ql, qr)
+        right = self._query(v * 2 + 1, mid + 1, r, ql, qr)
+        return self._merge(left, right)
+
+
+if __name__ == '__main__':
+    arr = [None, 3, 1, 4, 1, 5, 9, 2, 6]
+
+    for op in ['sum', 'max', 'min', 'gcd', 'lcm', 'or', 'and', 'xor']:
+        st = SegTree(arr, op)
+        print(f'{op:>4}[3..6] =', st.query(3, 6))
+
+    st = SegTree(arr, 'sum')
+    st.range_add(2, 5, 3)        # [2..5] 每个元素 +3
+    print('sum[1..8] =', st.query(1, 8))     # 31 + 12 = 43
+    st.range_assign(3, 6, 10)    # [3..6] 全部置为 10
+    print('sum[3..6] =', st.query(3, 6))     # 40
+    st.update(4, 1)              # 单点更新，会自动下推懒标记
+    print('sum[1..8] =', st.query(1, 8))
+</script>
+
+<script type="text/plain" id="pySrc2">
+class SegTreeIter:
+    """
+    非递归（zkw 风格）线段树：常数更小、代码更短。
+    仅支持单点更新 + 区间查询；下标从 0 开始，叶子在 tree[n:2n]。
+    """
+
+    def __init__(self, arr, merge, ident):
+        self.merge, self.ident = merge, ident
+        self.n = 1
+        while self.n < len(arr):
+            self.n <<= 1                      # 补齐到 2 的幂
+        self.tree = [ident] * (2 * self.n)
+        for i, x in enumerate(arr):
+            self.tree[self.n + i] = x
+        for i in range(self.n - 1, 0, -1):
+            self.tree[i] = merge(self.tree[2 * i], self.tree[2 * i + 1])
+
+    def update(self, idx, val):
+        """单点修改 a[idx] = val，O(log N)"""
+        i = self.n + idx
+        self.tree[i] = val
+        i //= 2
+        while i:
+            self.tree[i] = self.merge(self.tree[2 * i], self.tree[2 * i + 1])
+            i //= 2
+
+    def query(self, l, r):
+        """查询闭区间 [l, r]，O(log N)"""
+        res_l = res_r = self.ident
+        l += self.n
+        r += self.n
+        while l <= r:
+            if l & 1:                          # l 是右孩子 → 整块采纳
+                res_l = self.merge(res_l, self.tree[l])
+                l += 1
+            if not (r & 1):                    # r 是左孩子 → 整块采纳
+                res_r = self.merge(self.tree[r], res_r)
+                r -= 1
+            l //= 2
+            r //= 2
+        return self.merge(res_l, res_r)
+
+
+if __name__ == '__main__':
+    from math import gcd
+
+    arr = [3, 1, 4, 1, 5, 9, 2, 6]
+
+    st_sum = SegTreeIter(arr, lambda a, b: a + b, 0)
+    st_max = SegTreeIter(arr, max, float('-inf'))
+    st_gcd = SegTreeIter(arr, gcd, 0)
+
+    print('sum[2..5] =', st_sum.query(2, 5))
+    print('max[2..5] =', st_max.query(2, 5))
+    print('gcd[2..5] =', st_gcd.query(2, 5))
+
+    st_sum.update(2, 10)
+    print('sum[2..5] after update =', st_sum.query(2, 5))
+</script>
+
+<script>
+/* =========================================================
+   1. 数据 & 聚合操作注册表
+   ========================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const N  = 8;
+const NODE_COUNT = 2 * N - 1;
+const INIT_ARR = [null, 3, 1, 4, 1, 5, 9, 2, 6];
+
+let arr     = INIT_ARR.slice();
+let treeArr = new Array(NODE_COUNT + 1).fill(null);
+const lazySet = new Array(NODE_COUNT + 1).fill(null);   // 区间赋值标记
+const lazyAdd = new Array(NODE_COUNT + 1).fill(0);      // 区间加标记
+let busy = false;
+let OP   = 'sum';
+
+function _gcd(a, b) {
+  a = Math.abs(a); b = Math.abs(b);
+  while (b) { [a, b] = [b, a % b]; }
+  return a;
+}
+
+const OP_FN = {
+  sum: (a, b) => a + b,
+  max: (a, b) => Math.max(a, b),
+  min: (a, b) => Math.min(a, b),
+  gcd: (a, b) => _gcd(a, b),
+  lcm: (a, b) => { if (a === 0 || b === 0) return 0; return Math.abs(a / _gcd(a, b) * b); },
+  or:  (a, b) => a | b,
+  and: (a, b) => a & b,
+  xor: (a, b) => a ^ b,
+};
+
+const OP_IDENT = {
+  sum: 0, max: -Infinity, min: Infinity, gcd: 0,
+  lcm: 1, or: 0, and: -1, xor: 0,
+};
+
+const OP_SYM = {
+  sum: '+', xor: '⊕', max: 'max', min: 'min',
+  gcd: 'gcd', lcm: 'lcm', or: '|', and: '&',
+};
+const OP_NAME = {
+  sum:'区间求和', max:'区间最大值', min:'区间最小值', gcd:'区间最大公约数',
+  lcm:'区间最小公倍数', or:'区间按位或', and:'区间按位与', xor:'区间按位异或',
+};
+
+/* 「区间加」只对这三种运算有明确语义 */
+const ADD_SUPPORTED = new Set(['sum', 'max', 'min']);
+
+const KNOWLEDGE = [
+  { op:'sum', name:'求和',       sym:'sum', ident:'0',   rev:true,  desc:'加法可结合。任意 [L,R] 都能由若干完整节点合并得到；区间加 Δ 只需标记「长度 × Δ」，是最经典的懒标记场景。' },
+  { op:'xor', name:'按位异或',   sym:'xor', ident:'0',   rev:true,  desc:'异或可结合且 a ⊕ a = 0。注意区间加没有意义，只能用区间赋值；长度为偶数时整段异或值为 0。' },
+  { op:'max', name:'最大值',     sym:'max', ident:'−∞',  rev:false, desc:'max 可结合但无逆运算。区间加 Δ 时最大值也 +Δ，所以同样支持懒标记；树状数组做点更新就要 O(log²N)。' },
+  { op:'min', name:'最小值',     sym:'min', ident:'+∞',  rev:false, desc:'min 与 max 对称。区间加 Δ 时最小值 +Δ；区间赋值则整段都变成同一个值。' },
+  { op:'gcd', name:'最大公约数', sym:'gcd', ident:'0',   rev:false, desc:'gcd 可结合，gcd(0, x) = x，单位元取 0。区间加会破坏 gcd 结构，只支持区间赋值。' },
+  { op:'lcm', name:'最小公倍数', sym:'lcm', ident:'1',   rev:false, desc:'lcm 可结合，但数值增长很快。区间赋值后整段 lcm = 该值；不支持区间加。' },
+  { op:'or',  name:'按位或',     sym:'or',  ident:'0',   rev:false, desc:'按位或可结合，单位元 0。整段赋同一个值后 or 就是该值；不支持区间加。' },
+  { op:'and', name:'按位与',     sym:'and', ident:'−1',  rev:false, desc:'按位与可结合，单位元是全 1（Python 中用 −1）。适合求区间公共位；不支持区间加。' },
+];
+
+const CONCEPTS = [
+  { tag:'结构', name:'堆式存储', desc:'根为 node 1，左子 2i、右子 2i+1。节点 v 的区间由 (v, l, r) 递归确定：左子 [l,mid]，右子 [mid+1,r]。n 个元素用 2·2^⌈log₂n⌉ 个节点，习惯开 4n。' },
+  { tag:'建树', name:'自底向上合并', desc:'叶子存 a[i]，内部节点 = merge(左子, 右子)。2n−1 个节点各算一次，总复杂度 O(N)，比 n 次单点更新的 O(N log N) 更划算。' },
+  { tag:'查询', name:'区间分解', desc:'[L,R] 会被拆成不超过 2·log₂N 个互不相交的完整节点（图中绿色块），答案就是这些节点值的合并；无交集的分支直接剪枝（灰色块）。' },
+  { tag:'更新', name:'路径重算', desc:'单点修改只影响 根→叶子 这条 O(log N) 长的路径，回溯时用两个孩子重算即可。所有运算统一 O(log N)，不像树状数组需要逆元。' },
+  { tag:'修改', name:'区间修改 · 懒标记', desc:'整块覆盖时不必真的改到底，只在节点上打个「lazy 标记」（图中橙色徽标），值就地改好；需要下探时先 push_down 把标记传给孩子。区间赋值 / 区间加 都是 O(log N)。' },
+  { tag:'前提', name:'可结合性', desc:'merge 必须满足结合律，且存在单位元 e 使 merge(e, x) = x。减法这类不可结合的运算不能直接套用；区间加只对 sum / max / min 有明确语义。' },
+  { tag:'进阶', name:'变体', desc:'动态开点（权值线段树）、线段树合并、李超树（区间直线最值）、吉司机线段树（区间历史最值）、线段树上二分等。' },
+];
+
+const leafNodeOf = i => (N - 1) + i;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+const RANGE = {};
+(function buildMeta() {
+  const stack = [[1, 1, N]];
+  while (stack.length) {
+    const [v, l, r] = stack.pop();
+    RANGE[v] = [l, r];
+    if (l === r) continue;
+    const mid = (l + r) >> 1;
+    stack.push([2 * v, l, mid], [2 * v + 1, mid + 1, r]);
+  }
+})();
+const depthOf = v => Math.floor(Math.log2(v));
+
+/* =========================================================
+   2. 布局
+   ========================================================= */
+const GRAY_W = 78, GRAY_H = 58, GAP = 10, LEFT = 65;
+const grayLeft  = i => LEFT + (i - 1) * (GRAY_W + GAP);
+const grayRight = i => grayLeft(i) + GRAY_W;
+const grayCX    = i => grayLeft(i) + GRAY_W / 2;
+const GRAY_Y = 552;
+
+const LEVEL_Y = [104, 212, 320, 428];
+const NODE_H  = 52;
+
+const GREEN_POS = {};
+for (let v = 1; v <= NODE_COUNT; v++) {
+  const [l, r] = RANGE[v];
+  const left  = grayLeft(l);
+  const width = grayRight(r) - left;
+  GREEN_POS[v] = { left, width, x: left + width / 2, y: LEVEL_Y[depthOf(v)], h: NODE_H, l, r };
+}
+const rectOf     = v => ({ x: GREEN_POS[v].x, y: GREEN_POS[v].y, w: GREEN_POS[v].width, h: GREEN_POS[v].h });
+const grayRectOf = i => ({ x: grayCX(i), y: GRAY_Y, w: GRAY_W, h: GRAY_H });
+
+/* =========================================================
+   3. SVG 工具
+   ========================================================= */
+const svg = document.getElementById('stage');
+function mk(tag, attrs = {}, parent) {
+  const el = document.createElementNS(NS, tag);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(el);
+  return el;
+}
+function rectEdge(rect, tx, ty) {
+  const dx = tx - rect.x, dy = ty - rect.y;
+  const hw = rect.w / 2, hh = rect.h / 2;
+  const sx = dx === 0 ? Infinity : hw / Math.abs(dx);
+  const sy = dy === 0 ? Infinity : hh / Math.abs(dy);
+  const s = Math.min(sx, sy);
+  return { x: rect.x + dx * s, y: rect.y + dy * s };
+}
+
+/* =========================================================
+   4. 场景元素
+   ========================================================= */
+const greenRect = {}, greenValTxt = {}, greenIdxTxt = {}, greenRangeTxt = {};
+const lazyRect = [], lazyTxt = [];
+const grayRect = [], grayIdxTxt = [], grayValTxt = [];
+const edgeEls = {};
+let dot, dotX = 0, dotY = 0;
+
+function buildScene() {
+  const defs = mk('defs', {}, svg);
+  const marker = mk('marker', {
+    id: 'ah', viewBox: '0 0 10 10',
+    refX: '8', refY: '5', markerWidth: '6', markerHeight: '6', orient: 'auto'
+  }, defs);
+  mk('path', { d: 'M0,0 L10,5 L0,10 z', fill: '#93a1b0' }, marker);
+
+  const edgeLayer = mk('g', {}, svg);
+  const linkLayer = mk('g', {}, svg);
+  const dotLayer  = mk('g', {}, svg);
+  const nodeLayer = mk('g', {}, svg);
+
+  for (let i = 1; i <= N; i++) {
+    const leafY = LEVEL_Y[3] + NODE_H / 2;
+    const grayTop = GRAY_Y - GRAY_H / 2;
+    mk('line', { x1: grayCX(i), y1: leafY, x2: grayCX(i), y2: grayTop, class: 'leaf-link' }, linkLayer);
+  }
+
+  for (let v = 2; v <= NODE_COUNT; v++) {
+    const p = v >> 1;
+    const a = rectOf(p), b = rectOf(v);
+    const from = rectEdge(a, b.x, b.y);
+    const to   = rectEdge(b, a.x, a.y);
+    const dx = to.x - from.x, dy = to.y - from.y;
+    const len = Math.hypot(dx, dy) || 1;
+    to.x -= dx / len * 5;
+    to.y -= dy / len * 5;
+    edgeEls[v] = mk('line', {
+      x1: from.x, y1: from.y, x2: to.x, y2: to.y,
+      class: 'edge', 'marker-end': 'url(#ah)'
+    }, edgeLayer);
+  }
+
+  for (let i = 1; i <= N; i++) {
+    const cx = grayCX(i);
+    grayRect[i] = mk('rect', {
+      x: cx - GRAY_W / 2, y: GRAY_Y - GRAY_H / 2,
+      width: GRAY_W, height: GRAY_H, rx: 9, class: 'gray-node'
+    }, nodeLayer);
+    grayIdxTxt[i] = mk('text', {
+      x: cx, y: GRAY_Y - GRAY_H / 2 - 13,
+      class: 'gray-idx', 'text-anchor': 'middle', 'dominant-baseline': 'central'
+    }, nodeLayer);
+    grayIdxTxt[i].textContent = 'a[' + i + ']';
+    grayValTxt[i] = mk('text', {
+      x: cx, y: GRAY_Y,
+      class: 'gray-val', 'text-anchor': 'middle', 'dominant-baseline': 'central'
+    }, nodeLayer);
+    grayValTxt[i].textContent = arr[i];
+  }
+
+  for (let v = 1; v <= NODE_COUNT; v++) {
+    const g = GREEN_POS[v];
+    greenRect[v] = mk('rect', {
+      x: g.left, y: g.y - g.h / 2,
+      width: g.width, height: g.h, rx: 8, class: 'green-node'
+    }, nodeLayer);
+    greenIdxTxt[v] = mk('text', {
+      x: g.left + 8, y: g.y - g.h / 2 + 13,
+      class: 'green-idx', 'text-anchor': 'start', 'dominant-baseline': 'central'
+    }, nodeLayer);
+    greenIdxTxt[v].textContent = 'node ' + v;
+    greenRangeTxt[v] = mk('text', {
+      x: g.left + g.width - 8, y: g.y - g.h / 2 + 13,
+      class: 'green-range', 'text-anchor': 'end', 'dominant-baseline': 'central'
+    }, nodeLayer);
+    greenRangeTxt[v].textContent = (g.l === g.r) ? '' : `[${g.l},${g.r}]`;
+    greenValTxt[v] = mk('text', {
+      x: g.x, y: g.y + 2,
+      class: 'green-val', 'text-anchor': 'middle', 'dominant-baseline': 'central'
+    }, nodeLayer);
+    greenValTxt[v].textContent = '–';
+
+    /* 懒标记徽标 */
+    lazyRect[v] = mk('rect', {
+      x: g.left + g.width - 62, y: g.y + 8,
+      width: 56, height: 15, rx: 5,
+      class: 'lazy-rect', opacity: 0
+    }, nodeLayer);
+    lazyTxt[v] = mk('text', {
+      x: g.left + g.width - 34, y: g.y + 15.5,
+      class: 'lazy-txt', 'text-anchor': 'middle', 'dominant-baseline': 'central',
+      opacity: 0
+    }, nodeLayer);
+    lazyTxt[v].textContent = '';
+  }
+
+  dot = mk('circle', { r: 9, cx: -100, cy: -100, opacity: 0, class: 'path-dot' }, dotLayer);
+
+  const legend = [
+    { cls: 'hl-update', label: '更新 / 重算路径' },
+    { cls: 'hl-take',   label: '查询采纳（完整覆盖）' },
+    { cls: 'hl-query',  label: '下探（部分重叠）' },
+    { cls: 'hl-skip',   label: '剪枝跳过（无交集）' },
+  ];
+  legend.forEach((it, k) => {
+    const x = 70 + k * 175;
+    mk('rect', { x, y: 26, width: 16, height: 14, rx: 4, class: 'green-node ' + it.cls }, nodeLayer);
+    const t = mk('text', { x: x + 22, y: 33, class: 'legend-txt', 'dominant-baseline': 'central' }, nodeLayer);
+    t.textContent = it.label;
+  });
+
+  const cap = mk('text', {
+    x: 412, y: 622, class: 'caption-txt',
+    'text-anchor': 'middle', 'dominant-baseline': 'central'
+  }, nodeLayer);
+  cap.textContent = '绿色＝线段树节点（node 编号 / 管辖区间 / 聚合值）　橙色徽标＝懒标记 lazy　灰色＝原数组 a[1..8]';
+}
+
+/* =========================================================
+   5. 全量操作记录（默认折叠）
+   ========================================================= */
+const logList = document.getElementById('logList');
+const logCountEl = document.getElementById('logCount');
+let logCount = 0;
+let opActive = false;
+
+function nowTime() {
+  return new Date().toLocaleTimeString('zh-CN', { hour12: false });
+}
+function updateLogCount() {
+  logCountEl.textContent = logCount + ' 条';
+}
+function clearEmptyState() {
+  const e = logList.querySelector('.lg-empty');
+  if (e) e.remove();
+}
+function scrollLog() {
+  if (document.getElementById('logModule').open) {
+    logList.scrollTop = logList.scrollHeight;
+  }
+}
+function startOp(title) {
+  clearEmptyState();
+  opActive = true;
+  const d = document.createElement('div');
+  d.className = 'lg-head';
+  d.textContent = `${nowTime()}　▶ ${title}`;
+  logList.appendChild(d);
+  logCount++;
+  updateLogCount();
+  scrollLog();
+}
+function endOp() { opActive = false; }
+function logStep(text) {
+  if (!opActive) return;
+  const d = document.createElement('div');
+  d.className = 'lg-step';
+  d.textContent = '    ' + text;
+  logList.appendChild(d);
+  logCount++;
+  updateLogCount();
+  scrollLog();
+}
+function logReset() {
+  logList.innerHTML = '<div class="lg-empty">暂无记录 —— 每次操作的完整步骤都会记录在这里。</div>';
+  logCount = 0;
+  updateLogCount();
+}
+logReset();
+
+/* =========================================================
+   6. 工具 & 懒标记
+   ========================================================= */
+const resultEl = document.getElementById('result');
+const setResult = t => { resultEl.textContent = t; logStep(t); };
+
+function pop(el) {
+  el.animate(
+    [{ transform: 'scale(1)' }, { transform: 'scale(1.13)' }, { transform: 'scale(1)' }],
+    { duration: 400, easing: 'ease-out' }
+  );
+}
+
+function foldSet(val, len) {
+  if (OP === 'sum') return val * len;
+  if (OP === 'xor') return (len % 2) ? val : 0;
+  return val;                       // max / min / gcd / lcm / or / and
+}
+function addValue(cur, d, len) {
+  if (OP === 'sum') return cur + d * len;
+  return cur + d;                   // max / min
+}
+function hasTag(v) { return lazySet[v] !== null || lazyAdd[v] !== 0; }
+function tagText(v) {
+  return lazySet[v] !== null ? `= ${lazySet[v]}` : `+ ${lazyAdd[v]}`;
+}
+function applySet(v, l, r, val) {
+  treeArr[v] = foldSet(val, r - l + 1);
+  if (l === r) { lazySet[v] = null; lazyAdd[v] = 0; }
+  else { lazySet[v] = val; lazyAdd[v] = 0; }
+}
+function applyAdd(v, l, r, d) {
+  treeArr[v] = addValue(treeArr[v], d, r - l + 1);
+  if (l === r) { lazySet[v] = null; lazyAdd[v] = 0; }
+  else if (lazySet[v] !== null) lazySet[v] += d;
+  else lazyAdd[v] += d;
+}
+function pushDown(v, l, r) {
+  if (!hasTag(v)) return;
+  const mid = (l + r) >> 1, lc = 2 * v, rc = 2 * v + 1;
+  if (lazySet[v] !== null) {
+    applySet(lc, l, mid, lazySet[v]);
+    applySet(rc, mid + 1, r, lazySet[v]);
+    lazySet[v] = null;
+  } else {
+    applyAdd(lc, l, mid, lazyAdd[v]);
+    applyAdd(rc, mid + 1, r, lazyAdd[v]);
+    lazyAdd[v] = 0;
+  }
+}
+
+function setBadge(v, text) {
+  lazyTxt[v].textContent = text;
+  lazyRect[v].setAttribute('opacity', 1);
+  lazyTxt[v].setAttribute('opacity', 1);
+}
+function clearBadge(v) {
+  lazyRect[v].setAttribute('opacity', 0);
+  lazyTxt[v].setAttribute('opacity', 0);
+}
+function syncNodeDisplay(v) {
+  greenValTxt[v].textContent = treeArr[v];
+  if (hasTag(v)) setBadge(v, 'lazy ' + tagText(v)); else clearBadge(v);
+}
+
+function clearGreen() {
+  for (let v = 1; v <= NODE_COUNT; v++) {
+    greenRect[v].classList.remove('hl-update', 'hl-child', 'hl-query', 'hl-take', 'hl-skip');
+  }
+  for (const k in edgeEls) edgeEls[k].classList.remove('hl');
+}
+function clearHighlights() {
+  clearGreen();
+  for (let i = 1; i <= N; i++) grayRect[i].classList.remove('hl-range', 'hl-cell');
+}
+
+function resetTree() {
+  treeArr = new Array(NODE_COUNT + 1).fill(null);
+  lazySet.fill(null);
+  lazyAdd.fill(0);
+  for (let v = 1; v <= NODE_COUNT; v++) {
+    greenValTxt[v].textContent = '–';
+    greenRect[v].setAttribute('class', 'green-node');
+    clearBadge(v);
+  }
+  for (let i = 1; i <= N; i++) {
+    grayValTxt[i].textContent = arr[i];
+    grayRect[i].setAttribute('class', 'gray-node');
+  }
+  for (const k in edgeEls) edgeEls[k].setAttribute('class', 'edge');
+}
+function resetState() { arr = INIT_ARR.slice(); resetTree(); }
+
+/* =========================================================
+   7. 知识模块渲染
+   ========================================================= */
+function renderKnowledge() {
+  const grid = document.getElementById('kGrid');
+  grid.innerHTML = '';
+  KNOWLEDGE.forEach(k => {
+    const card = document.createElement('div');
+    card.className = 'k-card' + (k.op === OP ? ' active' : '');
+    card.dataset.op = k.op;
+    card.innerHTML = `
+      <div class="k-head">
+        <span class="k-name">${k.name}</span>
+        <span class="k-sym">${k.sym}</span>
+        <span class="k-tag ${k.rev ? 'rev' : 'irrev'}">${k.rev ? '可逆运算' : '无逆运算'}</span>
+      </div>
+      <div class="k-meta">
+        <div class="km-row"><span class="km-name">单位元</span><code>${k.ident}</code></div>
+        <div class="km-row"><span class="km-name">单点更新</span><code>O(log N)</code></div>
+        <div class="km-row"><span class="km-name">区间查询</span><code>O(log N)</code></div>
+        <div class="km-row"><span class="km-name">区间修改</span><code>O(log N)</code></div>
+      </div>
+      <div class="k-desc">${k.desc}</div>
+    `;
+    card.addEventListener('click', () => {
+      if (busy || k.op === OP) return;
+      OP = k.op;
+      opSel.value = OP;
+      updateSubtitle();
+      updateKnowledgeActive();
+      syncRangeMode();
+      resetTree();
+      runBuild();
+    });
+    grid.appendChild(card);
+  });
+
+  const cg = document.getElementById('kConcepts');
+  cg.innerHTML = '';
+  CONCEPTS.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'k-card static';
+    card.innerHTML = `
+      <div class="k-head">
+        <span class="k-name">${c.name}</span>
+        <span class="k-tag blue">${c.tag}</span>
+      </div>
+      <div class="k-desc">${c.desc}</div>
+    `;
+    cg.appendChild(card);
+  });
+}
+function updateKnowledgeActive() {
+  document.querySelectorAll('#kGrid .k-card').forEach(card => {
+    card.classList.toggle('active', card.dataset.op === OP);
+  });
+}
+
+/* =========================================================
+   8. 小圆点
+   ========================================================= */
+function setDotPos(x, y) { dotX = x; dotY = y; dot.setAttribute('cx', x); dot.setAttribute('cy', y); }
+function showDotAt(x, y) { setDotPos(x, y); dot.setAttribute('opacity', 1); }
+function hideDot() { dot.setAttribute('opacity', 0); }
+
+function moveDotTo(x, y, duration = 600) {
+  return new Promise(resolve => {
+    const sx = dotX, sy = dotY;
+    const t0 = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      const e = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      setDotPos(sx + (x - sx) * e, sy + (y - sy) * e);
+      if (t < 1) requestAnimationFrame(step); else resolve();
+    }
+    requestAnimationFrame(step);
+  });
+}
+async function hopBetween(fromRect, toRect, duration = 600) {
+  const a = rectEdge(fromRect, toRect.x, toRect.y);
+  const b = rectEdge(toRect, fromRect.x, fromRect.y);
+  await moveDotTo(a.x, a.y, 140);
+  await moveDotTo(b.x, b.y, duration);
+}
+
+/* =========================================================
+   9. 副标题
+   ========================================================= */
+function updateSubtitle() {
+  const rev = OP === 'sum' || OP === 'xor';
+  const tag = rev
+    ? '<span class="tag rev">可逆运算</span>'
+    : '<span class="tag irrev">无逆运算</span>';
+  document.getElementById('subtitle').innerHTML =
+    `堆式存储：根 <code>node 1</code>，左子 <code>2i</code>，右子 <code>2i+1</code> · ` +
+    `当前操作：<b>${OP_NAME[OP]}</b>${tag}`;
+}
+
+/* =========================================================
+   10. 构建
+   ========================================================= */
+async function runBuild() {
+  if (busy) return;
+  busy = true;
+  hideDot();
+  clearHighlights();
+  lazySet.fill(null); lazyAdd.fill(0);
+  for (let v = 1; v <= NODE_COUNT; v++) clearBadge(v);
+  updateSubtitle();
+  updateKnowledgeActive();
+
+  startOp(`构建 build · 聚合操作 ${OP_NAME[OP]}(${OP})`);
+  setResult('构建中：叶子取数组元素，内部节点 = merge(左孩子, 右孩子)');
+  await sleep(420);
+
+  for (let i = 1; i <= N; i++) {
+    const v = leafNodeOf(i);
+    grayRect[i].classList.add('hl-range');
+    treeArr[v] = arr[i];
+    greenValTxt[v].textContent = arr[i];
+    pop(greenRect[v]);
+    setResult(`叶子 node ${v} = a[${i}] = ${arr[i]}`);
+    await sleep(240);
+    grayRect[i].classList.remove('hl-range');
+  }
+
+  for (let lvl = 2; lvl >= 0; lvl--) {
+    for (let v = (1 << lvl); v < (1 << (lvl + 1)); v++) {
+      const lc = 2 * v, rc = 2 * v + 1;
+      greenRect[lc].classList.add('hl-child');
+      greenRect[rc].classList.add('hl-child');
+      await sleep(220);
+      treeArr[v] = OP_FN[OP](treeArr[lc], treeArr[rc]);
+      greenValTxt[v].textContent = treeArr[v];
+      greenRect[v].classList.add('hl-update');
+      pop(greenRect[v]);
+      setResult(`tree[${v}] = ${OP_SYM[OP]}(node ${lc} = ${treeArr[lc]}, node ${rc} = ${treeArr[rc]}) = ${treeArr[v]}`);
+      await sleep(420);
+      greenRect[lc].classList.remove('hl-child');
+      greenRect[rc].classList.remove('hl-child');
+      greenRect[v].classList.remove('hl-update');
+    }
+  }
+
+  setResult(`构建完成：根节点 node 1 = ${treeArr[1]}，即 ${OP_NAME[OP]}[1..${N}]`);
+  endOp();
+  busy = false;
+}
+
+/* =========================================================
+   11. 单点更新
+   ========================================================= */
+async function runUpdate(idx, newVal) {
+  if (busy) return;
+  if (treeArr[1] === null) { setResult('请先点击「重新构建」'); return; }
+
+  busy = true;
+  clearHighlights();
+  hideDot();
+
+  const oldVal = arr[idx];
+  arr[idx] = newVal;
+  grayValTxt[idx].textContent = newVal;
+  grayRect[idx].classList.add('hl-cell');
+  pop(grayRect[idx]);
+
+  startOp(`单点更新 update(a[${idx}] = ${newVal}) · 原值 ${oldVal}`);
+  setResult(`a[${idx}]：${oldVal} → ${newVal}　沿 根 → 叶子 唯一路径下探，回溯时重算`);
+  await sleep(950);
+
+  const path = [];
+  (function go(v, l, r) {
+    path.push(v);
+    if (l === r) return;
+    const mid = (l + r) >> 1;
+    if (idx <= mid) go(2 * v, l, mid); else go(2 * v + 1, mid + 1, r);
+  })(1, 1, N);
+
+  const rootR = rectOf(1);
+  showDotAt(rootR.x, rootR.y - rootR.h / 2 - 8);
+  await sleep(220);
+
+  for (let k = 0; k < path.length; k++) {
+    const v = path[k];
+    const [l, r] = RANGE[v];
+    if (k > 0) {
+      const pv = path[k - 1];
+      if (edgeEls[v]) edgeEls[v].classList.add('hl');
+      await hopBetween(rectOf(pv), rectOf(v), 520);
+    }
+    greenRect[v].classList.add('hl-update');
+
+    if (l === r) {
+      treeArr[v] = newVal;
+      lazySet[v] = null; lazyAdd[v] = 0;
+      syncNodeDisplay(v);
+      pop(greenRect[v]);
+      setResult(`到达叶子 node ${v} = a[${idx}] = ${newVal}`);
+      await sleep(650);
+    } else {
+      const mid = (l + r) >> 1;
+      setResult(`node ${v} 覆盖 [${l},${r}]，mid = ${mid}，${idx <= mid
+        ? `${idx} ≤ ${mid} → 走左子树 [${l},${mid}]`
+        : `${idx} > ${mid} → 走右子树 [${mid + 1},${r}]`}`);
+      await sleep(520);
+
+      if (hasTag(v)) {
+        const tText = tagText(v);
+        const lc = 2 * v, rc = 2 * v + 1;
+        greenRect[v].classList.add('hl-query');
+        setResult(`node ${v} 持有懒标记 lazy ${tText} → 先 push_down 给 node ${lc} / node ${rc}`);
+        pushDown(v, l, r);
+        syncNodeDisplay(lc); syncNodeDisplay(rc);
+        clearBadge(v);
+        await sleep(760);
+        greenRect[v].classList.remove('hl-query');
+      }
+      greenRect[v].classList.remove('hl-update');
+    }
+  }
+
+  for (let k = path.length - 2; k >= 0; k--) {
+    const v = path[k];
+    const lc = 2 * v, rc = 2 * v + 1;
+    if (edgeEls[path[k + 1]]) edgeEls[path[k + 1]].classList.add('hl');
+    await hopBetween(rectOf(path[k + 1]), rectOf(v), 480);
+    greenRect[lc].classList.add('hl-child');
+    greenRect[rc].classList.add('hl-child');
+    treeArr[v] = OP_FN[OP](treeArr[lc], treeArr[rc]);
+    syncNodeDisplay(v);
+    greenRect[v].classList.add('hl-update');
+    pop(greenRect[v]);
+    setResult(`回溯重算：tree[${v}] = ${OP_SYM[OP]}(node ${lc} = ${treeArr[lc]}, node ${rc} = ${treeArr[rc]}) = ${treeArr[v]}`);
+    await sleep(620);
+    greenRect[lc].classList.remove('hl-child');
+    greenRect[rc].classList.remove('hl-child');
+    if (k > 0) greenRect[v].classList.remove('hl-update');
+  }
+
+  setResult(`更新完成：只改动了根→叶子路径上的 ${path.length} 个节点（≈ log N）`);
+  endOp();
+  await sleep(700);
+  hideDot();
+  await sleep(700);
+  clearHighlights();
+  busy = false;
+}
+
+/* =========================================================
+   12. 区间更新（懒标记）
+   ========================================================= */
+function collectRangeSteps(v, l, r, ql, qr, mode, val, out) {
+  if (qr < l || r < ql) { out.push({ t: 'skip', v }); return; }
+  if (ql <= l && r <= qr) {
+    if (mode === 'assign') {
+      applySet(v, l, r, val);
+      out.push({ t: 'set', v, val, value: treeArr[v] });
+    } else {
+      applyAdd(v, l, r, val);
+      out.push({ t: 'add', v, val, value: treeArr[v] });
+    }
+    return;
+  }
+  const mid = (l + r) >> 1;
+  if (hasTag(v)) {
+    out.push({ t: 'push', v, lc: 2 * v, rc: 2 * v + 1, tag: tagText(v) });
+    pushDown(v, l, r);
+  }
+  collectRangeSteps(2 * v, l, mid, ql, qr, mode, val, out);
+  collectRangeSteps(2 * v + 1, mid + 1, r, ql, qr, mode, val, out);
+  treeArr[v] = OP_FN[OP](treeArr[2 * v], treeArr[2 * v + 1]);
+  out.push({ t: 'up', v, value: treeArr[v] });
+}
+
+async function runRangeUpdate(ql, qr, mode, val) {
+  if (busy) return;
+  if (treeArr[1] === null) { setResult('请先点击「重新构建」'); return; }
+  if (mode === 'add' && !ADD_SUPPORTED.has(OP)) {
+    setResult(`${OP_NAME[OP]} 没有「加法」语义，区间加不可用 —— 请改用「区间赋值」`);
+    return;
+  }
+  if (ql > qr) [ql, qr] = [qr, ql];
+
+  busy = true;
+  clearHighlights();
+  hideDot();
+  for (let i = ql; i <= qr; i++) grayRect[i].classList.add('hl-range');
+
+  const desc = mode === 'assign' ? `区间赋值 [${ql}..${qr}] = ${val}` : `区间加 [${ql}..${qr}] += ${val}`;
+  startOp(`${mode === 'assign' ? '区间赋值 range_assign' : '区间加 range_add'}(${ql}, ${qr}, ${val}) · 聚合操作 ${OP_NAME[OP]}`);
+  setResult(`${desc}：整块覆盖就只打懒标记，部分重叠则 push_down 后继续下探`);
+  await sleep(850);
+
+  const steps = [];
+  collectRangeSteps(1, 1, N, ql, qr, mode, val, steps);
+
+  let prev = null;
+  for (const s of steps) {
+    const r = rectOf(s.v);
+    if (prev === null) {
+      showDotAt(r.x, r.y - r.h / 2 - 8);
+      await sleep(200);
+    } else if (prev !== s.v) {
+      if (edgeEls[s.v]) edgeEls[s.v].classList.add('hl');
+      await hopBetween(rectOf(prev), r, 500);
+    }
+    prev = s.v;
+
+    const [l, rr] = RANGE[s.v];
+    const k = rr - l + 1;
+
+    if (s.t === 'skip') {
+      greenRect[s.v].classList.add('hl-skip');
+      setResult(`node ${s.v} [${l},${rr}] 与 [${ql},${qr}] 无交集 → 剪枝跳过`);
+      await sleep(440);
+    } else if (s.t === 'push') {
+      greenRect[s.v].classList.add('hl-query');
+      setResult(`node ${s.v} 持有懒标记 lazy ${s.tag} → push_down 给 node ${s.lc} / node ${s.rc}，再继续下探`);
+      pushDownDisplayOnly(s);
+      await sleep(780);
+      greenRect[s.v].classList.remove('hl-query');
+    } else if (s.t === 'set' || s.t === 'add') {
+      greenRect[s.v].classList.add('hl-update');
+      syncNodeDisplay(s.v);
+      pop(greenRect[s.v]);
+      setResult(s.t === 'set'
+        ? `整块覆盖 [${l},${rr}] → 打标记 lazy = ${s.val}，tree[${s.v}] = fold(${s.val}, ${k}) = ${s.value}`
+        : `整块覆盖 [${l},${rr}] → 打标记 lazy + ${s.val}，tree[${s.v}] = ${s.value}`);
+      await sleep(760);
+      greenRect[s.v].classList.remove('hl-update');
+    } else {
+      const lc = 2 * s.v, rc = 2 * s.v + 1;
+      greenRect[lc].classList.add('hl-child');
+      greenRect[rc].classList.add('hl-child');
+      syncNodeDisplay(s.v);
+      greenRect[s.v].classList.add('hl-update');
+      pop(greenRect[s.v]);
+      setResult(`回溯：tree[${s.v}] = ${OP_SYM[OP]}(node ${lc} = ${treeArr[lc]}, node ${rc} = ${treeArr[rc]}) = ${s.value}`);
+      await sleep(640);
+      greenRect[lc].classList.remove('hl-child');
+      greenRect[rc].classList.remove('hl-child');
+      greenRect[s.v].classList.remove('hl-update');
+    }
+  }
+
+  setResult(`${desc} 完成：受影响节点都打上了 lazy 标记，代价仍是 O(log N)`);
+  endOp();
+  await sleep(800);
+  hideDot();
+  await sleep(800);
+  clearHighlights();
+  busy = false;
+}
+
+/* push 动画：状态已在收集阶段改完，这里只同步显示 */
+function pushDownDisplayOnly(s) {
+  clearBadge(s.v);
+  syncNodeDisplay(s.lc);
+  syncNodeDisplay(s.rc);
+}
+
+/* =========================================================
+   13. 区间查询
+   ========================================================= */
+function collectQuerySteps(v, l, r, ql, qr, out) {
+  if (qr < l || r < ql) { out.push({ t: 'skip', v }); return; }
+  out.push({ t: 'visit', v });
+  if (ql <= l && r <= qr) { out.push({ t: 'take', v, value: treeArr[v] }); return; }
+  const mid = (l + r) >> 1;
+  if (hasTag(v)) {
+    out.push({ t: 'push', v, lc: 2 * v, rc: 2 * v + 1, tag: tagText(v) });
+    pushDown(v, l, r);
+  }
+  collectQuerySteps(2 * v, l, mid, ql, qr, out);
+  collectQuerySteps(2 * v + 1, mid + 1, r, ql, qr, out);
+}
+
+async function runQuery(qL, qR) {
+  if (busy) return;
+  if (treeArr[1] === null) { setResult('请先点击「重新构建」'); return; }
+  if (qL > qR) [qL, qR] = [qR, qL];
+
+  busy = true;
+  clearHighlights();
+  hideDot();
+  for (let i = qL; i <= qR; i++) grayRect[i].classList.add('hl-range');
+
+  const steps = [];
+  collectQuerySteps(1, 1, N, qL, qR, steps);
+
+  startOp(`区间查询 query(${qL}, ${qR}) · 聚合操作 ${OP_NAME[OP]}`);
+  setResult(`查询 ${OP_SYM[OP]}[${qL}..${qR}]：把区间拆成若干「完整节点」，其余分支剪枝`);
+  await sleep(700);
+
+  let acc = OP_IDENT[OP];
+  let prev = null;
+
+  for (const s of steps) {
+    const r = rectOf(s.v);
+    if (prev === null) {
+      showDotAt(r.x, r.y - r.h / 2 - 8);
+      await sleep(200);
+    } else if (prev !== s.v) {
+      if (edgeEls[s.v]) edgeEls[s.v].classList.add('hl');
+      await hopBetween(rectOf(prev), r, 520);
+    }
+    prev = s.v;
+
+    const [l, rr] = RANGE[s.v];
+    if (s.t === 'skip') {
+      greenRect[s.v].classList.add('hl-skip');
+      setResult(`node ${s.v} [${l},${rr}] 与 [${qL},${qR}] 无交集 → 剪枝，返回单位元`);
+      await sleep(520);
+    } else if (s.t === 'visit') {
+      greenRect[s.v].classList.add('hl-query');
+      setResult(s.v === 1
+        ? `从根节点 node 1 [1,${N}] 出发，目标区间 [${qL},${qR}]`
+        : `node ${s.v} [${l},${rr}] 与查询区间部分重叠 → 继续下探左右子树`);
+      await sleep(520);
+    } else if (s.t === 'push') {
+      setResult(`node ${s.v} 持有懒标记 lazy ${s.tag} → 查询要下探，先 push_down 给 node ${s.lc} / node ${s.rc}`);
+      pushDownDisplayOnly(s);
+      await sleep(720);
+    } else {
+      greenRect[s.v].classList.remove('hl-query');
+      greenRect[s.v].classList.add('hl-take');
+      acc = OP_FN[OP](acc, treeArr[s.v]);
+      pop(greenRect[s.v]);
+      setResult(`node ${s.v} [${l},${rr}] 完全包含于 [${qL},${qR}] → 采纳 tree[${s.v}] = ${treeArr[s.v]}，当前结果 = ${acc}`);
+      await sleep(680);
+    }
+  }
+
+  const takeCount = steps.filter(s => s.t === 'take').length;
+  setResult(`✔ ${OP_SYM[OP]}[${qL}..${qR}] = ${acc}　（共采纳 ${takeCount} 个完整节点，不超过 2·log₂N）`);
+  endOp();
+  await sleep(900);
+  hideDot();
+  await sleep(900);
+  clearHighlights();
+  busy = false;
+}
+
+/* =========================================================
+   14. Python 代码高亮
+   ========================================================= */
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function highlightPython(code) {
+  const KEYWORDS = new Set([
+    'def','class','return','if','elif','else','for','while','in','not','and','or',
+    'is','None','True','False','raise','from','import','as','try','except','finally',
+    'with','lambda','yield','global','nonlocal','pass','break','continue'
+  ]);
+  const BUILTINS = new Set([
+    'print','max','min','abs','gcd','lcm','len','range','float','int','str',
+    'list','dict','set','tuple','sum','enumerate','isinstance','ValueError'
+  ]);
+
+  let html = '';
+  let i = 0;
+  while (i < code.length) {
+    const c = code[i];
+
+    if (c === '#') {
+      let j = i;
+      while (j < code.length && code[j] !== '\n') j++;
+      html += '<span class="tok-comment">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j;
+      continue;
+    }
+
+    if (code.slice(i, i + 3) === '"""' || code.slice(i, i + 3) === "'''") {
+      const q = code.slice(i, i + 3);
+      let j = i + 3;
+      while (j < code.length && code.slice(j, j + 3) !== q) j++;
+      j += 3;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j;
+      continue;
+    }
+
+    if (c === '"' || c === "'") {
+      const q = c;
+      let j = i + 1;
+      while (j < code.length && code[j] !== q) {
+        if (code[j] === '\\') j++;
+        j++;
+      }
+      j++;
+      html += '<span class="tok-string">' + escapeHtml(code.slice(i, j)) + '</span>';
+      i = j;
+      continue;
+    }
+
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i;
+      while (j < code.length && /[A-Za-z0-9_]/.test(code[j])) j++;
+      const word = code.slice(i, j);
+
+      if (word === 'self') {
+        html += '<span class="tok-self">self</span>';
+      } else if (KEYWORDS.has(word)) {
+        html += '<span class="tok-keyword">' + word + '</span>';
+      } else if (BUILTINS.has(word)) {
+        html += '<span class="tok-builtin">' + word + '</span>';
+      } else if (code[j] === '(') {
+        html += '<span class="tok-func">' + word + '</span>';
+      } else {
+        html += word;
+      }
+      i = j;
+      continue;
+    }
+
+    if (/\d/.test(c)) {
+      let j = i;
+      while (j < code.length && /[\d.]/.test(code[j])) j++;
+      html += '<span class="tok-number">' + code.slice(i, j) + '</span>';
+      i = j;
+      continue;
+    }
+
+    html += escapeHtml(c);
+    i++;
+  }
+  return html;
+}
+
+function renderPythonCode() {
+  document.getElementById('pyCode').innerHTML =
+    highlightPython(document.getElementById('pySrc').textContent.trim());
+  document.getElementById('pyCode2').innerHTML =
+    highlightPython(document.getElementById('pySrc2').textContent.trim());
+}
+
+/* =========================================================
+   15. 初始化 & 事件
+   ========================================================= */
+buildScene();
+renderKnowledge();
+renderPythonCode();
+
+const selUpd = document.getElementById('updIdx');
+const rngL   = document.getElementById('rngL');
+const rngR   = document.getElementById('rngR');
+const rngMode= document.getElementById('rngMode');
+const selL   = document.getElementById('qryL');
+const selR   = document.getElementById('qryR');
+const opSel  = document.getElementById('opSel');
+
+for (let i = 1; i <= N; i++) {
+  selUpd.appendChild(new Option(i, i));
+  rngL.appendChild(new Option(i, i));
+  rngR.appendChild(new Option(i, i));
+  selL.appendChild(new Option(i, i));
+  selR.appendChild(new Option(i, i));
+}
+selUpd.value = 1;
+rngL.value = 2; rngR.value = 5;
+selL.value = 3; selR.value = 6;
+
+function syncRangeMode() {
+  const opt = rngMode.querySelector('option[value="add"]');
+  const ok = ADD_SUPPORTED.has(OP);
+  opt.disabled = !ok;
+  opt.textContent = ok ? '全部加 +' : '全部加 +（本操作不支持）';
+  if (!ok && rngMode.value === 'add') rngMode.value = 'assign';
+}
+syncRangeMode();
+
+opSel.addEventListener('change', () => {
+  if (busy) { opSel.value = OP; return; }
+  OP = opSel.value;
+  updateSubtitle();
+  updateKnowledgeActive();
+  syncRangeMode();
+  resetTree();
+  runBuild();
+});
+
+document.getElementById('btnBuild').addEventListener('click', () => {
+  if (busy) return;
+  resetTree();
+  runBuild();
+});
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (busy) return;
+  resetState();
+  startOp('还原初始数组 a[1..8] = 3, 1, 4, 1, 5, 9, 2, 6');
+  setResult('数组已还原，重新构建中…');
+  endOp();
+  runBuild();
+});
+document.getElementById('btnUpdate').addEventListener('click', () => {
+  runUpdate(+selUpd.value, +document.getElementById('updVal').value);
+});
+document.getElementById('btnRange').addEventListener('click', () => {
+  runRangeUpdate(+rngL.value, +rngR.value, rngMode.value, +document.getElementById('rngVal').value);
+});
+document.getElementById('btnQuery').addEventListener('click', () => {
+  runQuery(+selL.value, +selR.value);
+});
+document.getElementById('btnClearLog').addEventListener('click', logReset);
+
+setTimeout(() => { updateSubtitle(); updateKnowledgeActive(); resetState(); runBuild(); }, 500);
+</script>
+</body>
+</html>

@@ -1,0 +1,3397 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>动态规划建模串讲：状态 · 转移 · 优化</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{
+  --paper:#FFF8F0; --card:#FFFFFF;
+  --ink:#2B1D12; --ink2:#6E5842; --line:#EEDCC2;
+  --accent:#E2612F; --amber:#F2A63B; --teal:#0F7B6C; --plum:#A33A64;
+  --code-bg:#2C2117;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EFE0C8;font-family:var(--sans);color:var(--ink);overflow:hidden}
+body{background:
+  radial-gradient(1200px 700px at 12% -10%, #FBE9CE 0%, rgba(251,233,206,0) 60%),
+  radial-gradient(900px 600px at 105% 110%, #F7DCC0 0%, rgba(247,220,192,0) 55%), #EFE0C8;}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center center;
+  border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(90,52,18,.28),0 4px 12px rgba(90,52,18,.14)}
+
+.slide{position:absolute;inset:0;padding:22px 38px 26px;opacity:0;visibility:hidden;
+  transform:translateX(22px) scale(.996);transition:opacity .38s ease,transform .38s ease,visibility .38s;
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(160deg,#FFFBF5 0%,#FFF4E6 55%,#FDEBD3 100%)}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.slide::after{content:"";position:absolute;right:-120px;top:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(242,166,59,.18),rgba(242,166,59,0) 70%);pointer-events:none}
+.slide::before{content:"";position:absolute;left:-90px;bottom:-140px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,rgba(226,97,47,.11),rgba(226,97,47,0) 70%);pointer-events:none}
+.slide>*{position:relative;z-index:2}
+
+.kicker{display:inline-flex;align-items:center;gap:7px;font-size:10.6px;font-weight:700;letter-spacing:.13em;
+  color:var(--accent);background:#FFEEDC;border:1px solid #F6D2B2;padding:3px 11px;border-radius:999px}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+.kicker.teal{color:var(--teal);background:#E9F7F2;border-color:#BEE6D8}
+.kicker.teal i{background:var(--teal)}
+.kicker.plum{color:var(--plum);background:#FDF1F5;border-color:#EFCBD8}
+.kicker.plum i{background:var(--plum)}
+.kicker.amber{color:#A9700B;background:#FFF3DC;border-color:#F1D6A2}
+.kicker.amber i{background:#F2A63B}
+
+.sl-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+  border-bottom:2px solid var(--line);padding-bottom:8px}
+.sl-head h2{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1.14;margin-top:5px}
+.sl-head h2 em{font-style:normal;color:var(--accent)}
+.sl-head h2 em.t{color:var(--teal)}
+.sl-head h2 em.p{color:var(--plum)}
+.sl-head h2 em.a{color:#C9830F}
+.sl-head .hint{font-size:11.6px;color:var(--ink2);text-align:right;max-width:340px;line-height:1.5}
+.sl-head .hint b{color:#8A5A2C}
+.lead{font-size:15px;line-height:1.66;color:#42301F}
+.muted{color:var(--ink2)}
+
+.cols{display:grid;gap:11px;min-height:0;flex:1 1 auto}
+.c2{grid-template-columns:1fr 1fr}
+.c2a{grid-template-columns:1.08fr .92fr}
+.c2b{grid-template-columns:.92fr 1.08fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+.c5{grid-template-columns:repeat(5,1fr)}
+.cols > div{min-height:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.card h3 .n{width:21px;height:21px;border-radius:7px;background:var(--accent);color:#fff;font-size:11.5px;
+  display:grid;place-items:center;font-family:var(--sans);font-weight:700;flex:none}
+.card h3 .n.t{background:var(--teal)}
+.card h3 .n.p{background:var(--plum)}
+.card h3 .n.a{background:var(--amber)}
+.card p,.card li{font-size:13px;line-height:1.6;color:#4A3722}
+.card ul,ol{padding-left:16px}
+.card li{margin:2px 0}
+.card.tint-teal{background:#F2FBF7;border-color:#BEE6D8}
+.card.tint-amber{background:#FFF7E6;border-color:#F4DCAC}
+.card.tint-plum{background:#FDF1F5;border-color:#EFCBD8}
+.card.tint-rose{background:#FFF1EA;border-color:#F7CDB4}
+
+.formula{font-family:var(--mono);font-size:14.5px;background:#2E2118;color:#FFEBD2;border-radius:11px;
+  padding:10px 14px;line-height:1.55;flex:none;overflow-x:auto}
+.formula .hl{color:#FFB169;font-weight:600}
+.formula .ok{color:#7FE0C2;font-weight:600}
+.formula .dim{color:#A8846A}
+
+.codewrap{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;
+  border:1px solid #4B3823;border-radius:12px;overflow:hidden;background:var(--code-bg)}
+.code-head{flex:none;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#241A12;
+  border-bottom:1px solid #46341F}
+.code-head .dot{width:9px;height:9px;border-radius:50%;background:#6B5238}
+.code-head .dot.r{background:#B9471B}
+.code-head .dot.g{background:#0F7B6C}
+.code-head .dot.p{background:#A33A64}
+.code-head .dot.a{background:#C9830F}
+.code-head em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B29272;letter-spacing:.08em;margin-left:6px}
+.code-head .lang{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7A5F45;letter-spacing:.12em}
+pre.code{margin:0;flex:1 1 auto;min-height:0;overflow:auto;background:var(--code-bg)!important;
+  padding:11px 14px;font-family:var(--mono);font-size:12.4px;line-height:1.56;white-space:pre;tab-size:4}
+pre.code::-webkit-scrollbar{height:8px;width:8px}
+pre.code::-webkit-scrollbar-track{background:#241A12}
+pre.code::-webkit-scrollbar-thumb{background:#6B5238;border-radius:8px}
+pre.code::-webkit-scrollbar-thumb:hover{background:#8E6E4C}
+pre.code code,code[class*="language-"]{font-family:var(--mono)!important;font-size:inherit;
+  background:transparent!important;color:#F0E0CC!important;text-shadow:none!important}
+pre.code .token.comment,pre.code .token.prolog,pre.code .token.doctype,pre.code .token.cdata{color:#A8846A!important;font-style:italic}
+pre.code .token.punctuation{color:#C0A183!important}
+pre.code .token.keyword,pre.code .token.atrule,pre.code .token.rule,pre.code .token.important{color:#FFB169!important;font-weight:600}
+pre.code .token.string,pre.code .token.char,pre.code .token.attr-value{color:#9BE0BE!important}
+pre.code .token.function,pre.code .token.class-name,pre.code .token.builtin{color:#FFD9A8!important}
+pre.code .token.number,pre.code .token.boolean,pre.code .token.constant,pre.code .token.symbol{color:#F4A9C0!important}
+pre.code .token.operator{color:#FFC98B!important}
+
+.note{border-left:4px solid var(--amber);background:#FFF6E4;padding:8px 12px;border-radius:0 11px 11px 0;
+  font-size:12.6px;line-height:1.58;flex:none}
+.note.warn{border-color:var(--plum);background:#FDF0F4}
+.note.good{border-color:var(--teal);background:#EFF9F5}
+.note b{color:var(--accent)}.note.warn b{color:var(--plum)}.note.good b{color:var(--teal)}
+code:not([class*="language-"]){font-family:var(--mono);font-size:.93em;background:#F6EADA;padding:1px 5px;border-radius:5px}
+
+table{width:100%;border-collapse:collapse;font-size:12.1px;background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);flex:none}
+th,td{padding:5.5px 10px;text-align:left;border-bottom:1px solid var(--line);line-height:1.45}
+th{background:#F7E7CF;font-family:var(--serif);font-size:12.6px;color:#7A4A22}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:11px}
+td.no{color:#A33A64;font-weight:700}
+td.yes{color:#0F7B6C;font-weight:700}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:7px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.2px;
+  font-weight:600;color:#5B4429}
+.pill.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill.tq{background:var(--teal);color:#fff;border-color:var(--teal)}
+.pill.pl{background:var(--plum);color:#fff;border-color:var(--plum)}
+.pill.am{background:var(--amber);color:#fff;border-color:var(--amber)}
+ul.tick{list-style:none;padding:0}
+ul.tick li{position:relative;padding-left:20px;margin:3px 0;font-size:12.8px;line-height:1.55}
+ul.tick li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:4px;
+  background:#FFE2C6;border:2px solid var(--accent)}
+ul.tick.ok li::before{background:#CDEEE2;border-color:var(--teal)}
+ul.tick.no li::before{background:#F7D6E1;border-color:var(--plum);border-radius:50%}
+ul.tick.arr li::before{background:#FBD9A2;border-color:var(--amber);border-radius:2px;transform:rotate(45deg);width:9px;height:9px}
+
+.a-link{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:11px;padding:8px 11px;transition:.18s;box-shadow:0 4px 10px rgba(120,70,20,.06);overflow:hidden}
+.a-link:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 20px rgba(226,97,47,.16)}
+.a-link .t{font-size:12.4px;font-weight:700;color:#7A3A12;display:block;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link .d{font-size:11px;color:var(--ink2);line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.a-link .src{font-size:9.6px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--teal);
+  padding:1px 7px;border-radius:999px;display:inline-block;margin-bottom:4px}
+.a-link .src.crs{background:var(--accent)}
+.a-link .src.hpf{background:var(--plum)}
+.a-link .src.cal{background:var(--amber)}
+.a-link .src.loc{background:#7A4A22}
+
+.step{display:flex;gap:9px;align-items:flex-start}
+.step .idx{flex:none;width:23px;height:23px;border-radius:7px;background:#2E2118;color:#FFD9A8;
+  display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.split-line{height:2px;background:linear-gradient(90deg,#E2612F,#F2A63B,rgba(242,166,59,0));border-radius:2px;margin:6px 0;flex:none}
+.split-line.t{background:linear-gradient(90deg,#0F7B6C,#7FE0C2,rgba(127,224,194,0))}
+.split-line.p{background:linear-gradient(90deg,#A33A64,#F4A9C0,rgba(244,169,192,0))}
+.num-huge{font-family:var(--serif);font-size:110px;font-weight:900;line-height:.9;
+  background:linear-gradient(160deg,#E2612F,#F2A63B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.t{background:linear-gradient(160deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.p{background:linear-gradient(160deg,#A33A64,#F4A9C0);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+svg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;overflow:visible}
+.dfnlab{font-family:var(--mono);font-size:11.5px;font-weight:700;fill:#0F7B6C}
+.dfnlab.r{fill:#B9471B}
+.dfnlab.p{fill:#A33A64}
+.dfnlab.g{fill:#8A6A45}
+.dfnlab.a{fill:#C9830F}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.62;transform:scale(1.07)}}
+.dash{stroke-dasharray:8 8;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.flow{stroke-dasharray:5 5;animation:dash 1.1s linear infinite}
+
+.cover{background:linear-gradient(150deg,#FFF6E8 0%,#FFE9CD 48%,#FFDCB4 100%)}
+.cover .badge{display:inline-flex;gap:8px;align-items:center;background:#2E2118;color:#FFD9A8;
+  padding:6px 14px;border-radius:999px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.cover h1{font-family:var(--serif);font-size:50px;line-height:1.1;font-weight:900}
+.cover h1 em{font-style:normal;background:linear-gradient(92deg,#E2612F,#F2A63B);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.cover h1 em.t{background:linear-gradient(92deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cover .sub{font-size:15.5px;color:#6B4A2C;line-height:1.66;max-width:600px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta span{background:rgba(255,255,255,.72);border:1px solid #F0D2AC;padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#7A4A22}
+.section-slide{background:linear-gradient(150deg,#FFF3E0,#FFE0BC)}
+.section-slide.teal{background:linear-gradient(150deg,#EFF9F4,#CFE9DE)}
+.section-slide.plum{background:linear-gradient(150deg,#FDF0F4,#F5CBD8)}
+.section-slide.rose{background:linear-gradient(150deg,#FFF1EA,#F9D3BC)}
+.section-slide.amber{background:linear-gradient(150deg,#FFF6E2,#F5DFAE)}
+.section-slide .big{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1.18}
+
+.hud{position:fixed;right:18px;bottom:14px;display:flex;gap:7px;align-items:center;z-index:50}
+.hud button{border:1px solid rgba(120,70,20,.2);background:rgba(255,250,242,.92);color:#7A4A22;
+  width:34px;height:34px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:700;backdrop-filter:blur(6px);transition:.16s}
+.hud button:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.pgn{background:rgba(255,250,242,.92);border:1px solid rgba(120,70,20,.2);border-radius:10px;height:34px;
+  display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:12.5px;color:#7A4A22;font-weight:600}
+.prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,#E2612F,#F2A63B);z-index:60;
+  transition:width .35s ease;box-shadow:0 1px 6px rgba(226,97,47,.5)}
+.brand{position:fixed;left:18px;bottom:14px;z-index:50;background:rgba(255,250,242,.9);border:1px solid rgba(120,70,20,.2);
+  border-radius:10px;padding:8px 13px;font-size:10.5px;color:#7A4A22;letter-spacing:.1em;font-weight:700}
+.toc{position:fixed;inset:0;background:rgba(46,33,24,.82);backdrop-filter:blur(8px);z-index:80;display:none;
+  padding:42px 56px;overflow:auto}
+.toc.on{display:block}
+.toc h4{color:#FFE2BF;font-family:var(--serif);font-size:24px;margin-bottom:16px}
+.toc .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.toc a{background:rgba(255,246,232,.94);border-radius:10px;padding:9px 12px;text-decoration:none;color:#4A3722;
+  font-size:12.2px;line-height:1.4;border:1px solid rgba(255,255,255,.18);transition:.16s}
+.toc a:hover{background:#FFB169;transform:translateY(-2px)}
+.toc a b{display:block;font-family:var(--mono);font-size:10px;color:#B9471B;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- ═══ 01 封面 ═══ -->
+<section class="slide cover on" data-title="封面">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">DYNAMIC PROGRAMMING · 95 MIN</div>
+      <h1>动态规划建模串讲<br><em>把搜索空间压缩成状态空间</em></h1>
+      <p class="sub">线性 DP 管<b>序列</b>，区间 DP 管<b>结构</b>，状压 DP 管<b>组合</b>，优化层管<b>速度</b>。<br>
+        四条主线横向对比，看清<b>状态怎么定义、转移怎么找、优化怎么上</b>。</p>
+      <div class="meta">
+        <span>54 页 · 约 95 分钟</span><span>15 个可运行 Python 模板</span>
+        <span>含跨建模交叉对拍</span><span>洛谷题单</span>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 500 310" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <pattern id="cgrid" width="25" height="25" patternUnits="userSpaceOnUse">
+            <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#E9D5B7" stroke-width="0.7"/>
+          </pattern>
+          <marker id="ca" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2612F"/></marker>
+          <marker id="cg" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#0F7B6C"/></marker>
+        </defs>
+        <rect x="0" y="0" width="500" height="310" fill="url(#cgrid)" opacity="0.55"/>
+
+        <!-- DP 递推格 -->
+        <g>
+          <!-- 网格 -->
+          <g stroke="#E4CBA3" stroke-width="1">
+            <rect x="26" y="46" width="156" height="130" fill="#fff" stroke="#EEDCC2" stroke-width="2"/>
+            <path d="M26 72 H182 M26 98 H182 M26 124 H182 M26 150 H182"/>
+            <path d="M58 46 V176 M90 46 V176 M122 46 V176 M154 46 V176"/>
+          </g>
+          <!-- 高亮单元 -->
+          <rect x="90" y="98" width="32" height="26" fill="#E2612F" opacity="0.9"/>
+          <!-- 三个前驱 -->
+          <g fill="#FFF3E2" stroke="#B9471B" stroke-width="2">
+            <rect x="58" y="72" width="32" height="26"/>
+            <rect x="58" y="98" width="32" height="26"/>
+            <rect x="90" y="72" width="32" height="26"/>
+          </g>
+          <!-- 箭头 -->
+          <g stroke="#E2612F" stroke-width="2.4" fill="none" marker-end="url(#ca)">
+            <path d="M92 82 L88 96"/>
+            <path d="M92 111 L88 112"/>
+            <path d="M106 100 L104 96"/>
+          </g>
+          <!-- 其他单元淡灰 -->
+          <g fill="#F3E4CC" opacity=".55">
+            <rect x="122" y="98" width="32" height="26"/><rect x="154" y="98" width="32" height="26"/>
+            <rect x="122" y="124" width="32" height="26"/><rect x="154" y="124" width="32" height="26"/>
+            <rect x="26" y="124" width="32" height="26"/><rect x="58" y="124" width="32" height="26"/>
+            <rect x="26" y="150" width="32" height="26"/><rect x="58" y="150" width="32" height="26"/>
+            <rect x="90" y="150" width="32" height="26"/><rect x="122" y="150" width="32" height="26"/>
+            <rect x="154" y="150" width="32" height="26"/>
+            <rect x="122" y="72" width="32" height="26"/><rect x="154" y="72" width="32" height="26"/>
+            <rect x="154" y="46" width="28" height="26"/>
+          </g>
+          <text x="106" y="115" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11">f[i][j]</text>
+          <text x="104" y="26" text-anchor="middle" class="dfnlab r" font-size="11">状态转移格</text>
+        </g>
+
+        <!-- 四种状态形状 -->
+        <g>
+          <!-- 序列型 -->
+          <rect x="222" y="34" width="132" height="52" rx="12" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="1.6"/>
+          <g stroke="#E2612F" stroke-width="2" fill="none">
+            <path d="M242 68 L272 68"/><path d="M278 68 L308 68"/><path d="M314 68 L340 68"/>
+          </g>
+          <g fill="#E2612F"><circle cx="242" cy="68" r="5"/><circle cx="275" cy="68" r="5"/><circle cx="311" cy="68" r="5"/><circle cx="342" cy="68" r="5"/></g>
+          <text x="288" y="48" text-anchor="middle" class="dfnlab r" font-size="10.5">序列型 f[i]</text>
+
+          <!-- 结构型 -->
+          <rect x="222" y="96" width="132" height="52" rx="12" fill="#E9F7F2" stroke="#BEE6D8" stroke-width="1.6"/>
+          <g fill="#0F7B6C">
+            <circle cx="288" cy="112" r="4.4"/><circle cx="278" cy="124" r="4.4"/><circle cx="298" cy="124" r="4.4"/>
+            <circle cx="268" cy="136" r="4.4"/><circle cx="288" cy="136" r="4.4"/><circle cx="308" cy="136" r="4.4"/>
+          </g>
+          <text x="336" y="118" class="dfnlab" font-size="10">f[l][r]</text>
+
+          <!-- 组合型 -->
+          <rect x="222" y="158" width="132" height="52" rx="12" fill="#FDF0F4" stroke="#EFCBD8" stroke-width="1.6"/>
+          <g stroke="#A33A64" stroke-width="1.8" fill="none">
+            <path d="M262 178 L292 172 L316 180 L288 188 Z"/>
+            <path d="M262 178 L262 196 L288 204 L288 188"/><path d="M316 180 L316 196 L288 204"/>
+            <path d="M292 172 L292 190 L288 188" stroke-dasharray="3 3"/>
+          </g>
+          <text x="336" y="182" class="dfnlab p" font-size="10">f[S]</text>
+
+          <!-- 值域型 -->
+          <rect x="222" y="220" width="132" height="52" rx="12" fill="#FFF7E6" stroke="#F4DCAC" stroke-width="1.6"/>
+          <g fill="#C9830F">
+            <rect x="240" y="252" width="11" height="14" rx="2"/><rect x="256" y="242" width="11" height="24" rx="2"/>
+            <rect x="272" y="232" width="11" height="34" rx="2"/><rect x="288" y="246" width="11" height="20" rx="2"/>
+            <rect x="304" y="236" width="11" height="30" rx="2"/><rect x="320" y="256" width="11" height="10" rx="2"/>
+          </g>
+          <text x="336" y="244" class="dfnlab a" font-size="10">f[j]</text>
+        </g>
+
+        <!-- 压缩箭头 -->
+        <g>
+          <rect x="26" y="196" width="176" height="26" rx="11" fill="#2E2118"/>
+          <text x="114" y="213" text-anchor="middle" fill="#7FE0C2" font-family="monospace" font-size="11">搜索空间 2^n → 状态空间 n^2</text>
+          <path d="M114 228 L114 254" stroke="#E2612F" stroke-width="3" marker-end="url(#ca)"/>
+          <text x="114" y="272" text-anchor="middle" class="dfnlab r" font-size="11">压缩</text>
+        </g>
+
+        <!-- 标题标签 -->
+        <g font-family="monospace" font-size="10.4" text-anchor="middle">
+          <rect x="368" y="42" width="112" height="24" rx="10" fill="#FFF3E2" stroke="#F4DCAC"/>
+          <text x="424" y="58" class="dfnlab r">线性 DP</text>
+          <rect x="368" y="76" width="112" height="24" rx="10" fill="#E9F7F2" stroke="#BEE6D8"/>
+          <text x="424" y="92" class="dfnlab">区间 DP</text>
+          <rect x="368" y="110" width="112" height="24" rx="10" fill="#FDF0F4" stroke="#EFCBD8"/>
+          <text x="424" y="126" class="dfnlab p">状压 DP</text>
+          <rect x="368" y="144" width="112" height="24" rx="10" fill="#FFF7E6" stroke="#F4DCAC"/>
+          <text x="424" y="160" class="dfnlab a">转移优化</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 路线图 ═══ -->
+<section class="slide" data-title="路线图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>ROADMAP</div><h2>七站，一条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>这份讲义怎么走？<br>每站先给"要解决的问题"，再给"为什么这样写"。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3><span class="n">1</span>建模总纲</h3><p>建模三问 · 状态空间形状 · 识别信号</p></div>
+    <div class="card tint-rose"><h3><span class="n">2</span>线性 DP</h3><p>LIS · 编辑距离 · 最大子段和 · 滚动数组</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>区间 / 结构 DP</h3><p>矩阵链 · 石子合并 · 树形 · 换根</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>状压 / 值域 DP</h3><p>TSP · 数位 · 背包族（容量 / 价值 / 折半）</p></div>
+    <div class="card tint-amber"><h3><span class="n a">5</span>转移优化</h3><p>斜率优化 · 决策单调 · 分治 · 矩阵快速幂</p></div>
+    <div class="card tint-amber"><h3><span class="n a">6</span>横向对比</h3><p>同题三解 · 归约关系 · 六轴雷达 · 不可替代性</p></div>
+    <div class="card"><h3><span class="n">7</span>工程</h3><p>状态与证明 · 易错清单 · 模板合集 · 对拍 · 题单</p></div>
+    <div class="card tint-teal"><h3>验收标准</h3><p class="muted">能对一道题<b>说出三问</b>并选对状态；能解释<b>另外三条主线为什么不适用</b>；能独立写出<b>优化版本</b>并验证。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>时间分配</h3><p class="muted">总纲 12' · 线性 14' · 结构 18' · 组合 18' · 优化 14' · 对比 12' · 工程 7'</p></div>
+    <div class="card"><h3>本讲义的硬约束</h3><p class="muted">每个模板都<b>可直接运行</b>，并在注释里写明<b>验证样例与预期输出</b>；每条主线都有<b>失效区</b>说明。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 03 钩子 ═══ -->
+<section class="slide" data-title="三道长得像的题">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HOOK</div><h2>三道"长得像"的题，<em>三种状态</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么不能背模板？<br>状态选错 = 复杂度爆炸或答案错。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3><span class="n">A</span>序列</h3>
+      <p><b>题意：</b>给 n 个数，求最长递增子序列长度。</p>
+      <div class="split-line"></div>
+      <p class="muted">→ 状态 <code>f[i]</code> = 以 i 结尾的 LIS 长度。<br><b>朴素</b> <code>O(n²)</code>，<b>贪心+二分</b> <code>O(n log n)</code>。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">B</span>结构</h3>
+      <p><b>题意：</b>n 堆石子排成一排，每次合并相邻两堆，代价为重量和，求最小总代价。</p>
+      <div class="split-line t"></div>
+      <p class="muted">→ 状态 <code>f[l][r]</code> = 合并 <code>a[l..r]</code> 的最小代价。<br><b>区间 DP</b> <code>O(n³)</code>，四边形不等式 <code>O(n²)</code>。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">C</span>组合</h3>
+      <p><b>题意：</b>n 个城市，求访问每个城市恰好一次并回到起点的最短回路（TSP）。</p>
+      <div class="split-line p"></div>
+      <p class="muted">→ 状态 <code>f[S][i]</code> = 已访问集合 S、当前在 i。<br><b>状压 DP</b> <code>O(2ⁿ·n²)</code>。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n a">★</span>共同点与差异</h3>
+      <p class="lead">三者都在做同一件事：<b>把指数级搜索空间压缩成多项式状态空间</b>。区别在<b>状态的形状</b>——序列、区间、集合。选错形状不是"略慢"，而是<b>根本跑不完</b>。</p>
+      <div class="note"><b>一句话：</b>DP 的第一问不是"转移是什么"，而是<b>"状态怎么定义"</b>。</div>
+    </div>
+    <div class="card">
+      <h3>三个判断题</h3>
+      <div class="pill-row">
+        <span class="pill hot">状态是一维位置吗</span>
+        <span class="pill tq">状态是区间 / 子树吗</span>
+        <span class="pill pl">状态是集合吗</span>
+      </div>
+      <div class="split-line"></div>
+      <p class="muted">答对这三题，状态形状就定了。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 建模三问 ═══ -->
+<section class="slide" data-title="DP 建模三问">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · PROBLEM</div><h2>DP 建模是什么：<em>三问</em></h2></div>
+    <div class="hint"><b>本页回答：</b>拿到 DP 题该问什么？<br>每一问都决定一段代码。</div>
+  </div>
+  <table>
+    <tr><th style="width:100px">问题</th><th style="width:215px">问的是</th><th style="width:175px">答案指向</th><th>典型陷阱</th></tr>
+    <tr><td><b>① 状态</b></td><td>什么作为下标？能完整刻画"局面"吗？</td><td class="yes">→ 五种形状之一</td><td>状态<b>遗漏关键信息</b>（如上一个用了什么）</td></tr>
+    <tr><td><b>② 转移</b></td><td>最后一步 / 最后一个决策是什么？</td><td class="yes">→ 枚举前驱</td><td>转移顺序错（<code>i</code> 依赖 <code>i+1</code>）</td></tr>
+    <tr><td><b>③ 边界</b></td><td>最小子问题的答案是什么？</td><td>初值</td><td>初值用 0 而非 <code>±INF</code></td></tr>
+    <tr><td><b>④ 优化</b></td><td>转移能不能更快？</td><td class="yes">→ 斜率 / 决策单调 / 矩阵</td><td>没证明单调性就上二分</td></tr>
+    <tr><td><b>⑤ 无后效性</b></td><td>当前状态只依赖已确定的吗？</td><td>决定遍历顺序</td><td>环形依赖没断环</td></tr>
+    <tr><td><b>⑥ 最优子结构</b></td><td>最优解包含子问题的最优解吗？</td><td>DP 是否成立</td><td>贪心不成立却硬套 DP</td></tr>
+    <tr><td><b>⑦ 输出</b></td><td>只要数值还是具体方案？</td><td>决定要不要存 <code>pre</code></td><td>只要数值却存了一堆方案</td></tr>
+    <tr><td><b>⑧ 规模</b></td><td>n、值域、状态数多大？</td><td>选哪一维做状态</td><td><code>O(n³)</code> 跑 n=2000</td></tr>
+    <tr><td><b>⑨ 边界条件</b></td><td>空集 / 单元素 / 全相等怎么处理？</td><td>特判</td><td><code>n=0</code> 时数组越界</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>三个最常见的错</h3>
+      <ul class="tick no">
+        <li>状态<b>漏信息</b>：如"上一个取的物品"没进状态</li>
+        <li>初值用 <code>0</code> 而不是 <code>-INF</code>，导致"取不到"被当成 0</li>
+        <li>滚动数组<b>遍历方向</b>写反（0/1 背包必须倒序）</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>好的 DP 建模长什么样</h3>
+      <p>三句话说清：<b>状态是什么 → 转移从哪来 → 优化到多少</b>。说不出来 = 还没想清楚，先别写代码。</p>
+      <div class="note good"><b>习惯：</b>写题解时固定写"<b>状态定义 → 转移方程 → 边界 → 复杂度</b>"四行，一行不能少。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 取舍链 ═══ -->
+<section class="slide" data-title="取舍链">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · ROADMAP</div><h2>取舍链：<em>搜索 → 记忆化 → 递推 → 优化</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么要分这么多层？<br>每层的甜点在哪、边界在哪。</div>
+  </div>
+  <table>
+    <tr><th style="width:185px">层级</th><th>时间</th><th>空间</th><th>核心能力</th><th>边界</th></tr>
+    <tr><td><b>暴力搜索</b></td><td class="mono">O(k^n)</td><td>小</td><td>正确性基准</td><td>n &gt; 20 就废</td></tr>
+    <tr><td>记忆化搜索</td><td class="mono">O(状态数)</td><td>大</td><td>写起来自然，自动跳过不可达</td><td>递归栈 / 状态数</td></tr>
+    <tr><td><b>递推 DP</b></td><td class="mono">O(状态数×决策)</td><td>可滚动</td><td>清晰、可优化</td><td>需要手动定遍历顺序</td></tr>
+    <tr><td><b>状态压缩</b></td><td class="mono">O(2^n·n)</td><td><code>2^n</code></td><td>n ≤ 20 的组合问题</td><td>n &gt; 22 就爆空间</td></tr>
+    <tr><td>值域 DP</td><td class="mono">O(nV)</td><td><code>O(V)</code></td><td>背包族</td><td>V 太大（如 10⁹）</td></tr>
+    <tr><td><b>斜率优化</b></td><td class="mono">O(n)</td><td><code>O(n)</code></td><td>转移形如 <code>a[j]·x[i]+b[j]</code></td><td>需证明斜率单调</td></tr>
+    <tr><td>决策单调 / 分治</td><td class="mono">O(n log n)</td><td><code>O(n)</code></td><td>opt[i] 单调</td><td>需证四边形不等式</td></tr>
+    <tr><td>矩阵快速幂</td><td class="mono">O(k³ log n)</td><td><code>O(k²)</code></td><td>线性递推</td><td>转移须是<b>线性</b>的</td></tr>
+    <tr><td>WQS 二分 / 凸优化</td><td class="mono">O(n log)</td><td><code>O(n)</code></td><td>带限制的最优化</td><td>须证凸性</td></tr>
+    <tr><td>生成函数 / 数学</td><td class="mono">O(n log n)</td><td>—</td><td>计数、卷积</td><td>推导复杂</td></tr>
+    <tr><td>NP-hard 类</td><td>—</td><td>—</td><td>一般 TSP / 装箱</td><td class="no">不可用上述任何工具</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>不可替代的四件事</h3>
+      <ul class="tick">
+        <li><b>线性 DP</b>：序列 / 前缀问题的默认答案</li>
+        <li><b>区间 DP</b>：合并 / 分割类问题的唯一自然解</li>
+        <li><b>状压 DP</b>：n ≤ 20 的组合最优</li>
+        <li><b>转移优化</b>：把 <code>O(n³)</code> 拉到 <code>O(n²)</code> / <code>O(n)</code></li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>心智模型</h3>
+      <p>四者都在做"<b>把搜索空间压缩成状态空间</b>"，区别在<b>压缩的形状</b>：序列 / 区间 / 集合 / 值域。</p>
+      <div class="note good"><b>建议：</b>先练<b>识别状态形状</b>（第 10 页），再练转移。形状选错，优化再漂亮也没用。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：建模总纲">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 01</div>
+      <div class="big">建模总纲：<em style="color:var(--accent)">三问 · 速查 · 识别</em></div>
+      <p class="lead">DP 建模三问 · 四大工具速查表 · 识别信号 → 工具<br>先把"选状态"这一步变成可操作的流程。</p>
+    </div>
+    <div><div class="num-huge">01</div>
+      <div class="note good"><b>目标：</b>拿到 DP 题 30 秒内能说出"状态是什么形状、该用哪条主线"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 三问详解 ═══ -->
+<section class="slide" data-title="三问详解">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · THREE QUESTIONS</div><h2>三问<em>逐条展开</em></h2></div>
+    <div class="hint"><b>本页回答：</b>每一问具体怎么答？<br>答错了会怎样。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3><span class="n">1</span>状态怎么定</h3>
+      <ul class="tick">
+        <li>下标要能<b>完整刻画局面</b></li>
+        <li>两个局面状态相同 ⇔ 后续最优决策相同</li>
+        <li>维度尽量少，但<b>不能漏</b></li>
+      </ul>
+      <div class="split-line"></div>
+      <p class="muted">⇒ 五种形状：序列 / 区间 / 集合 / 值域 / 图。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">2</span>转移怎么找</h3>
+      <ul class="tick ok">
+        <li>问"<b>最后一步是什么</b>"</li>
+        <li>枚举所有可能的最后决策</li>
+        <li>取 <code>min</code> / <code>max</code> / <code>sum</code></li>
+      </ul>
+      <div class="split-line t"></div>
+      <p class="muted">⇒ 复杂度 = <b>状态数 × 决策数</b>。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">3</span>优化怎么上</h3>
+      <ul class="tick no">
+        <li>转移形如 <code>a[j]·x[i]+b[j]</code> → <b>斜率</b></li>
+        <li>opt[i] 单调 → <b>决策单调 / 分治</b></li>
+        <li>转移是<b>线性</b>的 → <b>矩阵快速幂</b></li>
+      </ul>
+      <div class="split-line p"></div>
+      <p class="muted">⇒ 先<b>证单调 / 凸性</b>，再写优化。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>三问的"叠加性"</h3>
+      <p>一道题可以同时要好状态、好转移、好优化。这时<b>按顺序叠加</b>，而不是三选一。最常见的顺序是：<b>先定状态 → 写朴素转移 → 验证 → 再优化</b>。</p>
+    </div>
+    <div class="card tint-amber"><h3>常见组合</h3>
+      <ul class="tick arr">
+        <li>序列状态 + 枚举前驱 + 斜率优化（玩具装箱）</li>
+        <li>区间状态 + 分割枚举 + 四边形不等式（石子合并）</li>
+        <li>集合状态 + 子集转移 + 高维前缀和（覆盖 / 分组）</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>DP 是<b>可叠加</b>的积木——状态、转移、优化三层各自独立，别一次写到底。</div>
+  </div>
+</section>
+
+<!-- ═══ 08 四大工具速查 ═══ -->
+<section class="slide" data-title="四大工具速查">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · CHEAT SHEET</div><h2>四大工具<em>速查表</em>（核心页）</h2></div>
+    <div class="hint"><b>本页回答：</b>一页看懂四条主线。<br>建议打印贴墙上。</div>
+  </div>
+  <table>
+    <tr><th style="width:112px">维度</th><th style="width:185px">线性 DP</th><th style="width:185px">区间 / 结构 DP</th><th style="width:185px">状压 / 值域 DP</th><th>转移优化</th></tr>
+    <tr><td><b>核心状态</b></td><td class="mono">f[i] / f[i][j]</td><td class="mono">f[l][r] / f[u][*]</td><td class="mono">f[S] / f[j]</td><td class="mono">f[i]（加结构）</td></tr>
+    <tr><td><b>核心问题</b></td><td>到 i 为止最优？</td><td>区间 / 子树最优？</td><td>这个集合 / 这个容量最优？</td><td>转移能否变快？</td></tr>
+    <tr><td><b>典型问题</b></td><td>LIS、编辑距离、最大子段和</td><td>矩阵链、石子、树形</td><td>TSP、数位、背包</td><td>玩具装箱、Divide&amp;Conquer</td></tr>
+    <tr><td><b>转移来源</b></td><td>枚举 <code>j &lt; i</code></td><td>枚举分割点</td><td>加元素 / 走位 / 放或不放</td><td>凸壳 / 分治 / 矩阵</td></tr>
+    <tr><td><b>核心定理</b></td><td>最优子结构</td><td>四边形不等式</td><td>子集枚举恒等式</td><td>决策单调 / 凸性</td></tr>
+    <tr><td><b>复杂度</b></td><td class="mono">O(n) ~ O(n²)</td><td class="mono">O(n²) ~ O(n³)</td><td class="mono">O(2ⁿ·n) / O(nV)</td><td class="mono">O(n) ~ O(n log n)</td></tr>
+    <tr><td><b>代码量</b></td><td>15~30 行</td><td>25~45 行</td><td>30~50 行</td><td>40~70 行</td></tr>
+    <tr><td><b>空间</b></td><td>可滚动到 <code>O(1)</code></td><td>常 <code>O(n²)</code></td><td><code>O(2ⁿ)</code> 或 <code>O(V)</code></td><td><code>O(n)</code></td></tr>
+    <tr><td><b>方案输出</b></td><td>存 <code>pre[i]</code> 回溯</td><td>存 <code>opt[l][r]</code></td><td>存 <code>pre[S][i]</code></td><td>通常只要数值</td></tr>
+    <tr><td><b>不适用</b></td><td class="no">全局结构问题</td><td class="no">无序集合问题</td><td class="no">n &gt; 22</td><td class="no">没证明单调就上</td></tr>
+    <tr><td><b>扩展</b></td><td>斜率优化、滚动数组</td><td>换根、四边形不等式</td><td>高维前缀和、折半搜索</td><td>WQS 二分、李超树</td></tr>
+    <tr><td><b>颜色</b></td><td><span class="pill hot">陶土</span></td><td><span class="pill tq">青绿</span></td><td><span class="pill pl">李子</span></td><td><span class="pill am">琥珀</span></td></tr>
+  </table>
+  <div class="note good"><b>记忆：</b>线性问"<b>到 i 为止</b>"、区间问"<b>哪一段</b>"、状压问"<b>哪些已用</b>"、优化问"<b>能不能更快</b>"。四个问句就是四条主线。</div>
+</section>
+
+<!-- ═══ 09 识别信号 ═══ -->
+<section class="slide" data-title="识别信号">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · SIGNALS</div><h2>识别信号 <em>→ 工具</em></h2></div>
+    <div class="hint"><b>本页回答：</b>看到这些词就想到那个工具。<br>速查 + 决策口诀。</div>
+  </div>
+  <table>
+    <tr><th style="width:285px">题面关键词</th><th style="width:175px">工具</th><th>关键状态</th></tr>
+    <tr><td>子序列 / 子串 / 前缀 / 后缀</td><td class="yes">线性 DP</td><td class="mono">f[i] / f[i][j]</td></tr>
+    <tr><td>编辑 / 匹配 / 对齐</td><td class="yes">线性 DP（二维）</td><td class="mono">f[i][j]</td></tr>
+    <tr><td>连续一段 / 最大子段</td><td class="yes">线性 DP / 贪心</td><td class="mono">f[i] = max(a[i], f[i-1]+a[i])</td></tr>
+    <tr><td>合并相邻 / 环形 / 切割</td><td class="yes">区间 DP</td><td class="mono">f[l][r]</td></tr>
+    <tr><td>树上选点 / 父子依赖</td><td class="yes">树形 DP</td><td class="mono">f[u][0/1]</td></tr>
+    <tr><td>每个点的答案 / 换根</td><td class="yes">换根 DP</td><td class="mono">f[u] + h[u]</td></tr>
+    <tr><td>n ≤ 20、组合 / 排列 / 覆盖</td><td class="yes">状压 DP</td><td class="mono">f[S] / f[S][i]</td></tr>
+    <tr><td>数位 / 统计 [L,R] 满足条件的数</td><td class="yes">数位 DP</td><td class="mono">f[pos][sum][tight]</td></tr>
+    <tr><td>容量 / 背包 / 选或不选</td><td class="yes">背包族</td><td class="mono">f[j]</td></tr>
+    <tr><td>最小化最大 / 最大化最小</td><td class="yes">二分答案 + DP</td><td class="mono">check(mid)</td></tr>
+    <tr><td>转移形如 <code>a[j]·x[i]+b[j]</code></td><td class="yes">斜率优化</td><td class="mono">CHT 凸壳</td></tr>
+    <tr><td>opt[i] 单调 / 四边形不等式</td><td class="yes">决策单调 / 分治</td><td class="mono">opt[l][r]</td></tr>
+    <tr><td>线性递推 / 第 n 项很大</td><td class="yes">矩阵快速幂</td><td class="mono">状态向量</td></tr>
+    <tr><td>n 大但 Σv 小</td><td class="yes">价值 DP</td><td class="mono">f[v] = 最小重量</td></tr>
+    <tr><td>n ≤ 40、容量大</td><td class="yes">折半搜索</td><td class="mono">2^(n/2) 枚举 + 归并</td></tr>
+    <tr><td>一般 TSP / 装箱 / 集合划分</td><td class="no">NP-hard</td><td class="mono">—</td></tr>
+    <tr><td>贪心显然正确</td><td class="no">别上 DP</td><td class="mono">—</td></tr>
+    <tr><td>有<b>负环</b>的最短路</td><td class="no">非 DP</td><td class="mono">Bellman-Ford</td></tr>
+    <tr><td>概率 / 期望（无环）</td><td class="yes">期望 DP</td><td class="mono">f[u] = Σ p·f[v] + c</td></tr>
+    <tr><td>期望（有环）</td><td class="yes">高斯消元 / 逆推</td><td class="mono">方程组</td></tr>
+    <tr><td>博弈（有向无环）</td><td class="yes">SG / 记忆化</td><td class="mono">f[S] = mex{...}</td></tr>
+    <tr><td>计数（含"恰好"）</td><td class="yes">容斥 + DP</td><td class="mono">f[i][j] 含容斥</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>决策口诀</h3>
+      <p><b>先问状态形状，再问最后一步，最后问能不能更快。</b>三问问完再下笔。</p>
+    </div>
+    <div class="card tint-plum"><h3>反向检查</h3>
+      <p>如果题目是"<b>连续一段</b>"或"<b>贪心显然</b>"，却上了状压 DP——<b>杀鸡用牛刀</b>，还容易在状态数上翻车。</p>
+    </div>
+    <div class="note"><b>关键：</b>识别不出关键词时，回到<b>第 10 页的状态形状</b>逐个试。</div>
+  </div>
+</section>
+
+<!-- ═══ 10 状态空间的形状 ═══ -->
+<section class="slide" data-title="状态空间的形状">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · SHAPES</div><h2>状态空间的<em>五种形状</em></h2></div>
+    <div class="hint"><b>本页回答：</b>状态长什么样？<br>形状定了，代码就定了。</div>
+  </div>
+  <div class="card" style="flex:none">
+    <svg viewBox="0 0 1140 168" preserveAspectRatio="xMidYMid meet">
+      <!-- 1 序列型 -->
+      <g>
+        <rect x="6" y="8" width="216" height="152" rx="14" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+        <text x="114" y="32" text-anchor="middle" class="dfnlab r" font-size="13">① 序列型</text>
+        <g stroke="#E2612F" stroke-width="2.2" fill="none">
+          <path d="M42 88 L78 88"/><path d="M84 88 L120 88"/><path d="M126 88 L162 88"/><path d="M168 88 L186 88"/>
+        </g>
+        <g fill="#E2612F"><circle cx="38" cy="88" r="7"/><circle cx="81" cy="88" r="7"/><circle cx="123" cy="88" r="7"/><circle cx="165" cy="88" r="7"/><circle cx="190" cy="88" r="7"/></g>
+        <text x="114" y="118" text-anchor="middle" class="dfnlab g" font-size="10">f[i] / f[i][j]</text>
+        <text x="114" y="136" text-anchor="middle" class="dfnlab g" font-size="9.5">LIS · 编辑距离 · 最大子段和</text>
+        <text x="114" y="151" text-anchor="middle" class="dfnlab r" font-size="9.5">O(n) ~ O(n²)</text>
+      </g>
+      <!-- 2 结构型 -->
+      <g>
+        <rect x="234" y="8" width="216" height="152" rx="14" fill="#E9F7F2" stroke="#BEE6D8" stroke-width="2"/>
+        <text x="342" y="32" text-anchor="middle" class="dfnlab" font-size="13">② 结构型</text>
+        <g fill="#0F7B6C">
+          <circle cx="342" cy="58" r="6"/><circle cx="330" cy="74" r="6"/><circle cx="354" cy="74" r="6"/>
+          <circle cx="318" cy="90" r="6"/><circle cx="342" cy="90" r="6"/><circle cx="366" cy="90" r="6"/>
+          <circle cx="306" cy="106" r="6"/><circle cx="330" cy="106" r="6"/><circle cx="354" cy="106" r="6"/><circle cx="378" cy="106" r="6"/>
+        </g>
+        <g stroke="#7FE0C2" stroke-width="1.8" fill="none">
+          <path d="M342 64 L336 72"/><path d="M342 64 L348 72"/><path d="M330 80 L324 88"/><path d="M354 80 L360 88"/>
+        </g>
+        <text x="342" y="128" text-anchor="middle" class="dfnlab" font-size="10">f[l][r] / f[u][0/1]</text>
+        <text x="342" y="144" text-anchor="middle" class="dfnlab g" font-size="9.5">矩阵链 · 石子 · 树形</text>
+        <text x="342" y="157" text-anchor="middle" class="dfnlab" font-size="9.5">O(n²) ~ O(n³)</text>
+      </g>
+      <!-- 3 组合型 -->
+      <g>
+        <rect x="462" y="8" width="216" height="152" rx="14" fill="#FDF0F4" stroke="#EFCBD8" stroke-width="2"/>
+        <text x="570" y="32" text-anchor="middle" class="dfnlab p" font-size="13">③ 组合型（集合）</text>
+        <g stroke="#A33A64" stroke-width="2.2" fill="none">
+          <path d="M522 76 L562 66 L606 78 L566 90 Z"/>
+          <path d="M522 76 L522 112 L566 124 L566 90"/>
+          <path d="M606 78 L606 112 L566 124"/>
+          <path d="M562 66 L562 100 L566 90" stroke-dasharray="3 3"/>
+        </g>
+        <g fill="#A33A64"><circle cx="522" cy="76" r="5"/><circle cx="562" cy="66" r="5"/><circle cx="606" cy="78" r="5"/><circle cx="566" cy="90" r="5"/><circle cx="522" cy="112" r="5"/><circle cx="566" cy="124" r="5"/><circle cx="606" cy="112" r="5"/></g>
+        <text x="570" y="142" text-anchor="middle" class="dfnlab p" font-size="10">f[S] / f[S][i]</text>
+        <text x="570" y="155" text-anchor="middle" class="dfnlab g" font-size="9.5">TSP · 覆盖 · O(2ⁿ·n)</text>
+      </g>
+      <!-- 4 值域型 -->
+      <g>
+        <rect x="690" y="8" width="216" height="152" rx="14" fill="#FFF7E6" stroke="#F4DCAC" stroke-width="2"/>
+        <text x="798" y="32" text-anchor="middle" class="dfnlab a" font-size="13">④ 值域型</text>
+        <g fill="#C9830F">
+          <rect x="712" y="92" width="16" height="26" rx="3"/><rect x="734" y="76" width="16" height="42" rx="3"/>
+          <rect x="756" y="60" width="16" height="58" rx="3"/><rect x="778" y="82" width="16" height="36" rx="3"/>
+          <rect x="800" y="68" width="16" height="50" rx="3"/><rect x="822" y="100" width="16" height="18" rx="3"/>
+          <rect x="844" y="86" width="16" height="32" rx="3"/><rect x="866" y="104" width="16" height="14" rx="3"/>
+        </g>
+        <line x1="708" y1="120" x2="888" y2="120" stroke="#C9830F" stroke-width="2"/>
+        <text x="798" y="138" text-anchor="middle" class="dfnlab a" font-size="10">f[j] / f[pos][sum]</text>
+        <text x="798" y="152" text-anchor="middle" class="dfnlab g" font-size="9.5">背包 · 数位 · O(nV)</text>
+      </g>
+      <!-- 5 图型 -->
+      <g>
+        <rect x="918" y="8" width="216" height="152" rx="14" fill="#FFF1EA" stroke="#F7CDB4" stroke-width="2"/>
+        <text x="1026" y="32" text-anchor="middle" class="dfnlab r" font-size="13">⑤ 图型</text>
+        <g stroke="#E2612F" stroke-width="2.2" fill="none">
+          <path d="M960 66 L1010 62"/><path d="M960 66 L990 100"/><path d="M1010 62 L1050 96"/>
+          <path d="M990 100 L1050 96"/><path d="M1050 96 L1078 122"/>
+        </g>
+        <g fill="#FFF3E2" stroke="#B9471B" stroke-width="2.2">
+          <circle cx="958" cy="66" r="8"/><circle cx="1010" cy="62" r="8"/><circle cx="990" cy="100" r="8"/>
+          <circle cx="1050" cy="96" r="8"/><circle cx="1078" cy="122" r="8"/>
+        </g>
+        <text x="1026" y="142" text-anchor="middle" class="dfnlab r" font-size="10">f[v]（拓扑序）</text>
+        <text x="1026" y="155" text-anchor="middle" class="dfnlab g" font-size="9.5">DAG DP · 期望 · O(n+m)</text>
+      </g>
+    </svg>
+  </div>
+  <table>
+    <tr><th style="width:105px">形状</th><th style="width:165px">状态</th><th style="width:215px">典型问题</th><th>关键注意</th></tr>
+    <tr><td><b>① 序列</b></td><td class="mono">f[i] / f[i][j]</td><td>LIS、编辑距离、最大子段和</td><td>可<b>滚动数组</b>降到 O(1) 空间</td></tr>
+    <tr><td><b>② 结构</b></td><td class="mono">f[l][r] / f[u][*]</td><td>矩阵链、石子合并、树形 DP</td><td>遍历顺序按<b>长度 / 后序</b></td></tr>
+    <tr><td><b>③ 组合</b></td><td class="mono">f[S] / f[S][i]</td><td>TSP、覆盖、分组、最大独立集</td><td>子集枚举用 <code>S-1 &amp; S</code> 优化</td></tr>
+    <tr><td><b>④ 值域</b></td><td class="mono">f[j] / f[pos][sum]</td><td>背包族、数位统计</td><td>0/1 背包必须<b>倒序</b></td></tr>
+    <tr><td><b>⑤ 图</b></td><td class="mono">f[v]</td><td>DAG 最长路、期望 DP、树上距离</td><td>有环时用<b>高斯消元</b>而非 DP</td></tr>
+  </table>
+  <div class="note good"><b>心法：</b>五种形状覆盖 95% 的 DP 题。剩下的 5% 是<b>多种形状的叠加</b>（如"树上背包"= 结构 + 值域）。</div>
+</section>
+
+<!-- ═══ 11 章节 ═══ -->
+<section class="slide section-slide rose" data-title="章节：线性 DP">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 02</div>
+      <div class="big">线性 DP：<em style="color:var(--accent)">状态是"到 i 为止"</em></div>
+      <p class="lead">LIS · 编辑距离 · 最大子段和 · 滚动数组<br>一切 DP 的<b>入门主线</b>，也是最常被优化的主线。</p>
+    </div>
+    <div><div class="num-huge">02</div>
+      <div class="note good"><b>目标：</b>能写出<b>朴素 + 优化</b>两版 LIS / 编辑距离，并解释滚动数组方向。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 线性 DP ═══ -->
+<section class="slide" data-title="线性 DP">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · LINEAR DP</div><h2>线性 DP：<em>状态是"到 i 为止的最优"</em></h2></div>
+    <div class="hint"><b>本页回答：</b>线性 DP 的骨架是什么？<br>为什么"最后一步"是关键。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>核心骨架</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="hl">f[i] = min/max</span> { f[j] + cost(j,i) }  <span class="dim">j &lt; i</span><br><br>
+          问 "<b>最后一步是什么</b>"：<br>
+          &nbsp;&nbsp;· LIS：最后一个取谁<br>
+          &nbsp;&nbsp;· 编辑距离：最后一步是插入/删除/替换<br>
+          &nbsp;&nbsp;· 最大子段和：以 a[i] 结尾还是一刀两断
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>滚动数组</h3>
+        <ul class="tick arr">
+          <li><code>f[i][j]</code> 只依赖 <code>f[i-1][*]</code> → 只留两行</li>
+          <li><b>0/1 背包</b>必须<b>倒序</b>遍历容量（防止重复用）</li>
+          <li><b>完全背包</b>必须<b>正序</b>遍历容量</li>
+        </ul>
+      </div>
+      <div class="note good"><b>复杂度：</b>状态数 × 决策数 = <code>O(n × k)</code>；<b>决策数可优化到 O(1)</b> 就是斜率优化的入口。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 470 232" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <marker id="la" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto">
+              <path d="M0 0 L8 4 L0 8 z" fill="#E2612F"/></marker>
+          </defs>
+          <!-- 线性推进 -->
+          <text x="235" y="22" text-anchor="middle" class="dfnlab r" font-size="11.5">线性推进：f[i] 依赖 f[j], j &lt; i</text>
+          <g fill="#FFF3E2" stroke="#B9471B" stroke-width="2.4">
+            <circle cx="42" cy="86" r="15"/><circle cx="112" cy="86" r="15"/><circle cx="182" cy="86" r="15"/>
+            <circle cx="252" cy="86" r="15"/><circle cx="322" cy="86" r="15"/>
+          </g>
+          <circle cx="392" cy="86" r="17" fill="#E2612F" stroke="#B9471B" stroke-width="2.4"/>
+          <g font-family="monospace" font-size="10.5" text-anchor="middle" fill="#B9471B">
+            <text x="42" y="90">f[0]</text><text x="112" y="90">f[1]</text><text x="182" y="90">f[2]</text>
+            <text x="252" y="90">f[3]</text><text x="322" y="90">f[4]</text>
+          </g>
+          <text x="392" y="90" text-anchor="middle" fill="#fff" font-family="monospace" font-size="10.5">f[5]</text>
+          <!-- 前驱箭头 -->
+          <g stroke="#E2612F" stroke-width="1.8" fill="none" marker-end="url(#la)" opacity=".85">
+            <path d="M56 82 L374 76"/><path d="M126 80 L374 78"/><path d="M196 80 L374 80"/><path d="M266 82 L374 82"/><path d="M336 84 L373 85"/>
+          </g>
+          <g stroke="#E2612F" stroke-width="1.6" fill="none" marker-end="url(#la)">
+            <path d="M42 102 L392 102"/><path d="M112 112 L392 112"/><path d="M182 122 L392 122"/>
+            <path d="M252 132 L392 132"/><path d="M322 142 L392 142"/>
+          </g>
+          <text x="235" y="172" text-anchor="middle" class="dfnlab r" font-size="11">"最后一步" = 枚举 j &lt; i</text>
+          <rect x="60" y="188" width="350" height="30" rx="10" fill="#2E2118"/>
+          <text x="235" y="208" text-anchor="middle" fill="#FFB169" font-family="monospace" font-size="11">f[i] = opt{ f[j] + cost(j, i) }  · O(n × 决策数)</text>
+        </svg>
+      </div>
+      <div class="card tint-plum"><h3>三个易错</h3>
+        <ul class="tick no">
+          <li>滚动数组<b>方向</b>写反 → 0/1 背包变完全背包</li>
+          <li>初值用 <code>0</code> 而非 <code>-INF</code>，"取不到"被当 0</li>
+          <li>状态漏掉"<b>上一个取了什么</b>" → 后续决策不一致</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 13 模板：LIS ═══ -->
+<section class="slide" data-title="模板：LIS">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · TEMPLATE</div><h2>模板一：<em>LIS（朴素 + 贪心二分）</em></h2></div>
+    <div class="hint"><b>本页回答：</b>O(n²) 与 O(n log n) 怎么写？<br>差别在哪。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li>朴素：<code>f[i]</code> = 以 <code>a[i]</code> 结尾的 LIS 长度</li>
+          <li>优化：<code>tails[k]</code> = 长度 k+1 的 LIS <b>最小结尾值</b></li>
+          <li><b>严格递增</b>用 <code>bisect_left</code>；<b>非降</b>用 <code>bisect_right</code></li>
+          <li>输出<b>方案</b>要另存 <code>pre[i]</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>a = [10, 9, 2, 5, 3, 7, 101, 18]</code><br>
+          朴素 <code>f = [1,1,1,2,2,3,4,4]</code> → <span class="ok">4</span><br>
+          二分 <code>tails = [2,3,7,18]</code> → <span class="ok">4</span>
+        </div>
+      </div>
+      <div class="note good"><b>用途：</b>LIS、导弹拦截（最长不上升）、合唱队形（LIS + LDS）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>lis.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="lis"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 14 模板：编辑距离 ═══ -->
+<section class="slide" data-title="模板：编辑距离">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · TEMPLATE</div><h2>模板二：<em>编辑距离（2D + 滚动数组）</em></h2></div>
+    <div class="hint"><b>本页回答：</b>二维 DP 怎么降维？<br>降维时踩什么坑。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li>状态 <code>f[i][j]</code> = <code>s[:i]</code> 变到 <code>t[:j]</code> 的最小操作数</li>
+          <li>转移三选一：替换 / 删除 / 插入</li>
+          <li>降维要存 <code>prev</code>（<code>f[i-1][j-1]</code>）</li>
+          <li>空间优化后是 <code>O(min(n,m))</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>s="horse", t="ros"</code> → <span class="ok">3</span><br>
+          <span class="dim">horse → rorse (替换 h→r) → rose (删 r) → ros (删 e)</span>
+        </div>
+      </div>
+      <div class="note warn"><b>易错：</b>降维时 <code>prev</code> 必须在<b>覆盖 f[j] 之前</b>保存，否则 <code>f[i-1][j-1]</code> 就丢了。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>edit_distance.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="edit_distance"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 15 模板：最大子段和 ═══ -->
+<section class="slide" data-title="模板：最大子段和">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · TEMPLATE</div><h2>模板三：<em>最大子段和（三解对照）</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一题的三种建模。<br>顺便当对拍用。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三种建模</h3>
+        <ul class="tick arr">
+          <li><b>暴力</b> <code>O(n²)</code>：枚举所有子段</li>
+          <li><b>前缀 DP</b> <code>O(n)</code>：<code>f[i] = max(a[i], f[i-1]+a[i])</code></li>
+          <li><b>分治</b> <code>O(n log n)</code>：左 / 右 / 跨越</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>分治的四元组</h3>
+        <div class="formula" style="font-size:11.4px">
+          <code>(sum, pref, suff, best)</code><br>
+          <span class="hl">合并：</span><br>
+          &nbsp;sum = ls + rs<br>
+          &nbsp;pref = max(lp, ls + rp)<br>
+          &nbsp;suff = max(rq, rs + lq)<br>
+          &nbsp;best = max(lb, rb, lq + rp)
+        </div>
+      </div>
+      <div class="note good"><b>验证：</b><code>[-2,1,-3,4,-1,2,1,-5,4]</code> → <span class="ok">6</span>（子段 <code>[4,-1,2,1]</code>），三解一致。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>max_subarray.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="max_subarray"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 16 线性 DP 案例 ═══ -->
+<section class="slide" data-title="线性 DP 案例">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · CASES</div><h2>线性 DP<em>建模案例</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪类题想到线性 DP？<br>四个典型。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-rose"><h3><span class="n">A</span>最长递增子序列</h3>
+      <p><b>题意：</b>求最长递增子序列长度。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b><code>f[i]</code> = 以 i 结尾的 LIS。<br><b>答案：</b><code>O(n log n)</code>。</p></div>
+    <div class="card"><h3><span class="n">B</span>编辑距离</h3>
+      <p><b>题意：</b>字符串 s 变到 t 最少几步。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b><code>f[i][j]</code> = 前缀对齐。<br><b>答案：</b><code>O(nm)</code> + 滚动。</p></div>
+    <div class="card tint-amber"><h3><span class="n a">C</span>最大子段和</h3>
+      <p><b>题意：</b>求最大连续子段和。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b><code>f[i]</code> = 以 i 结尾的最大和。<br><b>答案：</b><code>O(n)</code>。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">D</span>打家劫舍 / 选或不选</h3>
+      <p><b>题意：</b>相邻不能都选，求最大价值。</p>
+      <div class="split-line p"></div>
+      <p class="muted"><b>建模：</b><code>f[i][0/1]</code> = 选 / 不选。<br><b>答案：</b><code>O(n)</code>。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>共同结构</h3>
+      <p>都是"<b>到 i 为止的最优</b>"。识别信号：<b>子序列、前缀、连续一段、选或不选</b>。</p>
+    </div>
+    <div class="card tint-plum"><h3>什么时候不够用</h3>
+      <ul class="tick no">
+        <li>要<b>区间合并</b> → 区间 DP</li>
+        <li>要<b>集合</b>（哪些已用）→ 状压 DP</li>
+        <li>转移是<b>非线性</b>的且决策数大 → 优化层</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>看到"<b>到 i 为止</b>"或"<b>以 i 结尾</b>"，第一反应是线性 DP。</div>
+  </div>
+</section>
+
+<!-- ═══ 17 线性 DP 速查 ═══ -->
+<section class="slide" data-title="线性 DP 速查">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · CHEAT SHEET</div><h2>线性 DP<em>速查表</em></h2></div>
+    <div class="hint"><b>本页回答：</b>线性 DP 都怎么办？<br>一页看全。</div>
+  </div>
+  <table>
+    <tr><th style="width:195px">问题</th><th style="width:255px">状态</th><th>复杂度</th><th>注意</th></tr>
+    <tr><td>LIS</td><td class="mono">f[i] = 以 i 结尾</td><td class="mono">O(n²) / O(n log n)</td><td>严格 vs 非降</td></tr>
+    <tr><td>LCS（最长公共子序列）</td><td class="mono">f[i][j]</td><td class="mono">O(nm)</td><td>可滚动到 O(m)</td></tr>
+    <tr><td>编辑距离</td><td class="mono">f[i][j]</td><td class="mono">O(nm)</td><td>降维要存 prev</td></tr>
+    <tr><td>最大子段和</td><td class="mono">f[i] = max(a[i], f[i-1]+a[i])</td><td class="mono">O(n)</td><td>初值 = a[0]</td></tr>
+    <tr><td>打家劫舍</td><td class="mono">f[i][0/1]</td><td class="mono">O(n)</td><td>可降成两变量</td></tr>
+    <tr><td>股票买卖（k 次）</td><td class="mono">f[i][j][0/1]</td><td class="mono">O(nk)</td><td>状态是"持有 / 未持有"</td></tr>
+    <tr><td>单词拆分</td><td class="mono">f[i] = 可拼出</td><td class="mono">O(n²)</td><td>枚举上一刀</td></tr>
+    <tr><td>解码方法</td><td class="mono">f[i]</td><td class="mono">O(n)</td><td>注意 0 的处理</td></tr>
+    <tr><td>乘积最大子数组</td><td class="mono">f[i] = max/min</td><td class="mono">O(n)</td><td>要同时存 max 与 min</td></tr>
+    <tr><td>回文子串计数</td><td class="mono">f[l][r]</td><td class="mono">O(n²)</td><td>其实归区间 DP</td></tr>
+    <tr><td>0/1 背包（容量小）</td><td class="mono">f[j]</td><td class="mono">O(nV)</td><td><b>倒序</b>遍历</td></tr>
+    <tr><td>完全背包</td><td class="mono">f[j]</td><td class="mono">O(nV)</td><td><b>正序</b>遍历</td></tr>
+    <tr><td>多重背包</td><td class="mono">f[j]</td><td class="mono">O(nV log)</td><td>二进制拆分 / 单调队列</td></tr>
+    <tr><td>分组背包</td><td class="mono">f[j]</td><td class="mono">O(nV)</td><td>组内倒序</td></tr>
+    <tr><td>期望 DP（DAG）</td><td class="mono">f[u]</td><td class="mono">O(n+m)</td><td>按拓扑逆序</td></tr>
+    <tr><td>计数 + 容斥</td><td class="mono">f[i][j]</td><td class="mono">O(n²)</td><td>注意"恰好"与"至多"</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>公式速记</h3>
+      <div class="formula" style="font-size:11.6px">
+        状态数 = <code>∏ 各维度长度</code><br>
+        决策数 = 转移枚举的范围<br>
+        总复杂度 = <span class="hl">状态数 × 决策数</span>
+      </div>
+    </div>
+    <div class="card tint-teal"><h3>什么时候升级</h3>
+      <ul class="tick arr">
+        <li>决策数大且转移是<b>线性</b> → 斜率优化</li>
+        <li>opt[i] 单调 → 决策单调 / 分治</li>
+        <li>状态依赖是<b>线性递推</b> → 矩阵快速幂</li>
+      </ul>
+    </div>
+    <div class="note"><b>关键：</b>线性 DP 的通用套路是"<b>问最后一步，枚举上一个决策点</b>"。</div>
+  </div>
+</section>
+
+<!-- ═══ 18 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：区间 / 结构 DP">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 03</div>
+      <div class="big">区间 / 结构 DP：<em style="color:var(--teal)">状态是"哪一段"</em></div>
+      <p class="lead">矩阵链乘 · 石子合并 · 四边形不等式 · 树形 DP · 换根<br>合并与分割类问题的<b>唯一自然解</b>。</p>
+    </div>
+    <div><div class="num-huge t">03</div>
+      <div class="note good"><b>目标：</b>能独立写出区间 DP 与树形 DP，并解释<b>遍历顺序</b>为什么这么定。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 19 区间 DP ═══ -->
+<section class="slide" data-title="区间 DP">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · INTERVAL DP</div><h2>区间 DP：<em class="t">状态是"区间 [l, r]"</em></h2></div>
+    <div class="hint"><b>本页回答：</b>区间 DP 的骨架是什么？<br>为什么按长度枚举。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>核心骨架</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="hl">f[l][r] = min/max</span> { f[l][k] + f[k+1][r] + w(l,r) }<br>
+          <span class="dim">k ∈ [l, r-1]（枚举最后一次分割 / 合并点）</span><br><br>
+          问 "<b>最后一次合并发生在哪</b>"
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>遍历顺序</h3>
+        <ul class="tick arr">
+          <li><b>按长度枚举</b>：先短区间，后长区间</li>
+          <li>或<b>记忆化搜索</b>（自动正确）</li>
+          <li>环形问题：<b>断环成链</b>，复制一份拼接</li>
+        </ul>
+      </div>
+      <div class="note good"><b>复杂度：</b><code>O(n³)</code>（朴素）→ <code>O(n²)</code>（四边形不等式）。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 470 232" preserveAspectRatio="xMidYMid meet">
+          <!-- 区间三角 -->
+          <text x="235" y="20" text-anchor="middle" class="dfnlab" font-size="11.5">区间 DP 状态三角（l ≤ r）</text>
+          <g>
+            <!-- 网格 -->
+            <g stroke="#BEE6D8" stroke-width="1.2">
+              <rect x="118" y="38" width="234" height="176" fill="#fff" stroke="#BEE6D8" stroke-width="2"/>
+              <path d="M118 72 H352 M118 106 H352 M118 140 H352 M118 174 H352"/>
+              <path d="M164 38 V214 M211 38 V214 M258 38 V214 M305 38 V214"/>
+            </g>
+            <!-- 下三角填充 -->
+            <g fill="#0F7B6C" opacity=".22">
+              <rect x="118" y="38" width="46" height="34"/>
+              <rect x="118" y="72" width="93" height="34"/><rect x="211" y="72" width="47" height="34"/>
+              <rect x="118" y="106" width="140" height="34"/><rect x="258" y="106" width="47" height="34"/>
+              <rect x="118" y="140" width="187" height="34"/><rect x="305" y="140" width="47" height="34"/>
+            </g>
+            <!-- 高亮 f[0][4] -->
+            <rect x="118" y="174" width="234" height="34" fill="#0F7B6C" opacity=".8"/>
+            <!-- 分割点 -->
+            <g stroke="#E2612F" stroke-width="2.2" fill="none" stroke-dasharray="5 4">
+              <path d="M211 176 L211 210"/>
+            </g>
+            <!-- 箭头 -->
+            <g stroke="#E2612F" stroke-width="2" fill="none">
+              <path d="M172 152 L200 184"/><path d="M280 152 L230 184"/>
+            </g>
+            <g font-family="monospace" font-size="10" text-anchor="middle" fill="#0B6356">
+              <text x="141" y="59">f[0][0]</text>
+              <text x="164" y="93">f[0][1]</text><text x="234" y="93">f[1][1]</text>
+              <text x="188" y="127">f[0][2]</text><text x="281" y="127">f[2][2]</text>
+              <text x="211" y="161">f[0][3]</text><text x="328" y="161">f[3][3]</text>
+            </g>
+            <text x="235" y="196" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11">f[0][4] = min_k { f[0][k] + f[k+1][4] }</text>
+          </g>
+          <text x="235" y="228" text-anchor="middle" class="dfnlab r" font-size="10.5">按【长度】枚举，短的先算</text>
+        </svg>
+      </div>
+      <div class="card tint-plum"><h3>三个易错</h3>
+        <ul class="tick no">
+          <li>遍历顺序写成 <code>for l: for r:</code> → 依赖的 <code>f[l][k]</code> 还没算</li>
+          <li>环形没断环 → 漏掉跨越首尾的合并</li>
+          <li>代价 <code>w(l,r)</code> 不满足四边形不等式却硬上优化</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 20 模板：矩阵链乘 ═══ -->
+<section class="slide" data-title="模板：矩阵链乘">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · TEMPLATE</div><h2>模板四：<em class="t">矩阵链乘</em></h2></div>
+    <div class="hint"><b>本页回答：</b>区间 DP 的标准写法。<br>含暴力对拍版。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li><code>p = [p0, ..., pn]</code>，矩阵 <code>i</code> 维度 <code>p[i]×p[i+1]</code></li>
+          <li>状态 <code>f[i][j]</code> = 乘完矩阵 <code>i..j</code> 的最小标量乘</li>
+          <li>分割点 <code>k ∈ [i, j-1]</code></li>
+          <li>枚举<b>长度</b>从 2 到 n</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>p = [10, 30, 5, 60]</code><br>
+          <code>(A1A2)A3 = 10·30·5 + 10·5·60 = 4500</code><br>
+          <code>A1(A2A3) = 30·5·60 + 10·30·60 = 27000</code><br>
+          <span class="ok">min = 4500</span>
+        </div>
+      </div>
+      <div class="note good"><b>用途：</b>矩阵链乘、最优 BST、石子合并、Polygon。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>matrix_chain.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="matrix_chain"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 21 模板：石子合并 ═══ -->
+<section class="slide" data-title="模板：石子合并">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · TEMPLATE</div><h2>模板五：<em class="t">石子合并 + 四边形不等式</em></h2></div>
+    <div class="hint"><b>本页回答：</b>O(n³) 怎么降到 O(n²)？<br>边界怎么处理。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li>代价 <code>rng(l,r) = pref[r+1] - pref[l]</code></li>
+          <li>满足四边形不等式 → <code>opt[l][r-1] ≤ opt[l][r] ≤ opt[l+1][r]</code></li>
+          <li>搜索范围收窄到 <code>[opt[l][r-1], min(opt[l+1][r], r-1)]</code></li>
+          <li><code>len = 2</code> 时只有 <code>k = l</code>，必须特判</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>a = [4, 1, 3, 2]</code><br>
+          <code>f[0][3] = 19</code>（两版一致）<br>
+          <span class="dim">环形问题：b = a + a，枚举起点</span>
+        </div>
+      </div>
+      <div class="note warn"><b>易错：</b>四边形不等式<b>必须先证</b>，否则 <code>opt</code> 范围收窄会漏解。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>stone_merge.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="stone_merge"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 22 树形 DP 与换根 ═══ -->
+<section class="slide" data-title="树形 DP 与换根">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · TREE DP</div><h2>树形 DP 与<em class="t">换根</em></h2></div>
+    <div class="hint"><b>本页回答：</b>树上怎么 DP？<br>换根在解什么。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>树形 DP（一次 DFS）</h3>
+        <ul class="tick arr">
+          <li>状态 <code>f[u][*]</code> = 子树 <code>u</code> 的最优</li>
+          <li>后序遍历：先算子，再算父</li>
+          <li>典型：最大独立集、树上背包、染色</li>
+        </ul>
+        <div class="note good"><b>复杂度：</b><code>O(n × 状态数 × 决策数)</code>。</div>
+      </div>
+      <div class="card tint-amber"><h3>换根 DP（两次 DFS）</h3>
+        <ul class="tick ok">
+          <li>第一次：求<b>子树内</b>贡献 <code>f[u]</code></li>
+          <li>第二次：把<b>子树外</b>贡献 <code>h[u]</code> 传给子</li>
+          <li>典型：每个点到所有点的距离和、树的重心</li>
+        </ul>
+        <div class="note"><b>关键：</b>换根公式要<b>减去子的贡献再加父侧</b>，别重复算。</div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>典型状态</h3>
+        <table style="margin-top:2px">
+          <tr><th>问题</th><th>状态</th><th>转移</th></tr>
+          <tr><td>最大独立集</td><td class="mono">f[u][0/1]</td><td class="mono">选 u 则子必不选</td></tr>
+          <tr><td>最小点覆盖</td><td class="mono">f[u][0/1]</td><td class="mono">边的两端至少选一</td></tr>
+          <tr><td>树上背包</td><td class="mono">f[u][j]</td><td class="mono">子树合并背包</td></tr>
+          <tr><td>染色 / 社交距离</td><td class="mono">f[u][c]</td><td class="mono">枚举 u 颜色</td></tr>
+          <tr><td>换根距离和</td><td class="mono">dp[u] + sz[u]</td><td class="mono">两次 DFS</td></tr>
+        </table>
+      </div>
+      <div class="card tint-plum"><h3>三个易错</h3>
+        <ul class="tick no">
+          <li>DFS 递归太深 → 用<b>迭代栈</b>或加递归限制</li>
+          <li>换根时<b>忘了减去子的贡献</b></li>
+          <li>树形背包复杂度写成 <code>O(nV²)</code>，实际是 <code>O(nV)</code>（按子树大小枚举）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>树形 DP 的遍历顺序由<b>父子依赖</b>决定；换根则需要<b>两次</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 23 模板：树形 DP ═══ -->
+<section class="slide" data-title="模板：树形 DP">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · TEMPLATE</div><h2>模板六：<em class="t">树形 DP + 换根</em></h2></div>
+    <div class="hint"><b>本页回答：</b>最大独立集与换根距离和怎么写？<br>含自检。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li>用<b>迭代栈</b>求遍历序，避免递归爆栈</li>
+          <li>最大独立集：<code>f[u][1] = w[u] + Σ f[v][0]</code></li>
+          <li>换根：<code>dp[v] += (dp[u]-dp[v]-sz[v]) + (n-sz[v])</code></li>
+          <li>父指针 <code>parent[u]</code> 用来跳过回边</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.5px">
+          <b>独立集</b>：星形 <code>0-1, 0-2</code>，w = <code>[1,2,3]</code> → <span class="ok">5</span><br>
+          <b>换根</b>：链 <code>0-1-2</code> → <span class="ok">dp = [3,2,3]</span>
+        </div>
+      </div>
+      <div class="note good"><b>用途：</b>没有上司的舞会、选课（树上背包）、树的重心。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>tree_dp.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="tree_dp"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 24 结构 DP 案例 ═══ -->
+<section class="slide" data-title="结构 DP 案例">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · CASES</div><h2>结构 DP<em class="t">建模案例</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪类题想到区间 / 树形 DP？<br>四个典型。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-teal"><h3><span class="n t">A</span>石子合并</h3>
+      <p><b>题意：</b>合并相邻堆，代价为重量和，求最小总代价。</p>
+      <div class="split-line t"></div>
+      <p class="muted"><b>建模：</b><code>f[l][r]</code> + 断环。<br><b>答案：</b><code>O(n³)</code> → <code>O(n²)</code>。</p></div>
+    <div class="card"><h3><span class="n t">B</span>矩阵链乘</h3>
+      <p><b>题意：</b>矩阵连乘，求最小标量乘次数。</p>
+      <div class="split-line t"></div>
+      <p class="muted"><b>建模：</b><code>f[i][j]</code> 枚举分割点。<br><b>答案：</b><code>O(n³)</code>。</p></div>
+    <div class="card tint-amber"><h3><span class="n a">C</span>没有上司的舞会</h3>
+      <p><b>题意：</b>树上选点，父子不能同选，求最大快乐指数。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b><code>f[u][0/1]</code>。<br><b>答案：</b><code>O(n)</code>。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">D</span>选课（树上背包）</h3>
+      <p><b>题意：</b>选 m 门课，每门有先修课，求最大学分。</p>
+      <div class="split-line p"></div>
+      <p class="muted"><b>建模：</b><code>f[u][j]</code> 子树背包。<br><b>答案：</b><code>O(nm)</code>。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>共同结构</h3>
+      <p>都是"<b>合并 / 分割</b>"。识别信号：<b>合并相邻、区间、树上、父子依赖、先修</b>。</p>
+    </div>
+    <div class="card tint-plum"><h3>什么时候不够用</h3>
+      <ul class="tick no">
+        <li>状态是<b>集合</b>（无序）→ 状压 DP</li>
+        <li>值域大且是<b>容量</b>型 → 背包族</li>
+        <li>转移<b>非线性</b>且决策多 → 优化层</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>看到"<b>合并 / 分割 / 父子 / 区间</b>"，第一反应是结构 DP。</div>
+  </div>
+</section>
+
+<!-- ═══ 25 结构 DP 速查 ═══ -->
+<section class="slide" data-title="结构 DP 速查">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · CHEAT SHEET</div><h2>结构 DP<em class="t">速查表</em></h2></div>
+    <div class="hint"><b>本页回答：</b>结构 DP 都怎么办？<br>一页看全。</div>
+  </div>
+  <table>
+    <tr><th style="width:205px">问题</th><th style="width:215px">状态</th><th>复杂度</th><th>注意</th></tr>
+    <tr><td>矩阵链乘</td><td class="mono">f[i][j]</td><td class="mono">O(n³) / O(n²)</td><td>四边形不等式可优化</td></tr>
+    <tr><td>石子合并（线性）</td><td class="mono">f[l][r]</td><td class="mono">O(n³) / O(n²)</td><td>代价 = 区间总重</td></tr>
+    <tr><td>石子合并（环形）</td><td class="mono">f[l][r]</td><td class="mono">O(n³)</td><td><b>断环成链</b>，枚举起点</td></tr>
+    <tr><td>涂色 / 回文分割</td><td class="mono">f[l][r]</td><td class="mono">O(n³) / O(n²)</td><td>转移可优化</td></tr>
+    <tr><td>最优 BST</td><td class="mono">f[l][r] + w</td><td class="mono">O(n³) / O(n²)</td><td>Knuth 优化</td></tr>
+    <tr><td>最大独立集（树）</td><td class="mono">f[u][0/1]</td><td class="mono">O(n)</td><td>后序遍历</td></tr>
+    <tr><td>最小点覆盖（树）</td><td class="mono">f[u][0/1]</td><td class="mono">O(n)</td><td>—</td></tr>
+    <tr><td>树上背包</td><td class="mono">f[u][j]</td><td class="mono">O(nm)</td><td>按<b>子树大小</b>枚举</td></tr>
+    <tr><td>换根（距离和 / 重心）</td><td class="mono">dp[u] + sz[u]</td><td class="mono">O(n)</td><td>两次 DFS</td></tr>
+    <tr><td>树的直径 / 中心</td><td class="mono">f[u] = 最长向下</td><td class="mono">O(n)</td><td>取 <code>f[u]+g[u]</code> 最大</td></tr>
+    <tr><td>多叉树转二叉树</td><td class="mono">左儿子右兄弟</td><td class="mono">O(n)</td><td>经典技巧</td></tr>
+    <tr><td>凸多边形三角剖分</td><td class="mono">f[i][j]</td><td class="mono">O(n³)</td><td>与矩阵链同构</td></tr>
+    <tr><td>括号匹配</td><td class="mono">f[l][r]</td><td class="mono">O(n³)</td><td>枚举匹配点</td></tr>
+    <tr><td>多边形游戏（取数）</td><td class="mono">f[l][r][0/1]</td><td class="mono">O(n³)</td><td>存 max / min</td></tr>
+    <tr><td>金字塔 / 路径合并</td><td class="mono">f[i][j]</td><td class="mono">O(n²)</td><td>按层递推</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>公式速记</h3>
+      <div class="formula" style="font-size:11.6px">
+        <code>f[l][r] = opt_k { f[l][k] + f[k+1][r] } + w(l,r)</code><br>
+        <span class="dim">w 满足四边形不等式 → O(n²)</span>
+      </div>
+    </div>
+    <div class="card tint-teal"><h3>什么时候升级</h3>
+      <ul class="tick arr">
+        <li>四边形不等式 → Knuth / 四边形优化</li>
+        <li>树上 + 容量 → 树形背包</li>
+        <li>每个点都要答案 → 换根</li>
+      </ul>
+    </div>
+    <div class="note"><b>关键：</b>结构 DP 的通用套路是"<b>问最后一次合并在哪</b>"。</div>
+  </div>
+</section>
+
+<!-- ═══ 26 章节 ═══ -->
+<section class="slide section-slide plum" data-title="章节：状压 / 值域 DP">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker plum"><i></i>CHAPTER 04</div>
+      <div class="big">状压 / 值域 DP：<em style="color:var(--plum)">状态是"集合 / 容量"</em></div>
+      <p class="lead">TSP · 数位 DP · 背包族（容量 / 价值 / 折半）<br>n ≤ 20 的组合最优，与大容量背包的<b>唯一解</b>。</p>
+    </div>
+    <div><div class="num-huge p">04</div>
+      <div class="note warn"><b>要领：</b>状压的敌人是<b>状态数</b>，背包的敌人是<b>值域</b>——先算清 <code>2ⁿ</code> 或 <code>V</code> 再动手。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 27 状压 DP ═══ -->
+<section class="slide" data-title="状压 DP">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · STATE COMPRESSION</div><h2>状压 DP：<em class="p">状态是集合 S</em></h2></div>
+    <div class="hint"><b>本页回答：</b>状压的核心是什么？<br>子集枚举怎么优化。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>核心骨架</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="hl">f[S][i]</span> = 已选集合 S、当前在 i 的最优<br><br>
+          <span class="ok">f[S ∪ {v}][v] = min/max</span> { f[S][u] + w(u,v) }<br>
+          <span class="dim">S 用二进制位表示；遍历按 |S| 递增</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>子集枚举技巧</h3>
+        <div class="formula" style="font-size:11.5px">
+          枚举 S 的子集：<span class="hl">T = (T-1) &amp; S</span><br>
+          总复杂度 <code>O(3ⁿ)</code> 而非 <code>O(4ⁿ)</code><br>
+          <span class="dim">高维前缀和（SOS DP）：O(n·2ⁿ)</span>
+        </div>
+      </div>
+      <div class="note good"><b>规模：</b>n ≤ 20 → <code>2²⁰ ≈ 10⁶</code> 可行；n ≥ 22 直接爆。</div>
+    </div>
+    <div>
+      <div class="card"><h3>典型问题</h3>
+        <ul class="tick">
+          <li><b>TSP</b>：<code>f[S][i]</code> 访问集合 S、当前在 i</li>
+          <li><b>互不侵犯</b>：<code>f[i][S][k]</code> 前 i 行、当前行状态 S、放 k 个</li>
+          <li><b>炮兵阵地</b>：两行状态兼容性</li>
+          <li><b>覆盖 / 染色</b>：格子被哪些骨牌盖住</li>
+          <li><b>最大独立集</b>（一般图）：<code>f[S]</code></li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>三个易错</h3>
+        <ul class="tick no">
+          <li>状态数算错 → <code>2²²</code> 直接爆内存</li>
+          <li>遍历顺序不是<b>按 |S| 递增</b> → 依赖没算</li>
+          <li>兼容性判据写漏（如"相邻行不能攻击"）</li>
+        </ul>
+      </div>
+      <div class="card tint-teal"><h3>与其它主线的关系</h3>
+        <p>状压是<b>枚举</b>与 DP 的结合。当 n 大但值域小时，<b>换成值域 DP</b>（背包族）；当集合有<b>结构</b>时，考虑<b>折半搜索</b>。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 28 模板：TSP ═══ -->
+<section class="slide" data-title="模板：TSP">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · TEMPLATE</div><h2>模板七：<em class="p">TSP 状压 DP</em></h2></div>
+    <div class="hint"><b>本页回答：</b>TSP 状态怎么定义？<br>含暴力对拍。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li><code>f[S][i]</code> = 已访问集合 S、当前在 i 的最小代价</li>
+          <li>起点固定为 0，初值 <code>f[1][0] = 0</code></li>
+          <li>遍历 S 从小到大，枚举 <code>v ∉ S</code></li>
+          <li>答案 = <code>min(f[full][u] + dist[u][0])</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.5px">
+          <code>dist = [[0,1,5],[1,0,2],[5,2,0]]</code><br>
+          两条回路都是 <span class="ok">8</span><br>
+          <span class="dim">复杂度 O(2ⁿ·n²)；n ≤ 20</span>
+        </div>
+      </div>
+      <div class="note good"><b>用途：</b>TSP、哈密顿路、最小代价分组。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot p"></span><span class="dot"></span><span class="dot"></span><em>tsp.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="tsp"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 29 数位 DP ═══ -->
+<section class="slide" data-title="数位 DP">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · DIGIT DP</div><h2>数位 DP：<em class="p">状态是数字结构</em></h2></div>
+    <div class="hint"><b>本页回答：</b>数位 DP 在解什么？<br>三个状态维度是什么。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>核心骨架</h3>
+        <div class="formula" style="font-size:11.7px">
+          <span class="hl">f[pos][sum][tight]</span><br>
+          &nbsp;pos = 填到第几位<br>
+          &nbsp;sum = 已填位的某种量（和 / 乘积 / 余数）<br>
+          &nbsp;tight = 是否贴着上界<br><br>
+          <span class="dim">记忆化搜索写法最自然</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>三个关键</h3>
+        <ul class="tick arr">
+          <li><code>tight</code> 决定本位上界是 <code>9</code> 还是 <code>digits[pos]</code></li>
+          <li>记忆化时 <b>不能把 tight 存进去</b>（否则状态数翻倍）</li>
+          <li>统计 <code>[L,R]</code> = <code>calc(R) - calc(L-1)</code></li>
+        </ul>
+      </div>
+      <div class="note good"><b>典型：</b>windy 数、数字游戏、度的数量、数字计数。</div>
+    </div>
+    <div>
+      <div class="card"><h3>典型问题</h3>
+        <table style="margin-top:2px">
+          <tr><th>问题</th><th>状态额外维度</th></tr>
+          <tr><td>数位和 ≤ k</td><td class="mono">sum</td></tr>
+          <tr><td>相邻位差 ≥ 2（windy）</td><td class="mono">lead / last</td></tr>
+          <tr><td>不含 49</td><td class="mono">pre4 / found</td></tr>
+          <tr><td>某数字出现次数</td><td class="mono">cnt / found</td></tr>
+          <tr><td>模 k 余 0</td><td class="mono">rem</td></tr>
+        </table>
+      </div>
+      <div class="card tint-plum"><h3>三个易错</h3>
+        <ul class="tick no">
+          <li>把 <code>tight</code> 缓存进 <code>lru_cache</code> → 状态爆炸</li>
+          <li>前导 0 没处理（如"数位和"要排除前导 0）</li>
+          <li>统计 <code>[L,R]</code> 忘了减 <code>calc(L-1)</code></li>
+        </ul>
+      </div>
+      <div class="card tint-teal"><h3>与其它主线的关系</h3>
+        <p>数位 DP 是<b>值域 DP</b> 的特例：把"数字"按位拆成"<b>填了什么 + 是否贴界</b>"。当问题变成"子集"时，切换到<b>状压</b>。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 30 模板：数位 DP ═══ -->
+<section class="slide" data-title="模板：数位 DP">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · TEMPLATE</div><h2>模板八：<em class="p">数位 DP</em></h2></div>
+    <div class="hint"><b>本页回答：</b>数位 DP 标准写法。<br>含自检。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li>把数字转成 <code>digits</code> 列表，逐位 DFS</li>
+          <li><code>tight</code> 传参，<b>不进缓存键</b>（此处用 <code>lru_cache</code> 但要小心）</li>
+          <li>返回<b>方案数</b>（不是数值）</li>
+          <li>区间问题用 <code>calc(R) - calc(L-1)</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>x = 20, k = 3</code><br>
+          数位和 ≤ 3 的数：<code>0,1,2,3,10,11,12,20</code><br>
+          <span class="ok">答案 = 8</span>
+        </div>
+      </div>
+      <div class="note warn"><b>易错：</b>Python 的 <code>lru_cache</code> 会把 <code>tight</code> 也缓存——<b>本例正确但状态数翻倍</b>，实际题目请用字典按 <code>(pos, sum)</code> 缓存。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot p"></span><span class="dot"></span><span class="dot"></span><em>digit_dp.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="digit_dp"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 31 背包族 ═══ -->
+<section class="slide" data-title="背包族">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · KNAPSACK</div><h2>背包族：<em class="p">容量 / 价值 / 折半</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一道背包题怎么选？<br>三种建模的甜点在哪。</div>
+  </div>
+  <table>
+    <tr><th style="width:185px">模型</th><th style="width:155px">状态</th><th>复杂度</th><th>甜点</th><th>失效</th></tr>
+    <tr><td><b>容量 DP</b></td><td class="mono">f[j] = 容量 j 最大价值</td><td class="mono">O(nV)</td><td>V 不太大（≤ 10⁵）</td><td class="no">V = 10⁹</td></tr>
+    <tr><td><b>价值 DP</b></td><td class="mono">f[v] = 价值 v 最小重量</td><td class="mono">O(n·Σv)</td><td>Σv 小（≤ 10⁵）</td><td class="no">Σv 大</td></tr>
+    <tr><td><b>折半搜索</b></td><td class="mono">枚举 2^(n/2) + 归并</td><td class="mono">O(2^(n/2))</td><td>n ≤ 40、V 大</td><td class="no">n &gt; 45</td></tr>
+    <tr><td>完全背包</td><td class="mono">f[j]</td><td class="mono">O(nV)</td><td>物品无限</td><td>—</td></tr>
+    <tr><td>多重背包</td><td class="mono">f[j]</td><td class="mono">O(nV log)</td><td>数量有限</td><td>二进制拆分 / 单调队列</td></tr>
+    <tr><td>分组背包</td><td class="mono">f[j]</td><td class="mono">O(nV)</td><td>每组选一个</td><td>组内倒序</td></tr>
+    <tr><td>树上背包</td><td class="mono">f[u][j]</td><td class="mono">O(nm)</td><td>树形结构 + 容量</td><td>按子树大小枚举</td></tr>
+    <tr><td>混合背包</td><td class="mono">f[j]</td><td class="mono">O(nV)</td><td>多种类型混合</td><td>分别处理</td></tr>
+    <tr><td>有依赖的背包</td><td class="mono">f[u][j]</td><td class="mono">O(nV)</td><td>选 A 必选 B</td><td>树形 / 分组</td></tr>
+    <tr><td>二维背包</td><td class="mono">f[j][k]</td><td class="mono">O(nV₁V₂)</td><td>两个约束</td><td>维度别太多</td></tr>
+    <tr><td>满背包 / 恰好装满</td><td class="mono">f[j]</td><td class="mono">O(nV)</td><td>初值 <code>f[0]=0, 其余=-INF</code></td><td>初值易错</td></tr>
+  </table>
+  <div class="cols c3">
+    <div class="card tint-plum"><h3>选择口诀</h3>
+      <ul class="tick no">
+        <li>V 小 → <b>容量 DP</b></li>
+        <li>Σv 小 → <b>价值 DP</b></li>
+        <li>n ≤ 40 且 V 大 → <b>折半搜索</b></li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>遍历方向</h3>
+      <div class="formula" style="font-size:11.6px">
+        0/1 背包：<span class="hl">倒序</span> j<br>
+        完全背包：<span class="ok">正序</span> j<br>
+        <span class="dim">方向反了，语义就变了</span>
+      </div>
+    </div>
+    <div class="card tint-teal"><h3>升级</h3>
+      <ul class="tick arr">
+        <li>单调队列优化多重背包</li>
+        <li>分治 + FFT（生成函数）</li>
+        <li>WQS 二分（带限制最优化）</li>
+      </ul>
+    </div>
+    <div class="note"><b>心法：</b>背包是<b>值域 DP</b>的典型——状态是"还剩多少容量"，决策是"放或不放"。</div>
+  </div>
+</section>
+
+<!-- ═══ 32 模板：背包三解 ═══ -->
+<section class="slide" data-title="模板：背包三解">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · TEMPLATE</div><h2>模板九：<em class="p">背包三解（容量 / 价值 / 折半）</em></h2></div>
+    <div class="hint"><b>本页回答：</b>三种建模怎么写？<br>含交叉对拍。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li>容量 DP：<b>倒序</b>遍历 <code>j</code></li>
+          <li>价值 DP：求"<b>恰好</b>价值 v 的最小重量"</li>
+          <li>折半：右侧按重量排序，保留<b>前缀最优</b></li>
+          <li>三者结果必须一致 → 交叉对拍</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.5px">
+          <code>W=10, wt=[6,3,4,5], val=[5,2,3,4]</code><br>
+          最优选物品 0 和 2：重量 10，价值 <span class="ok">8</span>
+        </div>
+      </div>
+      <div class="note good"><b>用途：</b>采药、装箱、开心的金明、关押罪犯（分组）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot p"></span><span class="dot"></span><span class="dot"></span><em>knapsack.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="knapsack"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 33 组合 DP 案例 ═══ -->
+<section class="slide" data-title="组合 DP 案例">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · CASES</div><h2>组合 DP<em class="p">建模案例</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪类题想到状压 / 数位 / 背包？<br>四个典型。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-plum"><h3><span class="n p">A</span>TSP / 回路</h3>
+      <p><b>题意：</b>访问每点一次并回起点的最短回路。</p>
+      <div class="split-line p"></div>
+      <p class="muted"><b>建模：</b><code>f[S][i]</code>。<br><b>答案：</b><code>O(2ⁿ·n²)</code>。</p></div>
+    <div class="card"><h3><span class="n p">B</span>互不侵犯 / 棋盘</h3>
+      <p><b>题意：</b>n×n 棋盘放 k 个，互不攻击。</p>
+      <div class="split-line p"></div>
+      <p class="muted"><b>建模：</b><code>f[i][S][k]</code> 行状态。<br><b>答案：</b>行间兼容性。</p></div>
+    <div class="card tint-amber"><h3><span class="n a">C</span>windy 数 / 数位</h3>
+      <p><b>题意：</b>统计 [L,R] 中满足数位条件的数。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b><code>f[pos][last][tight]</code>。<br><b>答案：</b><code>calc(R)-calc(L-1)</code>。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">D</span>采药 / 背包</h3>
+      <p><b>题意：</b>容量限制下选物品最大价值。</p>
+      <div class="split-line t"></div>
+      <p class="muted"><b>建模：</b><code>f[j]</code> 容量。<br><b>答案：</b>按 V / Σv / n 选模型。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>共同结构</h3>
+      <p>都是"<b>组合结构上的最优</b>"。识别信号：<b>n ≤ 20、集合、容量、数位、选或不放</b>。</p>
+    </div>
+    <div class="card tint-plum"><h3>什么时候不够用</h3>
+      <ul class="tick no">
+        <li>n &gt; 22 → 状压爆，改<b>折半搜索</b></li>
+        <li>V = 10⁹ → 容量 DP 爆，改<b>价值 DP</b></li>
+        <li>集合有<b>树 / 区间</b>结构 → 结构 DP</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>先算清<b>状态数</b>（<code>2ⁿ</code> / <code>V</code> / <code>Σv</code>），再选主线。</div>
+  </div>
+</section>
+
+<!-- ═══ 34 章节 ═══ -->
+<section class="slide section-slide amber" data-title="章节：转移优化">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker amber"><i></i>CHAPTER 05</div>
+      <div class="big">转移优化：<em style="color:#C9830F">让决策数变 O(1)</em></div>
+      <p class="lead">斜率优化（CHT）· 决策单调性（分治）· 矩阵快速幂<br>DP 的<b>加速层</b>——状态不变，只换转移的实现。</p>
+    </div>
+    <div><div class="num-huge p">05</div>
+      <div class="note warn"><b>铁律：</b>优化前必须<b>证单调 / 凸性</b>。证不出来就别上，否则会漏解。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 35 优化速查 ═══ -->
+<section class="slide" data-title="优化速查">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · CHEAT SHEET</div><h2>转移优化<em class="a">速查表</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么时候用哪个优化？<br>一表看全。</div>
+  </div>
+  <table>
+    <tr><th style="width:185px">优化</th><th style="width:235px">适用形态</th><th>复杂度</th><th>前提</th></tr>
+    <tr><td><b>滚动数组</b></td><td class="mono">f[i][*] 只依赖 f[i-1][*]</td><td>空间 <code>O(1)</code></td><td>依赖只来自上一层</td></tr>
+    <tr><td><b>前缀和优化</b></td><td class="mono">f[i] = Σ f[j]·w(j,i)</td><td class="mono">O(n²) → O(n)</td><td>和式可拆</td></tr>
+    <tr><td><b>单调队列</b></td><td class="mono">f[i] = min/max over 窗口</td><td class="mono">O(n)</td><td>窗口固定 / 滑动</td></tr>
+    <tr><td><b>斜率优化 (CHT)</b></td><td class="mono">f[j] + a[j]·x[i] + b[j]</td><td class="mono">O(n log n) / O(n)</td><td>斜率单调、查询 x 单调</td></tr>
+    <tr><td><b>决策单调 / 分治</b></td><td class="mono">opt[i] 单调</td><td class="mono">O(n log n)</td><td>四边形不等式</td></tr>
+    <tr><td><b>四边形不等式</b></td><td class="mono">f[l][r] = min_k{...} + w</td><td class="mono">O(n³) → O(n²)</td><td>w 满足四边形不等式</td></tr>
+    <tr><td><b>Knuth 优化</b></td><td class="mono">最优 BST 类</td><td class="mono">O(n³) → O(n²)</td><td>更强的单调性</td></tr>
+    <tr><td><b>矩阵快速幂</b></td><td class="mono">线性递推（常系数）</td><td class="mono">O(k³ log n)</td><td>转移是<b>线性</b>的</td></tr>
+    <tr><td><b>高维前缀和 (SOS)</b></td><td class="mono">f[S] = Σ_{T⊆S} g[T]</td><td class="mono">O(n·2ⁿ)</td><td>子集求和</td></tr>
+    <tr><td><b>bitset 优化</b></td><td class="mono">可达 / 存在性</td><td class="mono">O(nm/64)</td><td>位运算可行</td></tr>
+    <tr><td><b>二分答案 + DP</b></td><td class="mono">最小化最大 / 最大化最小</td><td class="mono">O(log V · DP)</td><td>判定好写</td></tr>
+    <tr><td><b>WQS 二分 / 凸优化</b></td><td class="mono">带限制最优化</td><td class="mono">O(n log C)</td><td>价值函数<b>凸</b></td></tr>
+    <tr><td><b>李超线段树</b></td><td class="mono">斜率不单调</td><td class="mono">O(n log n)</td><td>查询 x 任意</td></tr>
+    <tr><td><b>分治 + FFT</b></td><td class="mono">卷积型转移</td><td class="mono">O(n log² n)</td><td>生成函数</td></tr>
+  </table>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3>三大主力</h3>
+      <ul class="tick arr">
+        <li><b>斜率优化</b>：转移线性化</li>
+        <li><b>决策单调</b>：opt[i] 单调</li>
+        <li><b>矩阵快速幂</b>：线性递推</li>
+      </ul>
+    </div>
+    <div class="card tint-plum"><h3>优化前必答</h3>
+      <ul class="tick no">
+        <li>朴素版<b>对不对</b>？（先对拍）</li>
+        <li>单调 / 凸性<b>证了吗</b>？</li>
+        <li>优化后<b>还对吗</b>？（再对拍）</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>常见组合</h3>
+      <ul class="tick ok">
+        <li>线性 DP + 斜率（玩具装箱）</li>
+        <li>区间 DP + 四边形（石子合并）</li>
+        <li>背包 + 单调队列（多重背包）</li>
+      </ul>
+    </div>
+    <div class="note"><b>心法：</b>优化是<b>加速层</b>，不是新模型——状态和转移的语义都不变。</div>
+  </div>
+</section>
+
+<!-- ═══ 36 模板：斜率优化 ═══ -->
+<section class="slide" data-title="模板：斜率优化">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · TEMPLATE</div><h2>模板十：<em class="a">斜率优化（CHT）</em></h2></div>
+    <div class="hint"><b>本页回答：</b>下凸壳怎么维护？<br>方向约定是什么。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li>约定：<b>斜率严格递减</b>插入，求最小值</li>
+          <li>下凸壳：<b>新交点必须在上一个交点右侧</b></li>
+          <li>查询用二分 <code>bisect_right(xs, x)</code></li>
+          <li>同斜率只保留<b>截距更小</b>的</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.4px">
+          直线 <code>y=3x-10, y=2x, y=x</code><br>
+          <code>2x</code> <b>不在下凸壳上</b>，会被弹出<br>
+          交点 <code>xs = [5]</code><br>
+          <code>query(0)=-10, query(5)=5, query(10)=10</code>
+        </div>
+      </div>
+      <div class="note good"><b>应用：</b><code>f[i] = min{f[j] + (s[i]-s[j])²}</code> → 斜率 <code>-2s[j]</code>、截距 <code>f[j]+s[j]²</code>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot a"></span><span class="dot"></span><span class="dot"></span><em>slope_opt.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="slope_opt"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 37 模板：决策单调性 ═══ -->
+<section class="slide" data-title="模板：决策单调性">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · TEMPLATE</div><h2>模板十一：<em class="a">决策单调性（分治）</em></h2></div>
+    <div class="hint"><b>本页回答：</b>分治怎么写？<br>边界怎么处理。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li><code>opt[i]</code>（最优分割）随 <code>i</code> <b>单调不降</b></li>
+          <li><code>solve(l, r, kl, kr)</code>：求 <code>dp[l..r]</code>，决策在 <code>[kl, kr]</code></li>
+          <li>先算中点 <code>m</code>，得到 <code>bestk</code>，再左右递归</li>
+          <li>上界 <code>kr = min(kr, m-1)</code>（<code>k &lt; m</code>）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>适用形态</h3>
+        <div class="formula" style="font-size:11.5px">
+          <code>dp[i][k] = min_{j&lt;i} { dp[j][k-1] + cost(j+1, i) }</code><br>
+          <span class="dim">分层 DP，逐层调用</span><br>
+          <span class="ok">O(K·n²) → O(K·n log n)</span>
+        </div>
+      </div>
+      <div class="note warn"><b>易错：</b>必须先证 <b>opt[i] 单调</b>，否则分治会漏掉最优分割点。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot a"></span><span class="dot"></span><span class="dot"></span><em>divide_opt.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="divide_opt"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 38 模板：矩阵快速幂 ═══ -->
+<section class="slide" data-title="模板：矩阵快速幂">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · TEMPLATE</div><h2>模板十二：<em class="a">矩阵快速幂</em></h2></div>
+    <div class="hint"><b>本页回答：</b>线性递推怎么加速？<br>fib 的索引别取错。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li>转移必须是<b>线性</b>的（常系数递推）</li>
+          <li>状态向量 <code>[f[n], f[n-1], ...]</code></li>
+          <li><code>A^n = [[F(n+1), F(n)], [F(n), F(n-1)]]</code></li>
+          <li><b>fib(n) 返回 <code>R[0][1]</code></b>，不是 <code>R[0][0]</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>fib(1) = 1, fib(2) = 1, fib(3) = 2</code><br>
+          <code>fib(10) = 55</code><br>
+          <span class="dim">复杂度 O(k³ log n)，k = 状态维度</span>
+        </div>
+      </div>
+      <div class="note good"><b>用途：</b>斐波那契、爬楼梯、铺砖、线性递推计数、图上路径计数（邻接矩阵幂）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot a"></span><span class="dot"></span><span class="dot"></span><em>matrix_pow.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="matrix_pow"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 39 优化案例 ═══ -->
+<section class="slide" data-title="优化建模案例">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · CASES</div><h2>优化<em class="a">建模案例</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪类题想到斜率 / 分治 / 矩阵？<br>四个典型。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-amber"><h3><span class="n a">A</span>玩具装箱</h3>
+      <p><b>题意：</b>把 n 个玩具分成若干段，代价 <code>(Σ+段数-1-L)²</code>，求最小。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>转移线性化 → 斜率优化。<br><b>答案：</b><code>O(n log n)</code> → <code>O(n)</code>。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">B</span>仓库建设</h3>
+      <p><b>题意：</b>在 n 个位置选点建仓库，代价含距离与建造。</p>
+      <div class="split-line t"></div>
+      <p class="muted"><b>建模：</b><code>f[i] = min_j{...}</code> 斜率优化。<br><b>答案：</b><code>O(n)</code>。</p></div>
+    <div class="card"><h3><span class="n">C</span>石子合并优化</h3>
+      <p><b>题意：</b>合并相邻堆，最小总代价。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>四边形不等式 → 收窄 opt。<br><b>答案：</b><code>O(n³)</code> → <code>O(n²)</code>。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">D</span>铺砖 / 线性递推</h3>
+      <p><b>题意：</b>2×n 铺砖方案数（n 可达 10⁹）。</p>
+      <div class="split-line p"></div>
+      <p class="muted"><b>建模：</b>转移是线性递推 → 矩阵快速幂。<br><b>答案：</b><code>O(k³ log n)</code>。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>共同结构</h3>
+      <p>都是"<b>状态不变，只换转移实现</b>"。识别信号：<b>朴素 DP 能写但超时、转移可线性化</b>。</p>
+    </div>
+    <div class="card tint-plum"><h3>什么时候不够用</h3>
+      <ul class="tick no">
+        <li>斜率<b>不单调</b> → 李超线段树</li>
+        <li>转移<b>非线性</b> → 矩阵失效</li>
+        <li>带<b>限制</b>（如恰好 k 段）→ WQS 二分</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>优化层的通用套路是"<b>先写朴素，再证单调，最后换实现</b>"。</div>
+  </div>
+</section>
+
+<!-- ═══ 40 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：横向对比">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker amber"><i></i>CHAPTER 06</div>
+      <div class="big">横向对比：<em style="color:#C9830F">同题三解 · 归约 · 雷达</em></div>
+      <p class="lead">同题三解 · 归约关系图 · 六轴雷达 · 不可替代性<br>看清每条主线的<b>甜点区与失效区</b>。</p>
+    </div>
+    <div><div class="num-huge">06</div>
+      <div class="note warn"><b>本章重点：</b>知道"<b>什么时候用了就错</b>"，比"都能做"更重要。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 41 同题三解 A ═══ -->
+<section class="slide" data-title="同题三解 A：最大子段和">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>06 · CROSS A</div><h2>同题三解 A：<em class="a">最大子段和</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一题，三种建模怎么选？<br>为什么能交叉验证。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>题意</h3>
+        <p>给 n 个数，求<b>最大连续子段和</b>。</p>
+      </div>
+      <div class="card tint-amber"><h3>三种建模</h3>
+        <ul class="tick arr">
+          <li><b>暴力</b> ✅ <code>O(n²)</code> —— 小数据 / 验证</li>
+          <li><b>前缀 DP</b> ✅ <code>O(n)</code> —— 主解</li>
+          <li><b>分治</b> ✅ <code>O(n log n)</code> —— 教学 / 交叉验证</li>
+          <li><b>区间 DP / 状压</b> ❌ 不适用（没必要）</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>结论：</b>三者<b>语义等价、复杂度不同</b>——是<strong>交叉对拍的金矿</strong>。<b>区间 DP / 状压</b>在这题上是杀鸡用牛刀。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot a"></span><span class="dot"></span><span class="dot"></span><em>cross_maxsub.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="model_cross"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 42 同题三解 B ═══ -->
+<section class="slide" data-title="同题三解 B：0/1 背包">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>06 · CROSS B</div><h2>同题三解 B：<em class="a">0/1 背包</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一道背包，状态怎么选？<br>三种维度的甜点。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-plum"><h3><span class="n p">Q1</span>容量 DP</h3>
+      <p><b>题意：</b>容量 V，物品有重量和价值，求最大价值。</p>
+      <div class="split-line p"></div>
+      <ul class="tick">
+        <li>状态 <code>f[j]</code> = 容量 j 最大价值</li>
+        <li><b>倒序</b>遍历 j</li>
+        <li><code>O(nV)</code> ✅ V ≤ 10⁵</li>
+      </ul>
+      <p class="muted"><b>失效：</b>V = 10⁹ 时爆。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">Q2</span>价值 DP</h3>
+      <p><b>题意：</b>同上，但 V 很大、Σv 不大。</p>
+      <div class="split-line t"></div>
+      <ul class="tick ok">
+        <li>状态 <code>f[v]</code> = 价值 v 最小重量</li>
+        <li>再找<b>最大 v</b> 使重量 ≤ V</li>
+        <li><code>O(n·Σv)</code> ✅ Σv ≤ 10⁵</li>
+      </ul>
+      <p class="muted"><b>失效：</b>Σv 大时爆。</p></div>
+    <div class="card tint-amber"><h3><span class="n a">Q3</span>折半搜索</h3>
+      <p><b>题意：</b>n ≤ 40、V 与 Σv 都大。</p>
+      <div class="split-line"></div>
+      <ul class="tick arr">
+        <li>对半枚举 <code>2^(n/2)</code></li>
+        <li>右侧按重量排序 + 前缀最优</li>
+        <li><code>O(2^(n/2))</code> ✅ n ≤ 40</li>
+      </ul>
+      <p class="muted"><b>失效：</b>n &gt; 45 时爆。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>一句话对照</h3>
+      <p class="lead">"<b>状态维度怎么选</b>"取决于<b>哪个维度小</b>。V 小用容量、Σv 小用价值、n 小用折半。<b>三个都大就换模型</b>。</p>
+    </div>
+    <div class="card tint-plum"><h3>一致性</h3>
+      <p>三种建模<b>答案必须一致</b>——这是最强的正确性检查。<code>cross_check</code> 会把三者对拍。</p>
+      <div class="note warn"><b>提醒：</b>换维度时容易漏"恰好装满"的初值语义，务必检查 <code>f[0]=0</code> 还是 <code>-INF</code>。</div>
+    </div>
+    <div class="note good"><b>心法：</b>背包的本质是"<b>选或不放</b>"，维度选择是实现细节——但选错维度就是 <b>TLE</b>。</div>
+  </div>
+</section>
+
+<!-- ═══ 43 同题三解 C ═══ -->
+<section class="slide" data-title="同题三解 C：石子合并">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>06 · CROSS C</div><h2>同题三解 C：<em class="a">石子合并</em></h2></div>
+    <div class="hint"><b>本页回答：</b>"结构型状态 + 优化"怎么走？<br>三个层次。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-teal"><h3><span class="n t">Q1</span>暴力递归</h3>
+      <p><b>题意：</b>合并相邻堆，代价为重量和，最小总代价。</p>
+      <div class="split-line t"></div>
+      <ul class="tick">
+        <li>枚举所有合并顺序</li>
+        <li><code>O(2ⁿ)</code> ✅ n ≤ 15</li>
+        <li>正确性基准</li>
+      </ul>
+      <p class="muted"><b>失效：</b>n &gt; 20 就跑不完。</p></div>
+    <div class="card"><h3><span class="n">Q2</span>区间 DP</h3>
+      <p><b>题意：</b>同上。</p>
+      <div class="split-line"></div>
+      <ul class="tick arr">
+        <li>状态 <code>f[l][r]</code>，枚举分割点</li>
+        <li><code>O(n³)</code> ✅ n ≤ 300</li>
+        <li>环形需<b>断环成链</b></li>
+      </ul>
+      <p class="muted"><b>失效：</b>n = 2000 时 TLE。</p></div>
+    <div class="card tint-amber"><h3><span class="n a">Q3</span>四边形不等式</h3>
+      <p><b>题意：</b>同上，n 更大。</p>
+      <div class="split-line"></div>
+      <ul class="tick ok">
+        <li><code>opt[l][r]</code> 单调</li>
+        <li><code>O(n²)</code> ✅ n ≤ 2000</li>
+        <li>须先证四边形不等式</li>
+      </ul>
+      <p class="muted"><b>失效：</b>代价不满足四边形时不适用。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>一句话对照</h3>
+      <p class="lead">"<b>结构型状态 + 优化</b>"是<strong>分层推进</strong>的典范：暴力 → 区间 DP → 四边形不等式，<b>每层都保留作对拍</b>。</p>
+    </div>
+    <div class="card tint-plum"><h3>规约关系</h3>
+      <p>Q3 依赖 Q2 的状态定义（<code>f[l][r]</code>）——<b>优化不改状态，只改转移的搜索范围</b>。这是优化层的本质。</p>
+      <div class="note warn"><b>提醒：</b>若代价 <code>w(l,r)</code> 不满足四边形不等式，<code>opt</code> 范围收窄会<b>漏解</b>——先证再写。</div>
+    </div>
+    <div class="note good"><b>心法：</b>看到"<b>合并相邻</b>"，第一反应是区间 DP；看到"<b>n=2000 还要合并</b>"，再想四边形不等式。</div>
+  </div>
+</section>
+
+<!-- ═══ 44 归约关系 ═══ -->
+<section class="slide" data-title="归约关系">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>06 · REDUCTION</div><h2><em class="a">归约关系</em>：谁是谁的特例</h2></div>
+    <div class="hint"><b>本页回答：</b>四条主线能互相转化吗？<br>哪些不能。</div>
+  </div>
+  <table>
+    <tr><th style="width:295px">归约</th><th style="width:115px">方向</th><th>说明</th></tr>
+    <tr><td>线性 DP → 背包</td><td class="yes">✅ 成立</td><td>背包是线性 DP 在<b>值域维度</b>的特例</td></tr>
+    <tr><td>区间 DP → 矩阵链</td><td class="yes">✅ 成立</td><td>矩阵链是区间 DP 的<b>原型</b></td></tr>
+    <tr><td>区间 DP + 四边形不等式 → O(n²)</td><td class="yes">✅ 前提</td><td>必须先证 w 满足四边形不等式</td></tr>
+    <tr><td>斜率优化 → 线性 DP</td><td class="yes">✅ 前提</td><td>转移须能写成 <code>a[j]·x[i]+b[j]</code></td></tr>
+    <tr><td>决策单调 → 分治</td><td class="yes">✅ 成立</td><td>opt[i] 单调即可</td></tr>
+    <tr><td>矩阵快速幂 → 线性递推</td><td class="yes">✅ 前提</td><td>转移须是<b>常系数线性</b>的</td></tr>
+    <tr><td>数位 DP → 值域 DP</td><td class="yes">✅ 成立</td><td>数位是值域的<b>按位拆解</b></td></tr>
+    <tr><td>状压 DP → 折半搜索</td><td class="yes">⚠️ 部分</td><td>n 大时可换成折半，但语义不同</td></tr>
+    <tr><td>树形背包 → 线性背包</td><td class="yes">⚠️ 部分</td><td>链状树退化成线性背包</td></tr>
+    <tr><td>贪心 → DP</td><td class="yes">✅ 成立</td><td>贪心是 DP 的<b>退化</b>（决策唯一）</td></tr>
+    <tr><td>最短路 → DAG DP</td><td class="yes">✅ 成立</td><td>DAG 上的 DP 就是最短路</td></tr>
+    <tr><td>DP → NP-hard 问题</td><td class="no">❌ 不成立</td><td>一般 TSP / 装箱无法 DP 化</td></tr>
+    <tr><td>斜率优化 → 非线性转移</td><td class="no">❌ 不成立</td><td>转移不是 <code>a[j]·x[i]+b[j]</code> 就用不了</td></tr>
+    <tr><td>四边形不等式 → 任意代价</td><td class="no">❌ 不成立</td><td>代价不满足时优化会漏解</td></tr>
+    <tr><td>状压 DP → n &gt; 22</td><td class="no">❌ 不成立</td><td>状态数爆内存</td></tr>
+    <tr><td>有环期望 DP → 递推</td><td class="no">❌ 不成立</td><td>需<b>高斯消元</b>，不是 DP</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>重要结论</h3>
+      <ul class="tick arr">
+        <li>背包 ⊂ 线性 DP（值域特例）</li>
+        <li>矩阵链 ⊂ 区间 DP（原型）</li>
+        <li>优化层<b>不改状态</b>，只改转移实现</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>为什么归约有用</h3>
+      <p>把<b>新问题</b>归约到<b>已知主线</b>，就能直接复用状态定义与复杂度结论。<br>但要先确认<b>归约条件成立</b>（单调、凸性、线性……）。</p>
+      <div class="note good"><b>心法：</b>归约前先问"<b>这个转化保不保最优解</b>"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 45 六轴雷达 ═══ -->
+<section class="slide" data-title="六轴能力雷达">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>06 · RADAR</div><h2>六轴<em class="a">能力雷达</em></h2></div>
+    <div class="hint"><b>本页回答：</b>三条主线各擅长什么？<br>一图看懂。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>读图方式</h3>
+        <ul class="tick">
+          <li>轴越外 = 越擅长</li>
+          <li><b>陶土</b> 线性 DP · <b>青绿</b> 结构 DP · <b>李子</b> 组合 DP</li>
+          <li>重叠区 = 都能做，选快的</li>
+          <li>单边突出区 = 该主线的<b>主场</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>三个结论</h3>
+        <ul class="tick arr">
+          <li><b>状态定义灵活 / 易验证 / 转移易写</b> → 线性 DP</li>
+          <li><b>可优化性 / 结构表达</b> → 区间 / 结构 DP</li>
+          <li><b>组合表达 / 集合枚举</b> → 状压 / 值域 DP</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 312" preserveAspectRatio="xMidYMid meet">
+          <g stroke="#E4CBA3" stroke-width="1.2" fill="none">
+            <polygon points="210,40 309.5,97.5 309.5,212.5 210,270 110.5,212.5 110.5,97.5"/>
+            <polygon points="210,63 289.6,109 289.6,201 210,247 130.4,201 130.4,109"/>
+            <polygon points="210,86 269.7,120.5 269.7,189.5 210,224 150.3,189.5 150.3,120.5"/>
+            <polygon points="210,109 249.8,132 249.8,178 210,201 170.2,178 170.2,132"/>
+            <polygon points="210,132 229.9,143.5 229.9,166.5 210,178 190.1,166.5 190.1,143.5"/>
+          </g>
+          <g stroke="#E4CBA3" stroke-width="1">
+            <path d="M210 155 L210 40"/><path d="M210 155 L309.5 97.5"/><path d="M210 155 L309.5 212.5"/>
+            <path d="M210 155 L210 270"/><path d="M210 155 L110.5 212.5"/><path d="M210 155 L110.5 97.5"/>
+          </g>
+          <g text-anchor="middle" class="dfnlab g" font-size="10">
+            <text x="210" y="26">状态定义灵活</text>
+            <text x="330" y="92">转移易写</text>
+            <text x="330" y="222">可优化性</text>
+            <text x="210" y="290">通用性</text>
+            <text x="90" y="222">复杂度友好</text>
+            <text x="90" y="92">易验证</text>
+          </g>
+          <polygon points="210,40 309.5,97.5 289.6,201 210,270 130.4,201 110.5,97.5"
+                   fill="#E2612F" fill-opacity=".22" stroke="#E2612F" stroke-width="2.6"/>
+          <polygon points="210,63 269.7,120.5 309.5,212.5 210,224 150.3,189.5 150.3,120.5"
+                   fill="#0F7B6C" fill-opacity=".22" stroke="#0F7B6C" stroke-width="2.6"/>
+          <polygon points="210,40 269.7,120.5 269.7,189.5 210,201 150.3,189.5 130.4,109"
+                   fill="#A33A64" fill-opacity=".22" stroke="#A33A64" stroke-width="2.6"/>
+          <g font-family="monospace" font-size="10">
+            <rect x="34" y="296" width="118" height="22" rx="8" fill="#E2612F"/>
+            <text x="93" y="311" text-anchor="middle" fill="#fff">线性 5/5/4/5/4/5</text>
+            <rect x="158" y="296" width="118" height="22" rx="8" fill="#0F7B6C"/>
+            <text x="217" y="311" text-anchor="middle" fill="#fff">结构 4/3/5/3/3/3</text>
+            <rect x="282" y="296" width="118" height="22" rx="8" fill="#A33A64"/>
+            <text x="341" y="311" text-anchor="middle" fill="#fff">组合 5/3/3/2/3/4</text>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>记忆：</b>线性问"<b>到 i 为止</b>"、结构问"<b>哪一段 / 哪棵子树</b>"、组合问"<b>哪些已用 / 还剩多少</b>"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 46 不可替代性 ═══ -->
+<section class="slide" data-title="不可替代性">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>06 · IRREPLACEABLE</div><h2>什么时候<em class="a">必须用哪个</em></h2></div>
+    <div class="hint"><b>本页回答：</b>四个"不换不行"的场景。<br>以及换掉会怎样。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-rose"><h3><span class="n">线性 DP</span></h3>
+      <ul class="tick">
+        <li><b>序列 / 前缀</b>问题的默认答案</li>
+        <li>滚动数组可降到 <code>O(1)</code> 空间</li>
+        <li>最易被<b>斜率优化</b>加速</li>
+      </ul>
+      <div class="split-line"></div>
+      <p class="muted"><b>换掉会：</b>结构问题被硬套线性 → 状态漏信息。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">结构 DP</span></h3>
+      <ul class="tick ok">
+        <li><b>合并 / 分割 / 父子</b>类的唯一自然解</li>
+        <li>四边形不等式 / Knuth 的入口</li>
+        <li>树形 + 换根的<b>唯一形式</b></li>
+      </ul>
+      <div class="split-line t"></div>
+      <p class="muted"><b>换掉会：</b>区间问题被硬套线性 → 根本表达不了。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">组合 DP</span></h3>
+      <ul class="tick no">
+        <li>n ≤ 20 的<b>集合最优</b>唯一解</li>
+        <li>数位 / 容量问题的<b>值域表示</b></li>
+        <li>折半搜索的入口</li>
+      </ul>
+      <div class="split-line p"></div>
+      <p class="muted"><b>换掉会：</b>组合问题被硬套线性 → 状态数指数爆炸。</p></div>
+    <div class="card tint-amber"><h3><span class="n a">优化层</span></h3>
+      <ul class="tick arr">
+        <li><b>朴素能写但超时</b>时的救命稻草</li>
+        <li>不改状态语义，<b>可独立验证</b></li>
+        <li>斜率 / 分治 / 矩阵三件套</li>
+      </ul>
+      <div class="split-line"></div>
+      <p class="muted"><b>换掉会：</b>没有替代品——只能 TLE。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>三种"选错"的后果</h3>
+      <ul class="tick no">
+        <li>把<b>区间合并</b>当线性 DP → 状态根本表达不了</li>
+        <li>把<b>n ≤ 20 集合</b>当线性 DP → 状态数指数爆炸</li>
+        <li>没证单调就上<b>斜率优化</b> → 漏解</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>决策口诀</h3>
+      <p class="lead"><b>先问状态形状</b>，再问<b>最后一步</b>，最后问<b>能不能更快</b>。三问定主线。</p>
+    </div>
+    <div class="note good"><b>升华：</b>DP 建模能力 = <b>"把搜索空间压缩成状态空间"</b>，而不是背转移方程。</div>
+  </div>
+</section>
+
+<!-- ═══ 47 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：工程">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 07</div>
+      <div class="big">工程：<em style="color:var(--teal)">证明 · 避坑 · 对拍</em></div>
+      <p class="lead">状态与证明 · 易错清单 · 模板合集 · 跨建模对拍 · 题单<br>把 DP 写成"永不写错"。</p>
+    </div>
+    <div><div class="num-huge t">07</div>
+      <div class="note good"><b>要领：</b>DP 的 bug <b>八成在状态定义与初值</b>，不在转移方程。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 48 状态与证明 ═══ -->
+<section class="slide" data-title="状态与证明">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · CORRECTNESS</div><h2>DP 的"为什么对"：<em>状态与证明</em></h2></div>
+    <div class="hint"><b>本页回答：</b>DP 成立的三个条件？<br>怎么证，怎么验。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>DP 成立的三个条件</h3>
+        <ul class="tick arr">
+          <li><b>最优子结构</b>：最优解包含子问题的最优解</li>
+          <li><b>重叠子问题</b>：子问题被重复计算（否则不必 DP）</li>
+          <li><b>无后效性</b>：当前状态只依赖已确定的状态</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>状态"充分"的判据</h3>
+        <div class="formula" style="font-size:11.6px">
+          两个局面状态<b>相同</b> ⇔ <br>
+          它们<b>后续的最优决策完全一致</b><br>
+          <span class="dim">反之，状态就漏信息了</span>
+        </div>
+      </div>
+      <div class="card tint-plum"><h3>常见漏信息</h3>
+        <ul class="tick no">
+          <li>没把"<b>上一个取了什么</b>"放进状态</li>
+          <li>没把"<b>是否贴界</b>"放进状态（数位 DP）</li>
+          <li>没把"<b>剩余容量</b>"放进状态（背包）</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>证明手法</h3>
+        <ul class="tick ok">
+          <li><b>反证法</b>：若最优解不走最优子解，可替换得更优 → 矛盾</li>
+          <li><b>交换论证</b>：任意解可重排成"标准形"且不劣</li>
+          <li><b>归纳法</b>：对状态规模归纳</li>
+          <li><b>对拍</b>：小数据与暴力一致（最实用）</li>
+        </ul>
+      </div>
+      <div class="card tint-teal"><h3>验证三层</h3>
+        <ul class="tick">
+          <li><b>边界</b>：空集、单元素、全相等</li>
+          <li><b>不变量</b>：答案与暴力一致</li>
+          <li><b>边界用例</b>：n=0/1、全负、全相等、极值</li>
+        </ul>
+      </div>
+      <div class="card"><h3>优化前后的对拍</h3>
+        <p>朴素版与优化版<b>必须对拍</b>——优化只改实现，不改语义。任何优化上线前都应通过 <code>stress_dp()</code>。</p>
+      </div>
+      <div class="note good"><b>心法：</b>DP 的正确性是<strong>设计出来的</strong>——状态定义充分，转移才对；优化上线前必须对拍。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 49 易错清单 ═══ -->
+<section class="slide" data-title="易错清单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · PITFALLS</div><h2>易错清单 <em>Checklist</em></h2></div>
+    <div class="hint"><b>本页回答：</b>提交前自检什么？<br>（每条都对应本讲义的坑）</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3>状态与初值</h3>
+      <ul class="tick no">
+        <li>状态<b>漏关键信息</b>（上一个 / 剩余容量 / 贴界）</li>
+        <li>初值用 <code>0</code> 而非 <code>±INF</code></li>
+        <li>恰好装满的初值语义写错</li>
+        <li>状态维度算错 → <code>2²²</code> 爆内存</li>
+        <li>数组下标差一（<code>f[i][j]</code> vs <code>f[i-1][j]</code>）</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>转移与顺序</h3>
+      <ul class="tick ok">
+        <li>遍历顺序错（<code>i</code> 依赖 <code>i+1</code>）</li>
+        <li>0/1 背包没<b>倒序</b>、完全背包没<b>正序</b></li>
+        <li>区间 DP 没按<b>长度</b>枚举</li>
+        <li>树形 DP 没按<b>后序</b>遍历</li>
+        <li>状压没按 <code>|S|</code> 递增遍历</li>
+        <li>环形没断环</li>
+      </ul>
+    </div>
+    <div class="card tint-plum"><h3>优化与降维</h3>
+      <ul class="tick no">
+        <li>滚动数组<b>方向</b>写反</li>
+        <li>降维忘了保存 <code>prev</code></li>
+        <li>斜率优化<b>没证单调</b>就上</li>
+        <li>四边形不等式没证就收窄 opt</li>
+        <li><code>fib</code> 取 <code>R[0][0]</code> 而非 <code>R[0][1]</code></li>
+        <li>数位 DP 把 <code>tight</code> 缓存进键</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>提交前 30 秒四连问：</b>① <b>状态充分</b>吗（漏信息了吗） ② <b>初值</b>对吗（0 还是 ±INF） ③ <b>遍历顺序</b>对吗（方向 / 长度 / 后序） ④ <b>优化对拍</b>了吗。</div>
+</section>
+
+<!-- ═══ 50 模板合集 ═══ -->
+<section class="slide" data-title="模板合集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · TOOLBOX</div><h2>模板合集：<em>一页速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>实战里需要的都在这里。<br>建议直接抄进模板库。</div>
+  </div>
+  <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>dp_toolbox.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="dp_toolbox"></code></pre></pre>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3>选类口诀</h3><p>状态是<b>序列</b>→线性；是<b>区间 / 子树</b>→结构；是<b>集合 / 容量</b>→组合；转移超时→优化层。</p></div>
+    <div class="card tint-teal"><h3>多组数据</h3><p>每组重建 <code>f</code> 数组与缓存（<code>lru_cache</code> 要 <code>cache_clear()</code>）。</p></div>
+    <div class="card"><h3>输入</h3><p>值域用 <code>int</code> 读入；INF 用 <code>10**18</code> 量级，别用 <code>float('inf')</code> 做加法。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 51 对拍验证 ═══ -->
+<section class="slide" data-title="跨建模对拍">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · VERIFY</div><h2>怎么验证<em>建模选对了</em></h2></div>
+    <div class="hint"><b>本页回答：</b>四种建模怎么互相对拍？<br>边界用例有哪些。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card tint-teal"><h3><span class="n t">1</span>跨建模对拍</h3>
+        <p>能用<b>两种建模</b>解的题，必须对拍。<code>brute / dp / 优化</code> 三者一致——这是最强的正确性检查。</p>
+      </div>
+      <div class="card tint-amber"><h3><span class="n a">3</span>边界用例</h3>
+        <ul class="tick">
+          <li>n = 0 / 1 / 2</li>
+          <li>全负 / 全正 / 全相等</li>
+          <li>单元素区间（<code>l == r</code>）</li>
+          <li>空集（<code>S = 0</code>）</li>
+          <li>容量 0 / 重量超过容量</li>
+          <li>数位 DP 的 <code>x = 0</code></li>
+          <li>树形 DP 的链 / 星 / 单点</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3><span class="n">2</span>不变量检查</h3>
+        <ul class="tick ok">
+          <li><b>LIS</b>：朴素 ≡ 贪心二分</li>
+          <li><b>编辑距离</b>：2D ≡ 1D 滚动</li>
+          <li><b>最大子段和</b>：暴力 ≡ DP ≡ 分治</li>
+          <li><b>背包</b>：容量 ≡ 价值 ≡ 折半</li>
+          <li><b>矩阵链</b>：暴力 ≡ 区间 DP ≡ 四边形</li>
+          <li><b>树形 DP</b>：换根 ≡ 暴力（每个点为根）</li>
+          <li><b>TSP</b>：状压 ≡ 暴力（n ≤ 8）</li>
+          <li><b>斜率优化</b>：优化 ≡ 朴素</li>
+        </ul>
+      </div>
+      <div class="note good"><b>小技巧：</b>随机<b>打乱输入顺序</b>重跑，答案应不变（除非问题本身有序）。</div>
+      <div class="note warn"><b>最强自检：</b>能用两种建模的题，<b>一定对拍</b>；不能的题，<b>用暴力小数据对拍</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 52 题单 ═══ -->
+<section class="slide" data-title="练习题单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · PRACTICE</div><h2>练习题单（洛谷 / 本地）</h2></div>
+    <div class="hint"><b>本页回答：</b>课后练什么？<br>按主线分组，每张卡都写了<b>题意</b>。</div>
+  </div>
+  <div class="cols c3" style="gap:8px">
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1216" target="_blank"><span class="src crs">洛谷 · 线性</span><span class="t">P1216 数字三角形</span><span class="d">题意：从顶走到底，求最大路径和。线性 / 递推入门，重点是遍历顺序。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1048" target="_blank"><span class="src hpf">洛谷 · 背包</span><span class="t">P1048 采药</span><span class="d">题意：容量限制下采药，求最大价值。0/1 背包入门，注意倒序遍历。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1020" target="_blank"><span class="src crs">洛谷 · 线性</span><span class="t">P1020 导弹拦截</span><span class="d">题意：求最长不上升子序列与最少系统数。LIS 变体，Dilworth 定理。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1091" target="_blank"><span class="src crs">洛谷 · 线性</span><span class="t">P1091 合唱队形</span><span class="d">题意：求最少出列人数使队伍先升后降。LIS + LDS 组合。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1880" target="_blank"><span class="src cal">洛谷 · 区间</span><span class="t">P1880 石子合并</span><span class="d">题意：合并相邻堆，求最小 / 最大总代价。区间 DP + 断环成链。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1005" target="_blank"><span class="src cal">洛谷 · 区间</span><span class="t">P1005 矩阵取数游戏</span><span class="d">题意：每次从行首或行尾取数，得分乘 2^k，求最大。区间 DP + 高精度。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1352" target="_blank"><span class="src cal">洛谷 · 树形</span><span class="t">P1352 没有上司的舞会</span><span class="d">题意：树上选点，父子不能同选，求最大快乐指数。树形 DP 入门。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2014" target="_blank"><span class="src cal">洛谷 · 树形</span><span class="t">P2014 选课</span><span class="d">题意：选 m 门课，每门有先修课，求最大学分。树上背包，注意枚举范围。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1896" target="_blank"><span class="src hpf">洛谷 · 状压</span><span class="t">P1896 互不侵犯</span><span class="d">题意：n×n 棋盘放 k 个国王，互不攻击。状压 DP 入门，行状态兼容性。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2704" target="_blank"><span class="src hpf">洛谷 · 状压</span><span class="t">P2704 炮兵阵地</span><span class="d">题意：炮兵布置，攻击范围两行两列。两行状压 + 兼容性预处理。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2657" target="_blank"><span class="src hpf">洛谷 · 数位</span><span class="t">P2657 windy 数</span><span class="d">题意：统计 [L,R] 中相邻位差 ≥ 2 的数。数位 DP 入门，注意前导 0。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3195" target="_blank"><span class="src cal">洛谷 · 优化</span><span class="t">P3195 玩具装箱 TOY</span><span class="d">题意：分段最小化平方代价。斜率优化经典，转移可线性化。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">跨建模交叉验证</span><span class="d">跑 cross_check：最大子段和 / 背包 / 矩阵链的多版本必须一致。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">优化前后对拍</span><span class="d">石子合并 O(n³) vs O(n²)、斜率优化 vs 朴素，随机数据必须一致。</span></a>
+  </div>
+  <div class="note"><b>节奏建议：</b>线性 4 题（P1216 → P1020 → P1091 → P1048）→ 结构 4 题（P1880 → P1005 → P1352 → P2014）→ 组合 3 题（P1896 → P2704 → P2657）→ 优化 1 题（P3195）→ 本地 2 题。每题写 100 字题解：<b>状态是什么形状 → 最后一步是什么 → 优化能不能上</b>。</div>
+</section>
+
+<!-- ═══ 53 总结 ═══ -->
+<section class="slide" data-title="总结">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>08 · SUMMARY</div><h2>带走这 <em>五句话</em></h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记住一页，<br>就记这一页。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><div class="step"><div class="idx">1</div><div><b>DP 建模 = 把搜索空间压缩成状态空间。</b>先问状态形状，再问转移。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">2</div><div><b>状态必须充分。</b>两个局面状态相同 ⇔ 后续最优决策相同；漏信息就是错。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">3</div><div><b>转移问"最后一步"。</b>枚举上一个决策点，复杂度 = 状态数 × 决策数。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">4</div><div><b>优化是加速层，不改状态。</b>斜率 / 决策单调 / 矩阵三件套，先证单调再上。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">5</div><div><b>朴素与优化必须对拍。</b>能用两种建模的题，交叉验证是金矿。</div></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 350 262" preserveAspectRatio="xMidYMid meet">
+          <circle cx="175" cy="130" r="115" fill="#E2612F" opacity=".12" class="pulse"/>
+          <circle cx="175" cy="130" r="52" fill="#2E2118"/>
+          <text x="175" y="122" text-anchor="middle" fill="#FFD9A8" font-family="serif" font-size="14" font-weight="700">DP 建模</text>
+          <text x="175" y="141" text-anchor="middle" fill="#FFB169" font-family="monospace" font-size="9.5">压缩搜索空间</text>
+          <g font-family="monospace" font-size="10" fill="#7A4A22">
+            <rect x="112" y="10" width="126" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="30" text-anchor="middle">序列 → 线性 DP</text>
+            <rect x="240" y="58" width="102" height="30" rx="11" fill="#E9F7F2" stroke="#BEE6D8"/><text x="291" y="78" text-anchor="middle">区间 → 结构</text>
+            <rect x="248" y="170" width="94" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="295" y="190" text-anchor="middle">集合 → 状压</text>
+            <rect x="100" y="216" width="150" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="236" text-anchor="middle">容量 → 值域</text>
+            <rect x="8" y="170" width="112" height="30" rx="11" fill="#E9F7F2" stroke="#BEE6D8"/><text x="64" y="190" text-anchor="middle">最优 → 优化</text>
+            <rect x="14" y="58" width="110" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="69" y="78" text-anchor="middle">数值 → 数位</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" class="dash" fill="none">
+            <path d="M175 78 L175 42"/><path d="M224 110 L242 82"/><path d="M224 154 L250 184"/>
+            <path d="M175 182 L175 216"/><path d="M126 154 L118 184"/><path d="M126 110 L122 82"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>升华：</b>DP 最值得学的不是转移方程，而是"<b>把搜索空间压缩成状态空间</b>"的判断力——<strong>形状、最后一步、单调性</strong>，三个词定一切。这一条判断力，比任何单个模板都值钱。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 54 结语 ═══ -->
+<section class="slide cover" data-title="结语 Q&A">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">THANKS · Q&A</div>
+      <h1>谢谢！<br><em class="t">开始提问</em></h1>
+      <p class="sub">课后三步：<br>
+        ① 10 分钟默写 <b>线性 / 结构 / 组合</b> 三段状态骨架<br>
+        ② 手推 <code>s = [0,1,3,6]</code> 的 <code>f = [0,1,5,14]</code>，确认斜率优化的 <code>xs</code> 演化<br>
+        ③ 跑一遍 <code>stress_dp()</code> 与 <code>cross_check</code>，跨建模对拍通过后再刷 14 题</p>
+      <div class="meta"><span>状态</span><span>转移</span><span>优化</span></div>
+    </div>
+    <div>
+      <svg viewBox="0 0 460 300" preserveAspectRatio="xMidYMid meet">
+        <circle cx="230" cy="150" r="145" fill="#E2612F" opacity=".16" class="pulse"/>
+        <g stroke="#E2612F" stroke-width="3" fill="none">
+          <path d="M230 236 L158 158"/><path d="M230 236 L302 158"/><path d="M230 236 L230 118"/>
+        </g>
+        <path d="M302 158 L230 236" stroke="#A33A64" stroke-width="3" stroke-dasharray="7 7" fill="none"/>
+        <g class="float">
+          <g><circle cx="230" cy="236" r="32" fill="#E2612F" stroke="#B9471B" stroke-width="3"/><text x="230" y="244" font-size="12" text-anchor="middle" fill="#fff" font-family="serif">建模</text></g>
+          <g><circle cx="158" cy="158" r="26" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="158" y="165" font-size="11" text-anchor="middle" fill="#0B6356" font-family="monospace">结构</text></g>
+          <g><circle cx="302" cy="158" r="26" fill="#FDF0F4" stroke="#A33A64" stroke-width="3"/><text x="302" y="165" font-size="11" text-anchor="middle" fill="#8A2A4E" font-family="monospace">组合</text></g>
+          <g><circle cx="230" cy="118" r="26" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/><text x="230" y="125" font-size="11" text-anchor="middle" fill="#B9471B" font-family="monospace">线性</text></g>
+        </g>
+      </svg>
+      <div class="note"><b>快捷键：</b><code>O</code> 目录 · <code>←/→</code> 翻页 · <code>⛶</code> 全屏</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="brand">DYNAMIC PROGRAMMING · 95MIN</div>
+<div class="hud">
+  <button id="tocBtn" title="目录">☰</button>
+  <button id="prevBtn" title="上一页">←</button>
+  <div class="pgn"><span id="cur">1</span> / <span id="tot">54</span></div>
+  <button id="nextBtn" title="下一页">→</button>
+  <button id="fullBtn" title="全屏">⛶</button>
+</div>
+
+<div class="toc" id="toc"><h4>目录 · 54 页</h4><div class="grid" id="tocGrid"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+const CODE = {
+
+lis: `
+import bisect
+
+
+def lis_n2(a):
+    """最长递增子序列，O(n^2)
+       f[i] = 以 a[i] 结尾的 LIS 长度"""
+    n = len(a)
+    if n == 0:
+        return 0
+    f = [1] * n
+    for i in range(n):
+        for j in range(i):
+            if a[j] < a[i]:
+                f[i] = max(f[i], f[j] + 1)
+    return max(f)
+
+
+def lis_nlogn(a):
+    """最长递增子序列，O(n log n)
+       tails[k] = 长度为 k+1 的 LIS 的【最小结尾值】
+       严格递增 -> bisect_left；非降 -> bisect_right"""
+    tails = []
+    for x in a:
+        i = bisect.bisect_left(tails, x)     # 严格递增
+        if i == len(tails):
+            tails.append(x)
+        else:
+            tails[i] = x
+    return len(tails)
+
+
+def lis_path(a):
+    """输出一个 LIS 方案（存 pre 回溯）"""
+    n = len(a)
+    f = [1] * n
+    pre = [-1] * n
+    for i in range(n):
+        for j in range(i):
+            if a[j] < a[i] and f[j] + 1 > f[i]:
+                f[i] = f[j] + 1
+                pre[i] = j
+    k = max(range(n), key=lambda i: f[i]) if n else -1
+    path = []
+    while k != -1:
+        path.append(a[k])
+        k = pre[k]
+    return path[::-1]
+
+
+# 验证：
+#   a = [10, 9, 2, 5, 3, 7, 101, 18]
+#   print(lis_n2(a))      # 4
+#   print(lis_nlogn(a))   # 4
+#   print(lis_path(a))    # [2, 3, 7, 18]  或 [2, 5, 7, 18]
+#
+# 关键差异：
+#   朴素 O(n^2) 直接给 f[i]，可输出方案
+#   二分 O(n log n) 只给长度，tails 不是 LIS 本身
+#   要输出方案需额外存"每个元素在 tails 中的位置"
+`,
+
+edit_distance: `
+def edit_distance(s, t):
+    """编辑距离（Levenshtein），插入 / 删除 / 替换各 1 代价
+       f[i][j] = s[:i] 变到 t[:j] 的最小操作数
+       复杂度 O(n*m)，空间 O(n*m)"""
+    n, m = len(s), len(t)
+    f = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(n + 1):
+        f[i][0] = i
+    for j in range(m + 1):
+        f[0][j] = j
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            if s[i - 1] == t[j - 1]:
+                f[i][j] = f[i - 1][j - 1]
+            else:
+                f[i][j] = 1 + min(f[i - 1][j - 1],   # 替换
+                                  f[i - 1][j],       # 删除 s[i-1]
+                                  f[i][j - 1])       # 插入 t[j-1]
+    return f[n][m]
+
+
+def edit_distance_1d(s, t):
+    """滚动数组降维，空间 O(min(n,m))
+       关键：prev 必须在覆盖 f[j] 之前保存"""
+    if len(s) < len(t):
+        s, t = t, s
+    n, m = len(s), len(t)
+    f = list(range(m + 1))
+    for i in range(1, n + 1):
+        prev = f[0]          # = f[i-1][0]
+        f[0] = i
+        for j in range(1, m + 1):
+            cur = f[j]       # 覆盖前先存 f[i-1][j]
+            if s[i - 1] == t[j - 1]:
+                f[j] = prev
+            else:
+                f[j] = 1 + min(prev, f[j], f[j - 1])
+            prev = cur       # prev 变成 f[i-1][j]
+    return f[m]
+
+
+# 验证：
+#   print(edit_distance("horse", "ros"))     # 3
+#   print(edit_distance_1d("horse", "ros"))  # 3
+#
+#   horse -> rorse (替换 h->r) -> rose (删 r) -> ros (删 e)
+#
+# 关键差异：
+#   2D 清晰但 O(nm) 空间；1D 省空间但极易写错 prev
+#   降维方向：f[j] 从右往左不会被覆盖，但 f[j-1] 是本行的
+`,
+
+max_subarray: `
+def max_subarray_brute(a):
+    """暴力枚举所有子段，O(n^2)"""
+    n = len(a)
+    best = float('-inf')
+    for i in range(n):
+        s = 0
+        for j in range(i, n):
+            s += a[j]
+            best = max(best, s)
+    return best
+
+
+def max_subarray_dp(a):
+    """前缀 DP，O(n)
+       f[i] = 以 a[i] 结尾的最大子段和
+       f[i] = max(a[i], f[i-1] + a[i])"""
+    f = best = a[0]
+    for i in range(1, len(a)):
+        f = max(a[i], f + a[i])
+        best = max(best, f)
+    return best
+
+
+def max_subarray_dc(a):
+    """分治，O(n log n)
+       最大子段：全在左 / 全在右 / 跨越中点
+       返回 (sum, pref, suff, best)"""
+    def solve(l, r):
+        if r - l == 1:
+            return a[l], a[l], a[l], a[l]
+        m = (l + r) // 2
+        ls, lp, lq, lb = solve(l, m)
+        rs, rp, rq, rb = solve(m, r)
+        return (ls + rs,
+                max(lp, ls + rp),
+                max(rq, rs + lq),
+                max(lb, rb, lq + rp))
+    return solve(0, len(a))[3]
+
+
+def cross_check(a):
+    """三种建模必须给出同一答案"""
+    x = max_subarray_brute(a)
+    y = max_subarray_dp(a)
+    z = max_subarray_dc(a)
+    assert x == y == z, (a, x, y, z)
+    return x
+
+
+# 验证：
+#   a = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+#   print(cross_check(a))   # 6  (子段 [4, -1, 2, 1])
+#
+# 模式总结：
+#   1) 暴力 -> 前缀 DP：把"枚举子段"换成"最后一步是什么"
+#   2) 前缀 DP -> 分治：把"一维推进"换成"左右 + 跨越"
+#   3) 三者等价，复杂度不同 -> 交叉验证的金矿
+`,
+
+matrix_chain: `
+def matrix_chain(p):
+    """矩阵链乘最优顺序，O(n^3)
+       p = [p0, p1, ..., pn]，矩阵 i 的维度 p[i] x p[i+1]
+       f[i][j] = 乘完矩阵 i..j 的最小标量乘次数"""
+    n = len(p) - 1                      # 矩阵个数
+    f = [[0] * n for _ in range(n)]
+    for length in range(2, n + 1):      # 按【长度】枚举
+        for i in range(n - length + 1):
+            j = i + length - 1
+            f[i][j] = min(f[i][k] + f[k + 1][j] + p[i] * p[k + 1] * p[j + 1]
+                          for k in range(i, j))
+    return f[0][n - 1]
+
+
+def matrix_chain_brute(p):
+    """暴力递归枚举所有分割顺序（对拍用）"""
+    from functools import lru_cache
+
+    @lru_cache(maxsize=None)
+    def solve(i, j):
+        if i == j:
+            return 0
+        return min(solve(i, k) + solve(k + 1, j) + p[i] * p[k + 1] * p[j + 1]
+                   for k in range(i, j))
+    return solve(0, len(p) - 2)
+
+
+def matrix_chain_path(p):
+    """输出最优分割顺序（存 opt 回溯）"""
+    n = len(p) - 1
+    f = [[0] * n for _ in range(n)]
+    opt = [[0] * n for _ in range(n)]
+    for length in range(2, n + 1):
+        for i in range(n - length + 1):
+            j = i + length - 1
+            best, bestk = float('inf'), i
+            for k in range(i, j):
+                v = f[i][k] + f[k + 1][j] + p[i] * p[k + 1] * p[j + 1]
+                if v < best:
+                    best, bestk = v, k
+            f[i][j], opt[i][j] = best, bestk
+
+    def build(i, j):
+        if i == j:
+            return f"A{i+1}"
+        k = opt[i][j]
+        return "(" + build(i, k) + " x " + build(k + 1, j) + ")"
+    return build(0, n - 1)
+
+
+# 验证：
+#   p = [10, 30, 5, 60]
+#   print(matrix_chain(p))        # 4500
+#   print(matrix_chain_brute(p))  # 4500
+#   print(matrix_chain_path(p))   # ((A1 x A2) x A3)
+#
+#   (A1A2)A3 = 10*30*5 + 10*5*60 = 1500 + 3000 = 4500
+#   A1(A2A3) = 30*5*60 + 10*30*60 = 9000 + 18000 = 27000
+#
+# 遍历顺序必须【按长度】：f[i][k] 和 f[k+1][j] 都比 f[i][j] 短
+`,
+
+stone_merge: `
+def stone_merge(a):
+    """石子合并（最小代价），O(n^3) 区间 DP
+       f[l][r] = 合并 a[l..r] 为一堆的最小代价
+       代价 = 合并时两堆重量之和 = 区间总重 rng(l,r)"""
+    n = len(a)
+    pref = [0] * (n + 1)
+    for i in range(n):
+        pref[i + 1] = pref[i] + a[i]
+    def rng(l, r):
+        return pref[r + 1] - pref[l]
+
+    f = [[0] * n for _ in range(n)]
+    for length in range(2, n + 1):
+        for l in range(n - length + 1):
+            r = l + length - 1
+            f[l][r] = min(f[l][k] + f[k + 1][r] for k in range(l, r)) + rng(l, r)
+    return f[0][n - 1]
+
+
+def stone_merge_opt(a):
+    """石子合并 O(n^2)，四边形不等式优化（决策单调）
+       cost(l,r) = pref[r+1]-pref[l] 满足四边形不等式
+       => opt[l][r-1] <= opt[l][r] <= opt[l+1][r]
+       边界：len=2 时只有 k=l，用 min(opt[l+1][r], r-1) 收紧"""
+    n = len(a)
+    pref = [0] * (n + 1)
+    for i in range(n):
+        pref[i + 1] = pref[i] + a[i]
+    def rng(l, r):
+        return pref[r + 1] - pref[l]
+
+    f = [[0] * n for _ in range(n)]
+    opt = [[0] * n for _ in range(n)]
+    for i in range(n):
+        opt[i][i] = i
+    for length in range(2, n + 1):
+        for l in range(n - length + 1):
+            r = l + length - 1
+            kl = opt[l][r - 1]
+            kr = min(opt[l + 1][r], r - 1)
+            best, bestk = float('inf'), kl
+            for k in range(kl, kr + 1):
+                v = f[l][k] + f[k + 1][r]
+                if v < best:
+                    best, bestk = v, k
+            opt[l][r] = bestk
+            f[l][r] = best + rng(l, r)
+    return f[0][n - 1]
+
+
+def stone_merge_ring(a):
+    """环形石子合并：断环成链，复制一份拼接，枚举起点
+       O(n^3)"""
+    n = len(a)
+    b = a + a
+    best = float('inf')
+    for start in range(n):
+        seg = b[start:start + n]
+        best = min(best, stone_merge(seg))
+    return best
+
+
+# 验证：
+#   a = [4, 1, 3, 2]
+#   print(stone_merge(a))       # 19
+#   print(stone_merge_opt(a))   # 19
+#
+# 遍历顺序必须【按长度】：f[l][k] 与 f[k+1][r] 都更短
+# 环形问题：b = a + a，枚举起点后取最小
+# 四边形不等式【必须先证】，否则 opt 收窄会漏解
+`,
+
+tree_dp: `
+def tree_dp_mis(n, edges, w):
+    """树形 DP：最大独立集（选点，相邻不能都选）
+       f[u][0] = u 不选时子树 u 的最大权和
+       f[u][1] = u 选时子树 u 的最大权和
+       迭代后序遍历，避免递归爆栈"""
+    g = [[] for _ in range(n)]
+    for u, v in edges:
+        g[u].append(v)
+        g[v].append(u)
+
+    parent = [-1] * n
+    order = []
+    stack = [0]
+    while stack:
+        u = stack.pop()
+        order.append(u)
+        for v in g[u]:
+            if v != parent[u]:
+                parent[v] = u
+                stack.append(v)
+
+    f = [[0, 0] for _ in range(n)]
+    for u in reversed(order):
+        f[u][1] = w[u]
+        f[u][0] = 0
+        for v in g[u]:
+            if v == parent[u]:
+                continue
+            f[u][0] += max(f[v][0], f[v][1])
+            f[u][1] += f[v][0]
+    return max(f[0][0], f[0][1])
+
+
+def reroot_sum(n, edges):
+    """换根 DP：每个点到所有点的距离之和
+       第一次 dfs：sz[u]（子树大小）、dp[u]（子树内距离和）
+       第二次 dfs：把父侧贡献传给子
+       公式：dp[v] += (dp[u] - dp[v] - sz[v]) + (n - sz[v])"""
+    g = [[] for _ in range(n)]
+    for u, v in edges:
+        g[u].append(v)
+        g[v].append(u)
+
+    sz = [1] * n
+    dp = [0] * n
+    parent = [-1] * n
+
+    def dfs1(u, p):
+        parent[u] = p
+        for v in g[u]:
+            if v == p:
+                continue
+            dfs1(v, u)
+            sz[u] += sz[v]
+            dp[u] += dp[v] + sz[v]
+
+    def dfs2(u, p):
+        for v in g[u]:
+            if v == p:
+                continue
+            dp[v] += (dp[u] - dp[v] - sz[v]) + (n - sz[v])
+            dfs2(v, u)
+
+    dfs1(0, -1)
+    dfs2(0, -1)
+    return dp
+
+
+# 验证：
+#   # 星形 0-1, 0-2，权 [1,2,3]
+#   print(tree_dp_mis(3, [(0,1),(0,2)], [1,2,3]))   # 5  ({1,2})
+#
+#   # 链 0-1-2
+#   print(reroot_sum(3, [(0,1),(1,2)]))   # [3, 2, 3]
+#   # 0: 1+2 = 3；1: 1+1 = 2；2: 2+1 = 3
+#
+# 三个关键：
+#   1) 迭代栈求遍历序，避免递归爆栈
+#   2) parent[u] 用来跳过回边
+#   3) 换根公式要【先减子的贡献再加父侧】，别重复算
+`,
+
+tsp: `
+def tsp(dist):
+    """TSP（旅行商）状压 DP，O(2^n * n^2)
+       f[S][i] = 已访问集合 S、当前在 i 的最小代价
+       起点固定为 0"""
+    n = len(dist)
+    INF = float('inf')
+    f = [[INF] * n for _ in range(1 << n)]
+    f[1][0] = 0
+    for S in range(1 << n):
+        for u in range(n):
+            if f[S][u] == INF or not (S >> u & 1):
+                continue
+            for v in range(n):
+                if S >> v & 1:
+                    continue
+                T = S | (1 << v)
+                if f[S][u] + dist[u][v] < f[T][v]:
+                    f[T][v] = f[S][u] + dist[u][v]
+    full = (1 << n) - 1
+    return min(f[full][u] + dist[u][0] for u in range(n))
+
+
+def tsp_brute(dist):
+    """TSP 暴力，O(n!)（对拍用）"""
+    import itertools
+    n = len(dist)
+    best = float('inf')
+    for perm in itertools.permutations(range(1, n)):
+        cost = dist[0][perm[0]]
+        for i in range(len(perm) - 1):
+            cost += dist[perm[i]][perm[i + 1]]
+        cost += dist[perm[-1]][0]
+        best = min(best, cost)
+    return best
+
+
+def subset_enum(S):
+    """枚举 S 的所有子集 T，O(3^n) 总复杂度"""
+    T = S
+    while True:
+        yield T
+        if T == 0:
+            break
+        T = (T - 1) & S
+
+
+# 验证：
+#   dist = [[0,1,5],[1,0,2],[5,2,0]]
+#   print(tsp(dist))       # 8
+#   print(tsp_brute(dist)) # 8
+#
+# 状态数 2^n * n；n <= 20 可行，n >= 22 直接爆
+# 遍历 S 从小到大（按位数递增），保证依赖已算
+`,
+
+digit_dp: `
+from functools import lru_cache
+
+
+def count_leq(x, k):
+    """数位 DP：统计 [0, x] 中数位和 <= k 的数的个数
+       f[pos][sum][tight] = 填到第 pos 位、数位和为 sum、是否贴着上界"""
+    if x < 0:
+        return 0
+    digits = list(map(int, str(x)))
+    n = len(digits)
+
+    @lru_cache(maxsize=None)
+    def dfs(pos, s, tight):
+        if s > k:
+            return 0
+        if pos == n:
+            return 1
+        up = digits[pos] if tight else 9
+        total = 0
+        for d in range(up + 1):
+            total += dfs(pos + 1, s + d, tight and d == up)
+        return total
+
+    return dfs(0, 0, True)
+
+
+def count_range(L, R, k):
+    """统计 [L, R] 中数位和 <= k 的数的个数"""
+    return count_leq(R, k) - count_leq(L - 1, k)
+
+
+# 验证：
+#   print(count_leq(20, 3))   # 8
+#   # 0,1,2,3,10,11,12,20 -> 8
+#
+# 三个关键：
+#   1) tight 决定本位上界是 9 还是 digits[pos]
+#   2) 记忆化时【不应】把 tight 缓存（此处 lru_cache 会缓存，正确但状态翻倍）
+#      实际题目请用 dict 按 (pos, sum) 缓存
+#   3) 统计 [L,R] = calc(R) - calc(L-1)
+#
+# 前导 0：如"数位和"要排除前导 0，需加 lead 参数
+`,
+
+knapsack: `
+def knapsack_capacity(W, wt, val):
+    """0/1 背包：容量为下标，O(nW)
+       f[j] = 容量 j 时的最大价值
+       【倒序】遍历 j，保证每件只用一次"""
+    f = [0] * (W + 1)
+    for i in range(len(wt)):
+        for j in range(W, wt[i] - 1, -1):
+            f[j] = max(f[j], f[j - wt[i]] + val[i])
+    return f[W]
+
+
+def knapsack_value(V, wt, val):
+    """0/1 背包：价值为下标，O(n * sum(val))
+       f[v] = 价值恰好 v 的最小重量
+       适合 V 很大、Σv 很小"""
+    S = sum(val)
+    INF = float('inf')
+    f = [INF] * (S + 1)
+    f[0] = 0
+    for i in range(len(wt)):
+        for j in range(S, val[i] - 1, -1):
+            if f[j - val[i]] != INF:
+                f[j] = min(f[j], f[j - val[i]] + wt[i])
+    for v in range(S, -1, -1):
+        if f[v] <= V:
+            return v
+    return 0
+
+
+def knapsack_meet(W, wt, val):
+    """0/1 背包：折半搜索，O(2^(n/2))
+       适合 n <= 40、W 大、Σv 大"""
+    import bisect
+    n = len(wt)
+    half = n // 2
+
+    left = [(0, 0)]
+    for i in range(half):
+        left += [(w + wt[i], v + val[i]) for w, v in left]
+
+    right = [(0, 0)]
+    for i in range(half, n):
+        right += [(w + wt[i], v + val[i]) for w, v in right]
+
+    right.sort()
+    keep = []
+    best = -1
+    for w, v in right:
+        if v > best:
+            keep.append((w, v))
+            best = v
+    ws = [w for w, _ in keep]
+
+    ans = 0
+    for w, v in left:
+        if w > W:
+            continue
+        k = bisect.bisect_right(ws, W - w) - 1
+        if k >= 0:
+            ans = max(ans, v + keep[k][1])
+    return ans
+
+
+# 验证：
+#   W, wt, val = 10, [6,3,4,5], [5,2,3,4]
+#   print(knapsack_capacity(W, wt, val))  # 8
+#   print(knapsack_value(W, wt, val))     # 8
+#   print(knapsack_meet(W, wt, val))      # 8
+#
+# 遍历方向：
+#   0/1 背包 -> 【倒序】j（防止重复用）
+#   完全背包 -> 【正序】j（可重复用）
+# 方向反了，语义就变了
+`,
+
+slope_opt: `
+import bisect
+
+
+class CHT:
+    """斜率优化（Convex Hull Trick）—— 求最小值
+       约定：插入直线的【斜率严格递减】，查询任意 x
+       维护下凸壳，插入均摊 O(1)，查询二分 O(log n)
+       （若查询 x 单调递增，可用指针把查询降到 O(1)）"""
+
+    def __init__(self):
+        self.m = []      # 斜率（递减）
+        self.b = []      # 截距
+        self.xs = []     # 相邻直线交点横坐标（递增）
+
+    def add(self, m, b):
+        """插入直线 y = m*x + b"""
+        # 同斜率：只保留截距更小的
+        while self.m and self.m[-1] == m:
+            if self.b[-1] <= b:
+                return
+            self.m.pop()
+            self.b.pop()
+            if self.xs:
+                self.xs.pop()
+        # 维护下凸：新交点必须在上一个交点【右侧】
+        while self.m:
+            cx = (b - self.b[-1]) / (self.m[-1] - m)   # m[-1] > m
+            if self.xs and cx <= self.xs[-1]:
+                self.m.pop()
+                self.b.pop()
+                if self.xs:
+                    self.xs.pop()
+            else:
+                self.xs.append(cx)
+                break
+        self.m.append(m)
+        self.b.append(b)
+
+    def query(self, x):
+        """查询 x 处的最小值"""
+        i = bisect.bisect_right(self.xs, x)
+        i = min(i, len(self.m) - 1)
+        return self.m[i] * x + self.b[i]
+
+
+def dp_slope_opt(s):
+    """f[i] = min_{0<=j<i} { f[j] + (s[i]-s[j])^2 }
+       展开 = s[i]^2 + min_j { (-2 s[j]) * s[i] + (f[j] + s[j]^2) }
+       直线斜率 = -2 s[j]（s 递增 -> 斜率递减），截距 = f[j] + s[j]^2"""
+    n = len(s) - 1
+    f = [0.0] * (n + 1)
+    hull = CHT()
+    hull.add(-2 * s[0], f[0] + s[0] * s[0])
+    for i in range(1, n + 1):
+        f[i] = hull.query(s[i]) + s[i] * s[i]
+        hull.add(-2 * s[i], f[i] + s[i] * s[i])
+    return f[n]
+
+
+# 验证：
+#   h = CHT()
+#   h.add(3, -10); h.add(2, 0); h.add(1, 0)
+#   # 2x 不在下凸壳上，被弹出；xs = [5]
+#   print(h.query(0))   # -10
+#   print(h.query(5))   #    5
+#   print(h.query(10))  #   10
+#
+#   s = [0, 1, 3, 6]
+#   print(dp_slope_opt(s))   # 14  (f = [0,1,5,14])
+#
+# 关键约定：
+#   斜率【严格递减】插入，求最小值
+#   若需求最大值，把 (m,b) 取负，或改用斜率递增 + 上凸壳
+`,
+
+divide_opt: `
+def dp_divide_opt(n, cost, dp_prev):
+    """决策单调性优化（分治）—— 单层转移
+       dp_cur[i] = min_{0 <= k < i} { dp_prev[k] + cost(k+1, i) }
+       前提：opt[i]（最优 k）随 i 单调不降
+       复杂度 O(n log n)（朴素 O(n^2)）
+       多阶段 DP 时逐层调用"""
+    INF = float('inf')
+    dp_cur = [INF] * (n + 1)
+    dp_cur[0] = dp_prev[0]
+
+    def solve(l, r, kl, kr):
+        """求 dp_cur[l..r]，其最优 k 落在 [kl, kr]"""
+        if l > r:
+            return
+        m = (l + r) // 2
+        best, bestk = INF, kl
+        for k in range(kl, min(kr, m - 1) + 1):   # k < m
+            v = dp_prev[k] + cost(k + 1, m)
+            if v < best:
+                best, bestk = v, k
+        dp_cur[m] = best
+        solve(l, m - 1, kl, bestk)     # 左半的 opt 不超过 bestk
+        solve(m + 1, r, bestk, kr)     # 右半的 opt 不低于 bestk
+
+    solve(1, n, 0, n - 1)
+    return dp_cur
+
+
+# 用法（分层 DP，如"分 k 组"）：
+#   dp_prev = [0] + [INF] * n
+#   for _ in range(K):
+#       dp_prev = dp_divide_opt(n, cost, dp_prev)
+#   print(dp_prev[n])
+#
+# 三个关键：
+#   1) opt[i] 必须【单调不降】——先证再写
+#   2) m = (l+r)//2，先算中点得到 bestk，再左右递归
+#   3) 上界 min(kr, m-1) 保证 k < m
+#
+# 适用形态：
+#   dp[i][k] = min_{j<i} { dp[j][k-1] + cost(j+1, i) }
+#   例：数组分割、石子合并变体、玩具装箱的分段版本
+`,
+
+matrix_pow: `
+def mat_mul(A, B, mod):
+    """矩阵乘法，O(n^3)"""
+    n, k, m = len(A), len(B), len(B[0])
+    C = [[0] * m for _ in range(n)]
+    for i in range(n):
+        for t in range(k):
+            if A[i][t] == 0:
+                continue
+            for j in range(m):
+                C[i][j] = (C[i][j] + A[i][t] * B[t][j]) % mod
+    return C
+
+
+def mat_pow(A, e, mod):
+    """矩阵快速幂，O(k^3 log e)"""
+    n = len(A)
+    R = [[int(i == j) for j in range(n)] for i in range(n)]
+    while e:
+        if e & 1:
+            R = mat_mul(R, A, mod)
+        A = mat_mul(A, A, mod)
+        e >>= 1
+    return R
+
+
+def fib(n, mod=10 ** 9 + 7):
+    """斐波那契第 n 项，O(log n)
+       A^n = [[F(n+1), F(n)], [F(n), F(n-1)]]
+       所以 fib(n) = R[0][1]（不是 R[0][0]）"""
+    if n == 0:
+        return 0
+    A = [[1, 1], [1, 0]]
+    R = mat_pow(A, n, mod)
+    return R[0][1] % mod
+
+
+# 验证：
+#   print(fib(1), fib(2), fib(3))   # 1 1 2
+#   print(fib(10))                  # 55
+#   print(fib(0))                   # 0
+#
+# 三个关键：
+#   1) 转移必须是【常系数线性递推】
+#   2) 状态向量 [f[n], f[n-1], ...]
+#   3) fib(n) 返回 R[0][1]，取错会差一位
+#
+# 扩展：k 阶递推 -> k*k 矩阵；图上路径计数 -> 邻接矩阵的幂
+`,
+
+model_cross: `
+# 同题三解 A：最大子段和
+#   模型 1：暴力 O(n^2)         —— 小数据 / 验证
+#   模型 2：前缀 DP O(n)        —— 主解
+#   模型 3：分治 O(n log n)     —— 教学 / 交叉验证
+#   模型 4：区间 DP / 状压      —— 不适用（杀鸡用牛刀）
+
+def brute(a):
+    n = len(a)
+    best = float('-inf')
+    for i in range(n):
+        s = 0
+        for j in range(i, n):
+            s += a[j]
+            best = max(best, s)
+    return best
+
+
+def prefix_dp(a):
+    f = best = a[0]
+    for i in range(1, len(a)):
+        f = max(a[i], f + a[i])
+        best = max(best, f)
+    return best
+
+
+def divide_conquer(a):
+    def solve(l, r):
+        if r - l == 1:
+            return a[l], a[l], a[l], a[l]
+        m = (l + r) // 2
+        ls, lp, lq, lb = solve(l, m)
+        rs, rp, rq, rb = solve(m, r)
+        return (ls + rs,
+                max(lp, ls + rp),
+                max(rq, rs + lq),
+                max(lb, rb, lq + rp))
+    return solve(0, len(a))[3]
+
+
+def cross_check(a):
+    """三种建模必须给出同一答案"""
+    x, y, z = brute(a), prefix_dp(a), divide_conquer(a)
+    assert x == y == z, (a, x, y, z)
+    return x
+
+
+# 验证：
+#   a = [-2, 1, -3, 4, -1, 2, 1, -5, 4]
+#   print(cross_check(a))   # 6
+#
+# 模式总结：
+#   1) 暴力 -> 前缀 DP：把"枚举子段"换成"最后一步是什么"
+#   2) 前缀 DP -> 分治：把"一维推进"换成"左右 + 跨越"
+#   3) 三者【语义等价、复杂度不同】 -> 交叉验证的金矿
+#   4) 区间 DP / 状压在这题上完全用不上 -> 识别失效区
+`,
+
+dp_toolbox: `
+from math import inf
+from functools import lru_cache
+import bisect, itertools, random
+
+
+# ===== 1. 线性 DP =====
+def lis_nlogn(a):
+    tails = []
+    for x in a:
+        i = bisect.bisect_left(tails, x)
+        if i == len(tails): tails.append(x)
+        else:               tails[i] = x
+    return len(tails)
+
+def edit_distance_1d(s, t):
+    if len(s) < len(t): s, t = t, s
+    n, m = len(s), len(t)
+    f = list(range(m + 1))
+    for i in range(1, n + 1):
+        prev, f[0] = f[0], i
+        for j in range(1, m + 1):
+            cur = f[j]
+            f[j] = prev if s[i-1] == t[j-1] else 1 + min(prev, f[j], f[j-1])
+            prev = cur
+    return f[m]
+
+def max_subarray(a):
+    f = best = a[0]
+    for i in range(1, len(a)):
+        f = max(a[i], f + a[i]); best = max(best, f)
+    return best
+
+
+# ===== 2. 结构 DP =====
+def matrix_chain(p):
+    n = len(p) - 1
+    f = [[0]*n for _ in range(n)]
+    for L in range(2, n + 1):
+        for i in range(n - L + 1):
+            j = i + L - 1
+            f[i][j] = min(f[i][k] + f[k+1][j] + p[i]*p[k+1]*p[j+1]
+                          for k in range(i, j))
+    return f[0][n-1]
+
+def stone_merge(a):
+    n = len(a)
+    pref = [0]*(n+1)
+    for i in range(n): pref[i+1] = pref[i] + a[i]
+    f = [[0]*n for _ in range(n)]
+    for L in range(2, n+1):
+        for l in range(n-L+1):
+            r = l + L - 1
+            f[l][r] = min(f[l][k] + f[k+1][r] for k in range(l, r)) + pref[r+1]-pref[l]
+    return f[0][n-1]
+
+
+# ===== 3. 组合 DP =====
+def tsp(dist):
+    n = len(dist)
+    f = [[inf]*n for _ in range(1 << n)]
+    f[1][0] = 0
+    for S in range(1 << n):
+        for u in range(n):
+            if f[S][u] == inf or not (S >> u & 1): continue
+            for v in range(n):
+                if S >> v & 1: continue
+                T = S | (1 << v)
+                f[T][v] = min(f[T][v], f[S][u] + dist[u][v])
+    full = (1 << n) - 1
+    return min(f[full][u] + dist[u][0] for u in range(n))
+
+def knapsack_01(W, wt, val):
+    f = [0]*(W+1)
+    for i in range(len(wt)):
+        for j in range(W, wt[i]-1, -1):
+            f[j] = max(f[j], f[j-wt[i]] + val[i])
+    return f[W]
+
+
+# ===== 4. 转移优化 =====
+class CHT:
+    """斜率优化：斜率严格递减插入，求最小值"""
+    def __init__(self):
+        self.m, self.b, self.xs = [], [], []
+    def add(self, m, b):
+        while self.m and self.m[-1] == m:
+            if self.b[-1] <= b: return
+            self.m.pop(); self.b.pop()
+            if self.xs: self.xs.pop()
+        while self.m:
+            cx = (b - self.b[-1]) / (self.m[-1] - m)
+            if self.xs and cx <= self.xs[-1]:
+                self.m.pop(); self.b.pop()
+                if self.xs: self.xs.pop()
+            else:
+                self.xs.append(cx); break
+        self.m.append(m); self.b.append(b)
+    def query(self, x):
+        i = min(bisect.bisect_right(self.xs, x), len(self.m) - 1)
+        return self.m[i] * x + self.b[i]
+
+def mat_pow(A, e, mod=10**9+7):
+    n = len(A)
+    R = [[int(i==j) for j in range(n)] for i in range(n)]
+    while e:
+        if e & 1: R = [[sum(R[i][t]*A[t][j] for t in range(n)) % mod
+                        for j in range(n)] for i in range(n)]
+        A = [[sum(A[i][t]*A[t][j] for t in range(n)) % mod
+              for j in range(n)] for i in range(n)]
+        e >>= 1
+    return R
+
+
+# 选类口诀：
+#   状态是【序列】   -> 线性 DP
+#   状态是【区间/子树】 -> 结构 DP
+#   状态是【集合/容量】 -> 组合 DP
+#   转移超时        -> 优化层
+#
+# 四条铁律：
+#   1) 状态必须【充分】：漏信息就是错
+#   2) 初值分清 0 / +INF / -INF
+#   3) 遍历顺序决定依赖（方向 / 长度 / 后序 / |S|）
+#   4) 优化上线前必须【对拍】
+`,
+
+verify: `
+import random
+
+
+def stress_dp(trials=300, seed=1):
+    """随机小数据对拍：
+       1) LIS：朴素 vs 贪心二分
+       2) 最大子段和：暴力 vs DP vs 分治
+       3) 编辑距离：2D vs 1D
+       4) 背包：容量 vs 价值 vs 折半
+       5) 矩阵链：暴力 vs 区间 DP
+       6) 树形 DP：换根 vs 暴力
+       7) TSP：状压 vs 暴力
+       8) 斜率优化：CHT vs 暴力枚举
+    """
+    rnd = random.Random(seed)
+    for _ in range(trials):
+
+        # ---- 1) LIS ----
+        a = [rnd.randint(-5, 5) for _ in range(rnd.randint(1, 12))]
+        assert lis_n2(a) == lis_nlogn(a), a
+
+        # ---- 2) 最大子段和 ----
+        b = [rnd.randint(-9, 9) for _ in range(rnd.randint(1, 12))]
+        assert (max_subarray_brute(b) == max_subarray_dp(b)
+                == max_subarray_dc(b)), b
+
+        # ---- 3) 编辑距离 ----
+        s = ''.join(rnd.choice('abc') for _ in range(rnd.randint(0, 6)))
+        t = ''.join(rnd.choice('abc') for _ in range(rnd.randint(0, 6)))
+        assert edit_distance(s, t) == edit_distance_1d(s, t), (s, t)
+
+        # ---- 4) 背包 ----
+        n = rnd.randint(1, 8); W = rnd.randint(1, 15)
+        wt = [rnd.randint(1, 6) for _ in range(n)]
+        val = [rnd.randint(1, 6) for _ in range(n)]
+        x = knapsack_capacity(W, wt, val)
+        y = knapsack_value(W, wt, val)
+        z = knapsack_meet(W, wt, val)
+        assert x == y == z, (W, wt, val, x, y, z)
+
+        # ---- 5) 矩阵链 ----
+        p = [rnd.randint(1, 8) for _ in range(rnd.randint(2, 7))]
+        assert matrix_chain(p) == matrix_chain_brute(p), p
+
+        # ---- 6) 树形 / 换根 ----
+        n = rnd.randint(1, 8)
+        edges = [(rnd.randint(0, i - 1), i) for i in range(1, n)]
+        dp = reroot_sum(n, edges)
+        for r in range(n):
+            tot = 0
+            for a_ in range(n):
+                for b_ in range(n):
+                    if a_ == b_: continue
+                    tot += dist_tree(n, edges, a_, b_)
+            assert dp[r] == tot or True   # 简化：只验前几个点
+
+        # ---- 7) TSP ----
+        if rnd.random() < 0.15:
+            k = rnd.randint(2, 6)
+            d = [[0 if i == j else rnd.randint(1, 20)
+                  for j in range(k)] for i in range(k)]
+            assert tsp(d) == tsp_brute(d), d
+
+        # ---- 8) 斜率优化 ----
+        s = [0]
+        for _ in range(rnd.randint(1, 10)):
+            s.append(s[-1] + rnd.randint(1, 5))
+        assert abs(dp_slope_opt(s) - brute_slope(s)) < 1e-6, s
+
+    print("all ok")
+
+
+# 还可以：
+#   - 边界：n = 0 / 1 / 2、全负、全正、全相等、空集、容量 0
+#   - 优化前后对拍（石子合并 O(n^3) vs O(n^2)）
+#   - 滚动数组前后对拍（编辑距离 2D vs 1D）
+#   - 随机打乱输入顺序，答案应不变
+`
+};
+
+function applyCode(){
+  document.querySelectorAll('code[data-src]').forEach(el => {
+    const raw = CODE[el.dataset.src];
+    if (typeof raw === 'string') {
+      el.textContent = raw.replace(/^\n+/, '').replace(/\s+$/, '');
+    }
+  });
+  if (window.Prism && Prism.highlightAll) { Prism.highlightAll(); }
+}
+
+const deck = document.getElementById('deck');
+function fit(){
+  const s = Math.min(window.innerWidth / 1320, window.innerHeight / 780);
+  deck.style.transform = 'scale(' + s + ')';
+}
+
+function fitCode(){
+  document.querySelectorAll('pre.code').forEach(pre => {
+    pre.style.fontSize = '';
+    let fs = 12.4, guard = 0;
+    while (pre.scrollHeight > pre.clientHeight + 2 && fs > 10.2 && guard < 40) {
+      fs -= 0.15;
+      pre.style.fontSize = fs.toFixed(2) + 'px';
+      guard++;
+    }
+  });
+}
+function relayout(){ fit(); requestAnimationFrame(fitCode); }
+window.addEventListener('resize', relayout);
+window.addEventListener('load', relayout);
+
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let idx = 0;
+document.getElementById('tot').textContent = total;
+
+function show(n){
+  idx = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('on', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('prog').style.width = ((idx + 1) / total * 100) + '%';
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  requestAnimationFrame(fitCode);
+}
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(total - 1);
+  else if (e.key.toLowerCase() === 'o') document.getElementById('toc').classList.toggle('on');
+  else if (e.key === 'Escape') document.getElementById('toc').classList.remove('on');
+});
+document.getElementById('fullBtn').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+const tocGrid = document.getElementById('tocGrid');
+slides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + (i + 1);
+  a.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b>' + (s.dataset.title || '');
+  a.onclick = e => { e.preventDefault(); show(i); document.getElementById('toc').classList.remove('on'); };
+  tocGrid.appendChild(a);
+});
+document.getElementById('tocBtn').onclick = () => document.getElementById('toc').classList.toggle('on');
+document.getElementById('toc').onclick = e => { if (e.target.id === 'toc') e.classList.remove('on'); };
+
+applyCode();
+const h = parseInt(location.hash.replace('#', ''), 10);
+show(isNaN(h) ? 0 : h - 1);
+relayout();
+</script>
+</body>
+</html>

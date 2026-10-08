@@ -1,0 +1,2605 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>网络流：增广路上的流量博弈</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{
+  --paper:#FFF8F0; --card:#FFFFFF;
+  --ink:#2B1D12; --ink2:#6E5842; --line:#EEDCC2;
+  --accent:#E2612F; --amber:#F2A63B; --teal:#0F7B6C; --plum:#A33A64;
+  --code-bg:#2C2117;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EFE0C8;font-family:var(--sans);color:var(--ink);overflow:hidden}
+body{background:
+  radial-gradient(1200px 700px at 12% -10%, #FBE9CE 0%, rgba(251,233,206,0) 60%),
+  radial-gradient(900px 600px at 105% 110%, #F7DCC0 0%, rgba(247,220,192,0) 55%), #EFE0C8;}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center center;
+  border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(90,52,18,.28),0 4px 12px rgba(90,52,18,.14)}
+
+.slide{position:absolute;inset:0;padding:22px 38px 26px;opacity:0;visibility:hidden;
+  transform:translateX(22px) scale(.996);transition:opacity .38s ease,transform .38s ease,visibility .38s;
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(160deg,#FFFBF5 0%,#FFF4E6 55%,#FDEBD3 100%)}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.slide::after{content:"";position:absolute;right:-120px;top:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(242,166,59,.18),rgba(242,166,59,0) 70%);pointer-events:none}
+.slide::before{content:"";position:absolute;left:-90px;bottom:-140px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,rgba(226,97,47,.11),rgba(226,97,47,0) 70%);pointer-events:none}
+.slide>*{position:relative;z-index:2}
+
+.kicker{display:inline-flex;align-items:center;gap:7px;font-size:10.6px;font-weight:700;letter-spacing:.13em;
+  color:var(--accent);background:#FFEEDC;border:1px solid #F6D2B2;padding:3px 11px;border-radius:999px}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+.kicker.teal{color:var(--teal);background:#E9F7F2;border-color:#BEE6D8}
+.kicker.teal i{background:var(--teal)}
+.kicker.plum{color:var(--plum);background:#FDF1F5;border-color:#EFCBD8}
+.kicker.plum i{background:var(--plum)}
+.sl-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+  border-bottom:2px solid var(--line);padding-bottom:8px}
+.sl-head h2{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1.14;margin-top:5px}
+.sl-head h2 em{font-style:normal;color:var(--accent)}
+.sl-head h2 em.t{color:var(--teal)}
+.sl-head h2 em.p{color:var(--plum)}
+.sl-head .hint{font-size:11.6px;color:var(--ink2);text-align:right;max-width:340px;line-height:1.5}
+.sl-head .hint b{color:#8A5A2C}
+.lead{font-size:15px;line-height:1.66;color:#42301F}
+.muted{color:var(--ink2)}
+
+.cols{display:grid;gap:11px;min-height:0;flex:1 1 auto}
+.c2{grid-template-columns:1fr 1fr}
+.c2a{grid-template-columns:1.08fr .92fr}
+.c2b{grid-template-columns:.92fr 1.08fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+.cols > div{min-height:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.card h3 .n{width:21px;height:21px;border-radius:7px;background:var(--accent);color:#fff;font-size:11.5px;
+  display:grid;place-items:center;font-family:var(--sans);font-weight:700;flex:none}
+.card h3 .n.t{background:var(--teal)}
+.card h3 .n.p{background:var(--plum)}
+.card p,.card li{font-size:13px;line-height:1.6;color:#4A3722}
+.card ul,ol{padding-left:16px}
+.card li{margin:2px 0}
+.card.tint-teal{background:#F2FBF7;border-color:#BEE6D8}
+.card.tint-amber{background:#FFF7E6;border-color:#F4DCAC}
+.card.tint-plum{background:#FDF1F5;border-color:#EFCBD8}
+
+.formula{font-family:var(--mono);font-size:14.5px;background:#2E2118;color:#FFEBD2;border-radius:11px;
+  padding:10px 14px;line-height:1.55;flex:none;overflow-x:auto}
+.formula .hl{color:#FFB169;font-weight:600}
+.formula .ok{color:#7FE0C2;font-weight:600}
+.formula .dim{color:#A8846A}
+
+.codewrap{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;
+  border:1px solid #4B3823;border-radius:12px;overflow:hidden;background:var(--code-bg)}
+.code-head{flex:none;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#241A12;
+  border-bottom:1px solid #46341F}
+.code-head .dot{width:9px;height:9px;border-radius:50%;background:#6B5238}
+.code-head .dot.r{background:#B9471B}
+.code-head .dot.g{background:#0F7B6C}
+.code-head em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B29272;letter-spacing:.08em;margin-left:6px}
+.code-head .lang{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7A5F45;letter-spacing:.12em}
+pre.code{margin:0;flex:1 1 auto;min-height:0;overflow:auto;background:var(--code-bg)!important;
+  padding:11px 14px;font-family:var(--mono);font-size:12.4px;line-height:1.56;white-space:pre;tab-size:4}
+pre.code::-webkit-scrollbar{height:8px;width:8px}
+pre.code::-webkit-scrollbar-track{background:#241A12}
+pre.code::-webkit-scrollbar-thumb{background:#6B5238;border-radius:8px}
+pre.code::-webkit-scrollbar-thumb:hover{background:#8E6E4C}
+pre.code code,code[class*="language-"]{font-family:var(--mono)!important;font-size:inherit;
+  background:transparent!important;color:#F0E0CC!important;text-shadow:none!important}
+pre.code .token.comment,pre.code .token.prolog,pre.code .token.doctype,pre.code .token.cdata{color:#A8846A!important;font-style:italic}
+pre.code .token.punctuation{color:#C0A183!important}
+pre.code .token.keyword,pre.code .token.atrule,pre.code .token.rule,pre.code .token.important{color:#FFB169!important;font-weight:600}
+pre.code .token.string,pre.code .token.char,pre.code .token.attr-value{color:#9BE0BE!important}
+pre.code .token.function,pre.code .token.class-name,pre.code .token.builtin{color:#FFD9A8!important}
+pre.code .token.number,pre.code .token.boolean,pre.code .token.constant,pre.code .token.symbol{color:#F4A9C0!important}
+pre.code .token.operator{color:#FFC98B!important}
+
+.note{border-left:4px solid var(--amber);background:#FFF6E4;padding:8px 12px;border-radius:0 11px 11px 0;
+  font-size:12.6px;line-height:1.58;flex:none}
+.note.warn{border-color:var(--plum);background:#FDF0F4}
+.note.good{border-color:var(--teal);background:#EFF9F5}
+.note b{color:var(--accent)}.note.warn b{color:var(--plum)}.note.good b{color:var(--teal)}
+code:not([class*="language-"]){font-family:var(--mono);font-size:.93em;background:#F6EADA;padding:1px 5px;border-radius:5px}
+
+table{width:100%;border-collapse:collapse;font-size:12.1px;background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);flex:none}
+th,td{padding:5.5px 10px;text-align:left;border-bottom:1px solid var(--line);line-height:1.45}
+th{background:#F7E7CF;font-family:var(--serif);font-size:12.6px;color:#7A4A22}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:11px}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:7px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.2px;
+  font-weight:600;color:#5B4429}
+.pill.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill.tq{background:var(--teal);color:#fff;border-color:var(--teal)}
+.pill.pl{background:var(--plum);color:#fff;border-color:var(--plum)}
+ul.tick{list-style:none;padding:0}
+ul.tick li{position:relative;padding-left:20px;margin:3px 0;font-size:12.8px;line-height:1.55}
+ul.tick li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:4px;
+  background:#FFE2C6;border:2px solid var(--accent)}
+ul.tick.ok li::before{background:#CDEEE2;border-color:var(--teal)}
+ul.tick.no li::before{background:#F7D6E1;border-color:var(--plum);border-radius:50%}
+ul.tick.arr li::before{background:#FBD9A2;border-color:var(--amber);border-radius:2px;transform:rotate(45deg);width:9px;height:9px}
+
+.a-link{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:11px;padding:8px 11px;transition:.18s;box-shadow:0 4px 10px rgba(120,70,20,.06);overflow:hidden}
+.a-link:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 20px rgba(226,97,47,.16)}
+.a-link .t{font-size:12.4px;font-weight:700;color:#7A3A12;display:block;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link .d{font-size:11px;color:var(--ink2);line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.a-link .src{font-size:9.6px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--teal);
+  padding:1px 7px;border-radius:999px;display:inline-block;margin-bottom:4px}
+.a-link .src.lg{background:var(--accent)}
+.a-link .src.loc{background:var(--amber)}
+
+.step{display:flex;gap:9px;align-items:flex-start}
+.step .idx{flex:none;width:23px;height:23px;border-radius:7px;background:#2E2118;color:#FFD9A8;
+  display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.split-line{height:2px;background:linear-gradient(90deg,#E2612F,#F2A63B,rgba(242,166,59,0));border-radius:2px;margin:6px 0;flex:none}
+.split-line.t{background:linear-gradient(90deg,#0F7B6C,#7FE0C2,rgba(127,224,194,0))}
+.split-line.p{background:linear-gradient(90deg,#A33A64,#F4A9C0,rgba(244,169,192,0))}
+.num-huge{font-family:var(--serif);font-size:110px;font-weight:900;line-height:.9;
+  background:linear-gradient(160deg,#E2612F,#F2A63B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.t{background:linear-gradient(160deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.p{background:linear-gradient(160deg,#A33A64,#F4A9C0);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+svg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;overflow:visible}
+.dfnlab{font-family:var(--mono);font-size:11.5px;font-weight:700;fill:#0F7B6C}
+.dfnlab.r{fill:#B9471B}
+.dfnlab.p{fill:#A33A64}
+.dfnlab.g{fill:#8A6A45}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.62;transform:scale(1.07)}}
+.dash{stroke-dasharray:8 8;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.cover{background:linear-gradient(150deg,#FFF6E8 0%,#FFE9CD 48%,#FFDCB4 100%)}
+.cover .badge{display:inline-flex;gap:8px;align-items:center;background:#2E2118;color:#FFD9A8;
+  padding:6px 14px;border-radius:999px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.cover h1{font-family:var(--serif);font-size:52px;line-height:1.1;font-weight:900}
+.cover h1 em{font-style:normal;background:linear-gradient(92deg,#E2612F,#F2A63B);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.cover h1 em.t{background:linear-gradient(92deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cover .sub{font-size:15.5px;color:#6B4A2C;line-height:1.66;max-width:600px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta span{background:rgba(255,255,255,.72);border:1px solid #F0D2AC;padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#7A4A22}
+.section-slide{background:linear-gradient(150deg,#FFF3E0,#FFE0BC)}
+.section-slide.teal{background:linear-gradient(150deg,#EFF9F4,#CFE9DE)}
+.section-slide.plum{background:linear-gradient(150deg,#FDF0F4,#F5CBD8)}
+.section-slide .big{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1.18}
+
+.hud{position:fixed;right:18px;bottom:14px;display:flex;gap:7px;align-items:center;z-index:50}
+.hud button{border:1px solid rgba(120,70,20,.2);background:rgba(255,250,242,.92);color:#7A4A22;
+  width:34px;height:34px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:700;backdrop-filter:blur(6px);transition:.16s}
+.hud button:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.pgn{background:rgba(255,250,242,.92);border:1px solid rgba(120,70,20,.2);border-radius:10px;height:34px;
+  display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:12.5px;color:#7A4A22;font-weight:600}
+.prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,#E2612F,#F2A63B);z-index:60;
+  transition:width .35s ease;box-shadow:0 1px 6px rgba(226,97,47,.5)}
+.brand{position:fixed;left:18px;bottom:14px;z-index:50;background:rgba(255,250,242,.9);border:1px solid rgba(120,70,20,.2);
+  border-radius:10px;padding:8px 13px;font-size:10.5px;color:#7A4A22;letter-spacing:.1em;font-weight:700}
+.toc{position:fixed;inset:0;background:rgba(46,33,24,.82);backdrop-filter:blur(8px);z-index:80;display:none;
+  padding:42px 56px;overflow:auto}
+.toc.on{display:block}
+.toc h4{color:#FFE2BF;font-family:var(--serif);font-size:24px;margin-bottom:16px}
+.toc .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.toc a{background:rgba(255,246,232,.94);border-radius:10px;padding:9px 12px;text-decoration:none;color:#4A3722;
+  font-size:12.2px;line-height:1.4;border:1px solid rgba(255,255,255,.18);transition:.16s}
+.toc a:hover{background:#FFB169;transform:translateY(-2px)}
+.toc a b{display:block;font-family:var(--mono);font-size:10px;color:#B9471B;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- ═══ 01 封面 ═══ -->
+<section class="slide cover on" data-title="封面">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">NETWORK FLOW · DINIC + MCMF · 80 MIN</div>
+      <h1>网络流<br><em>增广路上的流量博弈</em></h1>
+      <p class="sub">从<b>「找一条增广路，加流量，找不到就是最大流」</b>出发，<br>
+        串起<b>残量网络 · Dinic · 最小割 · 费用流 · 24 题建模</b>五条主线。</p>
+      <div class="meta">
+        <span>45 页 · 约 80 分钟</span><span>12 个可运行 Python 模板</span>
+        <span>含最小割构造与对拍脚本</span><span>洛谷 / LibreOJ 题单</span>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 520 300" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="fa" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#8A6A45"/></marker>
+          <marker id="fa2" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto">
+            <path d="M0 0 L11 5.5 L0 11 z" fill="#B9471B"/></marker>
+        </defs>
+        <text x="260" y="18" text-anchor="middle" class="dfnlab r">流网络：边上标容量 · 粗线=饱和 · 虚线=增广路</text>
+
+        <!-- 细边 -->
+        <g stroke="#D6B78C" stroke-width="2.4" fill="none" marker-end="url(#fa)">
+          <path d="M88 92 L182 82"/><path d="M88 168 L182 220"/><path d="M88 92 L182 160"/>
+          <path d="M198 82 L310 112"/><path d="M198 82 L310 192"/><path d="M198 160 L310 192"/>
+          <path d="M198 220 L310 112"/>
+        </g>
+        <!-- 饱和边 -->
+        <g stroke="#B9471B" stroke-width="5.5" fill="none" marker-end="url(#fa2)">
+          <path d="M88 130 L182 160"/><path d="M326 112 L432 150"/><path d="M326 192 L432 160"/>
+        </g>
+        <!-- 增广路 -->
+        <g stroke="#0F7B6C" stroke-width="4" stroke-dasharray="9 8" fill="none" marker-end="url(#fa)">
+          <path d="M78 130 L172 155"/><path d="M198 162 L300 118"/>
+        </g>
+
+        <!-- 节点 -->
+        <g>
+          <circle cx="72" cy="130" r="21" fill="#E2612F" stroke="#B9471B" stroke-width="3.5"/>
+          <circle cx="190" cy="82" r="16" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="190" cy="160" r="16" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="190" cy="220" r="16" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="318" cy="112" r="16" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="318" cy="192" r="16" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="448" cy="152" r="21" fill="#0F7B6C" stroke="#0B6356" stroke-width="3.5"/>
+        </g>
+        <g font-family="monospace" font-size="12" text-anchor="middle">
+          <text x="72" y="135" fill="#fff">s</text><text x="448" y="157" fill="#fff">t</text>
+          <text x="190" y="62" class="dfnlab r">a</text><text x="190" y="196" class="dfnlab r">b</text>
+          <text x="190" y="248" class="dfnlab r">c</text>
+          <text x="318" y="92" class="dfnlab">d</text><text x="318" y="220" class="dfnlab">e</text>
+        </g>
+        <!-- 容量标签 -->
+        <g font-family="monospace" font-size="10" text-anchor="middle">
+          <rect x="120" y="100" width="34" height="17" rx="6" fill="#fff" stroke="#F0D2AC"/>
+          <text x="137" y="112" class="dfnlab g">3/3</text>
+          <rect x="118" y="66" width="30" height="17" rx="6" fill="#fff" stroke="#F0D2AC"/>
+          <text x="133" y="78" class="dfnlab g">3</text>
+          <rect x="248" y="88" width="34" height="17" rx="6" fill="#fff" stroke="#F0D2AC"/>
+          <text x="265" y="100" class="dfnlab g">3/3</text>
+          <rect x="378" y="118" width="34" height="17" rx="6" fill="#fff" stroke="#F0D2AC"/>
+          <text x="395" y="130" class="dfnlab g">3/3</text>
+          <rect x="378" y="176" width="30" height="17" rx="6" fill="#fff" stroke="#F0D2AC"/>
+          <text x="393" y="188" class="dfnlab g">2</text>
+        </g>
+        <!-- 图例 -->
+        <g font-family="monospace" font-size="10.5" text-anchor="middle">
+          <rect x="46" y="272" width="126" height="24" rx="9" fill="#B9471B"/>
+          <text x="109" y="288" fill="#fff">饱和边 c=f</text>
+          <rect x="196" y="272" width="130" height="24" rx="9" fill="#0F7B6C"/>
+          <text x="261" y="288" fill="#fff">增广路径</text>
+          <rect x="350" y="272" width="140" height="24" rx="9" fill="#8A6A45"/>
+          <text x="420" y="288" fill="#fff">|f| ← |f|+Δ</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 路线图 ═══ -->
+<section class="slide" data-title="路线图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>ROADMAP</div><h2>六站，一条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>这份讲义怎么走？<br>每站先给"要解决的问题"，再给"为什么这样写"。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>基础</h3><p>流网络与可行流 · 残量网络 · 反向边 · 增广路 · FF/EK</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>Dinic</h3><p>分层图 · 当前弧优化 · 多路增广 · 复杂度与对比</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>最小割</h3><p>最大流=最小割 · 割构造 · 方案输出 · 最大权闭合子图</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>费用流</h3><p>最短增广路 · SPFA · 势函数 + Dijkstra · 负环</p></div>
+    <div class="card"><h3><span class="n">5</span>建模 24 题</h3><p>闭合子图 · 拆点 · 二分答案 · 费用流 · 上下界 · 多重匹配</p></div>
+    <div class="card tint-amber"><h3><span class="n">6</span>工程</h3><p>易错清单 · 模板合集 · 对拍脚本 · 题单</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>时间分配</h3><p class="muted">基础 16' · Dinic 12' · 最小割 14' · 费用流 14' · 建模 16' · 工程 8'</p></div>
+    <div class="card"><h3>验收标准</h3><p class="muted">能闭卷写出 Dinic 与 MCMF；能独立做出最小割方案输出与闭合子图建图。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 03 钩子 ═══ -->
+<section class="slide" data-title="四道题一个套路">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HOOK</div><h2>四道"互相配对"的题，<em>一个套路</em></h2></div>
+    <div class="hint"><b>本页回答：</b>网络流能干什么？<br>它把哪类问题统一了。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3>题 A</h3><p><b>题意：</b>管道有容量，从源到汇<b>最多能送多少水</b>？</p><div class="split-line"></div><p class="muted">→ 最大流。</p></div>
+    <div class="card"><h3>题 B</h3><p><b>题意：</b>最少切断多少容量的管道，才能<b>完全断流</b>？</p><div class="split-line t"></div><p class="muted">→ 最小割 = 最大流。</p></div>
+    <div class="card"><h3>题 C</h3><p><b>题意：</b>每条管道有单价，送完指定流量的<b>最小成本</b>？</p><div class="split-line p"></div><p class="muted">→ 最小费用流。</p></div>
+    <div class="card"><h3>题 D</h3><p><b>题意：</b>选项目有收益/花费，选了 A 就<b>必须选</b> B，最大收益？</p><div class="split-line"></div><p class="muted">→ 最大权闭合子图。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n">★</span>共同点</h3>
+      <p class="lead">都是"<b>在带容量的图上做最优的流量分配</b>"。一旦识别出这个结构，
+        就能套现成算法，<b>不用重新推导</b>。</p>
+      <div class="note"><b>一句话：</b>网络流把"最优分配类问题"从<b>指数枚举</b>降到 <b>O(V²E)</b>，并附赠<strong>对偶量（最小割）</strong>。</div>
+    </div>
+    <div class="card">
+      <h3>三个判断题</h3>
+      <div class="pill-row">
+        <span class="pill hot">有"源"和"汇"吗</span>
+        <span class="pill tq">边有容量限制吗</span>
+        <span class="pill pl">要不要考虑费用</span>
+      </div>
+      <div class="split-line"></div>
+      <p class="muted">答对这三题，就知道该用哪个算法。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 问题定义 ═══ -->
+<section class="slide" data-title="问题定义">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · PROBLEM</div><h2>先把概念<em>说清楚</em></h2></div>
+    <div class="hint"><b>本页回答：</b>流网络、可行流、最大流、最小割各是什么？<br>求的是什么量。</div>
+  </div>
+  <table>
+    <tr><th style="width:170px">概念</th><th style="width:235px">定义</th><th style="width:150px">复杂度</th><th>说明</th></tr>
+    <tr><td><b>流网络</b></td><td>有向图 G=(V,E)，边有容量 c(u,v) ≥ 0，指定 s, t</td><td>—</td><td>不含反向容量</td></tr>
+    <tr><td><b>可行流 f</b></td><td>容量约束 + 流量守恒</td><td>—</td><td>0 ≤ f ≤ c</td></tr>
+    <tr><td><b>流量 |f|</b></td><td>源的净流出 = 汇的净流入</td><td>—</td><td>目标函数</td></tr>
+    <tr><td><b>残量网络</b></td><td>c_f(u,v) = c(u,v) − f(u,v)；反向边容量 = f(u,v)</td><td>—</td><td><b>撤销能力</b></td></tr>
+    <tr><td><b>增广路</b></td><td>残量网络上 s→t 的路径</td><td class="mono">O(E)</td><td>沿路加 Δ 流量</td></tr>
+    <tr><td><b>最大流</b></td><td>流量最大的可行流</td><td class="mono">O(V²E)</td><td>核心问题</td></tr>
+    <tr><td><b>割 (S,T)</b></td><td>S ∋ s, T ∋ t；容量 = Σ c(u,v), u∈S, v∈T</td><td class="mono">= 最大流</td><td>对偶量</td></tr>
+    <tr><td><b>最小割</b></td><td>容量最小的割</td><td class="mono">= 最大流</td><td>方案输出</td></tr>
+    <tr><td><b>费用流</b></td><td>边再带费用 w；求最小总费用</td><td class="mono">O(E log V·f)</td><td>MCMF</td></tr>
+    <tr><td><b>闭合子图</b></td><td>u ∈ C 且 u→v ⇒ v ∈ C；最大权</td><td class="mono">= 最小割</td><td>建模利器</td></tr>
+    <tr><td><b>上下界流</b></td><td>每条边有流量下限 l(u,v)</td><td class="mono">O(V²E)</td><td>超级源汇</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>核心观察</h3><p>最大流、最小割、闭合子图、上下界流都<b>归约到同一个 Dinic</b>，只是建图不同。</p></div>
+    <div class="card tint-plum"><h3>不适用</h3><p>求<b>所有</b>最大流、<b>非线性</b>费用、<b>一般图匹配</b>（改用带花树）、<b>NP-hard</b> 类（如装箱）。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 05 取舍链 ═══ -->
+<section class="slide" data-title="取舍链">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · ROADMAP</div><h2>取舍链：<em>FF → EK → Dinic → ISAP → MCMF</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么有这么多算法？<br>各自的甜点在哪。</div>
+  </div>
+  <table>
+    <tr><th style="width:155px">方案</th><th>最大流</th><th>费用</th><th>代码量</th><th>适用</th></tr>
+    <tr><td>Ford-Fulkerson (DFS)</td><td class="mono">O(E·f*)</td><td>❌</td><td>极小</td><td>教学 / 整数容量极小数据</td></tr>
+    <tr><td><b>Edmonds-Karp</b></td><td class="mono">O(V·E²)</td><td>❌</td><td>小</td><td>n ≤ 500</td></tr>
+    <tr><td><b>Dinic</b></td><td class="mono">O(V²E)</td><td>❌</td><td>中</td><td><b>默认</b>（二分图 O(E√V)）</td></tr>
+    <tr><td>ISAP / HLPP</td><td class="mono">更快</td><td>❌</td><td>大</td><td>极限数据 / 卡常</td></tr>
+    <tr><td><b>MCMF (SPFA)</b></td><td class="mono">O(V·E·f)</td><td><b>是</b></td><td>中</td><td>费用流、n 小</td></tr>
+    <tr><td><b>MCMF (Dijkstra+势)</b></td><td class="mono">O(E log V·f)</td><td><b>是</b></td><td>中</td><td><b>费用流默认</b></td></tr>
+    <tr><td>上下界流</td><td class="mono">O(V²E)</td><td>可扩</td><td>中</td><td>有流量下限</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>不可替代的三件事</h3>
+      <ul class="tick">
+        <li><b>最小割</b>：给方案、给对偶证明（匹配要额外做）</li>
+        <li><b>费用流</b>：带价签的最优分配</li>
+        <li><b>建模</b>：识别"源-汇 + 容量"是关键能力</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>心智模型</h3>
+      <p>最大流 = <b>"在残量网络上找增广路"</b>。所有算法都只是<b>更聪明地找增广路</b>。</p>
+      <div class="note good"><b>建议：</b>先<b>闭卷默写 Dinic</b>，再学最小割建模，最后上费用流。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：基础">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 01</div>
+      <div class="big">基础：<em style="color:var(--accent)">残量 · 反向边 · 增广</em></div>
+      <p class="lead">流网络与可行流 · 残量网络 · 反向边 · Ford-Fulkerson / Edmonds-Karp · 手算<br>先把"增广"这个动作钉死。</p>
+    </div>
+    <div><div class="num-huge">01</div>
+      <div class="note good"><b>目标：</b>能解释"为什么必须有反向边"，并手算一次完整增广。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 流网络与可行流 ═══ -->
+<section class="slide" data-title="流网络与可行流">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · DEFINITION</div><h2>流网络与<em>可行流</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么叫"合法的流"？<br>两个约束条件。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>两个约束</h3>
+        <div class="formula" style="font-size:12.2px">
+          <span class="hl">容量约束</span> 0 ≤ f(u,v) ≤ c(u,v)<br>
+          <span class="hl">流量守恒</span> ∀v≠s,t: Σ_in f = Σ_out f
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>流量 |f|</h3>
+        <div class="formula" style="font-size:11.8px">
+          |f| = Σ_v f(s,v) − Σ_v f(v,s)<br>
+          <span class="dim">= 源的净流出 = 汇的净流入</span>
+        </div>
+      </div>
+      <div class="note good"><b>约定：</b>源没有入边、汇没有出边（不影响一般性）。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">流量守恒：中间点进出相等</text>
+          <defs><marker id="fa3" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#8A6A45"/></marker></defs>
+          <g stroke="#D6B78C" stroke-width="3" fill="none" marker-end="url(#fa3)">
+            <path d="M62 122 L146 122"/><path d="M206 122 L288 82"/><path d="M206 122 L288 162"/><path d="M304 82 L378 122"/><path d="M304 162 L378 122"/>
+          </g>
+          <circle cx="46" cy="122" r="19" fill="#E2612F" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="176" cy="122" r="24" fill="#FFF3E2" stroke="#B9471B" stroke-width="3.5"/>
+          <circle cx="296" cy="82" r="18" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="296" cy="162" r="18" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="396" cy="122" r="19" fill="#0F7B6C" stroke="#0B6356" stroke-width="3"/>
+          <g font-family="monospace" font-size="11" text-anchor="middle">
+            <text x="46" y="127" fill="#fff">s</text><text x="396" y="127" fill="#fff">t</text>
+            <text x="176" y="127" class="dfnlab r">v</text>
+          </g>
+          <g font-family="monospace" font-size="10" text-anchor="middle">
+            <rect x="92" y="98" width="30" height="18" rx="6" fill="#fff" stroke="#F0D2AC"/><text x="107" y="111" class="dfnlab g">4</text>
+            <rect x="238" y="90" width="30" height="18" rx="6" fill="#fff" stroke="#F0D2AC"/><text x="253" y="103" class="dfnlab g">2</text>
+            <rect x="238" y="140" width="30" height="18" rx="6" fill="#fff" stroke="#F0D2AC"/><text x="253" y="153" class="dfnlab g">2</text>
+            <rect x="330" y="86" width="30" height="18" rx="6" fill="#fff" stroke="#F0D2AC"/><text x="345" y="99" class="dfnlab g">2</text>
+            <rect x="330" y="140" width="30" height="18" rx="6" fill="#fff" stroke="#F0D2AC"/><text x="345" y="153" class="dfnlab g">2</text>
+          </g>
+          <text x="210" y="212" text-anchor="middle" class="dfnlab g">Σ_in f = 4 = Σ_out f　⇒　v 处守恒</text>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>注意</h3>
+        <ul class="tick ok">
+          <li>流<b>可以有反向值</b>（等价于撤销）</li>
+          <li>容量必须 <b>非负</b></li>
+          <li>多条平行边可以<b>合并容量</b></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 残量网络与反向边 ═══ -->
+<section class="slide" data-title="残量网络与反向边">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · RESIDUAL</div><h2>残量网络：<em>反向边是"撤销"</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么必须有反向边？<br>没有它会错在哪。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <div class="formula" style="font-size:11.8px">
+          正向残量 <span class="hl">c_f(u,v) = c(u,v) − f(u,v)</span><br>
+          反向残量 <span class="hl">c_f(v,u) = f(u,v)</span><br>
+          <span class="dim">即：已送的流量可以"退回"</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>反向边的作用</h3>
+        <ul class="tick arr">
+          <li>让算法能<b>撤销</b>错误的早期决策</li>
+          <li>等价于<b>翻转增广路</b>（匹配里的"让位"）</li>
+          <li>保证 <b>Ford-Fulkerson 正确性</b></li>
+        </ul>
+      </div>
+      <div class="note warn"><b>没有反向边的后果：</b>贪心增广后无法回退，最大流会<b>偏小</b>——这是网络流<b>最大的坑</b>。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">原图 → 残量网络（正向 + 反向）</text>
+          <defs>
+            <marker id="fb" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="#8A6A45"/></marker>
+            <marker id="fb2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+              <path d="M0 0 L10 5 L0 10 z" fill="#A33A64"/></marker>
+          </defs>
+          <!-- 原图 -->
+          <circle cx="110" cy="80" r="18" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="110" cy="170" r="18" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <path d="M126 88 L188 150" stroke="#B9471B" stroke-width="5" fill="none" marker-end="url(#fb)"/>
+          <g font-family="monospace" font-size="10" text-anchor="middle">
+            <text x="92" y="60" class="dfnlab r">u</text><text x="92" y="198" class="dfnlab">v</text>
+            <rect x="126" y="98" width="76" height="20" rx="7" fill="#fff" stroke="#F0D2AC"/>
+            <text x="164" y="113" class="dfnlab g">c=5, f=3</text>
+          </g>
+          <!-- 箭头 -->
+          <path d="M216 118 L252 118" stroke="#8A6A45" stroke-width="3" fill="none" marker-end="url(#fb)"/>
+          <!-- 残量 -->
+          <g>
+            <circle cx="300" cy="72" r="18" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+            <circle cx="300" cy="176" r="18" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+            <path d="M316 82 L378 146" stroke="#B9471B" stroke-width="4" fill="none" marker-end="url(#fb)"/>
+            <path d="M372 166 L312 102" stroke="#A33A64" stroke-width="4" stroke-dasharray="7 6" fill="none" marker-end="url(#fb2)"/>
+            <g font-family="monospace" font-size="10" text-anchor="middle">
+              <text x="282" y="52" class="dfnlab r">u</text><text x="282" y="204" class="dfnlab">v</text>
+              <rect x="318" y="94" width="70" height="20" rx="7" fill="#fff" stroke="#F0D2AC"/>
+              <text x="353" y="109" class="dfnlab r">正向 5−3=2</text>
+              <rect x="318" y="182" width="70" height="20" rx="7" fill="#fff" stroke="#EFCBD8"/>
+              <text x="353" y="197" class="dfnlab p">反向 =3</text>
+            </g>
+          </g>
+          <text x="210" y="228" text-anchor="middle" class="dfnlab g">反向边容量 = 已用流量 f　⇒　可以退回 3 个单位</text>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>三条铁律</h3>
+        <ul class="tick ok">
+          <li>加边 <b>必须同时加反向边</b>，容量 0</li>
+          <li>增广时<b>正减反加</b>，同一个 Δ</li>
+          <li>反向边的<b>反向边</b>指回正向边（<code>rev</code> 索引）</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 09 增广路与 FF ═══ -->
+<section class="slide" data-title="增广路与 Ford-Fulkerson">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · AUGMENT</div><h2>增广路与 <em>Ford-Fulkerson</em></h2></div>
+    <div class="hint"><b>本页回答：</b>增广怎么做？<br>为什么停止就是最大流。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>三个定义</h3>
+        <ul class="tick">
+          <li><b>增广路</b>：残量网络上 s→t 的路径</li>
+          <li><b>瓶颈</b> Δ = 路径上<b>最小残量</b></li>
+          <li><b>增广</b>：沿路正向减 Δ、反向加 Δ</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>Ford-Fulkerson 定理</h3>
+        <div class="formula" style="font-size:12.2px">
+          <span class="ok">f 是最大流</span><br>
+          <span class="hl">⇔ 残量网络中不存在 s→t 的路径</span>
+        </div>
+      </div>
+      <div class="note good"><b>类比：</b>和二分图的 Berge 定理<b>完全同构</b>——最大 ⇔ 无增广路。</div>
+    </div>
+    <div>
+      <div class="card"><h3>通用骨架</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="hl">while 存在 s→t 路径 P:</span><br>
+          &nbsp;&nbsp;Δ = min 残量(P)<br>
+          &nbsp;&nbsp;沿 P 增广 Δ　<span class="dim"># 正减反加</span><br>
+          <span class="ok">return |f|</span>
+        </div>
+      </div>
+      <div class="card tint-plum"><h3>不同算法的差异</h3>
+        <ul class="tick no">
+          <li><b>FF</b>：随便找一条（DFS），可能极慢</li>
+          <li><b>EK</b>：找<b>最短</b>增广路（BFS）</li>
+          <li><b>Dinic</b>：一次找<b>一组</b>最短增广路（阻塞流）</li>
+          <li><b>MCMF</b>：找<b>费用最小</b>的增广路</li>
+        </ul>
+      </div>
+      <div class="note"><b>心法：</b>学算法时永远问一句：<b>"它在找哪一种增广路？"</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 最大流 = 最小割 ═══ -->
+<section class="slide" data-title="最大流=最小割">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · DUALITY</div><h2>最大流 = <em>最小割</em></h2></div>
+    <div class="hint"><b>本页回答：</b>割是什么？<br>为什么两者相等。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>割的定义</h3>
+        <div class="formula" style="font-size:11.8px">
+          划分 (S,T)：s ∈ S，t ∈ T<br>
+          <span class="hl">c(S,T) = Σ c(u,v)，u∈S, v∈T</span><br>
+          <span class="dim">只算从 S 指向 T 的边</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>定理</h3>
+        <div class="formula" style="font-size:12.2px">
+          <span class="ok">最大流 = 最小割</span><br>
+          <span class="dim">Ford-Fulkerson 对偶定理</span>
+        </div>
+      </div>
+      <div class="note good"><b>推论：</b>求出最大流就能立刻拿到最小割方案——<b>不用另写算法</b>。</div>
+    </div>
+    <div>
+      <div class="card"><h3>直觉</h3>
+        <p>流"满"了 ⇒ 残量网络断开 ⇒ S = 从 s 还能到达的点集。任何 s→t 的路都必须穿过 S 到 T，所以割容量至少等于流量；又存在割恰好等于流量。</p>
+      </div>
+      <div class="card tint-teal"><h3>三个应用</h3>
+        <ul class="tick ok">
+          <li><b>方案输出</b>：哪些边被"切断"</li>
+          <li><b>最小割计数 / 字典序最小割</b></li>
+          <li><b>闭合子图 / 选与不选建模</b></li>
+        </ul>
+      </div>
+      <div class="note"><b>注意：</b>割只算 <b>S→T</b> 方向的边；T→S 的边<b>不算</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 模板：EK ═══ -->
+<section class="slide" data-title="模板：Edmonds-Karp">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · TEMPLATE</div><h2>模板一：<em class="t">Edmonds-Karp</em></h2></div>
+    <div class="hint"><b>本页回答：</b>最短增广路的写法。<br>四个关键点。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li><code>prev_v / prev_e</code> 记录<b>路径</b></li>
+          <li>BFS 只走 <code>cap > 0</code> 的边</li>
+          <li>增广时<b>正减反加</b>，同一个 Δ</li>
+          <li><code>prev_v[t] == -1</code> ⇒ 退出</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <div class="formula" style="font-size:11.8px">
+          时间 <span class="ok">O(V·E²)</span><br>
+          每次最短路长度<b>单调不减</b>
+        </div>
+      </div>
+      <div class="note good"><b>边的表示：</b><code>g[u] = [[v, cap, rev], ...]</code>，<code>rev</code> 指向反向边在 <code>g[v]</code> 的下标。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>edmonds_karp.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="core"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 12 手算 ═══ -->
+<section class="slide" data-title="手算增广过程">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · TRACE</div><h2>手算：<em class="t">三次增广到最大流</em></h2></div>
+    <div class="hint"><b>本页回答：</b>增广路怎么选？<br>逐轮对照残量。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>图</h3>
+        <p>点 <code>s, a, b, t</code><br>
+          边：<code>s→a(2), s→b(1), a→b(1), a→t(1), b→t(2)</code></p>
+        <div class="split-line"></div>
+        <table style="box-shadow:none">
+          <tr><th>轮次</th><th>增广路</th><th>瓶颈 Δ</th><th>|f|</th></tr>
+          <tr><td>1</td><td class="mono">s→a→t</td><td class="mono">1</td><td>1</td></tr>
+          <tr><td>2</td><td class="mono">s→a→b→t</td><td class="mono">1</td><td>2</td></tr>
+          <tr><td>3</td><td class="mono">s→b→t</td><td class="mono">1</td><td>3</td></tr>
+          <tr><td>4</td><td>无增广路</td><td>—</td><td><b>3</b></td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>对偶验证</h3>
+        <div class="formula" style="font-size:11.6px">
+          割 <code>({s,a,b}, {t})</code> 容量 = 1 + 2 = <span class="ok">3</span><br>
+          割 <code>({s}, {a,b,t})</code> 容量 = 2 + 1 = <span class="ok">3</span><br>
+          <span class="dim">最大流 = 最小割 = 3 ✓</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 250" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">三轮增广后的残量（括号内为残量）</text>
+          <defs><marker id="fc" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#8A6A45"/></marker>
+            <marker id="fc2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#A33A64"/></marker></defs>
+          <!-- 节点 -->
+          <circle cx="60" cy="130" r="20" fill="#E2612F" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="180" cy="80" r="18" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="180" cy="182" r="18" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="330" cy="130" r="20" fill="#0F7B6C" stroke="#0B6356" stroke-width="3"/>
+          <!-- 正向残量 -->
+          <g stroke="#B9471B" stroke-width="4" fill="none" marker-end="url(#fc2)">
+            <path d="M78 122 L162 90"/><path d="M78 138 L162 174"/><path d="M196 88 L310 124"/><path d="M196 176 L310 138"/>
+          </g>
+          <!-- 反向残量 -->
+          <g stroke="#A33A64" stroke-width="3" stroke-dasharray="6 5" fill="none" marker-end="url(#fc2)">
+            <path d="M158 76 L78 112"/><path d="M192 92 L192 164"/><path d="M192 168 L192 96"/>
+          </g>
+          <g font-family="monospace" font-size="10" text-anchor="middle">
+            <text x="46" y="135" fill="#fff" font-size="12">s</text><text x="330" y="135" fill="#fff" font-size="12">t</text>
+            <text x="180" y="52" class="dfnlab r">a</text><text x="180" y="212" class="dfnlab r">b</text>
+            <rect x="106" y="92" width="52" height="18" rx="6" fill="#fff" stroke="#F0D2AC"/><text x="132" y="105" class="dfnlab r">0 (反2)</text>
+            <rect x="106" y="140" width="34" height="18" rx="6" fill="#fff" stroke="#F0D2AC"/><text x="123" y="153" class="dfnlab r">0</text>
+            <rect x="242" y="88" width="34" height="18" rx="6" fill="#fff" stroke="#F0D2AC"/><text x="259" y="101" class="dfnlab r">0</text>
+            <rect x="242" y="132" width="34" height="18" rx="6" fill="#fff" stroke="#F0D2AC"/><text x="259" y="145" class="dfnlab r">0</text>
+            <rect x="152" y="118" width="56" height="18" rx="6" fill="#fff" stroke="#EFCBD8"/><text x="180" y="131" class="dfnlab p">a→b 0 (反1)</text>
+          </g>
+          <g font-family="monospace" font-size="10.5" text-anchor="middle">
+            <rect x="56" y="228" width="310" height="24" rx="8" fill="#2E2118"/>
+            <text x="211" y="245" fill="#7FE0C2">残量网络中 s 到 t 不通 ⇒ 最大流 = 3</text>
+          </g>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>观察</h3>
+        <ul class="tick ok">
+          <li>每轮<b>恰好一条</b>增广路，Δ = 1</li>
+          <li>第 2 轮走了 <code>a→b</code>，说明<b>不用反向边</b>也可能对</li>
+          <li>但更复杂的图<b>必须</b>靠反向边才能得到最大流</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 13 EK 复杂度 ═══ -->
+<section class="slide" data-title="EK 复杂度与单调性">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · COMPLEXITY</div><h2>EK 复杂度：<em>O(V·E²)</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么最短增广路能保证多项式？<br>单调性的价值。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>关键引理</h3>
+        <div class="formula" style="font-size:11.8px">
+          残量网络中，<span class="hl">最短增广路长度单调不减</span><br>
+          <span class="dim">每条边最多成为关键边 O(V) 次</span><br>
+          总关键边次数 <span class="ok">O(V·E)</span> ⇒ <span class="ok">O(V·E²)</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>对比 DFS 版 FF</h3>
+        <ul class="tick">
+          <li>FF (DFS)：<code>O(E·f*)</code>，与<b>流量值</b>有关</li>
+          <li>若 <code>f*</code> 极大（如 2⁶⁰），FF 直接挂掉</li>
+          <li>EK 与流量值<b>无关</b>，只与图结构有关</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>FF 的坏例子</h3>
+        <div class="formula" style="font-size:11.6px">
+          s→a (10⁶), s→b (10⁶), a→t (1), b→t (1), a→b (1)<br>
+          <span class="dim">DFS 可能交替选 s→a→b→t / s→b→a→t</span><br>
+          <span class="hl">每次只 +1，要 2×10⁶ 轮</span>
+        </div>
+      </div>
+      <div class="card tint-plum"><h3>什么时候还用 EK</h3>
+        <ul class="tick no">
+          <li><b>n ≤ 500</b>，代码量小、好调试</li>
+          <li>教学演示"最短增广路"思想</li>
+          <li>比赛里 Dinic 忘了时的<b>备胎</b></li>
+        </ul>
+      </div>
+      <div class="note good"><b>记忆：</b>EK = "每轮找一条最短路"；Dinic = "每轮把所有最短路一起找完"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 14 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：Dinic">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 02</div>
+      <div class="big">Dinic：<em style="color:var(--accent)">分层 · 当前弧 · 阻塞流</em></div>
+      <p class="lead">分层图 · 当前弧优化 · 多路增广 · 复杂度与对比<br>比赛默认写法。</p>
+    </div>
+    <div><div class="num-huge">02</div>
+      <div class="note good"><b>目标：</b>能闭卷默写 Dinic，并说清 <code>it</code> 数组的作用。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 15 分层图 ═══ -->
+<section class="slide" data-title="Dinic 分层图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · LEVEL</div><h2>Dinic：<em>分层图 + 阻塞流</em></h2></div>
+    <div class="hint"><b>本页回答：</b>分层图为什么能加速？<br>BFS 与 DFS 各干什么。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>BFS：建分层</h3>
+        <ul class="tick">
+          <li><code>level[v]</code> = 残量网络上 s→v 的<b>最短距离</b></li>
+          <li>只沿 <code>cap > 0</code> 的边扩展</li>
+          <li>若 <code>level[t] &lt; 0</code> ⇒ 无法增广，<b>结束</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>DFS：阻塞流</h3>
+        <ul class="tick ok">
+          <li>只沿 <code>level[v] == level[u] + 1</code> 的边走</li>
+          <li>一次 DFS 找到<b>一条</b>增广路</li>
+          <li>反复 DFS 直到<b>无路可走</b>（阻塞流）</li>
+          <li>再 BFS 重新分层</li>
+        </ul>
+      </div>
+      <div class="note good"><b>收益：</b>分层保证只走最短路，DFS 复用层次 ⇒ 一轮找<b>一组</b>增广路。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">分层图：level[v] = s 到 v 的最短残量距离</text>
+          <g stroke="#E4CBA3" stroke-width="2" stroke-dasharray="6 6">
+            <path d="M52 36 L52 214"/><path d="M160 36 L160 214"/><path d="M268 36 L268 214"/><path d="M376 36 L376 214"/>
+          </g>
+          <g font-family="monospace" font-size="10.5" text-anchor="middle">
+            <text x="52" y="30" class="dfnlab g">level 0</text><text x="160" y="30" class="dfnlab g">level 1</text>
+            <text x="268" y="30" class="dfnlab g">level 2</text><text x="376" y="30" class="dfnlab g">level 3</text>
+          </g>
+          <circle cx="52" cy="122" r="21" fill="#E2612F" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="160" cy="72" r="17" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="160" cy="172" r="17" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="268" cy="92" r="17" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="268" cy="162" r="17" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="376" cy="122" r="21" fill="#0F7B6C" stroke="#0B6356" stroke-width="3"/>
+          <g stroke="#D6B78C" stroke-width="2.4" fill="none">
+            <path d="M72 112 L142 82"/><path d="M72 132 L142 166"/><path d="M72 112 L142 166"/>
+            <path d="M177 78 L251 90"/><path d="M177 168 L251 160"/>
+            <path d="M285 98 L358 116"/><path d="M285 166 L358 132"/>
+          </g>
+          <path d="M251 90 L358 116" stroke="#D6B78C" stroke-width="2" stroke-dasharray="3 4" fill="none"/>
+          <text x="305" y="72" text-anchor="middle" class="dfnlab p" font-size="9.5">跨层边被丢弃</text>
+          <g font-family="monospace" font-size="10" text-anchor="middle">
+            <text x="34" y="127" fill="#fff" font-size="12">s</text><text x="376" y="127" fill="#fff" font-size="12">t</text>
+            <text x="160" y="48" class="dfnlab r">a</text><text x="160" y="200" class="dfnlab r">b</text>
+            <text x="268" y="68" class="dfnlab">c</text><text x="268" y="190" class="dfnlab">d</text>
+          </g>
+          <text x="210" y="226" text-anchor="middle" class="dfnlab g">DFS 只走 level[v] == level[u]+1 的边 ⇒ 保证最短</text>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>为什么有效</h3>
+        <p>分层后增广路长度<b>单调不减</b>，一轮内穷尽当前长度的所有增广路 ⇒ 总轮数 <code>≤ √V</code> 级别（单位容量网络）。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 16 当前弧 ═══ -->
+<section class="slide" data-title="当前弧与多路增广">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · CURRENT ARC</div><h2>当前弧优化 <em>+ 多路增广</em></h2></div>
+    <div class="hint"><b>本页回答：</b><code>it</code> 数组是干什么的？<br>没有它会慢在哪。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>当前弧 <code>it[u]</code></h3>
+        <ul class="tick">
+          <li>记录 u 的边<b>从哪条开始继续</b></li>
+          <li>一条边用尽（残量 0）后<b>不再回头</b></li>
+          <li>每轮 BFS 后 <code>it</code> <b>全部复位</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>没有它会怎样</h3>
+        <div class="formula" style="font-size:11.6px">
+          DFS 每次从 <code>g[u][0]</code> 开始<br>
+          <span class="hl">反复扫描已经用尽的边</span><br>
+          退化到 <span class="hl">O(V²E)</span> 甚至更差
+        </div>
+      </div>
+      <div class="note good"><b>收益：</b>把每条边的扫描次数从 <code>O(V)</code> 降到 <code>O(1)</code> 摊还。</div>
+    </div>
+    <div>
+      <div class="card"><h3>多路增广</h3>
+        <ul class="tick ok">
+          <li>一次 BFS 后，<b>反复</b>调用 <code>dfs(s, t, INF)</code></li>
+          <li>每次返回<b>一条</b>增广路的 Δ</li>
+          <li>返回 0 ⇒ 本轮阻塞，重新 BFS</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>易错</h3>
+        <ul class="tick no">
+          <li><code>it</code> 只在 <code>max_flow</code> 里初始化一次 → <b>错</b></li>
+          <li>必须<b>每轮 BFS 后</b>复位</li>
+          <li><code>INF</code> 要足够大（建议 <code>10**18</code>）</li>
+          <li>递归深度过大 → 改迭代或提栈</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>验证：</b>对照第 42 页的 <code>stress()</code>，Dinic 与 EK 必须一致。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 17 模板：Dinic ═══ -->
+<section class="slide" data-title="模板：Dinic">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>02 · TEMPLATE</div><h2>模板二：<em class="t">Dinic</em></h2></div>
+    <div class="hint"><b>本页回答：</b>比赛默认写法。<br>建议闭卷默写。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个部件</h3>
+        <ul class="tick">
+          <li><b>add()</b>：正向边 + 反向边</li>
+          <li><b>bfs()</b>：建 <code>level</code>，返回能否到 t</li>
+          <li><b>dfs()</b>：当前弧 + 多路增广</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>调用方式</h3>
+        <div class="formula" style="font-size:11.8px">
+          <code>dinic = Dinic(n)</code><br>
+          <code>dinic.add(u, v, cap)</code><br>
+          <code>flow = dinic.max_flow(s, t)</code><br>
+          <span class="dim">跑完后 g 里就是残量网络</span>
+        </div>
+      </div>
+      <div class="note good"><b>用途：</b>残量网络可直接用于<b>最小割构造</b>（第 20 页）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>dinic.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="dinic"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 18 复杂度对比 ═══ -->
+<section class="slide" data-title="复杂度与对比">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · COMPARE</div><h2>最大流算法<em>对比</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一道题该用哪个？<br>各自的甜点区。</div>
+  </div>
+  <table>
+    <tr><th style="width:155px">方案</th><th>时间</th><th>空间</th><th>代码量</th><th>推荐规模</th><th>备注</th></tr>
+    <tr><td>FF (DFS)</td><td class="mono">O(E·f*)</td><td class="mono">O(V+E)</td><td>极小</td><td>教学</td><td>与流量值有关</td></tr>
+    <tr><td><b>Edmonds-Karp</b></td><td class="mono">O(V·E²)</td><td class="mono">O(V+E)</td><td>小</td><td>n ≤ 500</td><td>最短增广路</td></tr>
+    <tr><td><b>Dinic</b></td><td class="mono">O(V²E)</td><td class="mono">O(V+E)</td><td>中</td><td><b>n ≤ 10⁴</b></td><td><b>默认</b></td></tr>
+    <tr><td>Dinic（单位容量）</td><td class="mono">O(E√V)</td><td class="mono">O(V+E)</td><td>中</td><td>n ≤ 10⁵</td><td>二分图匹配</td></tr>
+    <tr><td>ISAP</td><td class="mono">O(V²E)</td><td class="mono">O(V+E)</td><td>大</td><td>n ≤ 10⁴</td><td>常数更小</td></tr>
+    <tr><td>HLPP</td><td class="mono">O(V²√E)</td><td class="mono">O(V+E)</td><td>很大</td><td>极限</td><td>卡常利器</td></tr>
+    <tr><td>MCMF (Dijkstra)</td><td class="mono">O(E log V·f)</td><td class="mono">O(V+E)</td><td>中</td><td>费用流</td><td>势函数</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>怎么选</h3>
+      <ul class="tick arr">
+        <li>一般题 → <b>Dinic</b></li>
+        <li>二分图匹配 / 单位容量 → <b>Dinic</b>（自动 O(E√V)）</li>
+        <li>有费用 → <b>MCMF</b></li>
+        <li>极限数据 → <b>ISAP / HLPP</b></li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>常见误解</h3>
+      <ul class="tick no">
+        <li>"Dinic 比 EK 慢"——<b>错</b>，Dinic 严格更快</li>
+        <li>"二分图匹配要用匈牙利"——Dinic 也 O(E√V)</li>
+        <li>"反向边容量是 c"——<b>是 0</b>，流量加在上面</li>
+      </ul>
+      <div class="note good"><b>建议：</b>把 Dinic 写成<b>固定模板</b>，只改建图部分。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 19 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：最小割">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 03</div>
+      <div class="big">最小割：<em style="color:var(--teal)">方案 · 闭合子图 · 建模</em></div>
+      <p class="lead">割的构造 · 方案输出 · 最大权闭合子图 · 选与不选建模<br>网络流最"值钱"的对偶量。</p>
+    </div>
+    <div><div class="num-huge t">03</div>
+      <div class="note good"><b>目标：</b>能独立写出最小割方案输出，并把"选/不选"类问题转成割。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 20 最小割构造 ═══ -->
+<section class="slide" data-title="最小割构造">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · MIN-CUT</div><h2>最小割构造：<em class="t">残量可达集</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么从最大流拿最小割？<br>为什么这样是对的。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三步</h3>
+        <ul class="tick arr">
+          <li>跑完 <code>max_flow</code>（残量留在 <code>g</code>）</li>
+          <li>在<b>残量网络</b>上从 s BFS，得可达集 <code>S</code></li>
+          <li>割 = <span class="hl">(S, V\S)</span>；割边 = S 到 V\S 的<b>原图</b>边</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>原容量怎么恢复</h3>
+        <div class="formula" style="font-size:11.6px">
+          跑完后 <code>g[u][i][1]</code> = 正向残量<br>
+          <code>g[v][rev][1]</code> = 反向残量 = 已用流量<br>
+          <span class="hl">原容量 = 两者之和</span>
+        </div>
+      </div>
+      <div class="note good"><b>正确性：</b>残量上 s 到不了 t ⇒ S 与 T 被"断开"，这就是最小割。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>min_cut.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="mincut"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 21 最大权闭合子图 ═══ -->
+<section class="slide" data-title="最大权闭合子图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · CLOSURE</div><h2>最大权<em>闭合子图</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么是闭合子图？<br>为什么转成最小割。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <div class="formula" style="font-size:11.8px">
+          闭合子图 C：u ∈ C 且 u→v ⇒ <span class="hl">v ∈ C</span><br>
+          <span class="dim">"选 u 就必须选 v"的传递闭包</span><br>
+          目标：最大化 <span class="ok">Σ w(i), i ∈ C</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>建图</h3>
+        <ul class="tick arr">
+          <li>正权点：<code>s → i</code>，容量 <code>w[i]</code></li>
+          <li>负权点：<code>i → t</code>，容量 <code>-w[i]</code></li>
+          <li>依赖边 <code>u → v</code>：容量 <b>INF</b>（不能被割）</li>
+          <li><span class="hl">最大权 = 正权总和 − 最小割</span></li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>直觉</h3>
+        <p>最小割把点分成"<b>选（s 侧）</b>"和"<b>不选（t 侧）</b>"。割掉 <code>s→i</code> 等于"放弃正权 i"；割掉 <code>i→t</code> 等于"接受负权 i 的代价"。INF 依赖边保证<u>不违反依赖</u>。</p>
+      </div>
+      <div class="card tint-teal"><h3>典型题</h3>
+        <ul class="tick ok">
+          <li><b>太空飞行计划</b>：实验（正权）依赖仪器（负权）</li>
+          <li>项目选择：收益/成本 + 前置条件</li>
+          <li>最大密度子图（二分 + 割）</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>易错：</b>依赖边容量必须是<b>真正够大</b>的 INF（≥ 所有权绝对值之和），否则会被误割。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 22 模板：闭合子图 ═══ -->
+<section class="slide" data-title="模板：最大权闭合子图">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · TEMPLATE</div><h2>模板三：<em class="t">最大权闭合子图</em></h2></div>
+    <div class="hint"><b>本页回答：</b>闭合子图怎么写？<br>方案怎么取。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>关键点</h3>
+        <ul class="tick">
+          <li>正权点接 <code>s</code>，负权点接 <code>t</code></li>
+          <li>依赖边容量 = <b>INF</b></li>
+          <li>答案 = <code>正权总和 − 最小割</code></li>
+          <li>选中点 = 残量上 <code>s</code> <b>可达</b>的原点</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>weight = [3, -1]</code>，<code>deps = [(0,1)]</code><br>
+          <span class="dim">选 0 必选 1 ⇒ 3-1 = 2</span><br>
+          <span class="ok">输出 2，chosen = [0, 1]</span>
+        </div>
+      </div>
+      <div class="note good"><b>自检：</b>选中点集必须<b>满足闭合性</b>（u 选则 v 选）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>closure.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="closure"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 23 割的含义 ═══ -->
+<section class="slide" data-title="割的含义与方案输出">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · MEANING</div><h2>割的<em>含义</em>与方案输出</h2></div>
+    <div class="hint"><b>本页回答：</b>割代表什么决策？<br>怎么把割转成答案。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>选 / 不选</h3>
+      <p>S 侧 = <b>选</b>，T 侧 = <b>不选</b>。割容量 = 付出的总代价。</p>
+      <div class="split-line"></div><p class="muted">→ 闭合子图、项目选择</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>切 / 不切</h3>
+      <p>割边 = 被<b>切断</b>的管道；最小割 = 最小断流代价。</p>
+      <div class="split-line"></div><p class="muted">→ 网络可靠性、防御</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>方案输出</h3>
+      <p>把 <code>min_cut</code> 返回的 <code>S</code> 直接翻译成"选中的对象"。</p>
+      <div class="split-line t"></div><p class="muted">→ 输出具体方案而非数值</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>进阶：最小割计数</h3>
+      <ul class="tick">
+        <li><b>最小割边数</b>：求 1 条最小割，删掉后再求，直到流量变化</li>
+        <li><b>字典序最小割</b>：按顺序尝试"把点推到 T 侧"</li>
+        <li><b>必须割 / 可选割</b>：改动容量再判</li>
+      </ul>
+    </div>
+    <div class="card tint-plum"><h3>易错</h3>
+      <ul class="tick no">
+        <li>割只算 <b>S→T</b> 方向的边，T→S 不算</li>
+        <li>必须在 <b>max_flow 之后</b>再 BFS</li>
+        <li>INF 边割不动 ⇒ 依赖不被违反</li>
+        <li>权可能为负 ⇒ 先判全负/全正情况</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>凡是"选一组对象、有依赖或冲突、求最优"，先想<b>能不能用割表示代价</b>。</div>
+  </div>
+</section>
+
+<!-- ═══ 24 章节 ═══ -->
+<section class="slide section-slide plum" data-title="章节：费用流">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker plum"><i></i>CHAPTER 04</div>
+      <div class="big">费用流：<em style="color:var(--plum)">最短增广 · 势函数</em></div>
+      <p class="lead">最小费用最大流 · SPFA · Dijkstra + Johnson 势 · 负环与 k-增广<br>给流加上"价签"。</p>
+    </div>
+    <div><div class="num-huge p">04</div>
+      <div class="note warn"><b>要领：</b>找<b>费用最小</b>的增广路，而不是任意一条。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 25 费用流定义 ═══ -->
+<section class="slide" data-title="费用流定义">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · MCMF</div><h2>费用网络与<em class="p">最小费用流</em></h2></div>
+    <div class="hint"><b>本页回答：</b>费用流在求什么？<br>两个目标怎么排优先级。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <div class="formula" style="font-size:11.8px">
+          边 (u,v) 带容量 <code>c(u,v)</code> 与费用 <code>w(u,v)</code><br>
+          总费用 <span class="hl">cost(f) = Σ w(u,v)·f(u,v)</span><br>
+          目标：先<b>流量最大</b>，再<b>费用最小</b>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>两种问法</h3>
+        <ul class="tick">
+          <li><b>最小费用最大流</b>（MCMF）：流量必须最大</li>
+          <li><b>固定流量 k 的最小费用</b>：只增广 k 单位</li>
+          <li><b>最大费用流</b>：费用取负，转最小</li>
+        </ul>
+      </div>
+      <div class="note good"><b>核心：</b>每次沿<b>费用最短</b>的增广路增广，直到无法增广。</div>
+    </div>
+    <div>
+      <div class="card"><h3>反向边的费用</h3>
+        <div class="formula" style="font-size:11.6px">
+          正向边 <code>(u,v,c,w)</code><br>
+          反向边 <code>(v,u,0,-w)</code><br>
+          <span class="hl">费用取负 ⇒ "退回"要退钱</span>
+        </div>
+      </div>
+      <div class="card tint-plum"><h3>负权边怎么办</h3>
+        <ul class="tick no">
+          <li>SPFA 版：允许负权，但<b>不能有负环</b></li>
+          <li>Dijkstra 版：用<b>势函数</b>把边权抬成非负</li>
+          <li>初始有负费用 ⇒ 先用势或 SPFA 初始化</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>注意：</b>求"最大收益"时把费用设为 <code>-收益</code>，最后取负。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 26 SPFA 费用流 ═══ -->
+<section class="slide" data-title="最短增广路：SPFA">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>04 · TEMPLATE</div><h2>模板四：<em class="t">MCMF（SPFA 版）</em></h2></div>
+    <div class="hint"><b>本页回答：</b>最朴素的费用流写法。<br>容易理解、易写错。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>流程</h3>
+        <ul class="tick arr">
+          <li>SPFA 求 <code>s→t</code> 费用最短路</li>
+          <li>沿路增广 Δ（最小残量）</li>
+          <li>费用累加 <code>Δ · dist[t]</code></li>
+          <li>直到 <code>dist[t] == INF</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="hl">O(V·E·flow)</span>，最坏很慢<br>
+          <span class="dim">实际随机数据通常够用</span>
+        </div>
+      </div>
+      <div class="note good"><b>何时用：</b>n ≤ 500、边少、好调试；或需要支持<b>负权</b>时。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>mcmf_spfa.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="spfa"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 27 势函数 ═══ -->
+<section class="slide" data-title="势函数 + Dijkstra">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · POTENTIAL</div><h2>势函数：<em>Johnson 抬权</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么 Dijkstra 能用于负权？<br>势怎么更新。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>核心等式</h3>
+        <div class="formula" style="font-size:11.6px">
+          修正边权 <span class="hl">w' = w + h[u] − h[v]</span><br>
+          可行势：<span class="ok">w' ≥ 0</span><br>
+          <span class="dim">最短路不变（只是整体平移）</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>势怎么更新</h3>
+        <ul class="tick arr">
+          <li>初始 <code>h = 0</code>（或 SPFA 预处理）</li>
+          <li>每轮 Dijkstra 后 <code>h[i] += dist[i]</code></li>
+          <li>只对<b>可达</b>点更新</li>
+          <li><code>h[s]</code> 恒为 0 ⇒ <code>h[t]</code> = 原图最短路长</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>为什么对</h3>
+        <p>若 <code>h</code> 是<b>可行势</b>（对残量所有边 <code>w + h[u] − h[v] ≥ 0</code>），Dijkstra 就合法。增广后残量变化，但更新后的 <code>h</code> 仍保持可行性（Bellman-Ford 不等式）。</p>
+      </div>
+      <div class="card tint-teal"><h3>复杂度</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="ok">O(E log V · flow)</span><br>
+          <span class="dim">比 SPFA 稳定得多</span>
+        </div>
+        <ul class="tick ok">
+          <li>比赛默认写法</li>
+          <li>需要支持负费用时也能用</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>易错：</b><code>h[i] += dist[i]</code> 必须在 <code>cost += d * h[t]</code> <b>之前</b>执行。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 28 模板：MCMF ═══ -->
+<section class="slide" data-title="模板：MCMF">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>04 · TEMPLATE</div><h2>模板五：<em class="t">MCMF（Dijkstra + 势）</em></h2></div>
+    <div class="hint"><b>本页回答：</b>费用流标准实现。<br>建议闭卷默写。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>关键点</h3>
+        <ul class="tick">
+          <li>边存 <code>[v, cap, cost, rev]</code></li>
+          <li>反向边 <code>cost = -w</code></li>
+          <li>每次 <code>heappush</code> 用 <code>w + h[u] - h[v]</code></li>
+          <li><code>cost += d * h[t]</code>（不是 <code>dist[t]</code>）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>变体</h3>
+        <ul class="tick ok">
+          <li><b>最大费用</b>：<code>cost</code> 取负</li>
+          <li><b>只送 k 单位</b>：<code>if flow == k: break</code></li>
+          <li><b>无费用最大流</b>：<code>cost</code> 全 0（退化为 Dinic 的 EK 版）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>自检：</b>对照 SPFA 版，flow 与 cost 必须一致。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>mcmf.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="mcmf"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 29 费用流对比与负环 ═══ -->
+<section class="slide" data-title="费用流对比与负环">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · PITFALLS</div><h2>费用流<em>对比与负环</em></h2></div>
+    <div class="hint"><b>本页回答：</b>SPFA 与 Dijkstra 怎么选？<br>负环怎么处理。</div>
+  </div>
+  <table>
+    <tr><th style="width:170px">方案</th><th>时间</th><th>负权</th><th>负环</th><th>推荐</th></tr>
+    <tr><td><b>MCMF (SPFA)</b></td><td class="mono">O(V·E·flow)</td><td>✓</td><td>会挂</td><td>n 小 / 好调试</td></tr>
+    <tr><td><b>MCMF (Dijkstra+势)</b></td><td class="mono">O(E log V·flow)</td><td>✓（初值可行）</td><td>会挂</td><td><b>默认</b></td></tr>
+    <tr><td>消圈算法</td><td class="mono">O(V·E·flow)</td><td>✓</td><td>✓</td><td>一般费用流</td></tr>
+    <tr><td>上下界费用流</td><td class="mono">O(E log V·flow)</td><td>✓</td><td>需预处理</td><td>有流量下限</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>负环的三种情况</h3>
+      <ul class="tick">
+        <li>题目保证无负环 ⇒ 直接跑</li>
+        <li>有负环 ⇒ 用<b>消圈</b>或先<b>消去负环</b></li>
+        <li>负环在<b>残量</b>里出现 ⇒ 说明初始可行流不对</li>
+      </ul>
+    </div>
+    <div class="card tint-plum"><h3>易错清单</h3>
+      <ul class="tick no">
+        <li>反向边费用写成 <code>+w</code> → <b>全错</b></li>
+        <li><code>cost += d*dist[t]</code> 而非 <code>d*h[t]</code> → 费用错</li>
+        <li>势未对可达点更新 → 权重变负，Dijkstra 挂</li>
+        <li>求最大收益忘了取负 → 结果反号</li>
+      </ul>
+    </div>
+    <div class="note"><b>记忆：</b>费用流 = "Dinic 的思想 + 最短路的骨架"。</div>
+  </div>
+</section>
+
+<!-- ═══ 30 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：建模 24 题">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 05</div>
+      <div class="big">建模 24 题：<em style="color:var(--accent)">把题变成流网络</em></div>
+      <p class="lead">闭合子图 · 拆点 · 二分答案 · 费用流 · 上下界 · 多重匹配<br>经典"网络流 24 题"的建模套路。</p>
+    </div>
+    <div><div class="num-huge">05</div>
+      <div class="note good"><b>要领：</b>问自己"<b>源在哪、汇在哪、容量代表什么</b>"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 31 建模总纲 ═══ -->
+<section class="slide" data-title="建模总纲">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · PATTERNS</div><h2>六种<em>建模套路</em></h2></div>
+    <div class="hint"><b>本页回答：</b>拿到题怎么拆成流网络？<br>每条都配了识别信号。</div>
+  </div>
+  <table>
+    <tr><th style="width:160px">套路</th><th>识别信号</th><th style="width:180px">典型题</th><th>关键建图</th></tr>
+    <tr><td><b>最大权闭合子图</b></td><td>选项目、有依赖、权可正可负</td><td>太空飞行计划</td><td>正权→s，负权→t，依赖 INF</td></tr>
+    <tr><td><b>拆点</b></td><td>点有容量 / 只能用一次 / 有点权</td><td>LIS、深海机器人、火星探险</td><td>u_in → u_out</td></tr>
+    <tr><td><b>二分答案 + 流</b></td><td>最大值最小 / 最小值最大</td><td>星际转移</td><td>二分 T，判定满流</td></tr>
+    <tr><td><b>费用流</b></td><td>最小化总代价 / 最大化总收益</td><td>数字梯形、负载平衡</td><td>费用 = 代价，容量 = 限制</td></tr>
+    <tr><td><b>多重匹配</b></td><td>一个可配多个</td><td>圆桌问题</td><td>左点容量 = 份数</td></tr>
+    <tr><td><b>上下界流</b></td><td>每条边有流量下限</td><td>流量平衡</td><td>超级源汇 + t→s</td></tr>
+    <tr><td><b>最小路径覆盖</b></td><td>最少链、点不相交</td><td>最小路径覆盖、魔术球</td><td>拆点 + 匹配</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>识别信号</h3>
+      <ul class="tick">
+        <li>"最少删几个" / "最大收益" / "最小总代价"</li>
+        <li>"有依赖 / 前置条件"、"互斥 / 容量"</li>
+        <li>"能否在 T 内完成"（二分 + 判定）</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>心法三问</h3>
+      <ul class="tick ok">
+        <li><b>源</b>代表什么？<b>汇</b>代表什么？</li>
+        <li><b>容量</b>代表什么限制？</li>
+        <li><b>费用</b>代表什么代价？</li>
+      </ul>
+      <div class="note good"><b>一句：</b>把"选择的代价"编码成<b>割</b>，把"资源的限制"编码成<b>容量</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 32 闭合子图例题 ═══ -->
+<section class="slide" data-title="套路 A：闭合子图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · PATTERN A</div><h2>套路 A：<em>最大权闭合子图</em></h2></div>
+    <div class="hint"><b>本页回答：</b>闭合子图怎么认？<br>用太空飞行计划走一遍。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>题意（太空飞行计划）</h3>
+        <p>有 <code>m</code> 个实验，做实验 <code>i</code> 获利 <code>p_i</code>；每个实验需要若干仪器，购买仪器 <code>j</code> 花费 <code>c_j</code>。每种仪器可重复用于多个实验。求最大利润。</p>
+      </div>
+      <div class="card tint-amber"><h3>建模</h3>
+        <ul class="tick arr">
+          <li>实验 = <b>正权点</b>（<code>p_i</code>）</li>
+          <li>仪器 = <b>负权点</b>（<code>-c_j</code>）</li>
+          <li>实验 → 所需仪器 = <b>依赖边 INF</b></li>
+          <li><span class="hl">最大利润 = Σp − 最小割</span></li>
+        </ul>
+      </div>
+      <div class="note good"><b>方案：</b>残量上 s 可达的实验 = 要做的；可达的仪器 = 要买的。</div>
+    </div>
+    <div>
+      <div class="card"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.6px">
+          实验：A(+10)、B(+8)；仪器：X(−5)、Y(−3)<br>
+          A 需 X；B 需 X、Y<br>
+          <span class="dim">都做：10+8−5−3 = 10；只做 A：10−5 = 5</span><br>
+          <span class="ok">答案 10，选 {A, B, X, Y}</span>
+        </div>
+      </div>
+      <div class="card tint-plum"><h3>易错</h3>
+        <ul class="tick no">
+          <li>依赖边容量不够大 → 依赖被"割断"</li>
+          <li>把仪器也当正权点 → 公式错</li>
+          <li>忘了减 <code>Σp</code> → 结果是割不是收益</li>
+          <li>仪器可复用 ⇒ 依赖边方向别搞反</li>
+        </ul>
+      </div>
+      <div class="note"><b>举一反三：</b>项目选择、最大密度子图（二分密度后转割）都是同一骨架。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 33 拆点 ═══ -->
+<section class="slide" data-title="套路 B：拆点">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>05 · TEMPLATE</div><h2>套路 B：<em class="t">拆点</em></h2></div>
+    <div class="hint"><b>本页回答：</b>点有容量/费用怎么办？<br>下标怎么定。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>核心</h3>
+        <ul class="tick arr">
+          <li>点 <code>u</code> 拆成 <code>u_in = 2u</code>，<code>u_out = 2u+1</code></li>
+          <li><code>u_in → u_out</code>：容量 = 点容量，费用 = 点费用</li>
+          <li>进 u 的边改连 <code>u_in</code>；出 u 的边改从 <code>u_out</code> 出</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>三种用途</h3>
+        <ul class="tick ok">
+          <li>每人只能做 <b>1</b> 个任务 → 点容量 1</li>
+          <li>点最多经过 <b>k</b> 次 → 点容量 k</li>
+          <li>经过点要<b>交税</b> → 点费用 &gt; 0</li>
+        </ul>
+      </div>
+      <div class="note good"><b>典型：</b>最长递增子序列（不相交计数）、深海机器人、火星探险。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>split.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="split"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 34 二分答案 ═══ -->
+<section class="slide" data-title="套路 C：二分答案 + 流">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>05 · TEMPLATE</div><h2>套路 C：<em class="t">二分答案 + 流</em></h2></div>
+    <div class="hint"><b>本页回答：</b>"最大值最小"怎么拆？<br>判定函数怎么建。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>识别信号</h3>
+        <ul class="tick">
+          <li>"最小化<b>最大</b>完成时间"</li>
+          <li>"最大化<b>最小</b>容量"</li>
+          <li>"能否在 T 内完成"</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>三步</h3>
+        <ul class="tick arr">
+          <li><b>二分</b>答案 <code>T</code></li>
+          <li>按 <code>T</code> <b>过滤</b>边 / 建图</li>
+          <li><b>判定</b>是否满流 / 满匹配</li>
+        </ul>
+      </div>
+      <div class="note good"><b>关键：</b>判定必须<b>单调</b>（可行 ⇒ 更大的也可行）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>bisect.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bisect"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 35 费用流例题 ═══ -->
+<section class="slide" data-title="套路 D：费用流例题">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>05 · TEMPLATE</div><h2>套路 D：<em class="t">费用流（数字梯形）</em></h2></div>
+    <div class="hint"><b>本页回答：</b>一个完整的费用流建模。<br>三种约束怎么变。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>题意</h3>
+        <p>数字梯形 <code>n</code> 行、第 <code>i</code> 行 <code>i</code> 个数。从顶端走到底端，求<b>数字和最大</b>的 <code>n</code> 条路径。</p>
+      </div>
+      <div class="card tint-amber"><h3>三问</h3>
+        <ul class="tick">
+          <li><b>问 1</b>：路径<b>点不相交</b> → 点容量 1</li>
+          <li><b>问 2</b>：路径<b>边不相交</b> → 边容量 1</li>
+          <li><b>问 3</b>：无限制 → 容量 INF</li>
+        </ul>
+      </div>
+      <div class="note good"><b>技巧：</b>求"最大和" ⇒ 费用取负；求完再取负。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>trapezoid.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="model_case"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 36 上下界流 ═══ -->
+<section class="slide" data-title="套路 E：上下界流">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>05 · TEMPLATE</div><h2>套路 E：<em class="p">上下界可行流</em></h2></div>
+    <div class="hint"><b>本页回答：</b>流量有下限怎么办？<br>符号约定最易写反。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>符号约定（关键）</h3>
+        <div class="formula" style="font-size:11.4px">
+          边 <code>(u,v,l,r)</code>：拆成 <code>u→v</code> 容量 <code>r−l</code><br>
+          <code>b[u] -= l</code>，<code>b[v] += l</code><br>
+          <span class="hl">b[i] > 0 ⇒ SS → i</span>（要净流出）<br>
+          <span class="hl">b[i] < 0 ⇒ i → TT</span>（要净流入）
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>判定</h3>
+        <ul class="tick arr">
+          <li>有源汇 ⇒ 加 <code>t→s</code> 容量 INF 转循环</li>
+          <li>跑 <code>SS→TT</code> 最大流</li>
+          <li>满流 ⇒ 存在可行流</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>最容易错：</b>SS/TT 的方向。<span class="muted">已从守恒式重新推导，见右。</span></div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>bounded.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bounded"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 37 24 题速查 ═══ -->
+<section class="slide" data-title="24 题分类速查">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · INDEX</div><h2>经典"网络流 24 题"<em>分类速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>一类题对应哪个套路？<br>题号以官网为准。</div>
+  </div>
+  <table>
+    <tr><th style="width:120px">类别</th><th>题型</th><th style="width:170px">代表题</th><th>套路</th></tr>
+    <tr><td>匹配 / 覆盖</td><td>最小路径覆盖、魔术球</td><td>最小路径覆盖</td><td class="mono">拆点 + 匹配</td></tr>
+    <tr><td>多重匹配</td><td>圆桌问题、人员分配</td><td>圆桌问题</td><td class="mono">容量 = 份数</td></tr>
+    <tr><td>最大权闭合</td><td>太空飞行计划</td><td>太空飞行计划</td><td class="mono">闭合子图</td></tr>
+    <tr><td>拆点限制</td><td>最长递增子序列、深海机器人、火星探险</td><td>LIS 问题</td><td class="mono">u_in→u_out</td></tr>
+    <tr><td>费用流</td><td>数字梯形、负载平衡、运输问题</td><td>数字梯形</td><td class="mono">MCMF</td></tr>
+    <tr><td>二分 + 流</td><td>星际转移、最大密度子图</td><td>星际转移</td><td class="mono">二分 + 判定</td></tr>
+    <tr><td>上下界</td><td>流量平衡、循环流</td><td>可回收太空舱</td><td class="mono">超级源汇</td></tr>
+    <tr><td>最小割</td><td>方格取数、黑白染色</td><td>方格取数</td><td class="mono">选/不选建模</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>建议刷法</h3>
+      <ul class="tick arr">
+        <li>先刷<b>匹配 / 覆盖</b>（巩固最大流）</li>
+        <li>再刷<b>闭合子图 / 最小割</b>（练建模）</li>
+        <li>最后<b>费用流 / 上下界</b>（练细节）</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>每题写三句话</h3>
+      <p class="muted">① 源/汇代表什么 ② 容量代表什么 ③ 费用代表什么。<br>写不出来 = 还没建模成功。</p>
+      <div class="note good"><b>心得：</b>24 题的<b>算法不难</b>，难的是<b>建图</b>——多想"割代表什么代价"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 38 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：工程">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 06</div>
+      <div class="big">工程：<em style="color:var(--teal)">避坑 · 提速 · 验证</em></div>
+      <p class="lead">易错清单 · 模板合集 · 对拍脚本 · 题单<br>把网络流代码写成"永不写错"。</p>
+    </div>
+    <div><div class="num-huge t">06</div>
+      <div class="note good"><b>要领：</b>bug 集中在<b>反向边、it 复位、割方向、费用符号</b>四处。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 39 易错清单 ═══ -->
+<section class="slide" data-title="易错清单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PITFALLS</div><h2>易错清单 <em>Checklist</em></h2></div>
+    <div class="hint"><b>本页回答：</b>提交前自检什么？<br>（每条都对应本讲义的坑）</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-plum"><h3>最大流</h3>
+      <ul class="tick no">
+        <li>忘了<b>反向边</b> → 结果偏小</li>
+        <li>反向边容量写成 <code>c</code> 而非 0</li>
+        <li><code>it</code> 没每轮 BFS 后复位</li>
+        <li><code>INF</code> 太小 → 增广量不够</li>
+        <li>递归深度过大 → 栈溢出</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>最小割 / 建模</h3>
+      <ul class="tick">
+        <li>割方向搞反（只算 S→T）</li>
+        <li>INF 边不够大 → 依赖被割断</li>
+        <li>闭合子图忘了减 <code>Σ正权</code></li>
+        <li>拆点下标 <code>2u / 2u+1</code> 写混</li>
+        <li>二分答案判定不单调</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>费用流</h3>
+      <ul class="tick ok">
+        <li>反向边费用写成 <code>+w</code></li>
+        <li><code>cost += d*dist[t]</code> 应为 <code>d*h[t]</code></li>
+        <li>势未对可达点更新 → Dijkstra 挂</li>
+        <li>求最大收益忘了取负</li>
+        <li>负环未处理 → 死循环</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>提交前 30 秒四连问：</b>① 反向边加了吗 ② <code>it</code> 复位了吗 ③ 割是 S→T 吗 ④ 反向费用是 <code>-w</code> 吗。</div>
+</section>
+
+<!-- ═══ 40 模板合集 ═══ -->
+<section class="slide" data-title="模板合集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · TOOLBOX</div><h2>模板合集：<em>一页速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>实战里需要的都在这里。<br>建议直接抄进模板库。</div>
+  </div>
+  <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>flow_toolbox.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="toolbox"></code></pre></pre>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3>扩展点</h3><p>加费用 → 用 <code>MCMF</code>；加下界 → 用 <code>feasible_flow</code>。</p></div>
+    <div class="card tint-teal"><h3>多组数据</h3><p>每组新建 <code>Dinic / MCMF</code>，不要复用 <code>g</code>。</p></div>
+    <div class="card"><h3>输入</h3><p>大数据一次性读入；邻接表用 <code>list of list</code>。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 41 改一改就能用 ═══ -->
+<section class="slide" data-title="改一改就能用">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · ADAPT</div><h2>改一改<em>就能用</em>：四个改点</h2></div>
+    <div class="hint"><b>本页回答：</b>换一道题要改哪里？<br>只有四处。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3><span class="n">1</span>建图</h3>
+      <p>谁是源、谁是汇；边的含义是什么（可连接 / 可使用 / 可传输）。</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>求解量</h3>
+      <p>最大流 → <code>max_flow</code>；最小割 → <code>min_cut</code>；最优代价 → <code>MCMF</code>。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>输出</h3>
+      <p>数值、方案、割边、选中点集——都是<b>同一份残量网络</b>的不同视角。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>规模</h3>
+      <p>看 <code>V, E</code> 决定用 Dinic、ISAP 还是 MCMF；有费用用势函数版。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>换题检查表</h3>
+      <ul class="tick">
+        <li>源 / 汇的语义搞对了吗？</li>
+        <li>容量的语义是"限制"还是"代价"？</li>
+        <li>要的是数值还是具体方案？</li>
+        <li>有没有费用 / 下界 / 顺序约束？</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>什么时候该换框架</h3>
+      <p>有费用 → MCMF；有下界 → 上下界流；有奇环匹配 → 带花树；NP-hard → 回溯/DP/启发式。</p>
+      <div class="note"><b>别硬上：</b>把 NP-hard 问题硬套网络流，结果是"错"而不是"略差"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 42 验证 ═══ -->
+<section class="slide" data-title="调试与验证">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · VERIFY</div><h2>怎么验证答案<em>是对的</em></h2></div>
+    <div class="hint"><b>本页回答：</b>三种算法怎么互相对拍？<br>边界用例有哪些。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card tint-teal"><h3><span class="n t">1</span>三算法对拍</h3>
+        <p>暴力 FF 作<b>基准</b>，与 EK / Dinic 比对。随机小图 <b>1000 组</b>，三个数必须<b>完全相等</b>。</p>
+      </div>
+      <div class="card tint-amber"><h3><span class="n">3</span>边界用例</h3>
+        <ul class="tick">
+          <li>无边图（流 0）</li>
+          <li>单条边（流 = 容量）</li>
+          <li>s 与 t 不连通</li>
+          <li>容量为 0 的边</li>
+          <li>重边（容量相加）</li>
+          <li>自环</li>
+          <li>全 INF 容量</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3><span class="n">2</span>不变量检查</h3>
+        <ul class="tick ok">
+          <li><b>最大流 = 最小割</b>（必查）</li>
+          <li>残量网络上 <code>s</code> 不可达 <code>t</code></li>
+          <li>每点<b>流量守恒</b></li>
+          <li><code>flow ≤ Σ出边容量(s)</code></li>
+          <li>闭合子图<b>满足闭合性</b></li>
+          <li>MCMF 两版 flow / cost <b>一致</b></li>
+        </ul>
+      </div>
+      <div class="note good"><b>小技巧：</b>随机<b>打乱点编号</b>重跑，答案应不变——能抓出下标类 bug。</div>
+      <div class="note warn"><b>最小割自检：</b>遍历所有边，确认 S→T 的容量之和 = 最大流。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 43 题单 ═══ -->
+<section class="slide" data-title="练习题单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PRACTICE</div><h2>练习题单（洛谷 / LibreOJ / 本地）</h2></div>
+    <div class="hint"><b>本页回答：</b>课后练什么？<br>每张卡都写了<b>题意</b>，可按图索骥。</div>
+  </div>
+  <div class="cols c3" style="gap:8px">
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3376" target="_blank"><span class="src lg">洛谷</span><span class="t">P3376 【模板】网络最大流</span><span class="d">题意：给流网络求最大流。先闭卷默写 Dinic，再换 ISAP 对照。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6001" target="_blank"><span class="src lg">LibreOJ</span><span class="t">#6001. 太空飞行计划</span><span class="d">题意：实验获利、仪器花费、实验依赖仪器，求最大利润。经典最大权闭合子图。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6002" target="_blank"><span class="src lg">LibreOJ</span><span class="t">#6002. 最小路径覆盖</span><span class="d">题意：DAG 最小点不相交路径覆盖并输出方案。拆点 + 最大匹配。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6004" target="_blank"><span class="src lg">LibreOJ</span><span class="t">#6004. 圆桌问题</span><span class="d">题意：单位派代表坐圆桌，同单位不同桌。二分图多重匹配 / 网络流。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6006" target="_blank"><span class="src lg">LibreOJ</span><span class="t">#6006. 数字梯形</span><span class="d">题意：数字梯形三问（点不相交 / 边不相交 / 无限制）。费用流 + 拆点。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2756" target="_blank"><span class="src lg">洛谷</span><span class="t">P2756 飞行员配对方案问题</span><span class="d">题意：外籍/本籍飞行员配对。二分图匹配，可用 Dinic 一并练手。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2764" target="_blank"><span class="src lg">洛谷</span><span class="t">P2764 最小路径覆盖问题</span><span class="d">题意：DAG 最小点不相交路径覆盖，输出具体路径。拆点 + 输出方案。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3386" target="_blank"><span class="src lg">洛谷</span><span class="t">P3386 【模板】二分图最大匹配</span><span class="d">题意：二分图最大匹配。用 Dinic 与匈牙利/HK 对照跑，验证 O(E√V)。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">闭合子图手算</span><span class="d">用第 22 页的 max_weight_closure，手算 weight=[3,-1] 与 [3,-5] 两个样例。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">拆点 LIS</span><span class="d">跑第 33 页的 lis_disjoint，与暴力 DP 对拍不相交 LIS 条数。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">二分答案 + 流</span><span class="d">跑第 34 页的 min_makespan，与二分 + 贪心对照最小化最大完成时间。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">三算法随机对拍</span><span class="d">跑第 42 页的 stress()，暴力 / EK / Dinic 必须一致，且最大流=最小割。</span></a>
+  </div>
+  <div class="note"><b>节奏建议：</b>基础 3 题（P3376、P3386、P2756）→ 割与闭合 3 题（LOJ 6001、本地闭合子图、P2764）→ 费用流 6 题（LOJ 6004/6006、本地拆点、二分、对拍）。每题写 100 字题解：<b>源/汇 → 容量 → 费用 → 为什么是流</b>。</div>
+</section>
+
+<!-- ═══ 44 总结 ═══ -->
+<section class="slide" data-title="总结">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · SUMMARY</div><h2>带走这 <em>五句话</em></h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记住一页，<br>就记这一页。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><div class="step"><div class="idx">1</div><div><b>核心动作是"增广"：</b>在残量网络上找 s→t 路径，加 Δ 流量（正减反加）。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">2</div><div><b>反向边 = 撤销能力。</b>缺了它，最大流会偏小——这是最大坑。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">3</div><div><b>最大流 = 最小割。</b>跑完就能拿到方案，用残量可达集 <code>S</code> 翻译。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">4</div><div><b>费用流 = 最短增广。</b>用势函数把边权抬非负，就能上 Dijkstra。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">5</div><div><b>建模三问：</b>源/汇代表什么、容量代表什么、费用代表什么。</div></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 350 260" preserveAspectRatio="xMidYMid meet">
+          <circle cx="175" cy="130" r="115" fill="#E2612F" opacity=".12" class="pulse"/>
+          <circle cx="175" cy="130" r="52" fill="#2E2118"/>
+          <text x="175" y="122" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="11">最大流</text>
+          <text x="175" y="140" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="11">Dinic</text>
+          <g font-family="monospace" font-size="10.5" fill="#7A4A22">
+            <rect x="112" y="10" width="126" height="30" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="175" y="30" text-anchor="middle">残量网络</text>
+            <rect x="248" y="58" width="96" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="296" y="78" text-anchor="middle">最小割</text>
+            <rect x="252" y="170" width="92" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="298" y="190" text-anchor="middle">费用流</text>
+            <rect x="100" y="216" width="150" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="236" text-anchor="middle">闭合子图</text>
+            <rect x="6" y="170" width="106" height="30" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="59" y="190" text-anchor="middle">上下界流</text>
+            <rect x="8" y="58" width="102" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="59" y="78" text-anchor="middle">拆点</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" class="dash" fill="none">
+            <path d="M175 78 L175 42"/><path d="M224 110 L250 82"/><path d="M224 154 L254 184"/>
+            <path d="M175 182 L175 216"/><path d="M126 154 L110 184"/><path d="M126 110 L108 82"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>升华：</b>网络流最值得学的不是代码，而是"<b>把'代价'编码成割、把'限制'编码成容量</b>"这种<strong>建模能力</strong>——24 题的算法都不难，难的是建图。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 45 结语 ═══ -->
+<section class="slide cover" data-title="结语 Q&A">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">THANKS · Q&A</div>
+      <h1>谢谢！<br><em class="t">开始提问</em></h1>
+      <p class="sub">课后三步：<br>
+        ① 10 分钟默写 Dinic + MCMF<br>
+        ② 手算第 12 页的三轮增广（应得 |f| = 3），并画出最小割<br>
+        ③ 跑一遍 <code>stress()</code> 对拍脚本，确认三算法一致后再刷 12 题</p>
+      <div class="meta"><span>反向边</span><span>当前弧</span><span>势函数</span></div>
+    </div>
+    <div>
+      <svg viewBox="0 0 460 300" preserveAspectRatio="xMidYMid meet">
+        <circle cx="230" cy="150" r="145" fill="#E2612F" opacity=".16" class="pulse"/>
+        <g stroke="#E2612F" stroke-width="3" fill="none"><path d="M230 236 L158 158"/><path d="M230 236 L302 158"/><path d="M230 236 L230 118"/></g>
+        <path d="M302 158 L230 236" stroke="#A33A64" stroke-width="3" stroke-dasharray="7 7" fill="none"/>
+        <g class="float">
+          <g><circle cx="230" cy="236" r="30" fill="#E2612F" stroke="#B9471B" stroke-width="3"/><text x="230" y="244" font-size="13" text-anchor="middle" fill="#fff" font-family="monospace">流</text></g>
+          <g><circle cx="158" cy="158" r="24" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="158" y="165" font-size="11" text-anchor="middle" fill="#0B6356" font-family="monospace">增广</text></g>
+          <g><circle cx="302" cy="158" r="24" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="302" y="165" font-size="11" text-anchor="middle" fill="#0B6356" font-family="monospace">最小割</text></g>
+          <g><circle cx="230" cy="118" r="24" fill="#fff" stroke="#D9B98D" stroke-width="3"/><text x="230" y="125" font-size="11" text-anchor="middle" fill="#4A3722" font-family="monospace">建模</text></g>
+        </g>
+      </svg>
+      <div class="note"><b>快捷键：</b><code>O</code> 目录 · <code>←/→</code> 翻页 · <code>⛶</code> 全屏</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="brand">NETWORK FLOW · 80MIN</div>
+<div class="hud">
+  <button id="tocBtn" title="目录">☰</button>
+  <button id="prevBtn" title="上一页">←</button>
+  <div class="pgn"><span id="cur">1</span> / <span id="tot">45</span></div>
+  <button id="nextBtn" title="下一页">→</button>
+  <button id="fullBtn" title="全屏">⛶</button>
+</div>
+
+<div class="toc" id="toc"><h4>目录 · 45 页</h4><div class="grid" id="tocGrid"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+const CODE = {
+
+core: `
+from collections import deque
+
+def add_edge(g, u, v, c):
+    """加有向边 u->v（容量 c），同时加容量 0 的反向边"""
+    g[u].append([v, c, len(g[v])])
+    g[v].append([u, 0, len(g[u]) - 1])
+
+def edmonds_karp(g, s, t):
+    """Edmonds-Karp：BFS 找最短增广路，O(V * E^2)
+       g: 邻接表，每条边 [v, cap, rev]
+       返回最大流值"""
+    n = len(g)
+    INF = 10 ** 18
+    flow = 0
+    while True:
+        prev_v = [-1] * n        # 前驱结点
+        prev_e = [-1] * n        # 前驱边在 g[prev_v] 中的下标
+        prev_v[s] = s
+        q = deque([s])
+        while q:
+            u = q.popleft()
+            for i, (v, cap, _) in enumerate(g[u]):
+                if cap > 0 and prev_v[v] == -1:
+                    prev_v[v] = u
+                    prev_e[v] = i
+                    q.append(v)
+        if prev_v[t] == -1:
+            break                # 无增广路 ⇒ 最大流
+        # 瓶颈容量
+        d = INF
+        v = t
+        while v != s:
+            d = min(d, g[prev_v[v]][prev_e[v]][1])
+            v = prev_v[v]
+        # 沿路增广：正减反加
+        v = t
+        while v != s:
+            e = g[prev_v[v]][prev_e[v]]
+            e[1] -= d
+            g[v][e[2]][1] += d
+            v = prev_v[v]
+        flow += d
+    return flow
+
+
+# 用法：
+#   n = 4
+#   g = [[] for _ in range(n)]
+#   add_edge(g, 0, 1, 2); add_edge(g, 0, 2, 1)
+#   add_edge(g, 1, 2, 1); add_edge(g, 1, 3, 1); add_edge(g, 2, 3, 2)
+#   print(edmonds_karp(g, 0, 3))    # 3
+#
+# 三条铁律：
+#   1) 加边必须同时加反向边，容量 0
+#   2) 增广时正减反加，同一个 delta
+#   3) 反向边的 rev 索引指回正向边
+`,
+
+dinic: `
+from collections import deque
+
+class Dinic:
+    """Dinic 最大流
+       一般 O(V^2 E)；单位容量 / 二分图 O(E sqrt(V))
+       比赛默认写法"""
+    def __init__(self, n):
+        self.n = n
+        self.g = [[] for _ in range(n)]
+
+    def add(self, u, v, c):
+        """加边 u->v，容量 c；反向边容量 0（撤销能力）"""
+        self.g[u].append([v, c, len(self.g[v])])
+        self.g[v].append([u, 0, len(self.g[u]) - 1])
+
+    def bfs(self, s, t):
+        """建分层图：level[v] = s 到 v 的最短残量距离"""
+        self.level = [-1] * self.n
+        q = deque([s])
+        self.level[s] = 0
+        while q:
+            u = q.popleft()
+            for v, c, _ in self.g[u]:
+                if c > 0 and self.level[v] < 0:
+                    self.level[v] = self.level[u] + 1
+                    q.append(v)
+        return self.level[t] >= 0
+
+    def dfs(self, u, t, f):
+        """沿分层图多路增广；当前弧优化靠 self.it"""
+        if u == t:
+            return f
+        for i in range(self.it[u], len(self.g[u])):
+            self.it[u] = i
+            v, c, rev = self.g[u][i]
+            if c > 0 and self.level[v] == self.level[u] + 1:
+                d = self.dfs(v, t, min(f, c))
+                if d > 0:
+                    self.g[u][i][1] -= d
+                    self.g[v][rev][1] += d
+                    return d
+        return 0
+
+    def max_flow(self, s, t):
+        flow = 0
+        INF = 10 ** 18
+        while self.bfs(s, t):          # 还能分层到 t
+            self.it = [0] * self.n      # 当前弧每轮复位
+            while True:
+                f = self.dfs(s, t, INF) # 阻塞流
+                if f == 0:
+                    break
+                flow += f
+        return flow
+
+
+# 用法：
+#   dinic = Dinic(n)
+#   dinic.add(u, v, cap)
+#   flow = dinic.max_flow(s, t)
+#
+# 跑完后 dinic.g 就是残量网络，可直接用于最小割构造
+# it 数组必须在每轮 BFS 后复位，否则会错 / 退化
+`,
+
+mincut: `
+def min_cut(dinic, s):
+    """跑完 max_flow 后调用
+       在残量网络上从 s BFS 可达集 S
+       最小割 = (S, V\\\\S)；返回 S 的点集"""
+    n = dinic.n
+    vis = [False] * n
+    vis[s] = True
+    q = [s]
+    head = 0
+    while head < len(q):
+        u = q[head]; head += 1
+        for v, cap, _ in dinic.g[u]:
+            if cap > 0 and not vis[v]:
+                vis[v] = True
+                q.append(v)
+    return [i for i in range(n) if vis[i]]
+
+
+def cut_edges(dinic, S):
+    """割边：u ∈ S, v ∉ S 的原图边（原始容量 > 0）
+       原容量 = 正向残量 + 反向残量"""
+    inS = set(S)
+    res = []
+    for u in S:
+        for v, cap, rev in dinic.g[u]:
+            orig = cap + dinic.g[v][rev][1]
+            if v not in inS and orig > 0:
+                res.append((u, v, orig))
+    return res
+
+
+# 用法：
+#   dinic = Dinic(n)
+#   ... add edges ...
+#   f = dinic.max_flow(s, t)
+#   S = min_cut(dinic, s)
+#   assert s in S and t not in S
+#   print("最小割容量 =", f, "  S =", S)
+#   print("割边 =", cut_edges(dinic, S))
+#
+# 定理：最大流 = 最小割
+#   S = 残量网络上还能从 s 到达的点
+#   割只算 S -> T 方向的边，T -> S 不算
+`,
+
+closure: `
+def max_weight_closure(n, weight, deps):
+    """最大权闭合子图
+       weight[i]：点 i 的权（可正可负）
+       deps: (u, v) 表示"选 u 则必须选 v"
+       返回 (最大权, 选中的点集)"""
+    S, T = n, n + 1
+    dinic = Dinic(n + 2)
+    pos = sum(w for w in weight if w > 0)   # 所有正权之和
+
+    for i in range(n):
+        if weight[i] > 0:
+            dinic.add(S, i, weight[i])      # 正权点：s -> i
+        elif weight[i] < 0:
+            dinic.add(i, T, -weight[i])     # 负权点：i -> t
+    for u, v in deps:
+        dinic.add(u, v, 10 ** 18)           # 依赖边，容量必须够大
+
+    cut = dinic.max_flow(S, T)
+    reach = set(min_cut(dinic, S))          # 残量上 s 可达 = "选"
+    chosen = [i for i in range(n) if i in reach]
+    return pos - cut, chosen
+
+
+# 用法（太空飞行计划）：
+#   实验 = 正权点（收益）；仪器 = 负权点（花费）
+#   实验 -> 其所需仪器 = 依赖边
+#   weight = [10, 8, -5, -3]   # A, B, X, Y
+#   deps   = [(0, 2), (1, 2), (1, 3)]
+#   print(max_weight_closure(4, weight, deps))   # (10, [0,1,2,3])
+#
+# 原理：
+#   闭合子图 C：u ∈ C 且 u -> v ⇒ v ∈ C
+#   最大权 = 正权总和 - 最小割
+#   INF 边保证依赖关系不被割断
+`,
+
+spfa: `
+from collections import deque
+
+def add_cost_edge(g, u, v, cap, w):
+    """加边 u->v，容量 cap，费用 w；反向边费用 -w"""
+    g[u].append([v, cap, w, len(g[v])])
+    g[v].append([u, 0, -w, len(g[u]) - 1])
+
+def mcmf_spfa(g, s, t):
+    """最小费用最大流（SPFA 版），O(V * E * flow)
+       g[u] 每条边 [v, cap, cost, rev]
+       返回 (最大流, 最小费用)"""
+    n = len(g)
+    INF = float('inf')
+    flow = 0
+    cost = 0
+    while True:
+        dist = [INF] * n
+        inq = [False] * n
+        prev_v = [-1] * n
+        prev_e = [-1] * n
+        dist[s] = 0
+        q = deque([s])
+        inq[s] = True
+        while q:
+            u = q.popleft()
+            inq[u] = False
+            for i, (v, cap, w, _) in enumerate(g[u]):
+                if cap > 0 and dist[v] > dist[u] + w:
+                    dist[v] = dist[u] + w
+                    prev_v[v] = u
+                    prev_e[v] = i
+                    if not inq[v]:
+                        q.append(v)
+                        inq[v] = True
+        if dist[t] == INF:
+            break                     # 无法再增广
+        d = INF
+        v = t
+        while v != s:
+            d = min(d, g[prev_v[v]][prev_e[v]][1])
+            v = prev_v[v]
+        v = t
+        while v != s:
+            e = g[prev_v[v]][prev_e[v]]
+            e[1] -= d
+            g[v][e[3]][1] += d
+            v = prev_v[v]
+        flow += d
+        cost += d * dist[t]
+    return flow, cost
+
+
+# 何时用：n ≤ 500、好调试、需要支持负权
+# 反向边费用必须是 -w，否则"退回"不退钱，结果全错
+`,
+
+mcmf: `
+import heapq
+
+class MCMF:
+    """最小费用最大流（Dijkstra + 势函数），O(E log V * flow)
+       势函数 h 保证每次最短路的边权非负"""
+    def __init__(self, n):
+        self.n = n
+        self.g = [[] for _ in range(n)]
+
+    def add(self, u, v, cap, w):
+        self.g[u].append([v, cap, w, len(self.g[v])])
+        self.g[v].append([u, 0, -w, len(self.g[u]) - 1])
+
+    def min_cost_max_flow(self, s, t):
+        n = self.n
+        INF = float('inf')
+        h = [0] * n               # 势（距离标号）
+        prev_v = [0] * n
+        prev_e = [0] * n
+        flow = 0
+        cost = 0
+        while True:
+            dist = [INF] * n
+            dist[s] = 0
+            pq = [(0, s)]
+            while pq:
+                d, u = heapq.heappop(pq)
+                if dist[u] < d:
+                    continue
+                for i, (v, cap, w, _) in enumerate(self.g[u]):
+                    # 用势修正边权：w + h[u] - h[v] >= 0
+                    if cap > 0 and dist[v] > dist[u] + w + h[u] - h[v]:
+                        dist[v] = dist[u] + w + h[u] - h[v]
+                        prev_v[v] = u
+                        prev_e[v] = i
+                        heapq.heappush(pq, (dist[v], v))
+            if dist[t] == INF:
+                break
+            for i in range(n):
+                if dist[i] < INF:
+                    h[i] += dist[i]        # 更新势（须在 cost 之前）
+            d = INF
+            v = t
+            while v != s:
+                d = min(d, self.g[prev_v[v]][prev_e[v]][1])
+                v = prev_v[v]
+            v = t
+            while v != s:
+                e = self.g[prev_v[v]][prev_e[v]]
+                e[1] -= d
+                self.g[v][e[3]][1] += d
+                v = prev_v[v]
+            flow += d
+            cost += d * h[t]              # h[t] = 原图最短路长
+        return flow, cost
+
+
+# 变体：
+#   最大费用流：cost 取负，最后取负
+#   只送 k 单位：if flow >= k: break
+#   无费用最大流：cost 全 0
+#
+# 与 SPFA 版对照：flow / cost 必须一致
+`,
+
+split: `
+# 拆点：点有容量 / 点只能用一次 / 点有费用
+#
+#   点 u  ->  u_in = 2*u, u_out = 2*u + 1
+#   u_in -> u_out   容量 = 点容量，费用 = 点费用
+#   所有"进 u"的边改连 u_in；所有"出 u"的边改从 u_out 出
+
+def build_split(n, node_cap, node_cost, edges):
+    """n 个点；node_cap[u]、node_cost[u]；edges = (u,v,cap,cost)
+       返回 (网络 net, 源 S, 汇 T)，S/T 为新建的 2n / 2n+1"""
+    S, T = 2 * n, 2 * n + 1
+    net = MCMF(S + 1)
+    for u in range(n):
+        net.add(2 * u, 2 * u + 1, node_cap[u], node_cost[u])
+    for u, v, cap, cost in edges:
+        net.add(2 * u + 1, 2 * v, cap, cost)
+    return net, S, T
+
+
+# 例：最长递增子序列（不相交 LIS 条数）
+#   a[i] < a[j] 且 dp[j] == dp[i] + 1  ⇒  连边 i -> j
+#   点容量 1 ⇒ 每个数至多用一次；dp==1 连源，dp==L 连汇
+
+def lis_disjoint(a):
+    n = len(a)
+    dp = [1] * n
+    for i in range(n):
+        for j in range(i):
+            if a[j] < a[i]:
+                dp[i] = max(dp[i], dp[j] + 1)
+    L = max(dp)
+
+    edges = [(i, j, 1, 0)
+             for i in range(n) for j in range(i + 1, n)
+             if a[i] < a[j] and dp[j] == dp[i] + 1]
+    net, S, T = build_split(n, [1] * n, [0] * n, edges)
+    for i in range(n):
+        if dp[i] == 1:
+            net.add(S, 2 * i, 1, 0)
+        if dp[i] == L:
+            net.add(2 * i + 1, T, 1, 0)
+    return L, net.min_cost_max_flow(S, T)[0]
+
+
+# 验证：
+#   lis_disjoint([1, 2, 3])      -> (3, 1)
+#   lis_disjoint([1, 2, 1, 2])   -> (2, 2)
+`,
+
+bisect: `
+def bisect_answer(lo, hi, ok):
+    """二分答案：ok(mid) 单调（True ⇒ 右半都可行）
+       返回最小的可行值；用于"最大值最小"类问题"""
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if ok(mid):
+            hi = mid
+        else:
+            lo = mid + 1
+    return lo
+
+
+# 例：n 个任务分给 m 个机器，任务 i 在机器 j 上耗时 t[i][j]
+#     每个机器同时只做一个任务，最小化最大完成时间
+#   二分 T：保留 t[i][j] <= T 的边，判定最大匹配 == n
+
+def min_makespan(t):
+    n, m = len(t), len(t[0])
+
+    def ok(T):
+        dinic = Dinic(n + m + 2)
+        S, Tt = n + m, n + m + 1
+        for i in range(n):
+            dinic.add(S, i, 1)
+            for j in range(m):
+                if t[i][j] <= T:
+                    dinic.add(i, n + j, 1)
+        for j in range(m):
+            dinic.add(n + j, Tt, 1)
+        return dinic.max_flow(S, Tt) == n
+
+    hi = max(max(row) for row in t)
+    return bisect_answer(0, hi, ok)
+
+
+# 用法：
+#   t = [[3, 8], [5, 2]]
+#   print(min_makespan(t))    # 最小化最大完成时间
+#
+# 心法：凡是"最大值最小 / 最小值最大"，先二分再判定
+# 判定必须单调：可行 ⇒ 更大的也可行
+`,
+
+model_case: `
+# 例：数字梯形（网络流 24 题之一）
+#   n 行，第 i 行有 i 个数；从顶走到底部
+#   问 1：n 条路径【点不相交】，数字和最大
+#   问 2：n 条路径【边不相交】
+#   问 3：无限制
+#   建模：拆点 + 费用流，费用 = -数字（最小费用 ⇒ 最大和）
+
+def number_trapezoid(a, mode):
+    """a[i][j]：第 i 行第 j 个数（0-index）
+       mode: 1=点不相交  2=边不相交  3=无限制"""
+    n = len(a)
+
+    def id(i, j):
+        return i * (i + 1) // 2 + j          # 三角编号
+
+    N = sum(len(row) for row in a)
+    S, T = 2 * N, 2 * N + 1
+    net = MCMF(2 * N + 2)
+    INF = 10 ** 9
+
+    for i in range(n):
+        for j in range(len(a[i])):
+            k = id(i, j)
+            if mode == 1:
+                net.add(2 * k, 2 * k + 1, 1, -a[i][j])   # 点只能用一次
+            else:
+                net.add(2 * k, 2 * k + 1, INF, -a[i][j])
+    for i in range(n - 1):
+        for j in range(len(a[i])):
+            for dj in (0, 1):
+                u = id(i, j)
+                v = id(i + 1, j + dj)
+                cap = 1 if mode == 2 else INF
+                net.add(2 * u + 1, 2 * v, cap, 0)
+    for j in range(len(a[0])):
+        net.add(S, 2 * id(0, j), 1, 0)
+    for j in range(len(a[n - 1])):
+        net.add(2 * id(n - 1, j) + 1, T, 1, 0)
+
+    flow, cost = net.min_cost_max_flow(S, T)
+    return flow, -cost        # 最大数字和
+
+
+# a = [[2], [3, 4], [1, 5, 6]]
+#   mode 1: 点不相交  mode 2: 边不相交  mode 3: 无限制
+#
+# 心法：求"最大和"⇒ 费用取负；求"最多 k 条"⇒ 容量设 k
+`,
+
+bounded: `
+def feasible_flow(n, edges, s=None, t=None):
+    """带上下界的可行流
+       edges: (u, v, low, high)；给出 s,t 时加 t->s 构造循环流
+       返回 (是否可行, 每条边的实际流量)"""
+    dinic = Dinic(n + 2)
+    SS, TT = n, n + 1
+    b = [0] * n              # b[v] = 下界净流入 = Σ_in l − Σ_out l
+    idx = []
+    for (u, v, low, high) in edges:
+        b[u] -= low
+        b[v] += low
+        idx.append((u, len(dinic.g[u])))
+        dinic.add(u, v, high - low)
+    if s is not None:
+        dinic.add(t, s, 10 ** 18)     # 有源汇 ⇒ 加边构造循环
+    need = 0
+    for i in range(n):
+        if b[i] > 0:
+            dinic.add(SS, i, b[i])    # 要净流出 b[i] ⇒ SS -> i
+            need += b[i]
+        elif b[i] < 0:
+            dinic.add(i, TT, -b[i])   # 要净流入 -b[i] ⇒ i -> TT
+    if dinic.max_flow(SS, TT) != need:
+        return False, None            # 不存在可行流
+    flows = []
+    for (u, v, low, high), (uu, k) in zip(edges, idx):
+        used = (high - low) - dinic.g[uu][k][1]   # 初始容量 - 残量
+        flows.append(low + used)
+    return True, flows
+
+
+# 用法：
+#   edges = [(0, 1, 1, 3), (1, 2, 0, 2), (2, 0, 0, 5)]
+#   print(feasible_flow(3, edges))     # (True, [1, 1, 1])
+#
+# 原理（符号约定，最易写反）：
+#   边 (u,v,l,r) 拆成 u->v 容量 r-l
+#   守恒式：Σ_out f' − Σ_in f' = b[v]，b[v] = Σ_in l − Σ_out l
+#   b[i] > 0 ⇒ 需要净流出 ⇒ SS -> i 容量 b[i]
+#   b[i] < 0 ⇒ 需要净流入 ⇒ i -> TT 容量 -b[i]
+#   有源汇时加 t -> s 容量 INF 转成循环流
+#   SS 到 TT 满流 ⇒ 存在可行流
+`,
+
+toolbox: `
+from collections import deque
+import heapq
+
+
+# ============ 1. Dinic 最大流 ============
+class Dinic:
+    def __init__(self, n):
+        self.n = n
+        self.g = [[] for _ in range(n)]
+
+    def add(self, u, v, c):
+        self.g[u].append([v, c, len(self.g[v])])
+        self.g[v].append([u, 0, len(self.g[u]) - 1])
+
+    def bfs(self, s, t):
+        self.level = [-1] * self.n
+        q = deque([s]); self.level[s] = 0
+        while q:
+            u = q.popleft()
+            for v, c, _ in self.g[u]:
+                if c > 0 and self.level[v] < 0:
+                    self.level[v] = self.level[u] + 1
+                    q.append(v)
+        return self.level[t] >= 0
+
+    def dfs(self, u, t, f):
+        if u == t: return f
+        for i in range(self.it[u], len(self.g[u])):
+            self.it[u] = i
+            v, c, rev = self.g[u][i]
+            if c > 0 and self.level[v] == self.level[u] + 1:
+                d = self.dfs(v, t, min(f, c))
+                if d > 0:
+                    self.g[u][i][1] -= d
+                    self.g[v][rev][1] += d
+                    return d
+        return 0
+
+    def max_flow(self, s, t):
+        flow = 0
+        INF = 10 ** 18
+        while self.bfs(s, t):
+            self.it = [0] * self.n
+            while True:
+                f = self.dfs(s, t, INF)
+                if f == 0: break
+                flow += f
+        return flow
+
+
+# ============ 2. 最小割构造 ============
+def min_cut(dinic, s):
+    n = dinic.n
+    vis = [False] * n
+    vis[s] = True
+    q = [s]; head = 0
+    while head < len(q):
+        u = q[head]; head += 1
+        for v, cap, _ in dinic.g[u]:
+            if cap > 0 and not vis[v]:
+                vis[v] = True; q.append(v)
+    return [i for i in range(n) if vis[i]]
+
+
+# ============ 3. MCMF（Dijkstra + 势）============
+class MCMF:
+    def __init__(self, n):
+        self.n = n
+        self.g = [[] for _ in range(n)]
+
+    def add(self, u, v, cap, w):
+        self.g[u].append([v, cap, w, len(self.g[v])])
+        self.g[v].append([u, 0, -w, len(self.g[u]) - 1])
+
+    def min_cost_max_flow(self, s, t):
+        n = self.n; INF = float('inf')
+        h = [0] * n; prev_v = [0] * n; prev_e = [0] * n
+        flow = 0; cost = 0
+        while True:
+            dist = [INF] * n; dist[s] = 0
+            pq = [(0, s)]
+            while pq:
+                d, u = heapq.heappop(pq)
+                if dist[u] < d: continue
+                for i, (v, cap, w, _) in enumerate(self.g[u]):
+                    if cap > 0 and dist[v] > dist[u] + w + h[u] - h[v]:
+                        dist[v] = dist[u] + w + h[u] - h[v]
+                        prev_v[v] = u; prev_e[v] = i
+                        heapq.heappush(pq, (dist[v], v))
+            if dist[t] == INF: break
+            for i in range(n):
+                if dist[i] < INF: h[i] += dist[i]
+            d = INF; v = t
+            while v != s:
+                d = min(d, self.g[prev_v[v]][prev_e[v]][1]); v = prev_v[v]
+            v = t
+            while v != s:
+                e = self.g[prev_v[v]][prev_e[v]]
+                e[1] -= d; self.g[v][e[3]][1] += d; v = prev_v[v]
+            flow += d; cost += d * h[t]
+        return flow, cost
+
+
+# ============ 4. 最大权闭合子图 ============
+def max_weight_closure(n, weight, deps):
+    S, T = n, n + 1
+    dinic = Dinic(n + 2)
+    pos = sum(w for w in weight if w > 0)
+    for i in range(n):
+        if weight[i] > 0: dinic.add(S, i, weight[i])
+        elif weight[i] < 0: dinic.add(i, T, -weight[i])
+    for u, v in deps: dinic.add(u, v, 10 ** 18)
+    cut = dinic.max_flow(S, T)
+    reach = set(min_cut(dinic, S))
+    return pos - cut, [i for i in range(n) if i in reach]
+
+
+# ============ 5. 派生量 ============
+def max_matching_by_flow(g, nL, nR):
+    """二分图最大匹配 = 网络最大流"""
+    S, T = nL + nR, nL + nR + 1
+    d = Dinic(nL + nR + 2)
+    for u in range(nL):
+        d.add(S, u, 1)
+        for v in g[u]: d.add(u, nL + v, 1)
+    for v in range(nR): d.add(nL + v, T, 1)
+    return d.max_flow(S, T)
+
+
+# 换题只需改：建图方式 + 调用哪个函数
+# 有费用 → MCMF；有下界 → feasible_flow；纯匹配 → max_matching_by_flow
+`,
+
+verify: `
+import random
+
+def brute_max_flow(n, edges, s, t):
+    """暴力最大流（Ford-Fulkerson on 矩阵残量），仅用于对拍"""
+    g = [[0] * n for _ in range(n)]
+    for u, v, c in edges:
+        g[u][v] += c
+
+    def find_path():
+        prev = [-1] * n
+        prev[s] = s
+        q = [s]; head = 0
+        while head < len(q):
+            u = q[head]; head += 1
+            for v in range(n):
+                if g[u][v] > 0 and prev[v] == -1:
+                    prev[v] = u
+                    q.append(v)
+        if prev[t] == -1:
+            return None
+        path = []
+        v = t
+        while v != s:
+            path.append((prev[v], v))
+            v = prev[v]
+        return path
+
+    flow = 0
+    while True:
+        p = find_path()
+        if p is None:
+            break
+        d = min(g[u][v] for u, v in p)
+        for u, v in p:
+            g[u][v] -= d
+            g[v][u] += d
+        flow += d
+    return flow
+
+
+def stress(trials=1000, seed=1):
+    """随机小图对拍：Dinic / EK / 暴力 必须一致；
+       并校验 最大流 = 最小割"""
+    rnd = random.Random(seed)
+    for _ in range(trials):
+        n = rnd.randint(2, 8)
+        edges = []
+        for u in range(n):
+            for v in range(n):
+                if u != v and rnd.random() < 0.35:
+                    edges.append((u, v, rnd.randint(1, 9)))
+        s, t = 0, n - 1
+
+        g1 = [[] for _ in range(n)]
+        for u, v, c in edges:
+            add_edge(g1, u, v, c)
+        a = edmonds_karp(g1, s, t)
+
+        d = Dinic(n)
+        for u, v, c in edges:
+            d.add(u, v, c)
+        b = d.max_flow(s, t)
+
+        c_ = brute_max_flow(n, edges, s, t)
+        assert a == b == c_, (edges, a, b, c_)
+
+        # 最大流 = 最小割
+        S = set(min_cut(d, s))
+        assert s in S and t not in S
+        cut = sum(c for (u, v, c) in edges if u in S and v not in S)
+        assert cut == b, (edges, S, cut, b)
+    print("all ok")
+
+
+# 还可以：
+#   - 随机打乱点编号重跑，答案应不变（抓下标 bug）
+#   - 构造边界：无边、单边、s-t 不连通、容量 0、重边、自环
+#   - 费用流两版（SPFA / Dijkstra）flow 与 cost 必须一致
+#   - 闭合子图选中点集必须满足闭合性
+`
+};
+
+function applyCode(){
+  document.querySelectorAll('code[data-src]').forEach(el => {
+    const raw = CODE[el.dataset.src];
+    if (typeof raw === 'string') {
+      el.textContent = raw.replace(/^\n+/, '').replace(/\s+$/, '');
+    }
+  });
+  if (window.Prism && Prism.highlightAll) { Prism.highlightAll(); }
+}
+
+const deck = document.getElementById('deck');
+function fit(){
+  const s = Math.min(window.innerWidth / 1320, window.innerHeight / 780);
+  deck.style.transform = 'scale(' + s + ')';
+}
+
+function fitCode(){
+  document.querySelectorAll('pre.code').forEach(pre => {
+    pre.style.fontSize = '';
+    let fs = 12.4, guard = 0;
+    while (pre.scrollHeight > pre.clientHeight + 2 && fs > 10.2 && guard < 40) {
+      fs -= 0.15;
+      pre.style.fontSize = fs.toFixed(2) + 'px';
+      guard++;
+    }
+  });
+}
+function relayout(){ fit(); requestAnimationFrame(fitCode); }
+window.addEventListener('resize', relayout);
+window.addEventListener('load', relayout);
+
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let idx = 0;
+document.getElementById('tot').textContent = total;
+
+function show(n){
+  idx = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('on', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('prog').style.width = ((idx + 1) / total * 100) + '%';
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  requestAnimationFrame(fitCode);
+}
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(total - 1);
+  else if (e.key.toLowerCase() === 'o') document.getElementById('toc').classList.toggle('on');
+  else if (e.key === 'Escape') document.getElementById('toc').classList.remove('on');
+});
+document.getElementById('fullBtn').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+const tocGrid = document.getElementById('tocGrid');
+slides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + (i + 1);
+  a.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b>' + (s.dataset.title || '');
+  a.onclick = e => { e.preventDefault(); show(i); document.getElementById('toc').classList.remove('on'); };
+  tocGrid.appendChild(a);
+});
+document.getElementById('tocBtn').onclick = () => document.getElementById('toc').classList.toggle('on');
+document.getElementById('toc').onclick = e => { if (e.target.id === 'toc') e.classList.remove('on'); };
+
+applyCode();
+const h = parseInt(location.hash.replace('#', ''), 10);
+show(isNaN(h) ? 0 : h - 1);
+relayout();
+</script>
+</body>
+</html>

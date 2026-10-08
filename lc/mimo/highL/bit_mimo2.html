@@ -1,0 +1,2270 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>树状数组：把数组折成 log 层</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{
+  --paper:#FFF8F0; --card:#FFFFFF;
+  --ink:#2B1D12; --ink2:#6E5842; --line:#EEDCC2;
+  --accent:#E2612F; --amber:#F2A63B; --teal:#0F7B6C; --plum:#A33A64;
+  --code-bg:#2C2117;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EFE0C8;font-family:var(--sans);color:var(--ink);overflow:hidden}
+body{background:
+  radial-gradient(1200px 700px at 12% -10%, #FBE9CE 0%, rgba(251,233,206,0) 60%),
+  radial-gradient(900px 600px at 105% 110%, #F7DCC0 0%, rgba(247,220,192,0) 55%), #EFE0C8;}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center center;
+  border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(90,52,18,.28),0 4px 12px rgba(90,52,18,.14)}
+
+.slide{position:absolute;inset:0;padding:22px 38px 26px;opacity:0;visibility:hidden;
+  transform:translateX(22px) scale(.996);transition:opacity .38s ease,transform .38s ease,visibility .38s;
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(160deg,#FFFBF5 0%,#FFF4E6 55%,#FDEBD3 100%)}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.slide::after{content:"";position:absolute;right:-120px;top:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(242,166,59,.18),rgba(242,166,59,0) 70%);pointer-events:none}
+.slide::before{content:"";position:absolute;left:-90px;bottom:-140px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,rgba(226,97,47,.11),rgba(226,97,47,0) 70%);pointer-events:none}
+.slide>*{position:relative;z-index:2}
+
+.kicker{display:inline-flex;align-items:center;gap:7px;font-size:10.6px;font-weight:700;letter-spacing:.13em;
+  color:var(--accent);background:#FFEEDC;border:1px solid #F6D2B2;padding:3px 11px;border-radius:999px}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+.kicker.teal{color:var(--teal);background:#E9F7F2;border-color:#BEE6D8}
+.kicker.teal i{background:var(--teal)}
+.kicker.plum{color:var(--plum);background:#FDF1F5;border-color:#EFCBD8}
+.kicker.plum i{background:var(--plum)}
+.sl-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+  border-bottom:2px solid var(--line);padding-bottom:8px}
+.sl-head h2{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1.14;margin-top:5px}
+.sl-head h2 em{font-style:normal;color:var(--accent)}
+.sl-head h2 em.t{color:var(--teal)}
+.sl-head .hint{font-size:11.6px;color:var(--ink2);text-align:right;max-width:340px;line-height:1.5}
+.sl-head .hint b{color:#8A5A2C}
+.lead{font-size:15px;line-height:1.66;color:#42301F}
+.muted{color:var(--ink2)}
+
+.cols{display:grid;gap:11px;min-height:0;flex:1 1 auto}
+.c2{grid-template-columns:1fr 1fr}
+.c2a{grid-template-columns:1.08fr .92fr}
+.c2b{grid-template-columns:.92fr 1.08fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+.cols > div{min-height:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.card h3 .n{width:21px;height:21px;border-radius:7px;background:var(--accent);color:#fff;font-size:11.5px;
+  display:grid;place-items:center;font-family:var(--sans);font-weight:700;flex:none}
+.card h3 .n.t{background:var(--teal)}
+.card p,.card li{font-size:13px;line-height:1.6;color:#4A3722}
+.card ul,ol{padding-left:16px}
+.card li{margin:2px 0}
+.card.tint-teal{background:#F2FBF7;border-color:#BEE6D8}
+.card.tint-amber{background:#FFF7E6;border-color:#F4DCAC}
+.card.tint-plum{background:#FDF1F5;border-color:#EFCBD8}
+
+.formula{font-family:var(--mono);font-size:14.5px;background:#2E2118;color:#FFEBD2;border-radius:11px;
+  padding:10px 14px;line-height:1.55;flex:none;overflow-x:auto}
+.formula .hl{color:#FFB169;font-weight:600}
+.formula .ok{color:#7FE0C2;font-weight:600}
+.formula .dim{color:#A8846A}
+
+.codewrap{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;
+  border:1px solid #4B3823;border-radius:12px;overflow:hidden;background:var(--code-bg)}
+.code-head{flex:none;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#241A12;
+  border-bottom:1px solid #46341F}
+.code-head .dot{width:9px;height:9px;border-radius:50%;background:#6B5238}
+.code-head .dot.r{background:#B9471B}
+.code-head .dot.g{background:#0F7B6C}
+.code-head em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B29272;letter-spacing:.08em;margin-left:6px}
+.code-head .lang{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7A5F45;letter-spacing:.12em}
+pre.code{margin:0;flex:1 1 auto;min-height:0;overflow:auto;background:var(--code-bg)!important;
+  padding:11px 14px;font-family:var(--mono);font-size:12.4px;line-height:1.56;white-space:pre;tab-size:4}
+pre.code::-webkit-scrollbar{height:8px;width:8px}
+pre.code::-webkit-scrollbar-track{background:#241A12}
+pre.code::-webkit-scrollbar-thumb{background:#6B5238;border-radius:8px}
+pre.code::-webkit-scrollbar-thumb:hover{background:#8E6E4C}
+pre.code code,code[class*="language-"]{font-family:var(--mono)!important;font-size:inherit;
+  background:transparent!important;color:#F0E0CC!important;text-shadow:none!important}
+pre.code .token.comment,pre.code .token.prolog,pre.code .token.doctype,pre.code .token.cdata{color:#A8846A!important;font-style:italic}
+pre.code .token.punctuation{color:#C0A183!important}
+pre.code .token.keyword,pre.code .token.atrule,pre.code .token.rule,pre.code .token.important{color:#FFB169!important;font-weight:600}
+pre.code .token.string,pre.code .token.char,pre.code .token.attr-value{color:#9BE0BE!important}
+pre.code .token.function,pre.code .token.class-name,pre.code .token.builtin{color:#FFD9A8!important}
+pre.code .token.number,pre.code .token.boolean,pre.code .token.constant,pre.code .token.symbol{color:#F4A9C0!important}
+pre.code .token.operator{color:#FFC98B!important}
+pre.code .token.decorator,pre.code .token.annotation{color:#F4A9C0!important}
+
+.note{border-left:4px solid var(--amber);background:#FFF6E4;padding:8px 12px;border-radius:0 11px 11px 0;
+  font-size:12.6px;line-height:1.58;flex:none}
+.note.warn{border-color:var(--plum);background:#FDF0F4}
+.note.good{border-color:var(--teal);background:#EFF9F5}
+.note b{color:var(--accent)}.note.warn b{color:var(--plum)}.note.good b{color:var(--teal)}
+code:not([class*="language-"]){font-family:var(--mono);font-size:.93em;background:#F6EADA;padding:1px 5px;border-radius:5px}
+
+table{width:100%;border-collapse:collapse;font-size:12.1px;background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);flex:none}
+th,td{padding:5.5px 10px;text-align:left;border-bottom:1px solid var(--line);line-height:1.45}
+th{background:#F7E7CF;font-family:var(--serif);font-size:12.6px;color:#7A4A22}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:11px}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:7px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.2px;
+  font-weight:600;color:#5B4429}
+.pill.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill.tq{background:var(--teal);color:#fff;border-color:var(--teal)}
+ul.tick{list-style:none;padding:0}
+ul.tick li{position:relative;padding-left:20px;margin:3px 0;font-size:12.8px;line-height:1.55}
+ul.tick li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:4px;
+  background:#FFE2C6;border:2px solid var(--accent)}
+ul.tick.ok li::before{background:#CDEEE2;border-color:var(--teal)}
+ul.tick.no li::before{background:#F7D6E1;border-color:var(--plum);border-radius:50%}
+
+.a-link{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:11px;padding:8px 11px;transition:.18s;box-shadow:0 4px 10px rgba(120,70,20,.06);overflow:hidden}
+.a-link:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 20px rgba(226,97,47,.16)}
+.a-link .t{font-size:12.4px;font-weight:700;color:#7A3A12;display:block;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link .d{font-size:11px;color:var(--ink2);line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.a-link .src{font-size:9.6px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--teal);
+  padding:1px 7px;border-radius:999px;display:inline-block;margin-bottom:4px}
+.a-link .src.lg{background:var(--accent)}
+
+.step{display:flex;gap:9px;align-items:flex-start}
+.step .idx{flex:none;width:23px;height:23px;border-radius:7px;background:#2E2118;color:#FFD9A8;
+  display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.split-line{height:2px;background:linear-gradient(90deg,#E2612F,#F2A63B,rgba(242,166,59,0));border-radius:2px;margin:6px 0;flex:none}
+.split-line.t{background:linear-gradient(90deg,#0F7B6C,#7FE0C2,rgba(127,224,194,0))}
+.num-huge{font-family:var(--serif);font-size:110px;font-weight:900;line-height:.9;
+  background:linear-gradient(160deg,#E2612F,#F2A63B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.t{background:linear-gradient(160deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+svg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;overflow:visible}
+.gnode circle{fill:#fff;stroke:#D9B98D;stroke-width:3;transition:.45s}
+.gnode text{font-family:var(--mono);font-size:16px;font-weight:600;fill:#4A3722;text-anchor:middle}
+.gnode.root circle{fill:#E2612F;stroke:#B9471B}
+.gnode.root text{fill:#fff}
+.gnode.done circle{fill:#E9F7F2;stroke:#0F7B6C}
+.gnode.done text{fill:#0B6356}
+.gnode.cur circle{fill:#FFF1DC;stroke:#F2A63B;stroke-width:4}
+.gedge{stroke:#D8BC9B;stroke-width:3;fill:none}
+.gedge.up{stroke:#0F7B6C}
+.gedge.cut{stroke:#A33A64;stroke-width:3;stroke-dasharray:7 7}
+.gedge.tree{stroke:#E2612F;stroke-width:3.5}
+.dfnlab{font-family:var(--mono);font-size:11.5px;font-weight:700;fill:#0F7B6C}
+.dfnlab.r{fill:#B9471B}
+.dfnlab.p{fill:#A33A64}
+.dfnlab.g{fill:#8A6A45}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.62;transform:scale(1.07)}}
+.dash{stroke-dasharray:8 8;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.cover{background:linear-gradient(150deg,#FFF6E8 0%,#FFE9CD 48%,#FFDCB4 100%)}
+.cover .badge{display:inline-flex;gap:8px;align-items:center;background:#2E2118;color:#FFD9A8;
+  padding:6px 14px;border-radius:999px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.cover h1{font-family:var(--serif);font-size:52px;line-height:1.1;font-weight:900}
+.cover h1 em{font-style:normal;background:linear-gradient(92deg,#E2612F,#F2A63B);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.cover h1 em.t{background:linear-gradient(92deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cover .sub{font-size:15.5px;color:#6B4A2C;line-height:1.66;max-width:600px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta span{background:rgba(255,255,255,.72);border:1px solid #F0D2AC;padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#7A4A22}
+.section-slide{background:linear-gradient(150deg,#FFF3E0,#FFE0BC)}
+.section-slide.teal{background:linear-gradient(150deg,#EFF9F4,#CFE9DE)}
+.section-slide .big{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1.18}
+
+.hud{position:fixed;right:18px;bottom:14px;display:flex;gap:7px;align-items:center;z-index:50}
+.hud button{border:1px solid rgba(120,70,20,.2);background:rgba(255,250,242,.92);color:#7A4A22;
+  width:34px;height:34px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:700;backdrop-filter:blur(6px);transition:.16s}
+.hud button:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.pgn{background:rgba(255,250,242,.92);border:1px solid rgba(120,70,20,.2);border-radius:10px;height:34px;
+  display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:12.5px;color:#7A4A22;font-weight:600}
+.prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,#E2612F,#F2A63B);z-index:60;
+  transition:width .35s ease;box-shadow:0 1px 6px rgba(226,97,47,.5)}
+.brand{position:fixed;left:18px;bottom:14px;z-index:50;background:rgba(255,250,242,.9);border:1px solid rgba(120,70,20,.2);
+  border-radius:10px;padding:8px 13px;font-size:10.5px;color:#7A4A22;letter-spacing:.1em;font-weight:700}
+.toc{position:fixed;inset:0;background:rgba(46,33,24,.82);backdrop-filter:blur(8px);z-index:80;display:none;
+  padding:42px 56px;overflow:auto}
+.toc.on{display:block}
+.toc h4{color:#FFE2BF;font-family:var(--serif);font-size:24px;margin-bottom:16px}
+.toc .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.toc a{background:rgba(255,246,232,.94);border-radius:10px;padding:9px 12px;text-decoration:none;color:#4A3722;
+  font-size:12.2px;line-height:1.4;border:1px solid rgba(255,255,255,.18);transition:.16s}
+.toc a:hover{background:#FFB169;transform:translateY(-2px)}
+.toc a b{display:block;font-family:var(--mono);font-size:10px;color:#B9471B;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- ═══ 01 封面 ═══ -->
+<section class="slide cover on" data-title="封面">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">DATA STRUCTURE · FENWICK / BIT · 80 MIN</div>
+      <h1>树状数组<br><em>把数组折成 log 层</em></h1>
+      <p class="sub">十行代码，换来 <b>O(log n)</b> 的单点修改与区间查询。<br>
+        从 <code>lowbit</code> 的由来，到双 BIT、二维、上界二分，一次讲透。</p>
+      <div class="meta">
+        <span>46 页 · 约 80 分钟</span><span>13 个可运行 Python 模板</span>
+        <span>含手算与验算</span><span>洛谷 / LeetCode 题单</span>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 520 300" preserveAspectRatio="xMidYMid meet">
+        <!-- 五层折叠：16 → 8 → 4 → 2 → 1 -->
+        <text x="242" y="20" text-anchor="middle" class="dfnlab r">同一段区间 [1..16]，被折成 log 层</text>
+        <g font-family="monospace" font-size="8.5" fill="#7A4A22">
+          <!-- 层1：16 格 -->
+          <g>
+            <rect x="22" y="32" width="27.5" height="26" rx="4" fill="#FFE2C6" stroke="#E2612F"/><text x="35" y="48">1</text>
+            <rect x="49.5" y="32" width="27.5" height="26" rx="4" fill="#F6CDA8" stroke="#E2612F"/><text x="63" y="48">2</text>
+            <rect x="77" y="32" width="27.5" height="26" rx="4" fill="#FFE2C6" stroke="#E2612F"/><text x="90" y="48">3</text>
+            <rect x="104.5" y="32" width="27.5" height="26" rx="4" fill="#F6CDA8" stroke="#E2612F"/><text x="118" y="48">4</text>
+            <rect x="132" y="32" width="27.5" height="26" rx="4" fill="#FFE2C6" stroke="#E2612F"/><text x="145" y="48">5</text>
+            <rect x="159.5" y="32" width="27.5" height="26" rx="4" fill="#F6CDA8" stroke="#E2612F"/><text x="173" y="48">6</text>
+            <rect x="187" y="32" width="27.5" height="26" rx="4" fill="#FFE2C6" stroke="#E2612F"/><text x="200" y="48">7</text>
+            <rect x="214.5" y="32" width="27.5" height="26" rx="4" fill="#F6CDA8" stroke="#E2612F"/><text x="228" y="48">8</text>
+            <rect x="242" y="32" width="27.5" height="26" rx="4" fill="#FFE2C6" stroke="#E2612F"/><text x="255" y="48">9</text>
+            <rect x="269.5" y="32" width="27.5" height="26" rx="4" fill="#F6CDA8" stroke="#E2612F"/><text x="283" y="48">10</text>
+            <rect x="297" y="32" width="27.5" height="26" rx="4" fill="#FFE2C6" stroke="#E2612F"/><text x="310" y="48">11</text>
+            <rect x="324.5" y="32" width="27.5" height="26" rx="4" fill="#F6CDA8" stroke="#E2612F"/><text x="338" y="48">12</text>
+            <rect x="352" y="32" width="27.5" height="26" rx="4" fill="#FFE2C6" stroke="#E2612F"/><text x="365" y="48">13</text>
+            <rect x="379.5" y="32" width="27.5" height="26" rx="4" fill="#F6CDA8" stroke="#E2612F"/><text x="393" y="48">14</text>
+            <rect x="407" y="32" width="27.5" height="26" rx="4" fill="#FFE2C6" stroke="#E2612F"/><text x="420" y="48">15</text>
+            <rect x="434.5" y="32" width="27.5" height="26" rx="4" fill="#F6CDA8" stroke="#E2612F"/><text x="448" y="48">16</text>
+          </g>
+          <!-- 层2：8 格（每格 2） -->
+          <g>
+            <rect x="22" y="68" width="55" height="26" rx="4" fill="#CDEEE2" stroke="#0F7B6C"/><text x="49" y="84">1-2</text>
+            <rect x="77" y="68" width="55" height="26" rx="4" fill="#B6E3D3" stroke="#0F7B6C"/><text x="104" y="84">3-4</text>
+            <rect x="132" y="68" width="55" height="26" rx="4" fill="#CDEEE2" stroke="#0F7B6C"/><text x="159" y="84">5-6</text>
+            <rect x="187" y="68" width="55" height="26" rx="4" fill="#B6E3D3" stroke="#0F7B6C"/><text x="214" y="84">7-8</text>
+            <rect x="242" y="68" width="55" height="26" rx="4" fill="#CDEEE2" stroke="#0F7B6C"/><text x="269" y="84">9-10</text>
+            <rect x="297" y="68" width="55" height="26" rx="4" fill="#B6E3D3" stroke="#0F7B6C"/><text x="324" y="84">11-12</text>
+            <rect x="352" y="68" width="55" height="26" rx="4" fill="#CDEEE2" stroke="#0F7B6C"/><text x="379" y="84">13-14</text>
+            <rect x="407" y="68" width="55" height="26" rx="4" fill="#B6E3D3" stroke="#0F7B6C"/><text x="434" y="84">15-16</text>
+          </g>
+          <!-- 层3：4 格（每格 4） -->
+          <g>
+            <rect x="22" y="104" width="110" height="26" rx="4" fill="#F7D6E1" stroke="#A33A64"/><text x="77" y="120">1-4</text>
+            <rect x="132" y="104" width="110" height="26" rx="4" fill="#F0C4D2" stroke="#A33A64"/><text x="187" y="120">5-8</text>
+            <rect x="242" y="104" width="110" height="26" rx="4" fill="#F7D6E1" stroke="#A33A64"/><text x="297" y="120">9-12</text>
+            <rect x="352" y="104" width="110" height="26" rx="4" fill="#F0C4D2" stroke="#A33A64"/><text x="407" y="120">13-16</text>
+          </g>
+          <!-- 层4：2 格（每格 8） -->
+          <g>
+            <rect x="22" y="140" width="220" height="26" rx="4" fill="#FFF1DC" stroke="#F2A63B"/><text x="132" y="156">1-8</text>
+            <rect x="242" y="140" width="220" height="26" rx="4" fill="#FFE6C0" stroke="#F2A63B"/><text x="352" y="156">9-16</text>
+          </g>
+          <!-- 层5：1 格 -->
+          <rect x="22" y="176" width="440" height="26" rx="4" fill="#2E2118"/><text x="242" y="192" fill="#FFD9A8">1-16</text>
+        </g>
+        <text x="242" y="222" text-anchor="middle" class="dfnlab">c[i] 管辖 lowbit(i) 个元素</text>
+        <!-- 对偶路径 -->
+        <g>
+          <rect x="42" y="238" width="180" height="42" rx="11" fill="#E9F7F2" stroke="#BEE6D8" stroke-width="2"/>
+          <text x="132" y="256" text-anchor="middle" class="dfnlab">查询 13 → 12 → 8</text>
+          <text x="132" y="272" text-anchor="middle" class="dfnlab g">i -= lowbit(i)</text>
+          <rect x="280" y="238" width="180" height="42" rx="11" fill="#FFEEDC" stroke="#F6D2B2" stroke-width="2"/>
+          <text x="370" y="256" text-anchor="middle" class="dfnlab r">修改 5 → 6 → 8 → 16</text>
+          <text x="370" y="272" text-anchor="middle" class="dfnlab r">i += lowbit(i)</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 路线图 ═══ -->
+<section class="slide" data-title="路线图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>ROADMAP</div><h2>六站，一条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>这份讲义怎么走？<br>每站先给"要解决的问题"，再给"为什么这样写"。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>基础</h3><p>lowbit · 管辖范围 · 树形态 · add/sum 模板 · 手算 trace</p></div>
+    <div class="card tint-teal"><h3><span class="n t">2</span>经典应用</h3><p>离散化 · 逆序对 · 上界二分（第 k 小）· LIS · 离线查询</p></div>
+    <div class="card tint-amber"><h3><span class="n">3</span>区间修改</h3><p>差分 · 区间加单点查 · 双 BIT 区间加区间和</p></div>
+    <div class="card tint-plum"><h3><span class="n">4</span>二维</h3><p>二维树状数组 · 子矩阵和 · 二维区间加</p></div>
+    <div class="card"><h3><span class="n">5</span>边界</h3><p>能维护什么（逆元条件）· 单调最值 · 与线段树/分块对比</p></div>
+    <div class="card tint-teal"><h3><span class="n t">6</span>工程</h3><p>易错清单 · 模板合集 · 验证方法 · 题单</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>时间分配</h3><p class="muted">基础 18' · 应用 16' · 区间修改 14' · 二维 8' · 边界 12' · 工程 8'</p></div>
+    <div class="card"><h3>验收标准</h3><p class="muted">能默写 add/sum、双 BIT 区间和、上界二分；说得出"什么时候不该用树状数组"。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 03 钩子 ═══ -->
+<section class="slide" data-title="四道题一个结构">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HOOK</div><h2>四道看似无关的题，<em>同一个结构</em></h2></div>
+    <div class="hint"><b>本页回答：</b>树状数组能干什么？<br>为什么值得单独讲一整套。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3>题 A</h3><p><b>题意：</b>数组支持"把 a[x] 加 v"，多次询问区间和。</p><div class="split-line t"></div><p class="muted">→ 单点加 + 前缀和。</p></div>
+    <div class="card"><h3>题 B</h3><p><b>题意：</b>求序列中<b>逆序对</b>个数（n ≤ 5×10⁵）。</p><div class="split-line"></div><p class="muted">→ 离散化 + 树状数组计数。</p></div>
+    <div class="card"><h3>题 C</h3><p><b>题意：</b>把区间 [l, r] 全部加 v，问某点的值。</p><div class="split-line"></div><p class="muted">→ 差分 + 树状数组。</p></div>
+    <div class="card"><h3>题 D</h3><p><b>题意：</b>矩阵单点加值，询问子矩阵的和。</p><div class="split-line t"></div><p class="muted">→ 二维树状数组。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n">★</span>统一模型</h3>
+      <p class="lead">所有题都在问：<b>"若干点的值被修改后，某一段的聚合值是多少？"</b>
+        树状数组的答案是：把数组<b>折成 log 层</b>，每层的块预先存好聚合值，查询时拼装、修改时更新。</p>
+      <div class="note"><b>判断口诀：</b>只有"加"与"求和/异或/可逆聚合" → 树状数组；要区间赋值、区间最值、复杂懒标记 → 线段树。</div>
+    </div>
+    <div class="card">
+      <h3>三个判断题</h3>
+      <div class="pill-row">
+        <span class="pill hot">更新是单点还是区间</span>
+        <span class="pill tq">聚合有没有逆运算</span>
+        <span class="pill">要不要区间最值</span>
+      </div>
+      <div class="split-line"></div>
+      <p class="muted">三个答案直接决定"用树状数组 / 双 BIT / 还是线段树"。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 问题定义 ═══ -->
+<section class="slide" data-title="问题定义">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · PROBLEM</div><h2>先把问题<em>说清楚</em></h2></div>
+    <div class="hint"><b>本页回答：</b>树状数组到底支持哪几种操作组合？<br>哪几种不支持。</div>
+  </div>
+  <table>
+    <tr><th style="width:190px">操作组合</th><th style="width:150px">结构</th><th style="width:130px">单次复杂度</th><th>说明</th></tr>
+    <tr><td>单点改 + 区间求和</td><td class="mono">BIT（1 个）</td><td class="mono">O(log n)</td><td>最经典，十行代码</td></tr>
+    <tr><td>区间加 + 单点查</td><td class="mono">BIT + 差分</td><td class="mono">O(log n)</td><td>存差分数组即可</td></tr>
+    <tr><td>区间加 + 区间和</td><td class="mono">BIT × 2</td><td class="mono">O(log n)</td><td>推导见第 30 页</td></tr>
+    <tr><td>单点改 + 区间最值</td><td class="mono">BIT-max</td><td class="mono">O(log n)</td><td><b>仅限单调更新</b></td></tr>
+    <tr><td>区间改 + 区间最值</td><td class="mono">线段树</td><td class="mono">O(log n)</td><td>树状数组做不到</td></tr>
+    <tr><td>区间第 k 大（静态）</td><td class="mono">BIT 上二分</td><td class="mono">O(log n)</td><td>要求计数非负</td></tr>
+    <tr><td>区间第 k 大（带修）</td><td class="mono">树套树 / 可持久化</td><td class="mono">O(log² n)</td><td>进阶，见第 26 页</td></tr>
+    <tr><td>子矩阵和</td><td class="mono">BIT × 2 维</td><td class="mono">O(log n·log m)</td><td>模板第 33 页</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-teal"><h3>共同点</h3><p>要求聚合运算<b>可结合、可逆</b>（和、异或、模意义乘法）；这样区间 = 两个前缀相减。</p></div>
+    <div class="card tint-plum"><h3>做不到</h3><p><b>区间赋值、区间最值（任意改）、区间 gcd</b> —— 没有逆运算，必须上别的结构。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 05 主线 ═══ -->
+<section class="slide" data-title="取舍链">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · ROADMAP</div><h2>取舍链：<em>朴素 → 前缀和 → 分块 → 树状数组 → 线段树</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么需要树状数组？<br>它在这条链上的位置。</div>
+  </div>
+  <table>
+    <tr><th style="width:120px">结构</th><th>单点改</th><th>区间查询</th><th>建表</th><th>常数</th><th>代码量</th></tr>
+    <tr><td>朴素</td><td class="mono">O(1)</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td>极小</td><td>1 行</td></tr>
+    <tr><td>前缀和</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td class="mono">O(n)</td><td>极小</td><td>1 行</td></tr>
+    <tr><td>分块</td><td class="mono">O(1)</td><td class="mono">O(√n)</td><td class="mono">O(n)</td><td>小</td><td>~20 行</td></tr>
+    <tr><td><b>树状数组</b></td><td class="mono">O(log n)</td><td class="mono">O(log n)</td><td class="mono">O(n)</td><td><b>很小</b></td><td><b>~10 行</b></td></tr>
+    <tr><td>线段树</td><td class="mono">O(log n)</td><td class="mono">O(log n)</td><td class="mono">O(n)</td><td>中</td><td>~50 行</td></tr>
+    <tr><td>ST 表</td><td class="mono">不支持</td><td class="mono">O(1)（最值）</td><td class="mono">O(n log n)</td><td>小</td><td>~15 行</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>树状数组的定位</h3>
+      <p>在"支持修改"的前提下，<b>代码量最小、常数最小</b>的对数结构。它的思想（分层块、lowbit）也是线段树、可持久化结构的基础语言。</p>
+    </div>
+    <div class="card tint-teal"><h3>典型心智模型</h3>
+      <p>数组被切成 <b>lowbit(i)</b> 长的块：查询 = 拼接 ≤ log n 块；修改 = 更新包含该点的 ≤ log n 块。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：基础">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 01</div>
+      <div class="big">基础：<em style="color:var(--accent)">lowbit 与两条跳转链</em></div>
+      <p class="lead">管辖范围 · 树形态 · add / sum 模板 · 手算 trace<br>理解了 lowbit，剩下的都是推论。</p>
+    </div>
+    <div><div class="num-huge">01</div>
+      <div class="note good"><b>目标：</b>能不看书写出 add 与 sum，并解释为什么是 O(log n)。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 朴素的困境 ═══ -->
+<section class="slide" data-title="朴素的困境">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · MOTIVATION</div><h2>朴素做法的<em>两难</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么前缀和不够用？<br>要"既快查又快改"怎么办。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>朴素数组</h3>
+        <div class="formula" style="font-size:12.8px">
+          查询 sum(l, r)：<span class="hl">O(n)</span> 逐个加<br>
+          修改 a[x] += v：<span class="ok">O(1)</span>
+        </div>
+        <p class="muted">查询太慢：10⁵ 次查询 × 10⁵ 长度 = 10¹⁰，TLE。</p>
+      </div>
+      <div class="card tint-teal"><h3>前缀和</h3>
+        <div class="formula" style="font-size:12.8px">
+          sum(l, r) = S[r] − S[l−1]：<span class="ok">O(1)</span><br>
+          修改 a[x] += v：<span class="hl">O(n)</span>（要重建 S）
+        </div>
+        <p class="muted">反过来，修改太慢。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card tint-amber"><h3>要的性质</h3>
+        <ul class="tick">
+          <li>修改只影响 <b>O(log n)</b> 个"预聚合值"</li>
+          <li>查询也只需要拼 <b>O(log n)</b> 个预聚合值</li>
+          <li>结构简单、常数小、不易写错</li>
+        </ul>
+      </div>
+      <div class="card"><h3>答案</h3>
+        <p>把数组<b>按 2 的幂分层</b>：第 k 层每块长 2^k。查询时由粗到细拼装，修改时由细到粗更新 —— 这就是树状数组。</p>
+      </div>
+      <div class="note good"><b>关键洞察：</b>不必维护"任意区间"，只要维护 <b>lowbit(i) 个后缀块</b>就够了。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 核心思想 ═══ -->
+<section class="slide" data-title="核心思想">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · IDEA</div><h2>核心思想：<em>每点管辖 lowbit(i) 个元素</em></h2></div>
+    <div class="hint"><b>本页回答：</b>c[i] 到底存什么？<br>为什么这样分块够用。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <div class="formula" style="font-size:12.8px">
+          c[i] = a[i − lowbit(i) + 1 .. i] 的和<br>
+          <span class="dim">即长度为 lowbit(i) 的一段，右端点为 i</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>为什么够用</h3>
+        <p>任取前缀 [1..x]，总能按 lowbit 把它切成 ≤ log n 段：例如 [1..13] = c[13] + c[12] + c[8]。</p>
+      </div>
+      <div class="note good"><b>两个方向：</b>查询往<b>左/下</b>跳（<code>i −= lowbit(i)</code>），修改往<b>右/上</b>跳（<code>i += lowbit(i)</code>）。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid meet">
+          <!-- 数组条 -->
+          <g font-family="monospace" font-size="10">
+            <rect x="24" y="150" width="300" height="34" rx="6" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+            <g stroke="#D9B98D"><path d="M42 150 L42 184 M60 150 L60 184 M78 150 L78 184 M96 150 L96 184 M114 150 L114 184 M132 150 L132 184 M150 150 L150 184 M168 150 L168 184 M186 150 L186 184 M204 150 L204 184 M222 150 L222 184 M240 150 L240 184 M258 150 L258 184 M276 150 L276 184 M294 150 L294 184"/></g>
+            <g fill="#7A4A22" text-anchor="middle">
+              <text x="33" y="200">1</text><text x="51" y="200">2</text><text x="69" y="200">3</text><text x="87" y="200">4</text>
+              <text x="105" y="200">5</text><text x="123" y="200">6</text><text x="141" y="200">7</text><text x="159" y="200">8</text>
+              <text x="177" y="200">9</text><text x="195" y="200">10</text><text x="213" y="200">11</text><text x="231" y="200">12</text>
+              <text x="249" y="200">13</text><text x="267" y="200">14</text><text x="285" y="200">15</text><text x="303" y="200">16</text>
+            </g>
+          </g>
+          <!-- 管辖括号 -->
+          <g fill="none" stroke-width="3">
+            <path d="M148 130 L148 112 L168 112 L168 130" stroke="#E2612F"/>
+            <path d="M226 130 L226 112 L254 112 L254 130" stroke="#0F7B6C"/>
+            <path d="M40 130 L40 112 L98 112 L98 130" stroke="#A33A64"/>
+            <path d="M24 92 L24 74 L324 74 L324 92" stroke="#F2A63B"/>
+          </g>
+          <g font-family="monospace" font-size="10.5" text-anchor="middle">
+            <text x="158" y="106" fill="#B9471B">c[8]→1-8</text>
+            <text x="240" y="106" fill="#0B6356">c[13]:13</text>
+            <text x="69" y="106" fill="#A33A64">c[4]:1-4</text>
+            <text x="174" y="68" fill="#B9471B">c[16]:1-16</text>
+          </g>
+          <text x="200" y="228" text-anchor="middle" class="dfnlab g">前缀 [1..13] = c[13] + c[12] + c[8]</text>
+        </svg>
+      </div>
+      <div class="note"><b>注意：</b>c 的下标与 a 一致（1..n），<b>没有 c[0]</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 09 lowbit ═══ -->
+<section class="slide" data-title="lowbit 原理">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · LOWBIT</div><h2>lowbit：<em>x &amp; -x</em> 为什么是最低位</h2></div>
+    <div class="hint"><b>本页回答：</b>这行位运算凭什么对？<br>用二进制一推就懂。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <div class="formula" style="font-size:13px">
+          lowbit(x) = <span class="hl">x &amp; -x</span> = x 最低位 1 所代表的值<br>
+          <span class="dim">44 = 101100₂ → lowbit = 100₂ = 4</span>
+        </div>
+      </div>
+      <div class="card"><h3>证明</h3>
+        <p>设 x 的最低位 1 在第 k 位。则 x = A·2^(k+1) + 2^k，补码取负 <code>-x = ~x + 1</code> 后，第 0..k−1 位全变 1 再进位，恰好第 k 位为 1、高位为 A 取反。<code>x &amp; -x</code> 只剩第 k 位。</p>
+      </div>
+      <div class="note warn"><b>致命细节：</b><code>lowbit(0) = 0</code>。若下标出现 0，<code>while i &gt; 0</code> 之外的写法会<b>死循环</b>。所以树状数组一律 <b>1-indexed</b>。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid meet">
+          <g font-family="monospace" font-size="17" text-anchor="middle">
+            <text x="200" y="34" fill="#7A4A22">x&nbsp;&nbsp;&nbsp;=&nbsp;0 0 1 0 1 1 0 0</text>
+            <text x="200" y="70" fill="#0B6356">-x&nbsp;&nbsp;=&nbsp;1 1 0 1 0 1 0 0</text>
+            <text x="200" y="118" fill="#B9471B">x &amp; -x = 0 0 0 0 0 1 0 0</text>
+            <text x="200" y="160" fill="#A33A64">↑ 最低位 1 = 4</text>
+          </g>
+          <line x1="88" y1="46" x2="312" y2="46" stroke="#D9B98D" stroke-width="2"/>
+          <line x1="88" y1="130" x2="312" y2="130" stroke="#D9B98D" stroke-width="2"/>
+          <rect x="146" y="88" width="26" height="30" rx="6" fill="#FFE2C6" stroke="#E2612F" stroke-width="2" class="pulse"/>
+          <text x="200" y="200" text-anchor="middle" class="dfnlab g">x &amp; (x - 1) 则相反：抹掉最低位 1</text>
+        </svg>
+      </div>
+      <div class="note good"><b>顺手记：</b><code>x &amp; (x-1)</code> 抹掉最低位 1（常用于数二进制中 1 的个数）；<code>x | (x-1)</code> 把最低位 1 变 0 之后全置 1。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 管辖范围 ═══ -->
+<section class="slide" data-title="管辖范围图解">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · COVERAGE</div><h2>1..16 的<em>管辖范围</em>长什么样</h2></div>
+    <div class="hint"><b>本页回答：</b>哪些 c[i] 覆盖 1..8？<br>块的长度有什么规律。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>规律</h3>
+        <ul class="tick">
+          <li>块长 = <code>lowbit(i)</code>，永远是 2 的幂</li>
+          <li>块长为 1 的块有 ⌈n/1⌉ 个，为 2 的有 ⌈n/2⌉ 个……共 n 个 c[i]</li>
+          <li>块长 2^k 的块，右端点满足 <code>i ≡ 0 (mod 2^k)</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>两个半边</h3>
+        <p>查询走<b>越来越短</b>的块（13 → 12 → 8），修改走<b>越来越长</b>的块（5 → 6 → 8 → 16）。两条链的长度都 ≤ log₂ n。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 250" preserveAspectRatio="xMidYMid meet">
+          <g font-family="monospace" font-size="9.5" text-anchor="middle">
+            <!-- 行1 -->
+            <g fill="#FFE2C6" stroke="#E2612F">
+              <rect x="10" y="16" width="24" height="22" rx="3"/><rect x="34" y="16" width="24" height="22" rx="3"/>
+              <rect x="58" y="16" width="24" height="22" rx="3"/><rect x="82" y="16" width="24" height="22" rx="3"/>
+              <rect x="106" y="16" width="24" height="22" rx="3"/><rect x="130" y="16" width="24" height="22" rx="3"/>
+              <rect x="154" y="16" width="24" height="22" rx="3"/><rect x="178" y="16" width="24" height="22" rx="3"/>
+              <rect x="202" y="16" width="24" height="22" rx="3"/><rect x="226" y="16" width="24" height="22" rx="3"/>
+              <rect x="250" y="16" width="24" height="22" rx="3"/><rect x="274" y="16" width="24" height="22" rx="3"/>
+              <rect x="298" y="16" width="24" height="22" rx="3"/><rect x="322" y="16" width="24" height="22" rx="3"/>
+              <rect x="346" y="16" width="24" height="22" rx="3"/><rect x="370" y="16" width="24" height="22" rx="3"/>
+            </g>
+            <g fill="#7A4A22">
+              <text x="22" y="31">1</text><text x="46" y="31">2</text><text x="70" y="31">3</text><text x="94" y="31">4</text>
+              <text x="118" y="31">5</text><text x="142" y="31">6</text><text x="166" y="31">7</text><text x="190" y="31">8</text>
+              <text x="214" y="31">9</text><text x="238" y="31">10</text><text x="262" y="31">11</text><text x="286" y="31">12</text>
+              <text x="310" y="31">13</text><text x="334" y="31">14</text><text x="358" y="31">15</text><text x="382" y="31">16</text>
+            </g>
+            <!-- 行2：块长 2 -->
+            <g fill="#CDEEE2" stroke="#0F7B6C">
+              <rect x="10" y="48" width="48" height="22" rx="3"/><rect x="58" y="48" width="48" height="22" rx="3"/>
+              <rect x="106" y="48" width="48" height="22" rx="3"/><rect x="154" y="48" width="48" height="22" rx="3"/>
+              <rect x="202" y="48" width="48" height="22" rx="3"/><rect x="250" y="48" width="48" height="22" rx="3"/>
+              <rect x="298" y="48" width="48" height="22" rx="3"/><rect x="346" y="48" width="48" height="22" rx="3"/>
+            </g>
+            <g fill="#0B6356">
+              <text x="34" y="63">c2</text><text x="82" y="63">c4*</text><text x="130" y="63">c6</text><text x="178" y="63">c8*</text>
+              <text x="226" y="63">c10</text><text x="274" y="63">c12*</text><text x="322" y="63">c14</text><text x="370" y="63">c16*</text>
+            </g>
+            <!-- 行3：块长 4 -->
+            <g fill="#F7D6E1" stroke="#A33A64">
+              <rect x="10" y="80" width="96" height="22" rx="3"/><rect x="106" y="80" width="96" height="22" rx="3"/>
+              <rect x="202" y="80" width="96" height="22" rx="3"/><rect x="298" y="80" width="96" height="22" rx="3"/>
+            </g>
+            <g fill="#A33A64">
+              <text x="58" y="95">c4 : 1-4</text><text x="154" y="95">c8 : 5-8</text>
+              <text x="250" y="95">c12: 9-12</text><text x="346" y="95">c16: 13-16</text>
+            </g>
+            <!-- 行4：块长 8 -->
+            <g fill="#FFF1DC" stroke="#F2A63B">
+              <rect x="10" y="112" width="192" height="22" rx="3"/><rect x="202" y="112" width="192" height="22" rx="3"/>
+            </g>
+            <g fill="#B9471B">
+              <text x="106" y="127">c8 : 1-8</text><text x="298" y="127">c16: 9-16</text>
+            </g>
+            <!-- 行5：块长 16 -->
+            <rect x="10" y="144" width="384" height="22" rx="3" fill="#2E2118"/>
+            <text x="202" y="159" fill="#FFD9A8">c16 : 1-16</text>
+
+            <text x="202" y="192" fill="#8A6A45">* 处的 c[i] 管辖 2 个元素；块长随 lowbit 变化</text>
+            <text x="202" y="212" fill="#0B6356">查询拼"短块"，修改更新"长块"</text>
+            <text x="202" y="232" fill="#B9471B">13 → 12(9-12) → 8(1-8) ｜ 5 → 6(5-6) → 8(1-8) → 16</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 树形态 ═══ -->
+<section class="slide" data-title="树形态与父子">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · TREE</div><h2>树形态：<em>父亲 = i + lowbit(i)</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么叫"树状"数组？<br>父子关系怎么来的。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>父子关系</h3>
+        <div class="formula" style="font-size:13px">
+          父亲：<span class="hl">i + lowbit(i)</span>（管辖区间向右扩展）<br>
+          子节点：j 满足 <span class="ok">j + lowbit(j) = i</span>
+        </div>
+        <p class="muted">i 的管辖区间是父亲区间<b>靠右</b>的一段。</p>
+      </div>
+      <div class="card tint-amber"><h3>性质</h3>
+        <ul class="tick">
+          <li>根是 <code>lowbit = n</code> 的位置（如 n = 2^k 时是 n 本身）</li>
+          <li>深度 ≤ log₂ n，所以两条跳转链都是 O(log n)</li>
+          <li>查询链 = 沿"被管辖"方向一路向左</li>
+        </ul>
+      </div>
+      <div class="note good"><b>命名由来：</b>把每个 i 连到 i+lowbit(i)，得到一棵树 —— <b>Fenwick Tree / Binary Indexed Tree</b>。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 400 250" preserveAspectRatio="xMidYMid meet">
+          <g class="gedge tree">
+            <path d="M42 200 L86 152"/><path d="M86 152 L150 100"/><path d="M122 200 L150 100"/>
+            <path d="M236 200 L276 152"/><path d="M276 152 L228 100"/><path d="M328 200 L276 152"/>
+            <path d="M228 100 L214 46"/><path d="M150 100 L214 46"/>
+          </g>
+          <g class="gnode root"><circle cx="214" cy="42" r="24"/><text x="214" y="49" font-size="14">8</text></g>
+          <g class="gnode done"><circle cx="150" cy="100" r="21"/><text x="150" y="107" font-size="13">4</text></g>
+          <g class="gnode done"><circle cx="276" cy="152" r="21"/><text x="276" y="159" font-size="13">6</text></g>
+          <g class="gnode"><circle cx="228" cy="100" r="21"/><text x="228" y="107" font-size="13">7</text></g>
+          <g class="gnode"><circle cx="86" cy="152" r="21"/><text x="86" y="159" font-size="13">2</text></g>
+          <g class="gnode"><circle cx="236" cy="200" r="21"/><text x="236" y="207" font-size="13">5</text></g>
+          <g class="gnode"><circle cx="328" cy="200" r="21"/><text x="328" y="207" font-size="13">3</text></g>
+          <g class="gnode"><circle cx="42" cy="200" r="21"/><text x="42" y="207" font-size="13">1</text></g>
+          <text x="200" y="240" text-anchor="middle" class="dfnlab g">i + lowbit(i)：1→2→4→8 · 3→4 · 5→6→8 · 7→8</text>
+          <text x="352" y="46" class="dfnlab r">修改向上</text>
+          <text x="24" y="46" class="dfnlab">查询向下</text>
+        </svg>
+      </div>
+      <div class="note"><b>记忆：</b>编号越"整"（低比特越多），管得越宽；<code>8</code> 一统 1..8，<code>1</code> 只管自己。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 模板 ═══ -->
+<section class="slide" data-title="核心模板">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · TEMPLATE</div><h2>核心模板：<em>add / sum / range_sum</em></h2></div>
+    <div class="hint"><b>本页回答：</b>模板到底怎么写？<br>循环条件各是什么。</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>bit_core.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="core"></code></pre></pre>
+    <div>
+      <div class="card"><h3>两行记忆</h3>
+        <div class="formula" style="font-size:12.8px">
+          查询 sum：<span class="ok">while i &gt; 0: i -= i &amp; -i</span><br>
+          修改 add：<span class="hl">while i &lt;= n: i += i &amp; -i</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>约定</h3>
+        <ul class="tick">
+          <li>下标 <b>1..n</b>，数组开 <code>n + 1</code></li>
+          <li>0 号位空着不参与</li>
+          <li><code>range_sum(l, r) = sum(r) − sum(l−1)</code></li>
+        </ul>
+      </div>
+      <div class="note warn"><b>别用 list 别名：</b>Python 里 <code>self.t</code> 复制到局部变量能省属性查找，高频题有明显收益（见第 42 页）。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 13 查询路径 ═══ -->
+<section class="slide" data-title="查询路径手算">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · QUERY</div><h2>查询路径手算：<em class="t">sum(13) = c[13] + c[12] + c[8]</em></h2></div>
+    <div class="hint"><b>本页回答：</b>每一步跳到哪？<br>为什么恰好覆盖 1..13。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>手算表</h3>
+        <table style="box-shadow:none">
+          <tr><th>步骤</th><th>i</th><th>lowbit</th><th>管辖区间</th></tr>
+          <tr><td>1</td><td class="mono">13</td><td class="mono">1</td><td class="mono">[13..13]</td></tr>
+          <tr><td>2</td><td class="mono">12</td><td class="mono">4</td><td class="mono">[9..12]</td></tr>
+          <tr><td>3</td><td class="mono">8</td><td class="mono">8</td><td class="mono">[1..8]</td></tr>
+          <tr><td>4</td><td class="mono">0</td><td class="mono">—</td><td>停止</td></tr>
+        </table>
+      </div>
+      <div class="card tint-teal"><h3>为什么恰好</h3>
+        <p>13 = 1101₂：最低位 1 代表 1，剩 12 = 1100₂；最低位 1 代表 4，剩 8 = 1000₂；代表 8，剩 0。<b>二进制分解 = 区间分解</b>。</p>
+      </div>
+      <div class="note good"><b>步数：</b>13 = 1101₂ 有 3 个 1 → 跳 3 步；最坏 n = 2^k−1 时跳 k 步 = ⌊log₂ n⌋+1。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid meet">
+          <g font-family="monospace" font-size="11" text-anchor="middle">
+            <rect x="24" y="150" width="330" height="30" rx="6" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+            <g fill="#7A4A22">
+              <text x="34" y="170">1</text><text x="54" y="170">2</text><text x="74" y="170">3</text><text x="94" y="170">4</text>
+              <text x="114" y="170">5</text><text x="134" y="170">6</text><text x="154" y="170">7</text><text x="174" y="170">8</text>
+              <text x="194" y="170">9</text><text x="214" y="170">10</text><text x="234" y="170">11</text><text x="254" y="170">12</text>
+              <text x="274" y="170">13</text><text x="294" y="170">14</text><text x="314" y="170">15</text><text x="334" y="170">16</text>
+            </g>
+            <!-- c[13] -->
+            <rect x="262" y="150" width="20" height="30" fill="#0F7B6C" opacity=".32"/>
+            <!-- c[12] -->
+            <rect x="182" y="150" width="80" height="30" fill="#0F7B6C" opacity=".32"/>
+            <!-- c[8] -->
+            <rect x="24" y="150" width="158" height="30" fill="#0F7B6C" opacity=".32"/>
+          </g>
+          <g fill="none" stroke="#0F7B6C" stroke-width="2.5">
+            <path d="M272 132 L272 118 L222 118 L222 132"/>
+            <path d="M222 118 L103 118 L103 132"/>
+            <path d="M103 118 L103 104 L272 104"/>
+          </g>
+          <g font-family="monospace" font-size="11" text-anchor="middle">
+            <text x="272" y="112" fill="#0B6356">c[13]</text>
+            <text x="222" y="112" fill="#0B6356">c[12]</text>
+            <text x="103" y="112" fill="#0B6356">c[8]</text>
+          </g>
+          <g font-family="monospace" font-size="13" text-anchor="middle">
+            <text x="200" y="212" fill="#B9471B">13 &amp; -13 = 1 → 12</text>
+            <text x="200" y="232" fill="#B9471B">12 &amp; -12 = 4 → 8 → 0</text>
+          </g>
+        </svg>
+      </div>
+      <div class="note"><b>记住：</b>查询的每一步都<b>少覆盖一半</b>，所以步数是 log 级；三步就拼完了 1..13。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 14 修改路径 ═══ -->
+<section class="slide" data-title="修改路径手算">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · UPDATE</div><h2>修改路径手算：<em>add(5) 更新 5 → 6 → 8 → 16</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪些 c[i] 必须更新？<br>为什么方向相反。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>手算表</h3>
+        <table style="box-shadow:none">
+          <tr><th>步骤</th><th>i</th><th>lowbit</th><th>管辖区间</th></tr>
+          <tr><td>1</td><td class="mono">5</td><td class="mono">1</td><td class="mono">[5..5]</td></tr>
+          <tr><td>2</td><td class="mono">6</td><td class="mono">2</td><td class="mono">[5..6]</td></tr>
+          <tr><td>3</td><td class="mono">8</td><td class="mono">8</td><td class="mono">[1..8]</td></tr>
+          <tr><td>4</td><td class="mono">16</td><td class="mono">16</td><td class="mono">[1..16]</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>为什么是这些</h3>
+        <p>凡是<b>管辖区间包含 5</b> 的 c[i] 都要更新。这样的 i 恰好是 5 的所有"祖先"：5 → 6 → 8 → 16，最多 log n 个。</p>
+      </div>
+      <div class="note warn"><b>方向相反：</b>查询从"细块"拼到"粗块"（i 减小），修改从"细块"扩散到"粗块"（i 增大）。两条链互补，都 ≤ log n。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid meet">
+          <g font-family="monospace" font-size="11" text-anchor="middle">
+            <rect x="24" y="150" width="330" height="30" rx="6" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+            <g fill="#7A4A22">
+              <text x="34" y="170">1</text><text x="54" y="170">2</text><text x="74" y="170">3</text><text x="94" y="170">4</text>
+              <text x="114" y="170">5</text><text x="134" y="170">6</text><text x="154" y="170">7</text><text x="174" y="170">8</text>
+              <text x="194" y="170">9</text><text x="214" y="170">10</text><text x="234" y="170">11</text><text x="254" y="170">12</text>
+              <text x="274" y="170">13</text><text x="294" y="170">14</text><text x="314" y="170">15</text><text x="334" y="170">16</text>
+            </g>
+            <rect x="104" y="150" width="20" height="30" fill="#E2612F" opacity=".38"/>
+            <rect x="104" y="150" width="40" height="30" fill="#E2612F" opacity=".22"/>
+            <rect x="24" y="150" width="160" height="30" fill="#E2612F" opacity=".16"/>
+            <rect x="24" y="150" width="330" height="30" fill="#E2612F" opacity=".10"/>
+          </g>
+          <g fill="none" stroke="#E2612F" stroke-width="2.5" class="dash">
+            <path d="M114 132 L114 116 L134 116 L134 132"/>
+            <path d="M134 116 L174 116 L174 132"/>
+            <path d="M174 116 L334 116 L334 132"/>
+          </g>
+          <g font-family="monospace" font-size="11" text-anchor="middle">
+            <text x="114" y="110" fill="#B9471B">c5</text>
+            <text x="150" y="110" fill="#B9471B">c6</text>
+            <text x="192" y="110" fill="#B9471B">c8</text>
+            <text x="322" y="110" fill="#B9471B">c16</text>
+          </g>
+          <g font-family="monospace" font-size="13" text-anchor="middle">
+            <text x="200" y="212" fill="#B9471B">5 &amp; -5 = 1 → 6；6 &amp; -6 = 2 → 8</text>
+            <text x="200" y="232" fill="#B9471B">8 &amp; -8 = 8 → 16</text>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>对照记忆：</b>查询 <code>i −= lowbit(i)</code>；修改 <code>i += lowbit(i)</code>。两个 while 的终止条件也相反（<code>&gt; 0</code> / <code>≤ n</code>）。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 15 trace ═══ -->
+<section class="slide" data-title="完整 trace">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · TRACE</div><h2>完整跑一遍：<em>a = 1..5</em></h2></div>
+    <div class="hint"><b>本页回答：</b>c 数组怎么来的？<br>改一次后还能对上吗。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>手算 c</h3>
+        <table style="box-shadow:none">
+          <tr><th>i</th><th>lowbit</th><th>管辖</th><th>c[i]</th></tr>
+          <tr><td class="mono">1</td><td class="mono">1</td><td class="mono">a[1..1]</td><td class="mono">1</td></tr>
+          <tr><td class="mono">2</td><td class="mono">2</td><td class="mono">a[1..2]</td><td class="mono">3</td></tr>
+          <tr><td class="mono">3</td><td class="mono">1</td><td class="mono">a[3..3]</td><td class="mono">3</td></tr>
+          <tr><td class="mono">4</td><td class="mono">4</td><td class="mono">a[1..4]</td><td class="mono">10</td></tr>
+          <tr><td class="mono">5</td><td class="mono">1</td><td class="mono">a[5..5]</td><td class="mono">5</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>改一次</h3>
+        <p><code>add(3, +2)</code>：a 变为 1,2,<b>5</b>,4,5；c[3] 3→5，c[4] 10→12。</p>
+        <div class="split-line"></div>
+        <p><code>sum(5) = c[5] + c[4] = 5 + 12 = 17</code> = 1+2+5+4+5 ✓</p>
+      </div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>trace.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="trace"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 16 建树 ═══ -->
+<section class="slide" data-title="O(n) 建树">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · BUILD</div><h2>建树：<em>O(n) 与 O(n log n)</em> 的差别</h2></div>
+    <div class="hint"><b>本页回答：</b>怎么最快建树？<br>常见写法错在哪。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>两种建法</h3>
+        <table style="box-shadow:none">
+          <tr><th>做法</th><th>复杂度</th><th>说明</th></tr>
+          <tr><td>逐个 <code>add(i, a[i])</code></td><td class="mono">O(n log n)</td><td>稳，n ≤ 10⁶ 也可</td></tr>
+          <tr><td>整体复制 + 向上传递</td><td class="mono">O(n)</td><td>n 很大时用</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>易错点</h3>
+        <div class="formula" style="font-size:12.6px">
+          <span style="color:#F4A9C0">错：</span>循环里 <code>c[i] = a[i]</code> 再 <code>c[j] += c[i]</code><br>
+          <span class="dim">会把之前累加的值覆盖掉！</span><br>
+          <span class="ok">对：</span>先 <code>c = a[:]</code>，再单独一轮向上传递
+        </div>
+      </div>
+      <div class="note good"><b>验证：</b>a = 1..5 走 O(n) 建法得到 <code>c = [0,1,3,3,10,5]</code>，与手算一致。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>build.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="build"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 17 复杂度 ═══ -->
+<section class="slide" data-title="复杂度与常数">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · COMPLEXITY</div><h2>复杂度与常数：<em>为什么它比线段树快</em></h2></div>
+    <div class="hint"><b>本页回答：</b>log 从哪来？<br>常数优势体现在哪。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>时间</h3>
+        <div class="formula" style="font-size:12.8px">
+          查询/修改：<span class="ok">O(log n)</span>（跳 ≤ ⌊log₂ n⌋+1 次）<br>
+          建树：<span class="ok">O(n)</span>　空间：<span class="ok">O(n)</span><br>
+          区间加区间和：<span class="hl">O(log n)</span>（两个 BIT）
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>常数来源</h3>
+        <ul class="tick">
+          <li>只有加法与位运算，<b>无递归、无分支</b></li>
+          <li>访问连续内存（数组 c），缓存友好</li>
+          <li>实测约为线段树的 2~3 倍快</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>与线段树的量级</h3>
+        <table style="box-shadow:none">
+          <tr><th>指标</th><th>BIT</th><th>线段树</th></tr>
+          <tr><td>单次操作</td><td class="mono">log n · c₁</td><td class="mono">log n · c₂</td></tr>
+          <tr><td>常数 c₁ : c₂</td><td class="mono">1</td><td class="mono">≈ 2~3</td></tr>
+          <tr><td>递归栈</td><td>无</td><td>有</td></tr>
+          <tr><td>代码量</td><td class="mono">~10 行</td><td class="mono">~50 行</td></tr>
+        </table>
+      </div>
+      <div class="note good"><b>结论：</b>能用 BIT 解决的题，<b>优先 BIT</b>；只有需要复杂懒标记/区间最值时才上树。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 18 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：经典应用">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 02</div>
+      <div class="big">应用：<em style="color:var(--accent)">计数 · 排序 · 第 k 小</em></div>
+      <p class="lead">离散化 · 逆序对 · 上界二分 · LIS · 离线查询<br>树状数组的真正威力在"统计"。</p>
+    </div>
+    <div><div class="num-huge">02</div>
+      <div class="note good"><b>目标：</b>逆序对 15 分钟内写对（含离散化）；能说清上界二分的每一步。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 19 离散化 ═══ -->
+<section class="slide" data-title="离散化">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · DISCRETIZE</div><h2>离散化：<em>把大值域压成 1..m</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么时候要离散化？<br>排名从 0 还是 1 开始。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>为什么需要</h3>
+        <p>值域可能到 10⁹，数组开不下；但<b>不同的值只有 n 个</b>。按大小映射到 1..m（m ≤ n）即可。</p>
+      </div>
+      <div class="card tint-amber"><h3>两个约定</h3>
+        <ul class="tick">
+          <li>排名从 <b>1</b> 开始（树状数组没有 0）</li>
+          <li>重复值映射到<b>同一排名</b>（统计出现次数时分别处理）</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>坑：</b>用 <code>dict</code> 建映射时记得 <code>set()</code> 去重；查询值 v 的排名用 <code>bisect_left(vals, v) + 1</code>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>discretize.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="discretize"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 20 逆序对 ═══ -->
+<section class="slide" data-title="逆序对">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · INVERSION</div><h2>逆序对：<em>经典中的经典</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么用 BIT 数逆序对？<br>例子验算是多少。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>思路</h3>
+        <ul class="tick">
+          <li>从左往右扫，维护"已出现的值"的计数</li>
+          <li>对 a[i]，前面比它大的个数 = 已插入数 − 前面 ≤ a[i] 的个数</li>
+          <li>累加后 <code>add(rank, 1)</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验算</h3>
+        <p>对 <code>[3,1,4,1,5,9,2,6]</code>：<br>
+          3 对 (1,2)、4 对 (1,2)、5 对 (2)、9 对 (2,6) → 共 <b>7</b> 对。</p>
+        <div class="split-line"></div>
+        <p class="muted">复杂度 O(n log n)，n = 5×10⁵ 稳过。</p>
+      </div>
+      <div class="note good"><b>对偶写法：</b>从右往左数"右边比它小的"，结果一样。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>inversion.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="inversion"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 21 其他解法 ═══ -->
+<section class="slide" data-title="逆序对的其他解法">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · COMPARE</div><h2>求逆序对：<em>三种解法对比</em></h2></div>
+    <div class="hint"><b>本页回答：</b>归并和 BIT 各有什么优势？<br>什么时候必须用 BIT。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>归并排序</h3>
+      <p><b>做法：</b>合并时统计跨半逆序数。</p>
+      <div class="split-line"></div>
+      <p class="muted">优点：常数小、无需离散化；缺点：离线、只能一次统计。</p>
+    </div>
+    <div class="card tint-teal"><h3><span class="n t">2</span>树状数组</h3>
+      <p><b>做法：</b>离散化后按值统计前缀计数。</p>
+      <div class="split-line t"></div>
+      <p class="muted">优点：<b>可支持在线/带修改</b>；可顺带求"每个元素贡献"。</p>
+    </div>
+    <div class="card tint-amber"><h3><span class="n">3</span>平衡树 / 有序容器</h3>
+      <p><b>做法：</b>插入时查询比它大的个数。</p>
+      <div class="split-line"></div>
+      <p class="muted">优点：不用离散化；缺点：常数大、Python 无内置。</p>
+    </div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>选择建议</h3>
+      <ul class="tick">
+        <li>一次性统计、纯求逆序对 → <b>归并</b>（快、短）</li>
+        <li>要"每个元素的贡献"或后续有修改 → <b>BIT</b></li>
+        <li>值域小且稠密 → 直接开桶 + BIT，省去离散化</li>
+      </ul>
+    </div>
+    <div class="card tint-plum"><h3>衍生问题</h3>
+      <p>"右侧比它小的个数"（LC 315）、"翻转对 i &lt; j 且 a[i] &gt; 2·a[j]"（LC 493）都是同一套路的变体。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 22 上界二分 ═══ -->
+<section class="slide" data-title="树状数组上二分">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>02 · KTH</div><h2>第 k 小：<em class="t">树状数组上二分</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么 O(log n) 找第 k 小？<br>倍增的每一步在做什么。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>思路</h3>
+        <ul class="tick ok">
+          <li>BIT 存的是<b>计数</b>，前缀和 = 排名</li>
+          <li>从高位到低位试探：若 <code>c[pos + bit] &lt; k</code>，说明这一段全跳过</li>
+          <li>最后 <code>pos + 1</code> 就是答案</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>前提条件</h3>
+        <div class="formula" style="font-size:12.6px">
+          计数<span class="ok">非负</span>；1 ≤ k ≤ 总数<br>
+          bit = <span class="hl">1 &lt;&lt; (n.bit_length() − 1)</span>（≤ n 的最大 2 的幂）
+        </div>
+      </div>
+      <div class="note warn"><b>易错：</b>判定必须是 <code>&lt; k</code> 而非 <code>≤ k</code>；写错会返回前一个位置。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>kth.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="kth"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 23 kth 手算 ═══ -->
+<section class="slide" data-title="kth 手算">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>02 · KTH TRACE</div><h2>手算一遍：<em class="t">kth(5) 与 kth(4)</em></h2></div>
+    <div class="hint"><b>本页回答：</b>倍增每一步的判断结果？<br>答案对不对得上。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>计数与 c</h3>
+        <table style="box-shadow:none">
+          <tr><th>排名</th><td class="mono">1</td><td class="mono">2</td><td class="mono">3</td><td class="mono">4</td><td class="mono">5</td><td class="mono">6</td><td class="mono">7</td><td class="mono">8</td></tr>
+          <tr><th>f</th><td class="mono">1</td><td class="mono">2</td><td class="mono">0</td><td class="mono">1</td><td class="mono">3</td><td class="mono">0</td><td class="mono">1</td><td class="mono">2</td></tr>
+          <tr><th>c</th><td class="mono">1</td><td class="mono">3</td><td class="mono">0</td><td class="mono">4</td><td class="mono">3</td><td class="mono">3</td><td class="mono">1</td><td class="mono">10</td></tr>
+        </table>
+        <p class="muted">总数 10；前缀和为 1,3,3,4,7,7,8,10。</p>
+      </div>
+      <div class="card tint-amber"><h3>kth(5)</h3>
+        <table style="box-shadow:none">
+          <tr><th>bit</th><th>nxt</th><th>c[nxt]</th><th>动作</th></tr>
+          <tr><td class="mono">8</td><td class="mono">8</td><td class="mono">10</td><td>10 ≥ 5 → 跳过</td></tr>
+          <tr><td class="mono">4</td><td class="mono">4</td><td class="mono">4</td><td>4 &lt; 5 → k=1, pos=4</td></tr>
+          <tr><td class="mono">2</td><td class="mono">6</td><td class="mono">3</td><td>3 ≥ 1 → 跳过</td></tr>
+          <tr><td class="mono">1</td><td class="mono">5</td><td class="mono">3</td><td>3 ≥ 1 → 跳过</td></tr>
+        </table>
+        <p>答案 <code>pos + 1 = 5</code> ✓（前缀和到 4 是 4，到 5 是 7）</p>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>kth(4)</h3>
+        <table style="box-shadow:none">
+          <tr><th>bit</th><th>nxt</th><th>c[nxt]</th><th>动作</th></tr>
+          <tr><td class="mono">8</td><td class="mono">8</td><td class="mono">10</td><td>10 ≥ 4 → 跳过</td></tr>
+          <tr><td class="mono">4</td><td class="mono">4</td><td class="mono">4</td><td>4 ≥ 4 → 跳过</td></tr>
+          <tr><td class="mono">2</td><td class="mono">2</td><td class="mono">3</td><td>3 &lt; 4 → k=1, pos=2</td></tr>
+          <tr><td class="mono">1</td><td class="mono">3</td><td class="mono">0</td><td>0 &lt; 1 → k=1, pos=3</td></tr>
+        </table>
+        <p>答案 <code>pos + 1 = 4</code> ✓</p>
+      </div>
+      <div class="card tint-teal"><h3>变式</h3>
+        <ul class="tick ok">
+          <li>第 k 大 → 倒着用（或把计数反向）</li>
+          <li>求排名 → 直接 <code>sum(rank)</code></li>
+          <li>求"不超过 x 的个数" → <code>sum(rank(x))</code></li>
+        </ul>
+      </div>
+      <div class="note good"><b>本质：</b>这是<b>在树上二分</b>，比"二分答案 + 判前缀和"快一个 log。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 24 LIS ═══ -->
+<section class="slide" data-title="LIS 与 BIT-max">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · LIS</div><h2>最长上升子序列：<em>BIT 维护最大值</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么这里 BIT 可以维护 max？<br>和 O(n log n) 的贪心解法比。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>做法</h3>
+        <ul class="tick">
+          <li>离散化值域；BIT 存"以值 r 结尾的 LIS 长度"</li>
+          <li>对 a[i]：<code>cur = query(rank − 1) + 1</code>（严格上升）</li>
+          <li><code>update(rank, cur)</code>（取 max）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>为什么可用 max</h3>
+        <p>每个排名的 dp 值<b>只增不减</b>（始终取 max），符合 BIT-max 的单调前提。否则必须上线段树。</p>
+      </div>
+      <div class="note good"><b>与贪心对比：</b>贪心 + 二分也是 O(n log n) 但<b>只能求长度</b>；BIT 版可以顺带统计方案数（改成求和 + 取模）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>lis.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="lis"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 25 离线查询 ═══ -->
+<section class="slide" data-title="离线查询套路">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>02 · OFFLINE</div><h2>离线查询：<em>按右端点排序 + BIT</em></h2></div>
+    <div class="hint"><b>本页回答：</b>"区间不同数个数"怎么做？<br>为什么要记"上次出现"。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>问题</h3>
+        <p><b>题意：</b>静态序列，多次询问 [l, r] 内<b>不同数</b>的个数（如洛谷 P1972）。</p>
+      </div>
+      <div class="card tint-amber"><h3>套路</h3>
+        <ul class="tick">
+          <li>查询按 <b>r 升序</b>排，右端点单调右移</li>
+          <li>每加入 a[p]：若它上次出现在 q，则 <code>add(q, −1)</code> 抵消</li>
+          <li>再 <code>add(p, +1)</code>；答案 = <code>range_sum(l, r)</code></li>
+        </ul>
+      </div>
+      <div class="note good"><b>关键：</b>每个值只在<b>最新出现位置</b>上记 1，于是区间内"1 的个数" = 不同数个数。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>offline.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="offline"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 26 扩展 ═══ -->
+<section class="slide" data-title="动态排名与扩展">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>02 · EXTEND</div><h2>再往前一步：<em>动态排名与树套树</em></h2></div>
+    <div class="hint"><b>本页回答：</b>带修改的区间第 k 小怎么办？<br>知识地图在哪。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>静态区间第 k 小</h3>
+      <p>主席树（可持久化线段树）O((n+q) log n)。</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>带修改</h3>
+      <p>树状数组套权值线段树 O(log² n)；或整体二分。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>整体二分</h3>
+      <p>把"值"二分 + BIT 统计，处理带修第 k 小的经典写法。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>BIT 在其中的角色</h3>
+      <p>在这些高级结构里，BIT 依然是<b>最内层的计数器</b>：它负责"当前值域内有多少个"。</p>
+    </div>
+    <div class="card tint-plum"><h3>学习顺序</h3>
+      <p>BIT → 主席树 → 整体二分 → 树套树。<b>先吃透 BIT</b>，后面全是它的叠加。</p>
+    </div>
+  </div>
+  <div class="note"><b>提醒：</b>本节是"知识地图"，不在本课要求内；面试与普及组只需前两站。</div>
+</section>
+
+<!-- ═══ 27 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：区间修改">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 03</div>
+      <div class="big">区间修改：<em style="color:var(--teal)">差分与双 BIT</em></div>
+      <p class="lead">区间加单点查 · 区间加区间和<br>一个公式推导，两种模板。</p>
+    </div>
+    <div><div class="num-huge t">03</div>
+      <div class="note good"><b>目标：</b>能独立推导双 BIT 公式，而不是背公式。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 28 差分 ═══ -->
+<section class="slide" data-title="差分思想">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · DIFF</div><h2>差分：<em class="t">把"区间加"变成"单点加"</em></h2></div>
+    <div class="hint"><b>本页回答：</b>差分数组是什么？<br>为什么区间加就变成两次单点加。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <div class="formula" style="font-size:12.8px">
+          d[i] = a[i] − a[i−1]，a[0] = 0<br>
+          则 <span class="ok">a[i] = d[1] + ... + d[i]</span>（前缀和还原）
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>区间加的妙用</h3>
+        <div class="formula" style="font-size:12.8px">
+          [l, r] 全部 + v：<br>
+          <span class="hl">d[l] += v</span>，<span class="hl">d[r+1] −= v</span><br>
+          <span class="dim">只动两个点！</span>
+        </div>
+      </div>
+      <div class="note good"><b>于是：</b>区间加 = 两次 BIT 单点加；单点查询 = BIT 前缀和。完美对接第 12 页的模板。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid meet">
+          <g font-family="monospace" font-size="11">
+            <text x="20" y="34" fill="#7A4A22">a:  1  2  3  4  5</text>
+            <text x="20" y="66" fill="#0B6356">d:  1  1  1  1  1</text>
+            <text x="20" y="106" fill="#B9471B">[2,4] +2 →</text>
+            <text x="20" y="138" fill="#B9471B">a:  1  4  5  6  5</text>
+            <text x="20" y="170" fill="#B9471B">d:  1  3  1  1 −1</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" fill="none">
+            <path d="M112 74 L112 100"/><path d="M212 74 L212 100"/>
+            <path d="M96 88 L128 88"/><path d="M196 88 L228 88"/>
+          </g>
+          <text x="160" y="200" text-anchor="middle" class="dfnlab r">d[2] += 2　　d[5] −= 2（r+1 = 5）</text>
+        </svg>
+      </div>
+      <div class="note warn"><b>边界：</b><code>r + 1</code> 可能 = n+1，超出范围；BIT 的 <code>while i ≤ n</code> 会自然跳过，不必特判。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 29 区间加单点查 ═══ -->
+<section class="slide" data-title="区间加、单点查">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · POINT QUERY</div><h2>区间加、单点查：<em class="t">一个 BIT 就够</em></h2></div>
+    <div class="hint"><b>本页回答：</b>模板怎么写？<br>怎么处理初始值。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>要点</h3>
+        <ul class="tick ok">
+          <li>BIT 存的是<b>差分数组 d</b></li>
+          <li>区间加 → <code>add(l, v)</code> + <code>add(r+1, −v)</code></li>
+          <li>单点查询 → <code>sum(i)</code>，如需初始值再加上 <code>a0[i]</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>什么时候用这版</h3>
+        <p>题目只问<b>某个位置的最终值</b>（如"区间加、最后输出每个数"）。若要区间和，看下一页。</p>
+      </div>
+      <div class="note good"><b>复杂度：</b>每次操作 O(log n)，空间 O(n)。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>range_add_point.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="range_point"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 30 双 BIT 推导 ═══ -->
+<section class="slide" data-title="双 BIT 推导">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>03 · TWO BIT</div><h2>区间加 + 区间和：<em>公式推导</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么要两个 BIT？<br>第二个 BIT 乘的是什么。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>推导</h3>
+        <div class="formula" style="font-size:12.6px">
+          S(x) = Σ<sub>i=1..x</sub> a[i]<br>
+          &nbsp;&nbsp;= Σ<sub>i=1..x</sub> Σ<sub>j=1..i</sub> d[j]<br>
+          &nbsp;&nbsp;= Σ<sub>j=1..x</sub> d[j]·(x − j + 1)<br>
+          &nbsp;&nbsp;= <span class="hl">(x+1)·Σ d[j]</span> − <span class="hl">Σ j·d[j]</span>
+        </div>
+        <p class="muted">所以要同时维护 <code>Σ d[j]</code> 与 <code>Σ j·d[j]</code> —— 两个 BIT。</p>
+      </div>
+      <div class="card tint-amber"><h3>区间加怎么落到两个 BIT</h3>
+        <div class="formula" style="font-size:12.6px">
+          [l, r] + v：<br>
+          B1: <span class="ok">add(l, v)</span>，<span class="ok">add(r+1, −v)</span><br>
+          B2: <span class="hl">add(l, l·v)</span>，<span class="hl">add(r+1, −(r+1)·v)</span>
+        </div>
+        <p class="muted">注意第二个加的是 <b>l·v</b> 与 <b>−(r+1)·v</b>，<b>不是 −r·v</b>。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 400 220" preserveAspectRatio="xMidYMid meet">
+          <rect x="18" y="20" width="364" height="52" rx="12" fill="#F2FBF7" stroke="#BEE6D8" stroke-width="2"/>
+          <text x="200" y="42" text-anchor="middle" class="dfnlab">B1：维护 d[j]</text>
+          <text x="200" y="62" text-anchor="middle" class="dfnlab g">Σ d[j] = 前缀 a 的"变化量"</text>
+
+          <rect x="18" y="88" width="364" height="52" rx="12" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+          <text x="200" y="110" text-anchor="middle" class="dfnlab r">B2：维护 j·d[j]</text>
+          <text x="200" y="130" text-anchor="middle" class="dfnlab r">Σ j·d[j] = 加权变化量</text>
+
+          <rect x="18" y="156" width="364" height="46" rx="12" fill="#2E2118"/>
+          <text x="200" y="176" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="12.5">S(x) = (x+1)·B1.sum(x) − B2.sum(x)</text>
+          <text x="200" y="192" text-anchor="middle" fill="#A8846A" font-family="monospace" font-size="10.5">区间和 = S(r) − S(l−1)</text>
+        </svg>
+      </div>
+      <div class="note warn"><b>验算：</b>a = 1..5，[2,4] +2 后 a = 1,4,5,6,5；<code>S(5) = 6·B1(5) − B2(5) = 6·5 − 9 = 21</code> = 1+4+5+6+5 ✓</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 31 双 BIT 模板 ═══ -->
+<section class="slide" data-title="双 BIT 模板">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>03 · TEMPLATE</div><h2>双 BIT <em>模板</em>（区间加、区间和）</h2></div>
+    <div class="hint"><b>本页回答：</b>完整类怎么写？<br>初始数组怎么喂进去。</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>range_add_range.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="range_range"></code></pre></pre>
+    <div>
+      <div class="card"><h3>初始化</h3>
+        <div class="formula" style="font-size:12.6px">
+          <span class="dim">初始 a[1..n]：逐点</span><br>
+          <span class="ok">bit.range_add(i, i, a[i])</span><br>
+          <span class="dim">等价于把差分喂进两个 BIT</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>三条记忆</h3>
+        <ul class="tick">
+          <li>B1 记 <code>d[j]</code>，B2 记 <code>j·d[j]</code></li>
+          <li>加 v 时 B2 的增量是 <code>l·v</code> 与 <code>−(r+1)·v</code></li>
+          <li>前缀和 <code>(x+1)·B1 − B2</code></li>
+        </ul>
+      </div>
+      <div class="note good"><b>验证方式：</b>先喂随机 a，跑 1 万次随机区间加，再与朴素暴力比对（第 43 页）。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 32 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：二维">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 04</div>
+      <div class="big">二维：<em style="color:var(--accent)">子矩阵和</em></div>
+      <p class="lead">二维树状数组 · 容斥取子矩阵<br>两个维度各自套一层 lowbit。</p>
+    </div>
+    <div><div class="num-huge">04</div>
+      <div class="note good"><b>目标：</b>能写出二维 add / sum，并用容斥算子矩阵。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 33 二维 BIT ═══ -->
+<section class="slide" data-title="二维树状数组">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · 2D BIT</div><h2>二维树状数组：<em>双层循环 lowbit</em></h2></div>
+    <div class="hint"><b>本页回答：</b>二维怎么套？<br>子矩阵和用容斥怎么写。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>复杂度</h3>
+        <div class="formula" style="font-size:12.6px">
+          add(x, y)：<span class="ok">O(log n · log m)</span><br>
+          子矩阵和：4 次 sum（容斥）
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>容斥公式</h3>
+        <div class="formula" style="font-size:12.4px">
+          rect(x1,y1,x2,y2) =<br>
+          &nbsp;&nbsp;S(x2,y2) − S(x1−1,y2) − S(x2,y1−1) + S(x1−1,y1−1)
+        </div>
+      </div>
+      <div class="note warn"><b>记忆法：</b>两个维度的 lowbit <b>各自独立</b>；内层循环先做完 y，再动 x。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>bit_2d.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bit2d"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 34 二维区间加 ═══ -->
+<section class="slide" data-title="二维区间加">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · 2D RANGE</div><h2>二维区间加：<em>四个 BIT 的容斥</em></h2></div>
+    <div class="hint"><b>本页回答：</b>二维也能"区间加区间和"吗？<br>需要维护什么。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>思路</h3>
+        <p>一维推导里的 <code>(x+1)·Σd − Σ j·d[j]</code>，在二维变成<b>四个求和项</b>，每个一项对应一个二维 BIT：</p>
+        <div class="formula" style="font-size:12.2px">
+          S(x,y) = (x+1)(y+1)·Σ d<br>
+          &nbsp;&nbsp;− (y+1)·Σ i·d − (x+1)·Σ j·d + Σ i·j·d
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>实话实说</h3>
+        <p>考场上几乎用不到；真要写，按"四个 BIT + 容斥"机械展开即可。<b>先保证一维版本滚瓜烂熟。</b></p>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>常考替代</h3>
+        <ul class="tick">
+          <li>子矩阵<b>加值</b>、单点查询 → 二维差分（4 次单点 add）</li>
+          <li>静态子矩阵和 → 二维前缀和 O(1)</li>
+          <li>动态且只问单点 → 二维 BIT 即可</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>复杂度一览</h3>
+        <table style="box-shadow:none">
+          <tr><th>操作</th><th>复杂度</th></tr>
+          <tr><td>二维单点加</td><td class="mono">O(log n · log m)</td></tr>
+          <tr><td>子矩阵和</td><td class="mono">O(log n · log m)</td></tr>
+          <tr><td>二维区间加区间和</td><td class="mono">O(log n · log m)（4 BIT）</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 35 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：边界与对比">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 05</div>
+      <div class="big">边界：<em style="color:var(--accent)">能做什么，不能做什么</em></div>
+      <p class="lead">逆元条件 · 单调最值 · 与线段树/分块/ST 对比<br>知道边界，才知道什么时候换工具。</p>
+    </div>
+    <div><div class="num-huge">05</div>
+      <div class="note warn"><b>要领：</b>树状数组的限制来自"聚合要有逆运算"，不是写法问题。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 36 逆元条件 ═══ -->
+<section class="slide" data-title="能维护什么">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · ABILITY</div><h2>树状数组能维护<em>什么信息</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么 max 不能直接维护？<br>哪些信息可以。</div>
+  </div>
+  <table>
+    <tr><th style="width:150px">信息</th><th style="width:120px">能否 BIT</th><th>原因 / 替代</th></tr>
+    <tr><td>和 / 计数</td><td>✅ 首选</td><td>可逆（减法），区间 = 前缀相减</td></tr>
+    <tr><td>异或</td><td>✅</td><td>自逆（异或两次还原）</td></tr>
+    <tr><td>模意义乘积</td><td>✅</td><td>用逆元做除法（模数为质数）</td></tr>
+    <tr><td>区间加 + 区间和</td><td>✅（双 BIT）</td><td>推导第 30 页</td></tr>
+    <tr><td>最大 / 最小值</td><td>⚠️ 有条件</td><td><b>单调更新</b>时可以（第 37 页）；否则线段树 / ST 表</td></tr>
+    <tr><td>区间 gcd</td><td>❌</td><td>无逆运算，需线段树</td></tr>
+    <tr><td>区间赋值 / 覆盖</td><td>❌</td><td>懒标记问题，需线段树</td></tr>
+    <tr><td>区间中位数</td><td>❌</td><td>需主席树 / 对顶堆</td></tr>
+    <tr><td>子矩阵和（二维）</td><td>✅</td><td>见第 33 页</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-teal"><h3>判断准则</h3>
+      <div class="formula" style="font-size:12.6px">可结合 ⊕ 且 <span class="hl">存在逆运算 ⊖</span> ⇒ 可用 BIT 做区间查询</div>
+    </div>
+    <div class="card tint-plum"><h3>为什么不能 max</h3>
+      <p>去掉一个元素后无法"撤销"它的贡献；因此 <code>sum(r) − sum(l−1)</code> 这一步失效。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 37 单调最值 ═══ -->
+<section class="slide" data-title="单调更新的最大值">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · BIT MAX</div><h2>例外：<em>单调更新下的最大值</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么时候 BIT 能维护 max？<br>限制是什么。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>成立条件</h3>
+        <ul class="tick">
+          <li>更新只能是 <code>a[i] = max(a[i], x)</code>（只增不减）</li>
+          <li>查询是<b>前缀最大值</b>，不是任意区间</li>
+          <li>典型应用：LIS、"历史最大高度"</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>为什么可以</h3>
+        <p>值只增不减时，<code>c[i]</code> 里的最大值只会变大，旧值永远不会"重新成为答案"；于是就地取 max 即可。</p>
+      </div>
+      <div class="note warn"><b>不能做：</b>值变小、区间最大、任意区间查询 —— 这些一律线段树。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>bit_max.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bit_max"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 38 对比表 ═══ -->
+<section class="slide" data-title="结构对比">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>05 · COMPARE</div><h2>与线段树 / 分块 / ST 表<em>对比</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一道题该用哪个？<br>各自的甜点区。</div>
+  </div>
+  <table>
+    <tr><th style="width:120px">结构</th><th>单点改+区间和</th><th>区间改+区间和</th><th>区间最值</th><th>建表</th><th>常数</th><th>代码量</th></tr>
+    <tr><td>前缀和</td><td>❌</td><td>❌</td><td>❌</td><td class="mono">O(n)</td><td>极小</td><td>1 行</td></tr>
+    <tr><td>分块</td><td class="mono">O(1)/O(√n)</td><td class="mono">O(√n)</td><td class="mono">O(√n)</td><td class="mono">O(n)</td><td>中</td><td>~30 行</td></tr>
+    <tr><td><b>树状数组</b></td><td class="mono">O(log n)</td><td class="mono">O(log n)</td><td>⚠️ 单调</td><td class="mono">O(n)</td><td><b>极小</b></td><td><b>~10 行</b></td></tr>
+    <tr><td>线段树</td><td class="mono">O(log n)</td><td class="mono">O(log n)</td><td class="mono">O(log n)</td><td class="mono">O(n)</td><td>中</td><td>~50 行</td></tr>
+    <tr><td>ST 表</td><td>❌</td><td>❌</td><td class="mono">O(1)</td><td class="mono">O(n log n)</td><td>小</td><td>~15 行</td></tr>
+    <tr><td>平衡树</td><td class="mono">O(log n)</td><td class="mono">O(log n)</td><td class="mono">O(log n)</td><td class="mono">O(n)</td><td>大</td><td>~80 行</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>选 BIT</h3><p>只需"加"与"和/异或"；要最快、代码最短；带修计数、离线查询。</p></div>
+    <div class="card tint-teal"><h3>选别的</h3><p>要区间赋值/最值 → 线段树；静态最值 → ST 表；要 O(√n) 且逻辑复杂 → 分块。</p></div>
+  </div>
+  <div class="note"><b>口诀：</b>能 BIT 就 BIT，要懒标记上树，静态最值用 ST，逻辑古怪上分块。</div>
+</section>
+
+<!-- ═══ 39 选型决策 ═══ -->
+<section class="slide" data-title="选型决策树">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · DECISION</div><h2>三步决策树</h2></div>
+    <div class="hint"><b>本页回答：</b>拿到题怎么判断用哪一版？<br>建议打印贴在机位旁。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>第一步：更新形式</h3>
+        <ul class="tick">
+          <li>单点改 → 标准 BIT</li>
+          <li>区间加 + 单点查 → 差分 BIT</li>
+          <li>区间加 + 区间和 → <b>双 BIT</b></li>
+          <li>区间赋值 → 线段树</li>
+        </ul>
+      </div>
+      <div class="card"><h3>第二步：查询形式</h3>
+        <ul class="tick ok">
+          <li>区间和 / 异或 / 计数 → BIT</li>
+          <li>区间最值 → 线段树 / ST 表</li>
+          <li>第 k 小 → BIT 上二分（计数）</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>第三步：规模与维度</h3>
+        <ul class="tick">
+          <li>n ≤ 10⁶、q ≤ 10⁶ → BIT 稳过</li>
+          <li>二维 → 二维 BIT（注意 n·m 内存）</li>
+          <li>值域大 → 先离散化</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>速判表</h3>
+        <table style="box-shadow:none">
+          <tr><th>题面关键词</th><th>结构</th></tr>
+          <tr><td>单点加、区间和</td><td class="mono">BIT</td></tr>
+          <tr><td>区间加、单点值</td><td class="mono">差分 BIT</td></tr>
+          <tr><td>区间加、区间和</td><td class="mono">双 BIT</td></tr>
+          <tr><td>逆序对 / 第 k 小</td><td class="mono">BIT + 离散化</td></tr>
+          <tr><td>子矩阵和</td><td class="mono">二维 BIT</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 40 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：工程">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 06</div>
+      <div class="big">工程：<em style="color:var(--teal)">避坑 · 提速 · 验证</em></div>
+      <p class="lead">易错清单 · 模板合集 · 对拍方法 · 题单<br>把 10 行代码写成"永不写错的 10 行"。</p>
+    </div>
+    <div><div class="num-huge t">06</div>
+      <div class="note good"><b>要领：</b>树状数组的 bug 集中在 <b>下标、边界、公式系数</b> 三处。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 41 易错清单 ═══ -->
+<section class="slide" data-title="易错清单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PITFALLS</div><h2>易错清单 <em>Checklist</em></h2></div>
+    <div class="hint"><b>本页回答：</b>提交前自检什么？<br>（每条都对应本讲义的坑）</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-plum"><h3>下标与边界</h3>
+      <ul class="tick no">
+        <li>用了 0-indexed（<code>lowbit(0) = 0</code> 死循环）</li>
+        <li>数组只开 n，访问 <code>t[n]</code> 越界</li>
+        <li>查询写成 <code>while i &gt; 0</code> 但 i 可能为负</li>
+        <li>修改写成 <code>while i &lt; n</code>（应为 ≤ n）</li>
+        <li>离散化排名从 0 开始</li>
+        <li>二维忘了把网格坐标 +1</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>公式</h3>
+      <ul class="tick">
+        <li>双 BIT 第二个增量写成 <code>−r·v</code>（应为 <code>−(r+1)·v</code>）</li>
+        <li>前缀和公式漏了 <code>(x+1)</code> 的 +1</li>
+        <li>区间和忘了 <code>− S(l−1)</code></li>
+        <li>容斥（二维）符号写反</li>
+        <li>kth 判定用 <code>≤ k</code>（应为 <code>&lt; k</code>）</li>
+        <li>kth 的 <code>bit</code> 取错（应为 ≤ n 的最大 2 幂）</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>建模</h3>
+      <ul class="tick ok">
+        <li>要求区间最值却硬套 BIT</li>
+        <li>值域 10⁹ 未离散化导致 MLE</li>
+        <li>求"第 k 小"却忘了计数非负的前提</li>
+        <li>区间加区间和却只建了一个 BIT</li>
+        <li>建树写成"边赋值边上传"（覆盖累加值）</li>
+        <li>多组数据忘了重置（用时间戳技巧）</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>提交前 30 秒四连问：</b>① 下标从 1 开始了吗 ② 循环条件 <code>&gt; 0</code> / <code>≤ n</code> 对了吗 ③ 双 BIT 的系数是 <code>l·v</code> 与 <code>−(r+1)·v</code> 吗 ④ 离散化排名 +1 了吗。</div>
+</section>
+
+<!-- ═══ 42 模板合集 ═══ -->
+<section class="slide" data-title="模板合集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · TOOLBOX</div><h2>模板合集：<em>一页速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>实战里需要的都在这里。<br>建议直接抄进模板库。</div>
+  </div>
+  <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>fenwick_toolbox.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="toolbox"></code></pre></pre>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3>提速细节</h3><p>把 <code>self.t</code>、<code>self.n</code> 取到局部变量；<code>__slots__</code> 减少属性开销。</p></div>
+    <div class="card tint-teal"><h3>多组数据</h3><p>别重复 <code>[0]*(n+1)</code>，用时间戳 <code>vis[i] == cur</code> 判新旧。</p></div>
+    <div class="card"><h3>输入</h3><p>大数据用 <code>sys.stdin.buffer.read().split()</code> 一次性读入。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 43 调试与验证 ═══ -->
+<section class="slide" data-title="调试与验证">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · VERIFY</div><h2>怎么验证答案<em>是对的</em></h2></div>
+    <div class="hint"><b>本页回答：</b>树状数组怎么对拍？<br>边界用例有哪些。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card tint-teal"><h3><span class="n t">1</span>暴力对拍</h3>
+        <p>写一个 O(n) 朴素实现当参照；随机生成 n ≤ 200、操作 500 次的数据，<b>对拍 1 万组</b>。重点覆盖"区间加 + 区间和"。</p>
+      </div>
+      <div class="card tint-amber"><h3><span class="n">3</span>边界用例</h3>
+        <ul class="tick">
+          <li>n = 1（只有一个元素）</li>
+          <li>l = r（单点区间）</li>
+          <li>r = n（末端区间，r+1 = n+1）</li>
+          <li>负数 / 零值（若题目允许）</li>
+          <li>k = 1 与 k = 总数（kth 两端）</li>
+          <li>空区间、全相同值（离散化后 m = 1）</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3><span class="n">2</span>不变量检查</h3>
+        <ul class="tick ok">
+          <li><code>sum(n)</code> = 全体元素和（改完后仍成立）</li>
+          <li>任意 l： <code>range_sum(l, l) == a[l]</code></li>
+          <li>对随机区间：<code>BIT</code> 结果 = 暴力累加</li>
+          <li>双 BIT：<code>prefix_sum(x) − prefix_sum(x−1) == a[x]</code></li>
+          <li>kth：<code>sum(kth(k) − 1) &lt; k ≤ sum(kth(k))</code></li>
+        </ul>
+      </div>
+      <div class="note good"><b>小技巧：</b>调试时打印 <code>c</code> 数组与"理论值"对比（第 15 页的做法），一次就能定位下标错位。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 44 题单 ═══ -->
+<section class="slide" data-title="练习题单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PRACTICE</div><h2>练习题单（洛谷 / LeetCode）</h2></div>
+    <div class="hint"><b>本页回答：</b>课后练什么？<br>每题都写了<b>题意</b>，可按图索骥。</div>
+  </div>
+  <div class="cols c3" style="gap:8px">
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3374" target="_blank"><span class="src lg">洛谷</span><span class="t">P3374 【模板】树状数组 1</span><span class="d">题意：单点加值、区间求和。标准模板，务必闭卷默写。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3368" target="_blank"><span class="src lg">洛谷</span><span class="t">P3368 【模板】树状数组 2</span><span class="d">题意：区间加值、单点查询。差分 BIT 入门。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1908" target="_blank"><span class="src lg">洛谷</span><span class="t">P1908 逆序对</span><span class="d">题意：求序列逆序对个数，n ≤ 5×10⁵。离散化 + BIT。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1966" target="_blank"><span class="src lg">洛谷</span><span class="t">P1966 火柴排队</span><span class="d">题意：两列数配对使差的平方和最小，求最少交换次数。贪心 + 逆序对。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1972" target="_blank"><span class="src lg">洛谷</span><span class="t">P1972 [SDOI2009] HH 的项链</span><span class="d">题意：多次询问区间内不同数的个数。离线排序 + BIT 经典。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P4588" target="_blank"><span class="src lg">洛谷</span><span class="t">P4588 [TJOI2018] 数学计算</span><span class="d">题意：支持乘/撤销某次乘法并输出当前乘积（模意义）。BIT 存乘积 + 逆元。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3373" target="_blank"><span class="src lg">洛谷</span><span class="t">P3373 【模板】线段树 2</span><span class="d">题意：区间加/乘、区间求和（对比用）。体会线段树懒标记与 BIT 的分工。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/range-sum-query-mutable/" target="_blank"><span class="src">LeetCode</span><span class="t">307. 区域和检索 - 数组可修改</span><span class="d">题意：单点修改、区间求和。BIT 最小可用例。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/count-of-smaller-numbers-after-self/" target="_blank"><span class="src">LeetCode</span><span class="t">315. 计算右侧小于当前元素的个数</span><span class="d">题意：对每个元素数右侧比它小的个数。离散化 + BIT（逆序对变形）。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/count-of-range-sum/" target="_blank"><span class="src">LeetCode</span><span class="t">327. 区间和的个数</span><span class="d">题意：求前缀和落在 [lower, upper] 的区间个数。离散化 + BIT / 归并。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/reverse-pairs/" target="_blank"><span class="src">LeetCode</span><span class="t">493. 翻转对</span><span class="d">题意：求 i &lt; j 且 a[i] &gt; 2·a[j] 的对数。注意 2·a[j] 可能溢出。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/count-number-of-teams/" target="_blank"><span class="src">LeetCode</span><span class="t">1395. 统计作战单位数</span><span class="d">题意：求满足大小关系的三元组个数。左右两侧各一次 BIT 统计。</span></a>
+  </div>
+  <div class="note"><b>节奏建议：</b>模板两题（P3374/P3368）→ 统计三题（P1908、LC 315、LC 493）→ 进阶两题（P1972、LC 327）→ 模板拓展（P4588）。每题写 100 字题解：<b>问题 → 离散化了吗 → 用哪个版本的 BIT</b>。</div>
+</section>
+
+<!-- ═══ 45 总结 ═══ -->
+<section class="slide" data-title="总结">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · SUMMARY</div><h2>带走这 <em>五句话</em></h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记住一页，<br>就记这一页。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><div class="step"><div class="idx">1</div><div><b>c[i] 管辖 lowbit(i) 个元素：</b>这是全部理解的基石；lowbit = x &amp; -x。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">2</div><div><b>两条对偶跳转链：</b>查询 <code>i −= lowbit(i)</code>，修改 <code>i += lowbit(i)</code>，都 ≤ log n。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">3</div><div><b>差分 + 两个 BIT = 区间加区间和：</b>公式 <code>(x+1)·B1 − B2</code>，系数是 <code>l·v</code> 与 <code>−(r+1)·v</code>。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">4</div><div><b>能维护的信息必须可逆：</b>和、异或、模乘可以；max/min 只在单调更新时可以。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">5</div><div><b>先判断再动手：</b>单点改/区间加/区间最值/第 k 小，四种需求对应四个模板。</div></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 350 260" preserveAspectRatio="xMidYMid meet">
+          <circle cx="175" cy="130" r="115" fill="#F2A63B" opacity=".12" class="pulse"/>
+          <circle cx="175" cy="130" r="52" fill="#2E2118"/>
+          <text x="175" y="126" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="12.5">BIT</text>
+          <text x="175" y="145" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="11">lowbit</text>
+          <g font-family="monospace" font-size="10.5" fill="#7A4A22">
+            <rect x="112" y="10" width="126" height="30" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="175" y="30" text-anchor="middle">单点加 + 区间和</text>
+            <rect x="248" y="58" width="96" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="296" y="78" text-anchor="middle">差分</text>
+            <rect x="252" y="170" width="92" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="298" y="190" text-anchor="middle">双 BIT</text>
+            <rect x="108" y="216" width="134" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="236" text-anchor="middle">上界二分 kth</text>
+            <rect x="6" y="170" width="106" height="30" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="59" y="190" text-anchor="middle">二维</text>
+            <rect x="8" y="58" width="102" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="59" y="78" text-anchor="middle">离散化</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" class="dash" fill="none">
+            <path d="M175 78 L175 42"/><path d="M224 110 L250 82"/><path d="M224 154 L254 184"/>
+            <path d="M175 182 L175 216"/><path d="M126 154 L110 184"/><path d="M126 110 L108 82"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>升华：</b>树状数组最值得学的不是模板，而是"<b>用二进制切分区间</b>"的思路 —— 它同样出现在 ST 表、倍增、二进制分组里。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 46 结语 ═══ -->
+<section class="slide cover" data-title="结语 Q&A">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">THANKS · Q&A</div>
+      <h1>谢谢！<br><em class="t">开始提问</em></h1>
+      <p class="sub">课后三步：<br>
+        ① 10 分钟默写 add / sum / 双 BIT / kth 四个模板<br>
+        ② 对 [3,1,4,1,5,9,2,6] 手算逆序对（答案 7）并与代码对照<br>
+        ③ 按题单刷 8 题，每题写 100 字题解（问题 → 离散化了吗 → 哪个版本）</p>
+      <div class="meta"><span>lowbit = x &amp; -x</span><span>1-indexed</span><span>O(log n)</span></div>
+    </div>
+    <div>
+      <svg viewBox="0 0 460 300" preserveAspectRatio="xMidYMid meet">
+        <circle cx="230" cy="150" r="145" fill="#F2A63B" opacity=".16" class="pulse"/>
+        <g class="gedge tree"><path d="M230 236 L158 158"/><path d="M230 236 L302 158"/><path d="M230 236 L230 118"/></g>
+        <path d="M302 158 L230 236" class="gedge cut"/>
+        <g class="float">
+          <g class="gnode root"><circle cx="230" cy="236" r="30"/><text x="230" y="244" font-size="15">a[]</text></g>
+          <g class="gnode done"><circle cx="158" cy="158" r="24"/><text x="158" y="165" font-size="13">sum</text></g>
+          <g class="gnode done"><circle cx="302" cy="158" r="24"/><text x="302" y="165" font-size="13">add</text></g>
+          <g class="gnode"><circle cx="230" cy="118" r="24"/><text x="230" y="125" font-size="13">c[]</text></g>
+        </g>
+      </svg>
+      <div class="note"><b>快捷键：</b><code>O</code> 目录 · <code>←/→</code> 翻页 · <code>⛶</code> 全屏</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="brand">FENWICK TREE · 80MIN</div>
+<div class="hud">
+  <button id="tocBtn" title="目录">☰</button>
+  <button id="prevBtn" title="上一页">←</button>
+  <div class="pgn"><span id="cur">1</span> / <span id="tot">46</span></div>
+  <button id="nextBtn" title="下一页">→</button>
+  <button id="fullBtn" title="全屏">⛶</button>
+</div>
+
+<div class="toc" id="toc"><h4>目录 · 46 页</h4><div class="grid" id="tocGrid"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+/* 代码以纯文本存放，用 textContent 注入，再交给 Prism 高亮 */
+const CODE = {
+
+core: `
+class BIT:
+    """树状数组：单点加、前缀和；下标 1..n"""
+    def __init__(self, n):
+        self.n = n
+        self.t = [0] * (n + 1)
+
+    def add(self, i, delta):
+        """a[i] += delta"""
+        while i <= self.n:
+            self.t[i] += delta
+            i += i & -i
+
+    def sum(self, i):
+        """返回 a[1] + ... + a[i]"""
+        s = 0
+        while i > 0:
+            s += self.t[i]
+            i -= i & -i
+        return s
+
+    def range_sum(self, l, r):
+        """返回 a[l] + ... + a[r]"""
+        return self.sum(r) - self.sum(l - 1)
+
+
+# 记忆：查询 i -= lowbit(i) 且 while i > 0
+#       修改 i += lowbit(i) 且 while i <= n
+`,
+
+trace: `
+# 手工模拟：a = [_, 1, 2, 3, 4, 5]
+# c[i] = a[i-lowbit(i)+1 .. i] 之和
+#   i=1 -> a[1..1]=1   i=2 -> a[1..2]=3   i=3 -> a[3..3]=3
+#   i=4 -> a[1..4]=10  i=5 -> a[5..5]=5
+# c = [_, 1, 3, 3, 10, 5]
+
+def build(a):
+    n = len(a) - 1
+    c = a[:]                       # 先整体复制
+    for i in range(1, n + 1):
+        j = i + (i & -i)           # 父亲
+        if j <= n:
+            c[j] += c[i]
+    return c
+
+a = [0, 1, 2, 3, 4, 5]
+c = build(a)
+print(c)                           # [0, 1, 3, 3, 10, 5]
+
+# 手验查询：sum(5) = c[5] + c[4] = 5 + 10 = 15 ✓
+# 手验查询：sum(3) = c[3] + c[2] = 3 + 3  = 6  ✓
+
+# 手验修改：add(3, +2) -> c[3] = 5, c[4] = 12
+#   此时 sum(5) = c[5] + c[4] = 5 + 12 = 17 = 1+2+5+4+5 ✓
+`,
+
+build: `
+def build_bit(a):
+    """O(n) 建树。a 为 1-indexed，长度 n+1；返回 c"""
+    n = len(a) - 1
+    c = a[:]                       # ① 必须先整体复制
+    for i in range(1, n + 1):
+        j = i + (i & -i)           # ② 再向父亲传递
+        if j <= n:
+            c[j] += c[i]
+    return c
+
+
+def build_by_add(a):
+    """O(n log n) 建树：逐点 add，n 不大时更稳"""
+    n = len(a) - 1
+    c = [0] * (n + 1)
+    for i in range(1, n + 1):
+        delta = a[i]
+        j = i
+        while j <= n:
+            c[j] += delta
+            j += j & -j
+    return c
+
+
+# 注意：下面这种写法是错的！
+#   for i in 1..n:
+#       c[i] = a[i]          # 会覆盖之前累加进 c[i] 的值
+#       c[i + lowbit(i)] += c[i]
+`,
+
+discretize: `
+def discretize(arr):
+    """把大值域压成 1..m；返回 (rank 数组, 去重有序值)"""
+    vals = sorted(set(arr))
+    rank = {v: i + 1 for i, v in enumerate(vals)}   # 1-indexed！
+    return [rank[v] for v in arr], vals
+
+
+def rank_of(vals, x):
+    """查询值 x 的排名（vals 为去重升序）"""
+    import bisect
+    return bisect.bisect_left(vals, x) + 1
+
+
+# 用法示例
+nums = [100, 1, 999999999, 1]
+ranks, vals = discretize(nums)
+# ranks = [2, 1, 3, 1]，vals = [1, 100, 999999999]
+`,
+
+inversion: `
+def count_inversions(nums):
+    """返回逆序对个数；O(n log n)"""
+    vals = sorted(set(nums))
+    rank = {v: i + 1 for i, v in enumerate(vals)}
+    m = len(vals)
+    bit = [0] * (m + 1)
+
+    def add(i, delta):
+        while i <= m:
+            bit[i] += delta
+            i += i & -i
+
+    def query(i):
+        s = 0
+        while i > 0:
+            s += bit[i]
+            i -= i & -i
+        return s
+
+    inv = 0
+    seen = 0
+    for v in nums:                       # 从左到右
+        r = rank[v]
+        bigger = seen - query(r)         # 前面比它大的个数
+        inv += bigger
+        add(r, 1)
+        seen += 1
+    return inv
+
+
+# 验算：count_inversions([3,1,4,1,5,9,2,6]) == 7
+#   3>(1,2) 4>(1,2) 5>(2) 9>(2,6) => 2+2+1+2 = 7
+`,
+
+kth: `
+class BIT:
+    def __init__(self, n):
+        self.n = n
+        self.t = [0] * (n + 1)
+
+    def add(self, i, delta):
+        while i <= self.n:
+            self.t[i] += delta
+            i += i & -i
+
+    def sum(self, i):
+        s = 0
+        while i > 0:
+            s += self.t[i]
+            i -= i & -i
+        return s
+
+    def kth(self, k):
+        """最小的 x 使 sum(x) >= k
+           要求：所有计数非负，1 <= k <= 总数"""
+        pos = 0
+        bit = 1 << (self.n.bit_length() - 1)   # <= n 的最大 2 的幂
+        while bit:
+            nxt = pos + bit
+            if nxt <= self.n and self.t[nxt] < k:
+                k -= self.t[nxt]
+                pos = nxt
+            bit >>= 1
+        return pos + 1
+
+
+# 验算（计数 f = [1,2,0,1,3,0,1,2]，n = 8）：
+#   c = [_, 1, 3, 0, 4, 3, 3, 1, 10]
+#   kth(5) == 5   kth(4) == 4
+`,
+
+lis: `
+def lis_length(nums):
+    """最长严格上升子序列长度；O(n log n)，BIT 维护最大值"""
+    vals = sorted(set(nums))
+    rank = {v: i + 1 for i, v in enumerate(vals)}
+    m = len(vals)
+    bit = [-10 ** 18] * (m + 1)
+
+    def upd(i, x):                    # 只增不减：取 max
+        while i <= m:
+            if bit[i] < x:
+                bit[i] = x
+            i += i & -i
+
+    def query(i):                     # 前缀最大值
+        res = -10 ** 18
+        while i > 0:
+            if res < bit[i]:
+                res = bit[i]
+            i -= i & -i
+        return res
+
+    best = 0
+    for v in nums:
+        r = rank[v]
+        cur = query(r - 1) + 1        # 严格上升：查询 r-1
+        if cur > best:
+            best = cur
+        upd(r, cur)
+    return best
+
+
+# 验算：lis_length([3,1,4,1,5,9,2,6]) == 4   (1,4,5,6)
+# 非严格上升：query(r) + 1
+`,
+
+offline: `
+def distinct_in_ranges(nums, queries):
+    """nums 0-indexed；queries = [(l, r, idx)]，l/r 为 1-indexed
+       返回每个查询区间内不同数的个数"""
+    n = len(nums)
+    bit = [0] * (n + 1)
+
+    def add(i, delta):
+        while i <= n:
+            bit[i] += delta
+            i += i & -i
+
+    def query(i):
+        s = 0
+        while i > 0:
+            s += bit[i]
+            i -= i & -i
+        return s
+
+    ans = [0] * len(queries)
+    last = {}                              # 值 -> 上次出现位置(1-indexed)
+    p = 0
+    for l, r, idx in sorted(queries, key=lambda q: q[1]):
+        while p < r:
+            v = nums[p]
+            if v in last:
+                add(last[v], -1)           # 抵消上次出现
+            add(p + 1, 1)                  # 只在最新位置记 1
+            last[v] = p + 1
+            p += 1
+        ans[idx] = query(r) - query(l - 1)
+    return ans
+`,
+
+range_point: `
+class BIT:
+    def __init__(self, n):
+        self.n = n
+        self.t = [0] * (n + 1)
+
+    def add(self, i, delta):
+        while i <= self.n:
+            self.t[i] += delta
+            i += i & -i
+
+    def sum(self, i):
+        s = 0
+        while i > 0:
+            s += self.t[i]
+            i -= i & -i
+        return s
+
+
+# 用法：BIT 里存的是差分数组 d
+bit = BIT(n)
+
+def range_add(l, r, delta):
+    """区间 [l, r] 全部加 delta"""
+    bit.add(l, delta)
+    bit.add(r + 1, -delta)        # r+1 > n 时循环自然不执行
+
+def point_query(i):
+    """单点查询：a[i]（含所有区间加）"""
+    return bit.sum(i) + a0[i]     # a0 为初始数组
+`,
+
+range_range: `
+class BIT2:
+    """区间加 + 区间和：维护 d[i] 与 i*d[i] 两个树状数组"""
+    def __init__(self, n):
+        self.n = n
+        self.b1 = [0] * (n + 2)
+        self.b2 = [0] * (n + 2)
+
+    def _add(self, bit, i, delta):
+        n = self.n
+        while i <= n:
+            bit[i] += delta
+            i += i & -i
+
+    def _sum(self, bit, i):
+        s = 0
+        while i > 0:
+            s += bit[i]
+            i -= i & -i
+        return s
+
+    def range_add(self, l, r, delta):
+        self._add(self.b1, l, delta)
+        self._add(self.b1, r + 1, -delta)
+        self._add(self.b2, l, delta * l)              # 注意是 l*delta
+        self._add(self.b2, r + 1, -delta * (r + 1))   # 注意是 -(r+1)*delta
+
+    def prefix_sum(self, x):
+        """a[1] + ... + a[x]"""
+        return (x + 1) * self._sum(self.b1, x) - self._sum(self.b2, x)
+
+    def range_sum(self, l, r):
+        return self.prefix_sum(r) - self.prefix_sum(l - 1)
+
+
+# 初始化初始数组 a[1..n]：
+#   bit = BIT2(n)
+#   for i in range(1, n + 1): bit.range_add(i, i, a[i])
+# 验算：a = 1..5，[2,4] +2 后 prefix_sum(5) == 21 ✓
+`,
+
+bit2d: `
+class BIT2D:
+    """二维树状数组：单点加、子矩阵和"""
+    def __init__(self, n, m):
+        self.n, self.m = n, m
+        self.t = [[0] * (m + 1) for _ in range(n + 1)]
+
+    def add(self, x, y, delta):
+        i = x
+        while i <= self.n:
+            j = y
+            while j <= self.m:
+                self.t[i][j] += delta
+                j += j & -j
+            i += i & -i
+
+    def sum(self, x, y):
+        """左上角 (1,1) 到 (x,y) 的和"""
+        res = 0
+        i = x
+        while i > 0:
+            j = y
+            while j > 0:
+                res += self.t[i][j]
+                j -= j & -j
+            i -= i & -i
+        return res
+
+    def rect_sum(self, x1, y1, x2, y2):
+        """容斥取子矩阵和"""
+        return (self.sum(x2, y2) - self.sum(x1 - 1, y2)
+                - self.sum(x2, y1 - 1) + self.sum(x1 - 1, y1 - 1))
+
+
+# 注意：网格坐标要 +1，树状数组没有 0 号下标
+`,
+
+bit_max: `
+class BITMax:
+    """前缀最大值；只支持 a[i] = max(a[i], x)（单调不减）"""
+    def __init__(self, n):
+        self.n = n
+        self.t = [-10 ** 18] * (n + 1)
+
+    def update(self, i, x):
+        """a[i] = max(a[i], x)"""
+        while i <= self.n:
+            if self.t[i] < x:
+                self.t[i] = x
+            i += i & -i
+
+    def query(self, i):
+        """max(a[1..i])"""
+        res = -10 ** 18
+        while i > 0:
+            if res < self.t[i]:
+                res = self.t[i]
+            i -= i & -i
+        return res
+
+
+# 限制：值不能变小、查询不能是任意区间
+# 若需要任意区间最值，用线段树或 ST 表
+`,
+
+toolbox: `
+class BIT:
+    """一份就够用的树状数组工具箱"""
+    __slots__ = ('n', 't')
+
+    def __init__(self, n):
+        self.n = n
+        self.t = [0] * (n + 1)
+
+    # ---------- 基础 ----------
+    def add(self, i, delta):
+        t, n = self.t, self.n
+        while i <= n:
+            t[i] += delta
+            i += i & -i
+
+    def sum(self, i):
+        s, t = 0, self.t
+        while i > 0:
+            s += t[i]
+            i -= i & -i
+        return s
+
+    def range_sum(self, l, r):
+        return self.sum(r) - self.sum(l - 1)
+
+    # ---------- 第 k 小（计数非负） ----------
+    def kth(self, k):
+        pos, t = 0, self.t
+        bit = 1 << (self.n.bit_length() - 1)
+        while bit:
+            nxt = pos + bit
+            if nxt <= self.n and t[nxt] < k:
+                k -= t[nxt]
+                pos = nxt
+            bit >>= 1
+        return pos + 1
+
+    # ---------- 区间加（差分） ----------
+    def range_add(self, l, r, delta):
+        self.add(l, delta)
+        self.add(r + 1, -delta)
+
+
+# 区间加 + 区间和：用两个 BIT（见 range_range 模板）
+# 二维：用 BIT2D 模板
+`
+};
+
+function applyCode(){
+  document.querySelectorAll('code[data-src]').forEach(el => {
+    const raw = CODE[el.dataset.src];
+    if (typeof raw === 'string') {
+      el.textContent = raw.replace(/^\n+/, '').replace(/\s+$/, '');
+    }
+  });
+  if (window.Prism && Prism.highlightAll) { Prism.highlightAll(); }
+}
+
+const deck = document.getElementById('deck');
+function fit(){
+  const s = Math.min(window.innerWidth / 1320, window.innerHeight / 780);
+  deck.style.transform = 'scale(' + s + ')';
+}
+
+function fitCode(){
+  document.querySelectorAll('pre.code').forEach(pre => {
+    pre.style.fontSize = '';
+    let fs = 12.4, guard = 0;
+    while (pre.scrollHeight > pre.clientHeight + 2 && fs > 10.2 && guard < 40) {
+      fs -= 0.15;
+      pre.style.fontSize = fs.toFixed(2) + 'px';
+      guard++;
+    }
+  });
+}
+function relayout(){ fit(); requestAnimationFrame(fitCode); }
+window.addEventListener('resize', relayout);
+window.addEventListener('load', relayout);
+
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let idx = 0;
+document.getElementById('tot').textContent = total;
+
+function show(n){
+  idx = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('on', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('prog').style.width = ((idx + 1) / total * 100) + '%';
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  requestAnimationFrame(fitCode);
+}
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(total - 1);
+  else if (e.key.toLowerCase() === 'o') document.getElementById('toc').classList.toggle('on');
+  else if (e.key === 'Escape') document.getElementById('toc').classList.remove('on');
+});
+document.getElementById('fullBtn').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+const tocGrid = document.getElementById('tocGrid');
+slides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + (i + 1);
+  a.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b>' + (s.dataset.title || '');
+  a.onclick = e => { e.preventDefault(); show(i); document.getElementById('toc').classList.remove('on'); };
+  tocGrid.appendChild(a);
+});
+document.getElementById('tocBtn').onclick = () => document.getElementById('toc').classList.toggle('on');
+document.getElementById('toc').onclick = e => { if (e.target.id === 'toc') e.classList.remove('on'); };
+
+applyCode();
+const h = parseInt(location.hash.replace('#', ''), 10);
+show(isNaN(h) ? 0 : h - 1);
+relayout();
+</script>
+</body>
+</html>

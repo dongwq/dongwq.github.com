@@ -1,0 +1,2359 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>字符串哈希：把串当 B 进制大整数</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{
+  --paper:#FFF8F0; --card:#FFFFFF;
+  --ink:#2B1D12; --ink2:#6E5842; --line:#EEDCC2;
+  --accent:#E2612F; --amber:#F2A63B; --teal:#0F7B6C; --plum:#A33A64;
+  --code-bg:#2C2117;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EFE0C8;font-family:var(--sans);color:var(--ink);overflow:hidden}
+body{background:
+  radial-gradient(1200px 700px at 12% -10%, #FBE9CE 0%, rgba(251,233,206,0) 60%),
+  radial-gradient(900px 600px at 105% 110%, #F7DCC0 0%, rgba(247,220,192,0) 55%), #EFE0C8;}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center center;
+  border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(90,52,18,.28),0 4px 12px rgba(90,52,18,.14)}
+
+.slide{position:absolute;inset:0;padding:22px 38px 26px;opacity:0;visibility:hidden;
+  transform:translateX(22px) scale(.996);transition:opacity .38s ease,transform .38s ease,visibility .38s;
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(160deg,#FFFBF5 0%,#FFF4E6 55%,#FDEBD3 100%)}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.slide::after{content:"";position:absolute;right:-120px;top:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(242,166,59,.18),rgba(242,166,59,0) 70%);pointer-events:none}
+.slide::before{content:"";position:absolute;left:-90px;bottom:-140px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,rgba(226,97,47,.11),rgba(226,97,47,0) 70%);pointer-events:none}
+.slide>*{position:relative;z-index:2}
+
+.kicker{display:inline-flex;align-items:center;gap:7px;font-size:10.6px;font-weight:700;letter-spacing:.13em;
+  color:var(--accent);background:#FFEEDC;border:1px solid #F6D2B2;padding:3px 11px;border-radius:999px}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+.kicker.teal{color:var(--teal);background:#E9F7F2;border-color:#BEE6D8}
+.kicker.teal i{background:var(--teal)}
+.kicker.plum{color:var(--plum);background:#FDF1F5;border-color:#EFCBD8}
+.kicker.plum i{background:var(--plum)}
+.sl-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+  border-bottom:2px solid var(--line);padding-bottom:8px}
+.sl-head h2{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1.14;margin-top:5px}
+.sl-head h2 em{font-style:normal;color:var(--accent)}
+.sl-head h2 em.t{color:var(--teal)}
+.sl-head h2 em.p{color:var(--plum)}
+.sl-head .hint{font-size:11.6px;color:var(--ink2);text-align:right;max-width:340px;line-height:1.5}
+.sl-head .hint b{color:#8A5A2C}
+.lead{font-size:15px;line-height:1.66;color:#42301F}
+.muted{color:var(--ink2)}
+
+.cols{display:grid;gap:11px;min-height:0;flex:1 1 auto}
+.c2{grid-template-columns:1fr 1fr}
+.c2a{grid-template-columns:1.08fr .92fr}
+.c2b{grid-template-columns:.92fr 1.08fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+.cols > div{min-height:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.card h3 .n{width:21px;height:21px;border-radius:7px;background:var(--accent);color:#fff;font-size:11.5px;
+  display:grid;place-items:center;font-family:var(--sans);font-weight:700;flex:none}
+.card h3 .n.t{background:var(--teal)}
+.card h3 .n.p{background:var(--plum)}
+.card p,.card li{font-size:13px;line-height:1.6;color:#4A3722}
+.card ul,ol{padding-left:16px}
+.card li{margin:2px 0}
+.card.tint-teal{background:#F2FBF7;border-color:#BEE6D8}
+.card.tint-amber{background:#FFF7E6;border-color:#F4DCAC}
+.card.tint-plum{background:#FDF1F5;border-color:#EFCBD8}
+
+.formula{font-family:var(--mono);font-size:14.5px;background:#2E2118;color:#FFEBD2;border-radius:11px;
+  padding:10px 14px;line-height:1.55;flex:none;overflow-x:auto}
+.formula .hl{color:#FFB169;font-weight:600}
+.formula .ok{color:#7FE0C2;font-weight:600}
+.formula .dim{color:#A8846A}
+
+.codewrap{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;
+  border:1px solid #4B3823;border-radius:12px;overflow:hidden;background:var(--code-bg)}
+.code-head{flex:none;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#241A12;
+  border-bottom:1px solid #46341F}
+.code-head .dot{width:9px;height:9px;border-radius:50%;background:#6B5238}
+.code-head .dot.r{background:#B9471B}
+.code-head .dot.g{background:#0F7B6C}
+.code-head em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B29272;letter-spacing:.08em;margin-left:6px}
+.code-head .lang{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7A5F45;letter-spacing:.12em}
+pre.code{margin:0;flex:1 1 auto;min-height:0;overflow:auto;background:var(--code-bg)!important;
+  padding:11px 14px;font-family:var(--mono);font-size:12.4px;line-height:1.56;white-space:pre;tab-size:4}
+pre.code::-webkit-scrollbar{height:8px;width:8px}
+pre.code::-webkit-scrollbar-track{background:#241A12}
+pre.code::-webkit-scrollbar-thumb{background:#6B5238;border-radius:8px}
+pre.code::-webkit-scrollbar-thumb:hover{background:#8E6E4C}
+pre.code code,code[class*="language-"]{font-family:var(--mono)!important;font-size:inherit;
+  background:transparent!important;color:#F0E0CC!important;text-shadow:none!important}
+pre.code .token.comment,pre.code .token.prolog,pre.code .token.doctype,pre.code .token.cdata{color:#A8846A!important;font-style:italic}
+pre.code .token.punctuation{color:#C0A183!important}
+pre.code .token.keyword,pre.code .token.atrule,pre.code .token.rule,pre.code .token.important{color:#FFB169!important;font-weight:600}
+pre.code .token.string,pre.code .token.char,pre.code .token.attr-value{color:#9BE0BE!important}
+pre.code .token.function,pre.code .token.class-name,pre.code .token.builtin{color:#FFD9A8!important}
+pre.code .token.number,pre.code .token.boolean,pre.code .token.constant,pre.code .token.symbol{color:#F4A9C0!important}
+pre.code .token.operator{color:#FFC98B!important}
+pre.code .token.decorator,pre.code .token.annotation{color:#F4A9C0!important}
+
+.note{border-left:4px solid var(--amber);background:#FFF6E4;padding:8px 12px;border-radius:0 11px 11px 0;
+  font-size:12.6px;line-height:1.58;flex:none}
+.note.warn{border-color:var(--plum);background:#FDF0F4}
+.note.good{border-color:var(--teal);background:#EFF9F5}
+.note b{color:var(--accent)}.note.warn b{color:var(--plum)}.note.good b{color:var(--teal)}
+code:not([class*="language-"]){font-family:var(--mono);font-size:.93em;background:#F6EADA;padding:1px 5px;border-radius:5px}
+
+table{width:100%;border-collapse:collapse;font-size:12.1px;background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);flex:none}
+th,td{padding:5.5px 10px;text-align:left;border-bottom:1px solid var(--line);line-height:1.45}
+th{background:#F7E7CF;font-family:var(--serif);font-size:12.6px;color:#7A4A22}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:11px}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:7px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.2px;
+  font-weight:600;color:#5B4429}
+.pill.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill.tq{background:var(--teal);color:#fff;border-color:var(--teal)}
+.pill.pl{background:var(--plum);color:#fff;border-color:var(--plum)}
+ul.tick{list-style:none;padding:0}
+ul.tick li{position:relative;padding-left:20px;margin:3px 0;font-size:12.8px;line-height:1.55}
+ul.tick li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:4px;
+  background:#FFE2C6;border:2px solid var(--accent)}
+ul.tick.ok li::before{background:#CDEEE2;border-color:var(--teal)}
+ul.tick.no li::before{background:#F7D6E1;border-color:var(--plum);border-radius:50%}
+
+.a-link{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:11px;padding:8px 11px;transition:.18s;box-shadow:0 4px 10px rgba(120,70,20,.06);overflow:hidden}
+.a-link:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 20px rgba(226,97,47,.16)}
+.a-link .t{font-size:12.4px;font-weight:700;color:#7A3A12;display:block;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link .d{font-size:11px;color:var(--ink2);line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.a-link .src{font-size:9.6px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--teal);
+  padding:1px 7px;border-radius:999px;display:inline-block;margin-bottom:4px}
+.a-link .src.lg{background:var(--accent)}
+
+.step{display:flex;gap:9px;align-items:flex-start}
+.step .idx{flex:none;width:23px;height:23px;border-radius:7px;background:#2E2118;color:#FFD9A8;
+  display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.split-line{height:2px;background:linear-gradient(90deg,#E2612F,#F2A63B,rgba(242,166,59,0));border-radius:2px;margin:6px 0;flex:none}
+.split-line.t{background:linear-gradient(90deg,#0F7B6C,#7FE0C2,rgba(127,224,194,0))}
+.split-line.p{background:linear-gradient(90deg,#A33A64,#F4A9C0,rgba(244,169,192,0))}
+.num-huge{font-family:var(--serif);font-size:110px;font-weight:900;line-height:.9;
+  background:linear-gradient(160deg,#E2612F,#F2A63B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.t{background:linear-gradient(160deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+svg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;overflow:visible}
+.dfnlab{font-family:var(--mono);font-size:11.5px;font-weight:700;fill:#0F7B6C}
+.dfnlab.r{fill:#B9471B}
+.dfnlab.p{fill:#A33A64}
+.dfnlab.g{fill:#8A6A45}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.62;transform:scale(1.07)}}
+.dash{stroke-dasharray:8 8;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.cover{background:linear-gradient(150deg,#FFF6E8 0%,#FFE9CD 48%,#FFDCB4 100%)}
+.cover .badge{display:inline-flex;gap:8px;align-items:center;background:#2E2118;color:#FFD9A8;
+  padding:6px 14px;border-radius:999px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.cover h1{font-family:var(--serif);font-size:52px;line-height:1.1;font-weight:900}
+.cover h1 em{font-style:normal;background:linear-gradient(92deg,#E2612F,#F2A63B);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.cover h1 em.t{background:linear-gradient(92deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cover .sub{font-size:15.5px;color:#6B4A2C;line-height:1.66;max-width:600px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta span{background:rgba(255,255,255,.72);border:1px solid #F0D2AC;padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#7A4A22}
+.section-slide{background:linear-gradient(150deg,#FFF3E0,#FFE0BC)}
+.section-slide.teal{background:linear-gradient(150deg,#EFF9F4,#CFE9DE)}
+.section-slide.plum{background:linear-gradient(150deg,#FDF0F4,#F5CBD8)}
+.section-slide .big{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1.18}
+
+.hud{position:fixed;right:18px;bottom:14px;display:flex;gap:7px;align-items:center;z-index:50}
+.hud button{border:1px solid rgba(120,70,20,.2);background:rgba(255,250,242,.92);color:#7A4A22;
+  width:34px;height:34px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:700;backdrop-filter:blur(6px);transition:.16s}
+.hud button:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.pgn{background:rgba(255,250,242,.92);border:1px solid rgba(120,70,20,.2);border-radius:10px;height:34px;
+  display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:12.5px;color:#7A4A22;font-weight:600}
+.prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,#E2612F,#F2A63B);z-index:60;
+  transition:width .35s ease;box-shadow:0 1px 6px rgba(226,97,47,.5)}
+.brand{position:fixed;left:18px;bottom:14px;z-index:50;background:rgba(255,250,242,.9);border:1px solid rgba(120,70,20,.2);
+  border-radius:10px;padding:8px 13px;font-size:10.5px;color:#7A4A22;letter-spacing:.1em;font-weight:700}
+.toc{position:fixed;inset:0;background:rgba(46,33,24,.82);backdrop-filter:blur(8px);z-index:80;display:none;
+  padding:42px 56px;overflow:auto}
+.toc.on{display:block}
+.toc h4{color:#FFE2BF;font-family:var(--serif);font-size:24px;margin-bottom:16px}
+.toc .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.toc a{background:rgba(255,246,232,.94);border-radius:10px;padding:9px 12px;text-decoration:none;color:#4A3722;
+  font-size:12.2px;line-height:1.4;border:1px solid rgba(255,255,255,.18);transition:.16s}
+.toc a:hover{background:#FFB169;transform:translateY(-2px)}
+.toc a b{display:block;font-family:var(--mono);font-size:10px;color:#B9471B;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- ═══ 01 封面 ═══ -->
+<section class="slide cover on" data-title="封面">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">DATA STRUCTURE · STRING HASHING · 80 MIN</div>
+      <h1>字符串哈希<br><em>把串当 B 进制大整数</em></h1>
+      <p class="sub">映射 <b>f(s) = s₁·B^(n−1) + s₂·B^(n−2) + … + sₙ</b>，取模后<b>子串比较变成 O(1)</b>。<br>
+        代价是<b>可能撞车</b>——用双哈希把碰撞概率压到 10⁻¹⁸。</p>
+      <div class="meta">
+        <span>45 页 · 约 80 分钟</span><span>12 个可运行 Python 模板</span>
+        <span>含手算与验算</span><span>洛谷 / LeetCode 题单</span>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 520 300" preserveAspectRatio="xMidYMid meet">
+        <!-- 三段链路 -->
+        <text x="260" y="20" text-anchor="middle" class="dfnlab r">字符串 → 多项式 → 取模 → (h₁, h₂)</text>
+        <!-- 面板1 字符串 -->
+        <g font-family="monospace" font-size="13" text-anchor="middle">
+          <rect x="20" y="46" width="180" height="46" rx="10" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+          <text x="110" y="76" fill="#B9471B" font-size="17">a b c b a c</text>
+          <text x="110" y="108" class="dfnlab r">字符串 s</text>
+        </g>
+        <path d="M204 69 L236 69" stroke="#8A6A45" stroke-width="2.5" marker-end="url(#ar)"/>
+        <defs>
+          <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#8A6A45"/>
+          </marker>
+          <marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#B9471B"/>
+          </marker>
+        </defs>
+        <!-- 面板2 多项式 -->
+        <g font-family="monospace" font-size="10.5" text-anchor="middle">
+          <rect x="240" y="34" width="160" height="70" rx="10" fill="#E9F7F2" stroke="#BEE6D8" stroke-width="2"/>
+          <text x="320" y="58" fill="#0B6356">1·B⁵ + 2·B⁴ + 3·B³</text>
+          <text x="320" y="76" fill="#0B6356">+ 2·B² + 1·B + 3</text>
+          <text x="320" y="96" fill="#0B6356" font-size="10">B = 131（进制）</text>
+        </g>
+        <path d="M404 69 L436 69" stroke="#B9471B" stroke-width="2.5" marker-end="url(#ar2)"/>
+        <!-- 面板3 取模 -->
+        <g font-family="monospace" font-size="11" text-anchor="middle">
+          <rect x="440" y="34" width="66" height="30" rx="9" fill="#E2612F"/>
+          <text x="473" y="54" fill="#fff">h₁</text>
+          <rect x="440" y="74" width="66" height="30" rx="9" fill="#E2612F" opacity=".72"/>
+          <text x="473" y="94" fill="#fff">h₂</text>
+        </g>
+        <!-- 底部：子串相减 -->
+        <g font-family="monospace" font-size="11" text-anchor="middle">
+          <rect x="20" y="140" width="486" height="60" rx="11" fill="#2E2118"/>
+          <text x="263" y="164" fill="#FFB169" font-size="12.5">get(l, r) = h[r] − h[l−1] · B^(r−l+1)   (mod M)</text>
+          <text x="263" y="187" fill="#7FE0C2" font-size="12">O(1) 子串比较 · 预处理 O(n) · 双模把碰撞概率压到 10⁻¹⁸</text>
+        </g>
+        <!-- 标签 -->
+        <g font-family="monospace" font-size="10.5" text-anchor="middle">
+          <rect x="60" y="222" width="130" height="30" rx="9" fill="#E2612F"/>
+          <text x="125" y="241" fill="#fff">O(1) 比较</text>
+          <rect x="205" y="222" width="130" height="30" rx="9" fill="#0F7B6C"/>
+          <text x="270" y="241" fill="#fff">O(n) 预处理</text>
+          <rect x="350" y="222" width="130" height="30" rx="9" fill="#A33A64"/>
+          <text x="415" y="241" fill="#fff">可能碰撞</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 路线图 ═══ -->
+<section class="slide" data-title="路线图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>ROADMAP</div><h2>六站，一条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>这份讲义怎么走？<br>每站先给"要解决的问题"，再给"为什么这样写"。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>基础</h3><p>多项式哈希 · 取模与进制 · 前缀哈希 · 子串公式 · 手算</p></div>
+    <div class="card tint-plum"><h3><span class="n p">2</span>陷阱</h3><p>单哈希 vs 自然溢出 · 卡哈希 · 双哈希 · 随机化 · 比较细节</p></div>
+    <div class="card tint-amber"><h3><span class="n">3</span>应用</h3><p>LCP · 最长公共子串 · 回文 · Rabin-Karp · 不同子串 · 循环节</p></div>
+    <div class="card tint-teal"><h3><span class="n t">4</span>变体</h3><p>二维哈希 · 哈希+二分 · 树上哈希（同构）</p></div>
+    <div class="card"><h3><span class="n">5</span>对比选型</h3><p>vs KMP / Z / Manacher / 后缀数组 · 何时必须哈希 · 常数</p></div>
+    <div class="card tint-amber"><h3><span class="n">6</span>工程</h3><p>易错清单 · 模板合集 · 对拍验证 · 题单</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>时间分配</h3><p class="muted">基础 22' · 陷阱 14' · 应用 18' · 变体 10' · 对比 6' · 工程 10'</p></div>
+    <div class="card"><h3>验收标准</h3><p class="muted">能闭卷写出双哈希模板 + 子串比较；能说清"为什么二分 LCP 是对的、二分 border 是错的"。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 03 钩子 ═══ -->
+<section class="slide" data-title="四道题一个套路">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HOOK</div><h2>四道"比较子串很贵"的题，<em>一个套路</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哈希能干什么？<br>它把哪一步变便宜了。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3>题 A</h3><p><b>题意：</b>给两个串，求它们的<b>最长公共子串</b>。</p><div class="split-line"></div><p class="muted">→ 二分长度 + 哈希集合。</p></div>
+    <div class="card"><h3>题 B</h3><p><b>题意：</b>多次询问 <code>s[l..r]</code> 是否<b>回文</b>。</p><div class="split-line"></div><p class="muted">→ 正反双哈希 O(1)。</p></div>
+    <div class="card"><h3>题 C</h3><p><b>题意：</b>求 <code>s</code> 的<b>最小循环节</b>长度。</p><div class="split-line t"></div><p class="muted">→ 枚举周期 + O(1) 校验。</p></div>
+    <div class="card"><h3>题 D</h3><p><b>题意：</b>在文本中<b>找出模式串所有出现位置</b>。</p><div class="split-line p"></div><p class="muted">→ Rabin-Karp 滚动哈希。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n">★</span>共同点</h3>
+      <p class="lead">都要"<b>快速判断两个子串是否相等</b>"。暴力逐字符 O(L)，哈希<b>O(1)</b>。
+        于是"长度上的二分"和"集合上的去重"都变得可行。</p>
+      <div class="note"><b>一句话：</b>哈希把<b>「比较」从 O(L) 降到 O(1)</b>，代价是<b>可能误判相等</b>。</div>
+    </div>
+    <div class="card">
+      <h3>三个判断题</h3>
+      <div class="pill-row">
+        <span class="pill hot">要比较子串吗</span>
+        <span class="pill tq">能接受概率正确吗</span>
+        <span class="pill pl">会不会被人卡</span>
+      </div>
+      <div class="split-line"></div>
+      <p class="muted">答对这三题，就知道该不该上哈希。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 问题定义 ═══ -->
+<section class="slide" data-title="问题定义">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · PROBLEM</div><h2>先把问题<em>说清楚</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哈希支持哪些查询？<br>各自代价多少。</div>
+  </div>
+  <table>
+    <tr><th style="width:250px">操作 / 查询</th><th style="width:130px">预处理</th><th style="width:120px">单次代价</th><th>说明</th></tr>
+    <tr><td>子串相等判定</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>核心能力</td></tr>
+    <tr><td>两子串最长公共前缀（LCP）</td><td class="mono">O(n)</td><td class="mono">O(log n)</td><td>二分长度</td></tr>
+    <tr><td>子串是否回文</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>正向 + 反向</td></tr>
+    <tr><td>最长回文子串（半径）</td><td class="mono">O(n)</td><td class="mono">O(n log n)</td><td>逐中心二分</td></tr>
+    <tr><td>模式匹配（Rabin-Karp）</td><td class="mono">O(m)</td><td class="mono">期望 O(1)</td><td>滚动哈希</td></tr>
+    <tr><td>不同子串个数</td><td class="mono">O(n²)</td><td class="mono">O(1)</td><td>哈希去重（可能偏小）</td></tr>
+    <tr><td>最小循环节 / 周期判定</td><td class="mono">O(n)</td><td class="mono">O(1)</td><td>枚举 p，O(n) 总计</td></tr>
+    <tr><td>子矩阵相等（二维）</td><td class="mono">O(nm)</td><td class="mono">O(1)</td><td>二维多项式</td></tr>
+    <tr><td>有根树同构</td><td class="mono">O(n log n)</td><td class="mono">O(1)</td><td>子节点哈希排序合并</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>共同点</h3><p>都依赖"<b>O(1) 子串比较</b>"；预处理 O(n)、查询 O(1)。</p></div>
+    <div class="card tint-plum"><h3>不适合</h3><p>要求<b>绝对正确</b>、要<b>字典序排名</b>、要<b>后缀相关</b> → 用后缀数组 / SAM 更稳。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 05 主线 ═══ -->
+<section class="slide" data-title="为什么需要哈希">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · ROADMAP</div><h2>取舍链：<em>暴力 → 哈希 → KMP/Z → 后缀数组</em></h2></div>
+    <div class="hint"><b>本页回答：</b>已有 KMP，为什么还要哈希？<br>它的不可替代性。</div>
+  </div>
+  <table>
+    <tr><th style="width:130px">方案</th><th>子串比较</th><th>模式匹配</th><th>回文</th><th>LCP</th><th>正确性</th></tr>
+    <tr><td>暴力</td><td class="mono">O(L)</td><td class="mono">O(nm)</td><td class="mono">O(L)</td><td class="mono">O(L)</td><td>绝对</td></tr>
+    <tr><td>KMP / Z</td><td>❌</td><td class="mono">O(n+m)</td><td>❌</td><td>❌</td><td>绝对</td></tr>
+    <tr><td>Manacher</td><td>❌</td><td>❌</td><td class="mono">O(n)</td><td>❌</td><td>绝对</td></tr>
+    <tr><td><b>字符串哈希</b></td><td class="mono">O(1)</td><td class="mono">O(n+m)</td><td class="mono">O(1)</td><td class="mono">O(log n)</td><td><b>概率</b></td></tr>
+    <tr><td>后缀数组 + LCP</td><td class="mono">O(1)</td><td class="mono">O(m log n)</td><td>⚠️ 复杂</td><td class="mono">O(1)</td><td>绝对</td></tr>
+    <tr><td>SAM / Suffix Automaton</td><td class="mono">O(1)</td><td class="mono">O(m)</td><td>❌</td><td class="mono">O(1)</td><td>绝对</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>不可替代的三件事</h3>
+      <ul class="tick">
+        <li><b>任意子串</b>的 O(1) 相等判定（KMP 做不到）</li>
+        <li><b>可以二分</b>的比较（LCP、最长公共子串、最长重复子串）</li>
+        <li><b>可以进集合</b>去重（不同子串、去重后的模式）</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>心智模型</h3>
+      <p>哈希 = <b>"用概率换常数"</b>：把 O(L) 的比较换成 O(1) 的整数相等。</p>
+      <div class="note good"><b>建议：</b>比赛默认<b>双哈希 + 随机进制</b>；被卡过一次就永远记得。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：基础">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 01</div>
+      <div class="big">基础：<em style="color:var(--accent)">多项式哈希与子串公式</em></div>
+      <p class="lead">取模与进制 · 前缀哈希 · 幂预处理 · 手算<br>先把"公式方向"钉死。</p>
+    </div>
+    <div><div class="num-huge">01</div>
+      <div class="note good"><b>目标：</b>能独立推导 <code>get(l,r)</code>，并手算出任意子串的哈希值。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 核心思想 ═══ -->
+<section class="slide" data-title="核心思想：多项式哈希">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · IDEA</div><h2>核心思想：<em>把串当成 B 进制大整数</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么要多项式？<br>为什么必须取模。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>多项式映射</h3>
+        <div class="formula" style="font-size:12.8px">
+          <span class="ok">f(s) = s₁·B^(n−1) + s₂·B^(n−2) + … + sₙ</span><br>
+          <span class="dim">相当于把 s 看成 B 进制数，s[i] 是"数位"</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>为什么取模</h3>
+        <ul class="tick">
+          <li>B 进制大整数会<b>指数级溢出</b></li>
+          <li>取模后值域固定，可做<b>数组下标 / 字典键</b></li>
+          <li>模数越大，碰撞越少</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>核心风险：</b>取模是<b>多对一</b>映射 ⇒ 不同串可能同值（碰撞）。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">"abc" → 1·B² + 2·B + 3</text>
+          <g font-family="monospace" font-size="12" text-anchor="middle">
+            <rect x="30" y="42" width="110" height="50" rx="10" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+            <text x="85" y="66" fill="#B9471B" font-size="17">a b c</text>
+            <text x="85" y="84" fill="#8A6A45" font-size="10">1  2  3</text>
+            <rect x="170" y="42" width="110" height="50" rx="10" fill="#E9F7F2" stroke="#BEE6D8" stroke-width="2"/>
+            <text x="225" y="72" fill="#0B6356">1·B² + 2·B + 3</text>
+            <rect x="310" y="42" width="80" height="50" rx="10" fill="#E2612F"/>
+            <text x="350" y="72" fill="#fff" font-size="14">h mod M</text>
+          </g>
+          <g stroke="#8A6A45" stroke-width="2.5" fill="none">
+            <path d="M142 67 L168 67"/><path d="M282 67 L308 67"/>
+          </g>
+          <!-- 鸽笼 -->
+          <g font-family="monospace" font-size="11" text-anchor="middle">
+            <rect x="30" y="118" width="360" height="26" rx="8" fill="#FDF0F4" stroke="#EFCBD8" stroke-width="2"/>
+            <text x="210" y="136" fill="#A33A64">字符串空间：无穷（长度任意）</text>
+            <rect x="30" y="156" width="360" height="26" rx="8" fill="#E9F7F2" stroke="#BEE6D8" stroke-width="2"/>
+            <text x="210" y="174" fill="#0B6356">哈希值空间：M 个（比如 10⁹+7）</text>
+            <rect x="30" y="194" width="360" height="28" rx="8" fill="#2E2118"/>
+            <text x="210" y="213" fill="#FFB169">多对一 ⇒ 必然存在碰撞 ⇒ 双哈希</text>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>为什么是多项式：</b>它让<b>前缀与子串之间有线性关系</b>，才能 O(1) 相减。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 取模与进制 ═══ -->
+<section class="slide" data-title="取模与进制">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · BASE & MOD</div><h2>进制 <em>B</em> 与模数 <em>M</em> 怎么选</h2></div>
+    <div class="hint"><b>本页回答：</b>常用组合有哪些？<br>哪些不能用。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>进制 B</h3>
+        <table style="box-shadow:none">
+          <tr><th>要求</th><th>原因</th></tr>
+          <tr><td class="mono">B ≥ 字符集大小</td><td>避免高位退化</td></tr>
+          <tr><td class="mono">B 为奇数</td><td>避开 2 的幂的低位问题</td></tr>
+          <tr><td class="mono">避开小常数</td><td>容易被构造碰撞</td></tr>
+        </table>
+        <div class="split-line"></div>
+        <div class="pill-row"><span class="pill hot">131</span><span class="pill hot">13331</span><span class="pill">233</span><span class="pill">1009</span><span class="pill">91138233</span><span class="pill tq">随机奇数</span></div>
+      </div>
+      <div class="card tint-amber"><h3>模数 M</h3>
+        <div class="pill-row"><span class="pill hot">10⁹+7</span><span class="pill hot">10⁹+9</span><span class="pill">10⁹+21</span><span class="pill">998244353</span></div>
+        <p class="muted">两个模数要<b>互不相同且为质数</b>，才能双哈希。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>三种取模方式</h3>
+        <table style="box-shadow:none">
+          <tr><th>方式</th><th>速度</th><th>安全性</th></tr>
+          <tr><td class="mono">mod 10⁹+7</td><td>中</td><td>中</td></tr>
+          <tr><td class="mono">自然溢出 2⁶⁴</td><td><b>最快</b></td><td>易被卡</td></tr>
+          <tr><td class="mono">双模 (M1, M2)</td><td>略慢</td><td><b>很稳</b></td></tr>
+        </table>
+      </div>
+      <div class="card tint-plum"><h3>不要这样配</h3>
+        <ul class="tick no">
+          <li><code>B = 2^k</code>（低位信息弱）</li>
+          <li><code>M = 2^32</code> 单独使用</li>
+          <li>双哈希用<b>同一个 M</b>（等于没做）</li>
+          <li>两个哈希<b>只比较一个</b></li>
+        </ul>
+      </div>
+      <div class="note good"><b>实战默认：</b><code>B ∈ 随机奇数</code> + <code>(10⁹+7, 10⁹+9)</code>，足够应付绝大多数题。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 09 前缀哈希 ═══ -->
+<section class="slide" data-title="前缀哈希 + 幂">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · PREFIX</div><h2>前缀哈希 + <em>幂预处理</em></h2></div>
+    <div class="hint"><b>本页回答：</b>两个数组各存什么？<br>递推式怎么推。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>递推式</h3>
+        <div class="formula" style="font-size:12.6px">
+          <span class="ok">h[i] = ( h[i−1] · B + s[i] ) mod M</span><br>
+          <span class="ok">p[i] = ( p[i−1] · B ) mod M,　p[0] = 1</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>展开看清楚</h3>
+        <div class="formula" style="font-size:12.2px">
+          h[i] = <span class="hl">s[1]·B^(i−1) + s[2]·B^(i−2) + … + s[i]</span><br>
+          <span class="dim">指数从 i−1 递减到 0：左端权重最大</span>
+        </div>
+      </div>
+      <div class="note warn"><b>方向不能反：</b>若你把 <code>h[i]</code> 写成 <code>Σ s[k]·B^(k−1)</code>，子串公式要改成<b>乘模逆元</b>，完全不同。全篇统一用上面这个。</div>
+    </div>
+    <div>
+      <div class="card"><h3>两个数组的含义</h3>
+        <table style="box-shadow:none">
+          <tr><th>数组</th><th>含义</th></tr>
+          <tr><td class="mono">h[i]</td><td>前缀 <code>s[1..i]</code> 的哈希</td></tr>
+          <tr><td class="mono">p[i]</td><td><code>B^i mod M</code>（注意是 i 次方）</td></tr>
+        </table>
+      </div>
+      <div class="card tint-teal"><h3>预处理</h3>
+        <div class="formula" style="font-size:12.2px">
+          时间 <span class="ok">O(n)</span>，空间 <span class="ok">O(n)</span><br>
+          <span class="dim">两个数组都要开到 n+1；p 用到下标 r−l+1 ≤ n</span>
+        </div>
+      </div>
+      <div class="note good"><b>记忆：</b><code>h</code> 是"答案"，<code>p</code> 是"尺子"——相减时用它对齐位数。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 子串公式 ═══ -->
+<section class="slide" data-title="子串哈希公式">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · SUBSTRING</div><h2>子串哈希：<em>前缀相减</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么相减就能得到子串？<br>公式怎么来的。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>公式</h3>
+        <div class="formula" style="font-size:13px">
+          <span class="hl">get(l, r) = ( h[r] − h[l−1] · p[r−l+1] ) mod M</span>
+        </div>
+      </div>
+      <div class="card"><h3>推导</h3>
+        <div class="formula" style="font-size:11.8px">
+          h[r] = Σ_{k=1..r} s[k]·B^(r−k)<br>
+          h[l−1]·p[r−l+1] = Σ_{k=1..l−1} s[k]·B^(r−k)<br>
+          <span class="ok">相减 = Σ_{k=l..r} s[k]·B^(r−k)</span>
+        </div>
+      </div>
+      <div class="note warn"><b>易错：</b>是 <code>p[r−l+1]</code>（长度），不是 <code>p[r−l]</code>。差一次方结果完全不同。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">h[r] 减去"被切掉的前缀"的对齐值</text>
+          <!-- h[r] 条 -->
+          <g font-family="monospace" font-size="10.5" text-anchor="middle">
+            <rect x="30" y="40" width="360" height="34" rx="8" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+            <rect x="30" y="40" width="120" height="34" rx="8" fill="#E2612F" opacity=".30"/>
+            <rect x="150" y="40" width="130" height="34" fill="#0F7B6C" opacity=".26"/>
+            <text x="215" y="62" fill="#0B6356">[l, r] 目标子串</text>
+            <text x="90" y="62" fill="#B9471B">[1, l−1]</text>
+            <text x="335" y="62" fill="#8A6A45">[r+1, n]</text>
+          </g>
+          <g stroke="#8A6A45" stroke-width="2.5" fill="none">
+            <path d="M210 82 L210 104"/><path d="M210 148 L210 168"/>
+          </g>
+          <g font-family="monospace" font-size="11" text-anchor="middle">
+            <rect x="60" y="106" width="300" height="40" rx="10" fill="#2E2118"/>
+            <text x="210" y="132" fill="#FFB169" font-size="12.5">h[r]  −  h[l−1] · p[r−l+1]</text>
+            <rect x="60" y="170" width="300" height="36" rx="10" fill="#E9F7F2" stroke="#BEE6D8" stroke-width="2"/>
+            <text x="210" y="193" fill="#0B6356" font-size="12">= 子串 s[l..r] 的哈希</text>
+          </g>
+          <text x="210" y="226" text-anchor="middle" class="dfnlab g">p[r−l+1] 把前缀"左移"到与 h[r] 同样的权重尺度</text>
+        </svg>
+      </div>
+      <div class="note good"><b>验证：</b>当 <code>l = 1</code> 时 <code>h[0] = 0</code>，公式退化为 <code>h[r]</code> ✓；当 <code>l = r</code> 时得到 <code>s[l]</code> ✓。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 模板 ═══ -->
+<section class="slide" data-title="模板：双哈希基础">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · TEMPLATE</div><h2>双哈希基础：<em class="t">标准模板</em></h2></div>
+    <div class="hint"><b>本页回答：</b>最常用的哈希类长什么样？<br>四个关键点在哪。</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>string_hash.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="core"></code></pre></pre>
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li><b>双模</b>：返回 tuple，两个都等才算等</li>
+          <li><b>随机进制</b>：防被卡</li>
+          <li><b>映射非零</b>：<code>ord(c) − 96</code></li>
+          <li><b>p[i] = B^i</b>：下标是长度</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>输入约定</h3>
+        <div class="formula" style="font-size:12.2px">
+          <code>a = [0] + [ord(c) - 96 for c in s]</code><br>
+          <span class="dim">1-indexed 整数列表，长度 n+1，值 ≥ 1</span>
+        </div>
+      </div>
+      <div class="note good"><b>验证：</b><code>"abcbac"</code>，<code>B = 5</code>，<code>M = 101</code>，<code>get(2,5) == get(?,?)</code> 手算见下一页。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 手算 ═══ -->
+<section class="slide" data-title="手算">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · TRACE</div><h2>手算：<em class="t">s = "abcbac", B = 5, M = 101</em></h2></div>
+    <div class="hint"><b>本页回答：</b>公式方向对不对？<br>逐项验算。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>预处理结果</h3>
+        <table style="box-shadow:none">
+          <tr><th>i</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th></tr>
+          <tr><td class="mono">s[i]</td><td>1</td><td>2</td><td>3</td><td>2</td><td>1</td><td>3</td></tr>
+          <tr><td class="mono">h[i]</td><td>1</td><td>7</td><td>38</td><td>91</td><td>52</td><td>61</td></tr>
+          <tr><td class="mono">p[i]</td><td>5</td><td>25</td><td>24</td><td>19</td><td>95</td><td>71</td></tr>
+        </table>
+        <p class="muted">映射 <code>a=1, b=2, c=3</code>；<code>p[i] = B^i mod 101</code>。</p>
+      </div>
+      <div class="card tint-amber"><h3>逐步推 h[4]</h3>
+        <div class="formula" style="font-size:12px">
+          h[4] = (38·5 + 2) mod 101<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= 192 mod 101 = <span class="ok">91</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>子串校验</h3>
+        <table style="box-shadow:none">
+          <tr><th>查询</th><th>公式</th><th>结果</th><th>直接展开</th></tr>
+          <tr><td class="mono">get(1,4)</td><td>91 − 0·19</td><td class="mono">91</td><td>1·125+2·25+3·5+2 = 192 ✓</td></tr>
+          <tr><td class="mono">get(2,5)</td><td>52 − 1·19</td><td class="mono">33</td><td>2·125+3·25+2·5+1 = 336 ✓</td></tr>
+          <tr><td class="mono">get(4,6)</td><td>61 − 38·24</td><td class="mono">58</td><td>2·25+1·5+3 = 58 ✓</td></tr>
+          <tr><td class="mono">get(3,3)</td><td>38 − 7·5</td><td class="mono">3</td><td>c = 3 ✓</td></tr>
+        </table>
+      </div>
+      <div class="card tint-teal"><h3>关键观察</h3>
+        <ul class="tick ok">
+          <li><code>get(1,4) = 91 = h[4]</code>：起点为 1 时无需相减 ✓</li>
+          <li>减法在模下要<b>非负化</b>（Python 自动）</li>
+          <li>长度 1 时公式退化为 <code>s[i]</code> ✓</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 13 映射与边界 ═══ -->
+<section class="slide" data-title="字符映射与边界">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · EDGE</div><h2>字符映射与<em>边界细节</em></h2></div>
+    <div class="hint"><b>本页回答：</b>映射为什么必须非零？<br>还有哪些边界。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>映射规则</h3>
+        <div class="formula" style="font-size:12.2px">
+          小写字母：<span class="hl">ord(c) − 96</span>　→ 1..26<br>
+          多字符集：<span class="hl">ord(c)</span>　→ ASCII<br>
+          整数序列：<span class="hl">直接用 v</span>，保证 v ≥ 1
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>为什么不能用 0</h3>
+        <div class="formula" style="font-size:12px">
+          映射 a→0：<br>
+          s = "a"　→ h = 0<br>
+          s = "aa" → h = (0·B + 0) = <span class="hl">0</span>　<span class="dim">← 撞了！</span>
+        </div>
+        <p class="muted">前导零会让不同长度的串同值。必须让每一位<b>非零</b>。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>边界清单</h3>
+        <ul class="tick">
+          <li><code>l = 1</code>：直接返回 <code>h[r]</code></li>
+          <li><code>l = r</code>：返回 <code>s[l]</code></li>
+          <li>空串：哈希为 0（约定）</li>
+          <li>比较不同长度的串：<b>先比长度</b>，或直接比哈希（长度不同必然不同——因为有高位权重；但保险起见先比长度）</li>
+          <li>下标越界：<code>r &gt; n</code> 是高频 bug</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>容易忽略</h3>
+        <ul class="tick no">
+          <li>混合大小写：映射要覆盖 <code>1..52</code>，且 B &gt; 52</li>
+          <li>含数字/符号：映射范围更大，B 也要更大</li>
+          <li>空串参与比较：统一约定"空串哈希 = 0"</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 14 复杂度 ═══ -->
+<section class="slide" data-title="复杂度分析">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · COMPLEXITY</div><h2>复杂度：<em>预处理 O(n)，查询 O(1)</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哈希到底多快？<br>和 KMP 比谁赢。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>各项开销</h3>
+        <table style="box-shadow:none">
+          <tr><th>操作</th><th>复杂度</th></tr>
+          <tr><td>预处理 h / p</td><td class="mono">O(n)</td></tr>
+          <tr><td>子串哈希</td><td class="mono">O(1)</td></tr>
+          <tr><td>子串比较</td><td class="mono">O(1)（双哈希 2 次）</td></tr>
+          <tr><td>LCP 二分</td><td class="mono">O(log n)</td></tr>
+          <tr><td>空间</td><td class="mono">O(n)</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>对比 KMP</h3>
+        <p>KMP 模式匹配 <code>O(n+m)</code> 且<b>确定性</b>；哈希 Rabin-Karp 期望 <code>O(n+m)</code> 但<b>可能误判</b>。纯匹配题 KMP 更稳，但 KMP <b>不能做任意子串比较</b>。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>关键优势</h3>
+        <div class="formula" style="font-size:12.4px">
+          比较 <span class="hl">O(L) → O(1)</span><br>
+          于是<b>可以在长度上二分</b><br>
+          <span class="dim">LCP、最长公共子串、最长重复子串</span>
+        </div>
+      </div>
+      <div class="card tint-teal"><h3>可以"进集合"</h3>
+        <ul class="tick ok">
+          <li>哈希值是整数，能作 dict/set 键</li>
+          <li>不同子串去重、模式串去重</li>
+          <li>meet-in-the-middle 类问题</li>
+        </ul>
+      </div>
+      <div class="note good"><b>结论：</b>哈希的价值不在"比 KMP 快"，而在<b>「比较便宜到能二分 / 能进集合」</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 15 空间与常数 ═══ -->
+<section class="slide" data-title="空间与常数">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · SPACE</div><h2>空间、下标与<em>容易翻车的细节</em></h2></div>
+    <div class="hint"><b>本页回答：</b>数组开多大？<br>下标从 0 还是 1。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>数组清单</h3>
+      <p>双哈希要 <code>h1, h2, p1, p2</code> 各 <code>n+1</code>；空间 <b>O(n)</b>。四倍于单哈希。</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>下标约定</h3>
+      <p>统一 <b>1-indexed</b>；<code>h[0] = 0</code>、<code>p[0] = 1</code>。两个初值错一个，全盘皆错。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>幂数组</h3>
+      <p><code>p[i] = B^i</code>，用到的最大下标是 <code>n</code>（当 <code>l=1, r=n</code> 时 <code>p[n]</code>）。开到 <code>n+1</code>。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>取模负数</h3>
+      <p>Python <code>%</code> 自动非负；<b>C++ 必须 <code>+M</code></b>，否则减法后为负。</p></div>
+    <div class="card"><h3><span class="n">5</span>tuple 开销</h3>
+      <p>Python 每次比较 <code>tuple</code> 有开销；可合成 <code>(h1 << 32) ^ h2</code> 作单值比较。</p></div>
+    <div class="card tint-amber"><h3><span class="n">6</span>预处理只做一次</h3>
+      <p>多组数据时<b>不要每次重建</b>；若字符串不变，h/p 复用。</p></div>
+  </div>
+  <div class="note warn"><b>记忆：</b><code>h[0]=0</code>、<code>p[0]=1</code>、<code>p[i]=B^i</code>、<code>p[r−l+1]</code>、C++ 加 <code>M</code>。</div>
+</section>
+
+<!-- ═══ 16 章节 ═══ -->
+<section class="slide section-slide plum" data-title="章节：陷阱">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker plum"><i></i>CHAPTER 02</div>
+      <div class="big">陷阱：<em style="color:var(--plum)">碰撞、卡哈希与防御</em></div>
+      <p class="lead">单哈希 vs 自然溢出 · 生日攻击 · 双哈希 · 随机化 · 比较细节<br>这一章决定你能不能"稳过"。</p>
+    </div>
+    <div><div class="num-huge t">02</div>
+      <div class="note warn"><b>目标：</b>能说清"为什么单哈希会被卡"，并写出防卡版本。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 17 单哈希 ═══ -->
+<section class="slide" data-title="单哈希 vs 自然溢出">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>02 · SINGLE</div><h2>单哈希 与 <em class="p">自然溢出</em></h2></div>
+    <div class="hint"><b>本页回答：</b>两种快写法怎么实现？<br>各自风险在哪。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>自然溢出（模 2⁶⁴）</h3>
+        <ul class="tick">
+          <li>用 <code>uint64</code> 溢出当取模，<b>无需取模指令</b></li>
+          <li>Python 里用 <code>& MASK</code> 模拟</li>
+          <li>速度最快，常数最小</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>风险</h3>
+        <ul class="tick no">
+          <li>模数是 2 的幂，<b>低位退化</b></li>
+          <li>攻击者可构造碰撞对（2³² 级搜索）</li>
+          <li>2018 年后大量题目专门卡</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>结论：</b>非公开数据的练习可用；<b>正式比赛/评测用双哈希</b>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>hash64.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="single"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 18 卡哈希 ═══ -->
+<section class="slide" data-title="卡哈希：生日攻击">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>02 · ATTACK</div><h2>卡哈希：<em class="p">生日攻击与碰撞概率</em></h2></div>
+    <div class="hint"><b>本页回答：</b>攻击者怎么做？<br>概率到底多大。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>生日悖论</h3>
+        <p>在 M 个可能值中随机取 <b>≈ √M</b> 个，就有约 50% 概率出现一对碰撞。</p>
+        <div class="split-line p"></div>
+        <div class="formula" style="font-size:12.2px">
+          M = 10⁹　→ √M ≈ <span class="hl">3×10⁴</span> 个候选<br>
+          M = 2⁶⁴　→ √M ≈ <span class="hl">2³²</span> 个候选
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>单哈希的碰撞概率</h3>
+        <div class="formula" style="font-size:12.2px">
+          q 次比较的失败概率 ≈ <span class="hl">q² / (2M)</span><br>
+          <span class="dim">q = 10⁵, M = 10⁹ ⇒ ≈ 5（完全不安全）</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab p">碰撞概率随比较次数 q 增长</text>
+          <line x1="50" y1="185" x2="392" y2="185" stroke="#8A6A45" stroke-width="2"/>
+          <line x1="50" y1="34" x2="50" y2="185" stroke="#8A6A45" stroke-width="2"/>
+          <!-- 曲线：单哈希 -->
+          <path d="M50 182 Q150 165 220 130 T330 60 T392 40" fill="none" stroke="#A33A64" stroke-width="3"/>
+          <!-- 曲线：双哈希（几乎为 0） -->
+          <path d="M50 183 L392 181" fill="none" stroke="#0F7B6C" stroke-width="3"/>
+          <g font-family="monospace" font-size="10.5">
+            <text x="300" y="52" class="dfnlab p">单哈希 M=10⁹</text>
+            <text x="300" y="174" class="dfnlab">双哈希 ≈ 10⁻¹⁸</text>
+            <text x="46" y="200" class="dfnlab g">0</text>
+            <text x="205" y="204" class="dfnlab g">q（比较次数）</text>
+            <text x="30" y="40" class="dfnlab g" transform="rotate(-90 30 40)">P(失败)</text>
+          </g>
+          <circle cx="220" cy="130" r="6" fill="#A33A64" class="pulse"/>
+        </svg>
+      </div>
+      <div class="card tint-plum"><h3>防御三招</h3>
+        <ul class="tick no">
+          <li><b>双哈希</b>：两个独立 (B, M) 同时撞才误判</li>
+          <li><b>随机进制</b>：运行时随机 B，攻击者无法预知</li>
+          <li><b>128 位 / 三哈希</b>：极致保险</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>判断：</b>q = 10⁵ 的题，单哈希 M = 10⁹ 的失败概率<b>不可接受</b>；双哈希是必要而非可选。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 19 双哈希与随机化 ═══ -->
+<section class="slide" data-title="双哈希与随机化">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>02 · RANDOM</div><h2>随机化哈希：<em class="t">运行时决定进制</em></h2></div>
+    <div class="hint"><b>本页回答：</b>随机化怎么做？<br>为什么能防卡。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三重随机</h3>
+        <ul class="tick ok">
+          <li><b>随机进制 B</b>（奇数、&gt; 字符集）</li>
+          <li><b>双模</b> <code>(10⁹+7, 10⁹+9)</code></li>
+          <li>（可选）<b>随机映射</b>：每个字符的数值随机</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>为什么有效</h3>
+        <p>攻击者要在<b>不知道 B</b> 的情况下构造碰撞，只能靠普遍性攻击，成本等价于直接搜索碰撞，实际不可行。</p>
+      </div>
+      <div class="note good"><b>固定 seed：</b>用 <code>random.Random(常数)</code>，保证同一份代码多次运行结果一致，方便对拍。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>rand_hash.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="randhash"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 20 三哈希 ═══ -->
+<section class="slide" data-title="三哈希 / 128 位">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>02 · EXTREME</div><h2>三哈希、<em class="p">128 位</em> 与模数对</h2></div>
+    <div class="hint"><b>本页回答：</b>极致安全怎么做到？<br>各方案的代价。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>双哈希</h3>
+      <p>两个独立 <code>(B, M)</code>，比较两个 tuple。</p>
+      <div class="split-line"></div>
+      <p class="muted">失败概率 <code>≈ 1/(M₁·M₂) ≈ 10⁻¹⁸</code>。多数题的最优性价比。</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>三哈希</h3>
+      <p>三个独立模数；或用 <code>__int128</code> 打包两个 64 位。</p>
+      <div class="split-line"></div>
+      <p class="muted">失败概率 <code>≈ 10⁻²⁷</code>。用于"明知会被卡"的题。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">3</span>大模数 / 128 位</h3>
+      <p>用 <code>2⁶¹−1</code>（梅森素数）+ 快速取模，或 <code>__int128</code> 乘法。</p>
+      <div class="split-line p"></div>
+      <p class="muted">速度快且安全，但写起来繁琐。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">4</span>随机模数</h3>
+      <p>运行时随机选一个大质数（预生成质数表）。</p>
+      <div class="split-line t"></div>
+      <p class="muted">防"预知模数"的定向攻击。</p></div>
+    <div class="card"><h3><span class="n">5</span>模数对</h3>
+      <p>常用 <code>(10⁹+7, 10⁹+9)</code>、<code>(10⁹+7, 998244353)</code>、<code>(2⁶¹−1, 2⁶⁴ 自然溢出)</code>。</p></div>
+    <div class="card tint-amber"><h3><span class="n">6</span>打包技巧</h3>
+      <div class="formula" style="font-size:11.6px">
+        <code>key = (h1 &lt;&lt; 32) ^ h2</code><br>
+        <span class="dim">合成单值，dict/set 更快</span>
+      </div>
+    </div>
+  </div>
+  <div class="note good"><b>实战建议：</b>99% 的题用<b>双哈希 + 随机进制</b>即可；剩下 1% 上三哈希或 2⁶¹−1。</div>
+</section>
+
+<!-- ═══ 21 比较细节 ═══ -->
+<section class="slide" data-title="易错：比较与顺序">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>02 · COMPARE</div><h2>比较的<em class="p">顺序与细节</em></h2></div>
+    <div class="hint"><b>本页回答：</b>比较时最容易写错什么？<br>为什么这些错很隐蔽。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>比较的正确姿势</h3>
+        <ul class="tick">
+          <li>先比<b>长度</b>，再比<b>双哈希</b></li>
+          <li>两个哈希<b>都相等</b>才判相等</li>
+          <li>比较对象是 <b>tuple</b>，不是单个整数</li>
+          <li>不要"比第一个哈希，不同就返回"（会丢第二个的信息）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>减法后取模</h3>
+        <div class="formula" style="font-size:11.8px">
+          Python：<code>(a - b) % M</code> <span class="ok">自动非负 ✓</span><br>
+          C++：<code>((a - b) % M + M) % M</code> <span class="hl">必须加 M</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>下标与幂</h3>
+        <ul class="tick no">
+          <li>幂下标是 <code>r − l + 1</code>（长度），不是 <code>r − l</code></li>
+          <li><code>p[i] = B^i</code>，不是 <code>B^(i−1)</code></li>
+          <li>1-indexed 混用 0-indexed 是灾难</li>
+          <li>双哈希里 <code>p1</code> 用 M₁、<code>p2</code> 用 M₂，别写混</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>C++ 特有</h3>
+        <ul class="tick no">
+          <li><code>unsigned long long</code> 溢出是<b>良定义</b>（模 2⁶⁴）；<code>int</code> 不是</li>
+          <li>有符号溢出是<b>未定义行为</b>，编译器可任意优化</li>
+          <li>模数与 <code>long long</code> 乘法要防溢出</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 22 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：应用">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 03</div>
+      <div class="big">应用：<em style="color:var(--accent)">比较便宜之后能做什么</em></div>
+      <p class="lead">LCP · 最长公共子串 · 回文 · Rabin-Karp · 不同子串 · 循环节<br>每个应用都源于"O(1) 比较"。</p>
+    </div>
+    <div><div class="num-huge">03</div>
+      <div class="note good"><b>目标：</b>看到"二分长度 + 比较"就能反应过来套哈希。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 23 LCP ═══ -->
+<section class="slide" data-title="LCP（二分+哈希）">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · LCP</div><h2>最长公共前缀：<em>二分长度</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么二分是对的？<br>复杂度多少。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>单调性</h3>
+        <p>若长度 <code>L</code> 的前缀相等，则长度 <code>L−1</code> 也相等。<b>谓词单调</b> ⇒ 可二分。</p>
+        <div class="split-line"></div>
+        <p class="muted">这正是哈希能二分的<b>根本原因</b>。</p>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <div class="formula" style="font-size:12.4px">
+          二分 <span class="hl">O(log n)</span> 次，每次 <span class="ok">O(1)</span> 比较<br>
+          合计 <span class="ok">O(log n)</span>
+        </div>
+      </div>
+      <div class="note good"><b>对比：</b>后缀数组 + RMQ 是 <code>O(1)</code>，但要 <code>O(n log n)</code> 预处理且代码长。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>lcp.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="lcp"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 24 最长公共子串 ═══ -->
+<section class="slide" data-title="最长公共子串">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · LCS</div><h2>最长公共子串：<em>二分长度 + 集合</em></h2></div>
+    <div class="hint"><b>本页回答：</b>两串的 LCS 怎么做？<br>为什么二分长度合法。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>思路</h3>
+        <ul class="tick">
+          <li>答案长度 <code>L</code> 有单调性：存在长 L 的 ⇒ 存在长 L−1 的</li>
+          <li>二分 <code>L</code>，判定"是否存在公共子串长 ≥ L"</li>
+          <li>判定：<code>s</code> 中长 L 的所有子串哈希入集合，看 <code>t</code> 有没有命中</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <div class="formula" style="font-size:12.2px">
+          每次判定 <span class="hl">O(n + m)</span><br>
+          二分 <span class="hl">O(log min(n,m))</span><br>
+          合计 <span class="ok">O((n+m)·log min(n,m))</span>
+        </div>
+      </div>
+      <div class="note warn"><b>小心：</b>若"最长公共子串"要求<b>不重复计数</b>或<b>输出所有</b>，要换成 SAM / 后缀自动机。</div>
+    </div>
+    <div>
+      <div class="card"><h3>判定函数骨架</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="hl">def ok(L):</span><br>
+          &nbsp;&nbsp;S = set( H_s.get(i, i+L-1) for i in 1..n-L+1 )<br>
+          &nbsp;&nbsp;<span class="ok">return any(H_t.get(j, j+L-1) in S for j in 1..m-L+1)</span>
+        </div>
+      </div>
+      <div class="card tint-teal"><h3>变体</h3>
+        <ul class="tick ok">
+          <li>最长公共<b>子序列</b> → 哈希不适用，用 DP</li>
+          <li>最长公共<b>回文</b>子串 → 正反哈希 + 二分</li>
+          <li>k 个串的公共子串 → 集合求交</li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>"二分 + 判定 + 哈希集合"是字符串题的<b>通用三件套</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 25 回文 ═══ -->
+<section class="slide" data-title="回文判断">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · PALINDROME</div><h2>回文判定：<em>正反双哈希</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么 O(1) 判回文？<br>反向哈希怎么建。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>思路</h3>
+        <ul class="tick">
+          <li>建两套哈希：正向 <code>f</code>、反向 <code>r</code></li>
+          <li><code>s[l..r]</code> 回文 ⇔ 它等于自己的反转</li>
+          <li>反转串中的区间：<code>[n−r+1, n−l+1]</code></li>
+          <li>比较 <code>f.get(l,r)</code> 与 <code>r.get(n−r+1, n−l+1)</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>下标推导</h3>
+        <div class="formula" style="font-size:11.8px">
+          反转串 <code>rs[k] = s[n−k+1]</code><br>
+          <span class="ok">s[l..r] 对应 rs[n−r+1 .. n−l+1]</span>
+        </div>
+      </div>
+      <div class="note good"><b>对比：</b>Manacher <code>O(n)</code> 求所有回文半径更专业；但判<b>单个区间</b>回文，哈希 <code>O(1)</code> 更方便。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>palindrome.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="palindrome"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 26 回文半径 ═══ -->
+<section class="slide" data-title="回文半径与最长回文">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · RADIUS</div><h2>回文半径：<em>逐中心二分</em></h2></div>
+    <div class="hint"><b>本页回答：</b>最长回文子串怎么做？<br>奇偶怎么处理。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>算法</h3>
+        <ul class="tick">
+          <li>对每个中心 <code>c</code>，二分最大半径 <code>R</code></li>
+          <li>判定：<code>is_pal(c−R+1, c+R−1)</code></li>
+          <li>奇回文：<code>2R−1</code> 长；偶回文：<code>2R</code> 长</li>
+          <li>总复杂度 <code>O(n log n)</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>偶回文的中心</h3>
+        <p>把中心看成"两个字符之间"，判定 <code>is_pal(c−R+1, c+R)</code>，得到 <code>2R</code> 长的偶回文。</p>
+      </div>
+      <div class="note warn"><b>若只求一个最长回文：</b>Manacher 更快（<code>O(n)</code>）；哈希版胜在好写、能顺便回答区间回文询问。</div>
+    </div>
+    <div>
+      <div class="card"><h3>骨架</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="hl">for c in 1..n:</span><br>
+          &nbsp;&nbsp;二分最大 R 使 <code>is_pal(c−R+1, c+R−1)</code><br>
+          &nbsp;&nbsp;更新答案<br>
+          <span class="dim">同理处理偶回文</span>
+        </div>
+      </div>
+      <div class="card tint-teal"><h3>常见变体</h3>
+        <ul class="tick ok">
+          <li>回文<b>子序列</b> → DP，不适用哈希</li>
+          <li>回文<b>划分</b>的最少段数 → 哈希判回文 + DP</li>
+          <li>加一个字符变成回文 → 最长回文前缀/后缀</li>
+        </ul>
+      </div>
+      <div class="note good"><b>LC 214 最短回文串：</b>求最长回文<b>前缀</b>长度 L，把 <code>s[L+1..]</code> 反转后接到前面。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 27 Rabin-Karp ═══ -->
+<section class="slide" data-title="Rabin-Karp 滚动哈希">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · ROLLING</div><h2>Rabin-Karp：<em>滚动哈希匹配</em></h2></div>
+    <div class="hint"><b>本页回答：</b>滚动公式怎么推？<br>为什么要二次验证。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>滚动公式</h3>
+        <div class="formula" style="font-size:12.2px">
+          <span class="ok">cur = ( cur·B − t[i−m]·B^m + t[i] ) mod M</span><br>
+          <span class="dim">窗口右移一位：去掉最左、加上最右</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>为什么要二次验证</h3>
+        <p>哈希相等<b>不代表</b>真匹配。命中后必须<b>逐字符比一次</b>，否则会被卡哈希。</p>
+      </div>
+      <div class="note good"><b>复杂度：</b>期望 <code>O(n + m)</code>；最坏 <code>O(nm)</code>（被构造碰撞时）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>rabin_karp.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="rk"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 28 不同子串 ═══ -->
+<section class="slide" data-title="不同子串个数">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · DISTINCT</div><h2>不同子串个数：<em>哈希去重</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哈希去重可行吗？<br>什么时候必须换方法。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>朴素做法</h3>
+        <ul class="tick">
+          <li>枚举所有 <code>(l, r)</code>，哈希入 set</li>
+          <li>复杂度 <code>O(n²)</code> 时间与空间</li>
+          <li>适用于 <code>n ≤ 2000</code> 左右</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>缺陷</h3>
+        <ul class="tick no">
+          <li>结果是"<b>哈希去重</b>"，可能<b>偏小</b>（碰撞把不同串算成相同）</li>
+          <li>内存 <code>O(n²)</code> 易炸</li>
+          <li>要求精确答案时<b>不可用</b></li>
+        </ul>
+      </div>
+      <div class="note warn"><b>精确做法：</b>后缀数组 <code>Σ(n−sa[i]+1−lcp[i])</code>，或 SAM <code>O(n)</code>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>distinct.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="distinct"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 29 最小循环节 ═══ -->
+<section class="slide" data-title="最小循环节 / 周期">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · PERIOD</div><h2>最小循环节：<em>枚举周期 + O(1) 校验</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么不能二分 border？<br>正确的做法是什么。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>周期判定</h3>
+        <div class="formula" style="font-size:12.2px">
+          <code>p</code> 是周期 ⇔ <span class="hl">hash(1, n−p) == hash(1+p, n)</span><br>
+          <span class="dim">即去掉前 p 位后与原串的前 n−p 位相同</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>最小循环节</h3>
+        <p>枚举 <code>p = 1..n−1</code>，第一个满足的就是最小周期。总复杂度 <code>O(n)</code>（因为每次判定 <code>O(1)</code>）。</p>
+        <div class="split-line"></div>
+        <p class="muted">若 <code>n % p == 0</code>，则 <code>s</code> 由 <code>s[1..p]</code> 循环构成。</p>
+      </div>
+      <div class="note warn"><b>重要纠正：</b>"最长 border"的<b>谓词不单调</b>。反例：<code>s = "abcdefabc"</code> 的 border 只有 <code>3</code>，二分会返回 <code>0</code>。<b>不能二分</b>，要么枚举 <code>p</code>，要么用 KMP 的 π 数组。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>period.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="cycle"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 30 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：变体">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 04</div>
+      <div class="big">变体：<em style="color:var(--teal)">二维 · 二分 · 树上</em></div>
+      <p class="lead">二维哈希（子矩阵）· 哈希 + 二分套路 · 树上哈希（同构）<br>同一个思想换个坐标系。</p>
+    </div>
+    <div><div class="num-huge t">04</div>
+      <div class="note good"><b>目标：</b>把"字符串"换成"矩阵/序列/树"，仍能说出公式。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 31 二维哈希 ═══ -->
+<section class="slide" data-title="二维哈希">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>04 · 2D HASH</div><h2>二维哈希：<em class="t">子矩阵 O(1) 比较</em></h2></div>
+    <div class="hint"><b>本页回答：</b>二维递推怎么写？<br>容斥怎么算。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>递推式</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="ok">h[i][j] = h[i−1][j]·B₁ + h[i][j−1]·B₂ − h[i−1][j−1]·B₁·B₂ + a[i][j]</span>
+        </div>
+      </div>
+      <div class="card"><h3>子矩阵</h3>
+        <div class="formula" style="font-size:11.4px">
+          <code>get(x1,y1,x2,y2)</code>：<br>
+          &nbsp;&nbsp;= h[x2][y2] − h[x1−1][y2]·B₁^dx<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;− h[x2][y1−1]·B₂^dy<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="hl">+ h[x1−1][y1−1]·B₁^dx·B₂^dy</span><br>
+          <span class="dim">dx = x2−x1+1, dy = y2−y1+1</span>
+        </div>
+      </div>
+      <div class="note warn"><b>容斥的加号</b>不能漏；两个减法把左上角减了两次。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">容斥：减两次要加回一次</text>
+          <!-- 网格 -->
+          <g stroke="#D9B98D" stroke-width="1.6">
+            <path d="M60 40 L340 40 M60 78 L340 78 M60 116 L340 116 M60 154 L340 154 M60 192 L340 192"/>
+            <path d="M60 40 L60 192 M130 40 L130 192 M200 40 L200 192 M270 40 L270 192 M340 40 L340 192"/>
+          </g>
+          <!-- 目标子矩阵 -->
+          <rect x="130" y="78" width="140" height="76" fill="#0F7B6C" opacity=".22" stroke="#0B6356" stroke-width="3"/>
+          <!-- 左上角 -->
+          <rect x="60" y="40" width="70" height="38" fill="#E2612F" opacity=".28" stroke="#B9471B" stroke-width="2.5"/>
+          <text x="95" y="64" class="dfnlab r" text-anchor="middle">减</text>
+          <!-- 上边 -->
+          <rect x="130" y="40" width="140" height="38" fill="#E2612F" opacity=".18" stroke="#B9471B" stroke-width="2"/>
+          <text x="200" y="64" class="dfnlab r" text-anchor="middle">减 h[x1-1][y2]·B₁^dx</text>
+          <!-- 左边 -->
+          <rect x="60" y="78" width="70" height="76" fill="#E2612F" opacity=".18" stroke="#B9471B" stroke-width="2"/>
+          <text x="95" y="118" class="dfnlab r" text-anchor="middle">减</text>
+          <text x="200" y="122" class="dfnlab" text-anchor="middle">目标子矩阵</text>
+          <g font-family="monospace" font-size="10.5">
+            <rect x="60" y="202" width="280" height="28" rx="9" fill="#2E2118"/>
+            <text x="200" y="221" fill="#FFB169" text-anchor="middle">h[x1-1][y1-1]·B₁^dx·B₂^dy  →  加回</text>
+          </g>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>应用</h3>
+        <ul class="tick ok">
+          <li>子矩阵相等判定</li>
+          <li>最大全 1 子正方形（二分 + 判定）</li>
+          <li>矩阵模式匹配</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 32 通用套路 ═══ -->
+<section class="slide" data-title="哈希 + 二分：通用套路">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · PATTERN</div><h2>哈希 + 二分：<em>一个通用套路</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么题能套这个？<br>前提条件是什么。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>适用题型</h3>
+        <ul class="tick">
+          <li>最长公共前缀 / 子串</li>
+          <li>最长重复子串（LC 1044）</li>
+          <li>最长回文子串 / 回文半径</li>
+          <li>最小改动后相等的串</li>
+          <li>"是否存在长度 ≥ L 的公共子串"</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>前提条件</h3>
+        <div class="formula" style="font-size:12.2px">
+          谓词 <code>ok(L)</code> <b>单调</b>：<br>
+          <span class="ok">ok(L) ⇒ ok(L−1)</span>
+        </div>
+        <p class="muted">只要满足，就能二分 + 哈希判定。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>三件套骨架</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="hl">lo, hi = 0, n</span><br>
+          <span class="hl">while lo &lt; hi:</span><br>
+          &nbsp;&nbsp;mid = (lo + hi + 1) // 2<br>
+          &nbsp;&nbsp;<span class="ok">if ok(mid): lo = mid</span><br>
+          &nbsp;&nbsp;else: hi = mid - 1<br>
+          <span class="dim">答案 = lo</span>
+        </div>
+      </div>
+      <div class="card tint-plum"><h3>不能套的场景</h3>
+        <ul class="tick no">
+          <li>谓词不单调（如最长 border）</li>
+          <li>需要<b>输出方案</b>而非长度</li>
+          <li>需要<b>精确</b>答案（哈希有碰撞）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>看到"最长 / 最小 / 是否存在"就问一句：<b>答案在长度上单调吗？</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 33 树上哈希 ═══ -->
+<section class="slide" data-title="树上哈希">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>04 · TREE HASH</div><h2>树上哈希：<em class="t">树同构的判定</em></h2></div>
+    <div class="hint"><b>本页回答：</b>树怎么哈希？<br>子节点顺序怎么处理。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>有根树哈希</h3>
+        <ul class="tick">
+          <li>叶子哈希 = 常数</li>
+          <li>节点哈希 = 子节点哈希<b>排序后</b>多项式合并</li>
+          <li><b>排序是关键</b>：无序树的子节点顺序不重要</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>无根树同构</h3>
+        <p>先找<b>树的中心</b>（1 或 2 个），分别以它们为根算哈希，取<b>较小的哈希</b>（或有序对）作为整棵树的签名。</p>
+      </div>
+      <div class="note good"><b>复杂度：</b>每个节点的子节点排序 <code>O(deg·log deg)</code>，总计 <code>O(n log n)</code>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>tree_hash.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="tree"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 34 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：对比选型">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 05</div>
+      <div class="big">选型：<em style="color:var(--accent)">什么时候用哈希</em></div>
+      <p class="lead">对比 KMP / Manacher / 后缀数组 · 决策树 · 常数优化<br>选对工具比写得快更重要。</p>
+    </div>
+    <div><div class="num-huge">05</div>
+      <div class="note good"><b>要领：</b>需要"任意子串比较"或"长度二分"就上哈希；纯匹配上 KMP。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 35 对比 ═══ -->
+<section class="slide" data-title="哈希 vs KMP vs 后缀数组">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>05 · COMPARE</div><h2>四大字符串工具<em class="p">对比</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一道题该用哪个？<br>各自的甜点区。</div>
+  </div>
+  <table>
+    <tr><th style="width:120px">工具</th><th>子串比较</th><th>模式匹配</th><th>回文</th><th>LCP</th><th>子串计数</th><th>正确性</th><th>代码量</th></tr>
+    <tr><td>暴力</td><td class="mono">O(L)</td><td class="mono">O(nm)</td><td class="mono">O(L)</td><td class="mono">O(L)</td><td class="mono">O(n²)</td><td>绝对</td><td>极小</td></tr>
+    <tr><td>KMP / Z</td><td>❌</td><td class="mono">O(n+m)</td><td>❌</td><td>❌</td><td>❌</td><td>绝对</td><td>小</td></tr>
+    <tr><td>Manacher</td><td>❌</td><td>❌</td><td class="mono">O(n)</td><td>❌</td><td>❌</td><td>绝对</td><td>中</td></tr>
+    <tr><td><b>字符串哈希</b></td><td class="mono">O(1)</td><td class="mono">O(n+m)</td><td class="mono">O(1)</td><td class="mono">O(log n)</td><td class="mono">O(n²)</td><td><b>概率</b></td><td><b>小</b></td></tr>
+    <tr><td>后缀数组</td><td class="mono">O(1)</td><td class="mono">O(m log n)</td><td>⚠️</td><td class="mono">O(1)</td><td class="mono">O(n log n)</td><td>绝对</td><td>大</td></tr>
+    <tr><td>SAM</td><td class="mono">O(1)</td><td class="mono">O(m)</td><td>❌</td><td class="mono">O(1)</td><td class="mono">O(n)</td><td>绝对</td><td>大</td></tr>
+    <tr><td>后缀自动机 + LCT</td><td class="mono">O(1)</td><td class="mono">O(m)</td><td>❌</td><td class="mono">O(1)</td><td class="mono">O(n)</td><td>绝对</td><td>很大</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>哈希的甜点</h3>
+      <p><b>任意子串 O(1) 比较</b>、<b>能二分长度</b>、<b>能进集合</b>、代码短。限时赛里的第一选择。</p></div>
+    <div class="card tint-teal"><h3>不该用哈希</h3>
+      <p>要求<b>绝对正确</b>（如答案要输出精确计数）、要<b>字典序</b>、要<b>子串出现次数</b> → 后缀数组 / SAM。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 36 决策树 ═══ -->
+<section class="slide" data-title="选型决策树">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · DECISION</div><h2>三步决策树</h2></div>
+    <div class="hint"><b>本页回答：</b>拿到题怎么判断？<br>建议打印贴在机位旁。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>第一步：要比较子串吗</h3>
+        <ul class="tick">
+          <li>只要模式匹配 → <b>KMP / Z</b></li>
+          <li>要判回文（区间）→ <b>Manacher</b> 或 <b>哈希</b></li>
+          <li>要任意子串比较 → <b>哈希</b></li>
+        </ul>
+      </div>
+      <div class="card"><h3>第二步：答案能二分吗</h3>
+        <ul class="tick ok">
+          <li>最长 / 最小且单调 → <b>哈希 + 二分</b></li>
+          <li>要精确计数 → 后缀数组 / SAM</li>
+          <li>要输出方案 → 考虑 DP / 贪心</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>第三步：会被卡吗</h3>
+        <ul class="tick">
+          <li>公开评测 / 有 hack 机制 → <b>必须双哈希 + 随机进制</b></li>
+          <li>私下练习 / 无 hack → 单哈希可过</li>
+          <li>已知是"卡哈希"题 → 三哈希或 2⁶¹−1</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>速判表</h3>
+        <table style="box-shadow:none">
+          <tr><th>题面关键词</th><th>方案</th></tr>
+          <tr><td>子串相等 / 最长公共</td><td class="mono">哈希</td></tr>
+          <tr><td>回文区间询问</td><td class="mono">正反哈希</td></tr>
+          <tr><td>出现位置 / 模式匹配</td><td class="mono">KMP 或 RK</td></tr>
+          <tr><td>不同子串个数</td><td class="mono">SA / SAM</td></tr>
+          <tr><td>循环节</td><td class="mono">哈希枚举 / KMP π</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 37 优化 ═══ -->
+<section class="slide" data-title="常数与优化">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · TUNING</div><h2>常数与<em>优化清单</em></h2></div>
+    <div class="hint"><b>本页回答：</b>能再快一点吗？<br>按性价比排序。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3><span class="n">1</span>合成单值</h3>
+      <p><code>(h1 &lt;&lt; 32) ^ h2</code> 作 dict/set 键，避免 tuple 比较开销。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">2</span>省掉取模</h3>
+      <p>用 <code>uint64</code> 自然溢出 + 双 base；或用 2⁶¹−1 快速模。</p></div>
+    <div class="card"><h3><span class="n">3</span>预处理一次</h3>
+      <p>多组数据复用 <code>h / p</code>；勿每次重建。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>局部变量</h3>
+      <p>把 <code>self.M1, self.B</code> 取到局部；热循环里别用 <code>self.x</code>。</p></div>
+    <div class="card"><h3><span class="n">5</span>数组而非 dict</h3>
+      <p>哈希值域大时用 <code>set</code>；要频查时用 <code>dict</code>；小规模用排序 + 二分。</p></div>
+    <div class="card tint-amber"><h3><span class="n">6</span>只比长度+首尾</h3>
+      <p>比较前先比长度、首字符、末字符，能短路掉大部分不相等。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>Python 特有</h3>
+      <ul class="tick">
+        <li><code>sys.stdin.buffer.read()</code> 一次性读入</li>
+        <li>大数组用 <code>array</code> 或 <code>list</code>，避免 dict</li>
+        <li>双哈希比较用 tuple 或合成整数</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>C++ 特有</h3>
+      <ul class="tick ok">
+        <li><code>uint64_t</code> 溢出良定义，自然溢出零成本</li>
+        <li><code>__int128</code> 打包双哈希</li>
+        <li>2⁶¹−1 的快速取模（乘完右移 + 减）</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 38 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：工程">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 06</div>
+      <div class="big">工程：<em style="color:var(--teal)">避坑 · 提速 · 验证</em></div>
+      <p class="lead">易错清单 · 模板合集 · 对拍方法 · 题单<br>把哈希代码写成"永不写错"。</p>
+    </div>
+    <div><div class="num-huge t">06</div>
+      <div class="note good"><b>要领：</b>哈希的 bug 集中在<b>幂下标、h[0] 初值、双哈希漏比、映射为零</b>四处。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 39 易错清单 ═══ -->
+<section class="slide" data-title="易错清单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PITFALLS</div><h2>易错清单 <em>Checklist</em></h2></div>
+    <div class="hint"><b>本页回答：</b>提交前自检什么？<br>（每条都对应本讲义的坑）</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-plum"><h3>公式与下标</h3>
+      <ul class="tick no">
+        <li>幂下标写成 <code>r − l</code>（应为 <code>r − l + 1</code>）</li>
+        <li><code>p[i]</code> 误存成 <code>B^(i−1)</code></li>
+        <li><code>h[0] ≠ 0</code> 或 <code>p[0] ≠ 1</code></li>
+        <li>1-indexed 与 0-indexed 混用</li>
+        <li>双哈希里 <code>p1</code> / <code>p2</code> 模数写混</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>映射与比较</h3>
+      <ul class="tick">
+        <li>字符映射用了 <code>0</code>（"a" 与 "aa" 撞）</li>
+        <li>双哈希只比较了一个</li>
+        <li>比较前没比长度</li>
+        <li>不同字符集没扩大 B</li>
+        <li>C++ 减法后忘 <code>+ M</code></li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>算法与安全</h3>
+      <ul class="tick ok">
+        <li>二分前没确认谓词单调（border 反例）</li>
+        <li>Rabin-Karp 命中后没二次逐字符验证</li>
+        <li>用单哈希跑公开评测被卡</li>
+        <li>不同子串个数用了哈希去重却要精确答案</li>
+        <li>树上哈希忘了对子节点<b>排序</b></li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>提交前 30 秒四连问：</b>① <code>h[0]=0 / p[0]=1</code> 了吗 ② 幂下标是 <code>长度</code> 吗 ③ 双哈希两个都比了吗 ④ 映射非零吗。</div>
+</section>
+
+<!-- ═══ 40 模板合集 ═══ -->
+<section class="slide" data-title="模板合集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · TOOLBOX</div><h2>模板合集：<em>一页速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>实战里需要的都在这里。<br>建议直接抄进模板库。</div>
+  </div>
+  <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>string_hash_toolbox.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="toolbox"></code></pre></pre>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3>扩展点</h3><p>加区间乘 → 多两个标记；加三哈希 → 再开一组 <code>(h3, p3, M3)</code>。</p></div>
+    <div class="card tint-teal"><h3>多组数据</h3><p>预处理 O(n) 一次；若串不变，<code>h / p</code> 直接复用。</p></div>
+    <div class="card"><h3>输入</h3><p>大数据一次性读入，避免 <code>input()</code> 慢速循环。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 41 改一改就能用 ═══ -->
+<section class="slide" data-title="改一改就能用">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · ADAPT</div><h2>改一改<em>就能用</em>：四个改点</h2></div>
+    <div class="hint"><b>本页回答：</b>换一道题要改哪里？<br>只有四处。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3><span class="n">1</span>映射函数</h3>
+      <p><code>ord(c) − 96</code> 换成你的编码（多字符集、整数序列、颜色…），<b>必须 ≥ 1</b>。</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>进制与模数</h3>
+      <p>默认随机奇数 + 双模；被卡就换三哈希或 <code>2⁶¹−1</code>。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>比较函数</h3>
+      <p>加长度判断、加短路（首尾字符）；要"小于"就改二分 + LCP。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>查询</h3>
+      <p>加 <code>lcp</code>、<code>is_pal</code>、<code>get_reverse</code>；二维换 <code>Hash2D</code>。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>换题检查表</h3>
+      <ul class="tick">
+        <li>需要比较子串吗？</li>
+        <li>答案在长度上单调吗（能不能二分）？</li>
+        <li>要求绝对正确吗？</li>
+        <li>会不会被刻意卡哈希？</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>什么时候该放弃哈希</h3>
+      <p>只要模式匹配 → KMP；要回文半径 → Manacher；要精确计数 / 字典序 → 后缀数组 / SAM。</p>
+      <div class="note"><b>别硬上：</b>哈希的"可能撞车"在要求精确答案的题里是致命的。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 42 验证 ═══ -->
+<section class="slide" data-title="调试与验证">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · VERIFY</div><h2>怎么验证答案<em>是对的</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哈希怎么对拍？<br>边界用例有哪些。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card tint-teal"><h3><span class="n t">1</span>暴力对拍</h3>
+        <p>写一个逐字符比较的 <code>brute_equal(l1,r1,l2,r2)</code>；随机小串 <b>10⁵ 组</b>，验证 <code>equal()</code> 与暴力<b>完全一致</b>。重点覆盖同长度、不同长度、相邻子串。</p>
+      </div>
+      <div class="card tint-amber"><h3><span class="n">3</span>边界用例</h3>
+        <ul class="tick">
+          <li>n = 1（单字符）</li>
+          <li>全相同字符（<code>aaaa…</code>）</li>
+          <li>长度 1 的子串比较</li>
+          <li><code>l = 1</code> 与 <code>l = r</code> 两种退化</li>
+          <li>整个串相等 / 只差最后一个字符</li>
+          <li>多组数据复用 <code>h / p</code></li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3><span class="n">2</span>不变量检查</h3>
+        <ul class="tick ok">
+          <li><code>get(l, l) == s[l]</code>（单字符）</li>
+          <li><code>get(1, i) == h[i]</code>（前缀）</li>
+          <li><code>get(l, r) == get(l', r')</code> ⇔ 暴力相等（对拍）</li>
+          <li>回文：<code>is_pal(l, r)</code> 与暴力反转一致</li>
+          <li>双哈希：任一哈希不同 ⇒ 串必不同</li>
+        </ul>
+      </div>
+      <div class="note good"><b>小技巧：</b>换 <b>3 组随机 base</b> 各跑一次，答案应完全一致；若不一致，说明代码有 bug（不是碰撞）。</div>
+      <div class="note warn"><b>防卡测试：</b>用 <code>"a"*n</code>、<code>"ab"*n</code>、交替模式串测 Rabin-Karp 的最坏情况。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 43 题单 ═══ -->
+<section class="slide" data-title="练习题单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PRACTICE</div><h2>练习题单（洛谷 / LeetCode）</h2></div>
+    <div class="hint"><b>本页回答：</b>课后练什么？<br>每题都写了<b>题意</b>，可按图索骥。</div>
+  </div>
+  <div class="cols c3" style="gap:8px">
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3370" target="_blank"><span class="src lg">洛谷</span><span class="t">P3370 【模板】字符串哈希</span><span class="d">题意：统计 n 个字符串中有多少个不同。最基础的哈希去重，先闭卷默写。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P4391" target="_blank"><span class="src lg">洛谷</span><span class="t">P4391 Radio Transmission</span><span class="d">题意：给一个循环生成的串，求最小循环节长度。哈希枚举周期的经典题。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3375" target="_blank"><span class="src lg">洛谷</span><span class="t">P3375 【模板】KMP</span><span class="d">题意：模式匹配。与哈希对比学习——KMP 确定性，但不能做任意子串比较。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3805" target="_blank"><span class="src lg">洛谷</span><span class="t">P3805 【模板】manacher</span><span class="d">题意：求最长回文子串。与"正反哈希 + 二分半径"对比，理解各自的适用场景。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/longest-duplicate-substring/" target="_blank"><span class="src">LeetCode</span><span class="t">1044. 最长重复子串</span><span class="d">题意：找最长的出现至少两次的子串。二分长度 + 哈希集合的招牌题。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/find-the-index-of-the-first-occurrence-in-a-string/" target="_blank"><span class="src">LeetCode</span><span class="t">28. 找出字符串中第一个匹配项的下标</span><span class="d">题意：strStr。用 Rabin-Karp 滚动哈希实现，注意二次验证防碰撞。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/repeated-dna-sequences/" target="_blank"><span class="src">LeetCode</span><span class="t">187. 重复的DNA序列</span><span class="d">题意：找出所有出现超过一次的长度 10 子串。滚动哈希 + 哈希表。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/longest-happy-prefix/" target="_blank"><span class="src">LeetCode</span><span class="t">1392. 最长快乐前缀</span><span class="d">题意：求最长的既是前缀又是后缀的真子串。哈希相减直接做（注意 border 不单调）。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/shortest-palindrome/" target="_blank"><span class="src">LeetCode</span><span class="t">214. 最短回文串</span><span class="d">题意：加最少字符使串变回文。求最长回文前缀 + 反转拼接。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/longest-duplicate-substring/" target="_blank"><span class="src">LeetCode</span><span class="t">1316. 不同的循环子字符串</span><span class="d">题意：统计不同的循环子串。哈希去重 + 枚举周期。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P4824" target="_blank"><span class="src lg">洛谷</span><span class="t">P4824 Censoring S</span><span class="d">题意：在文本中反复删除模式串。栈 + 哈希比对（或 KMP），练"局部匹配"。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/longest-common-subsequence/" target="_blank"><span class="src">LeetCode</span><span class="t">1143. 最长公共子序列</span><span class="d">题意：LCS（子序列）。<b>对比用：</b>子序列不适用哈希，用 DP——理解哈希的边界。</span></a>
+  </div>
+  <div class="note"><b>节奏建议：</b>基础 3 题（P3370、P4391、LC 28）→ 对比 3 题（P3375、P3805、LC 1143）→ 进阶 6 题（LC 1044、187、1392、214、P4824、LC 1316）。每题写 100 字题解：<b>问题 → 哈希公式方向 → 是否需要双哈希</b>。</div>
+</section>
+
+<!-- ═══ 44 总结 ═══ -->
+<section class="slide" data-title="总结">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · SUMMARY</div><h2>带走这 <em>五句话</em></h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记住一页，<br>就记这一页。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><div class="step"><div class="idx">1</div><div><b>把串当 B 进制数：</b><code>h[i] = h[i−1]·B + s[i]</code>，取模后子串比较变 O(1)。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">2</div><div><b>子串靠相减：</b><code>get(l,r) = h[r] − h[l−1]·p[r−l+1]</code>，幂下标是<b>长度</b>。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">3</div><div><b>映射必须非零：</b>否则 <code>"a"</code> 与 <code>"aa"</code> 同哈希。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">4</div><div><b>双哈希 + 随机进制：</b>把碰撞概率压到 10⁻¹⁸，公开评测必备。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">5</div><div><b>能二分的前提是单调：</b>LCP / 最长公共子串可以二分；最长 border <b>不行</b>。</div></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 350 260" preserveAspectRatio="xMidYMid meet">
+          <circle cx="175" cy="130" r="115" fill="#E2612F" opacity=".12" class="pulse"/>
+          <circle cx="175" cy="130" r="52" fill="#2E2118"/>
+          <text x="175" y="122" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="11">O(1)</text>
+          <text x="175" y="140" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="11">子串比较</text>
+          <g font-family="monospace" font-size="10.5" fill="#7A4A22">
+            <rect x="112" y="10" width="126" height="30" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="175" y="30" text-anchor="middle">LCP 二分</text>
+            <rect x="248" y="58" width="96" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="296" y="78" text-anchor="middle">回文判定</text>
+            <rect x="252" y="170" width="92" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="298" y="190" text-anchor="middle">滚动哈希</text>
+            <rect x="100" y="216" width="150" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="236" text-anchor="middle">不同子串去重</text>
+            <rect x="6" y="170" width="106" height="30" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="59" y="190" text-anchor="middle">循环节</text>
+            <rect x="8" y="58" width="102" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="59" y="78" text-anchor="middle">树同构</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" class="dash" fill="none">
+            <path d="M175 78 L175 42"/><path d="M224 110 L250 82"/><path d="M224 154 L254 184"/>
+            <path d="M175 182 L175 216"/><path d="M126 154 L110 184"/><path d="M126 110 L108 82"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>升华：</b>哈希最值得学的不是模板，而是"<b>用概率换常数</b>"这种<strong>工程取舍</strong>——知道什么时候能接受不确定性，比记住公式更重要。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 45 结语 ═══ -->
+<section class="slide cover" data-title="结语 Q&A">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">THANKS · Q&A</div>
+      <h1>谢谢！<br><em class="t">开始提问</em></h1>
+      <p class="sub">课后三步：<br>
+        ① 10 分钟默写双哈希模板 + <code>get(l, r)</code> 公式<br>
+        ② 对 <code>"abcbac"</code>、<code>B = 5</code>、<code>M = 101</code> 手算 <code>get(2,5)</code>（答案 33）并与代码对照<br>
+        ③ 按题单刷 12 题，每题写 100 字题解（问题 → 公式方向 → 是否双哈希）</p>
+      <div class="meta"><span>p[i] = B^i</span><span>映射非零</span><span>双哈希</span></div>
+    </div>
+    <div>
+      <svg viewBox="0 0 460 300" preserveAspectRatio="xMidYMid meet">
+        <circle cx="230" cy="150" r="145" fill="#E2612F" opacity=".16" class="pulse"/>
+        <g stroke="#E2612F" stroke-width="3" fill="none"><path d="M230 236 L158 158"/><path d="M230 236 L302 158"/><path d="M230 236 L230 118"/></g>
+        <path d="M302 158 L230 236" stroke="#A33A64" stroke-width="3" stroke-dasharray="7 7" fill="none"/>
+        <g class="float">
+          <g><circle cx="230" cy="236" r="30" fill="#E2612F" stroke="#B9471B" stroke-width="3"/><text x="230" y="244" font-size="13" text-anchor="middle" fill="#fff" font-family="monospace">h[]</text></g>
+          <g><circle cx="158" cy="158" r="24" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="158" y="165" font-size="11" text-anchor="middle" fill="#0B6356" font-family="monospace">B 进制</text></g>
+          <g><circle cx="302" cy="158" r="24" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="302" y="165" font-size="11" text-anchor="middle" fill="#0B6356" font-family="monospace">双模</text></g>
+          <g><circle cx="230" cy="118" r="24" fill="#fff" stroke="#D9B98D" stroke-width="3"/><text x="230" y="125" font-size="11" text-anchor="middle" fill="#4A3722" font-family="monospace">随机</text></g>
+        </g>
+      </svg>
+      <div class="note"><b>快捷键：</b><code>O</code> 目录 · <code>←/→</code> 翻页 · <code>⛶</code> 全屏</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="brand">STRING HASHING · 80MIN</div>
+<div class="hud">
+  <button id="tocBtn" title="目录">☰</button>
+  <button id="prevBtn" title="上一页">←</button>
+  <div class="pgn"><span id="cur">1</span> / <span id="tot">45</span></div>
+  <button id="nextBtn" title="下一页">→</button>
+  <button id="fullBtn" title="全屏">⛶</button>
+</div>
+
+<div class="toc" id="toc"><h4>目录 · 45 页</h4><div class="grid" id="tocGrid"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+const CODE = {
+
+core: `
+import random
+
+class StringHash:
+    """双哈希前缀哈希：O(1) 子串比较
+       约定：h[i] = s[1]*B^(i-1) + s[2]*B^(i-2) + ... + s[i]   (mod M)
+             get(l, r) = (h[r] - h[l-1] * B^(r-l+1)) mod M
+       s 为 1-indexed 的整数列表，长度 n+1，值必须 >= 1
+    """
+
+    def __init__(self, s, base=None, mods=(10**9 + 7, 10**9 + 9)):
+        self.s = s
+        self.n = len(s) - 1
+        rnd = random.Random(20250607)                 # 固定 seed，便于对拍
+        self.B = base if base else (rnd.randrange(257, 10**9) | 1)   # 奇数、> 字符集
+        self.M1, self.M2 = mods
+
+        n, B, M1, M2 = self.n, self.B, self.M1, self.M2
+        self.h1 = [0] * (n + 1)
+        self.h2 = [0] * (n + 1)
+        self.p1 = [1] * (n + 1)        # p1[i] = B^i mod M1
+        self.p2 = [1] * (n + 1)        # p2[i] = B^i mod M2
+        for i in range(1, n + 1):
+            v = s[i]
+            self.h1[i] = (self.h1[i-1] * B + v) % M1
+            self.h2[i] = (self.h2[i-1] * B + v) % M2
+            self.p1[i] = self.p1[i-1] * B % M1
+            self.p2[i] = self.p2[i-1] * B % M2
+
+    def get(self, l, r):
+        """返回 [l, r] 的双哈希 tuple"""
+        x1 = (self.h1[r] - self.h1[l-1] * self.p1[r-l+1]) % self.M1
+        x2 = (self.h2[r] - self.h2[l-1] * self.p2[r-l+1]) % self.M2
+        return (x1, x2)
+
+    def equal(self, l1, r1, l2, r2):
+        if r1 - l1 != r2 - l2:                       # 先比长度
+            return False
+        return self.get(l1, r1) == self.get(l2, r2)  # 两个都相等才算
+
+
+# 用法：
+#   a = [0] + [ord(c) - 96 for c in "abcbac"]   # 映射必须 >= 1
+#   H = StringHash(a)
+#   H.equal(2, 5, 4, 7)
+`,
+
+trace: `
+# 手算：s = "abcbac", B = 5, M = 101, 映射 a=1, b=2, c=3
+
+s = [0, 1, 2, 3, 2, 1, 3]          # 1-indexed
+B, M = 5, 101
+
+h = [0] * 7
+p = [1] * 7
+for i in range(1, 7):
+    h[i] = (h[i-1] * B + s[i]) % M
+    p[i] = p[i-1] * B % M
+
+def get(l, r):
+    return (h[r] - h[l-1] * p[r-l+1]) % M
+
+# h = [0, 1, 7, 38, 91, 52, 61]
+# p = [1, 5, 25, 24, 19, 95, 71]
+
+print(get(1, 4))   # "abcb" = 1*125 + 2*25 + 3*5 + 2 = 192 % 101 = 91
+print(get(2, 5))   # "bcba" = 2*125 + 3*25 + 2*5 + 1 = 336 % 101 = 33
+print(get(4, 6))   # "bac"  = 2*25 + 1*5 + 3 = 58
+print(get(3, 3))   # "c"    = 3
+
+# 逐步推 h[4]：
+#   h[4] = (h[3] * B + s[4]) % 101
+#        = (38 * 5 + 2) % 101
+#        = 192 % 101 = 91
+`,
+
+single: `
+class Hash64:
+    """自然溢出哈希（模 2^64）：最快，但易被卡
+       Python 用 & MASK 模拟 uint64 回绕"""
+    MASK = (1 << 64) - 1
+    B = 131
+
+    def __init__(self, s):
+        self.n = len(s) - 1
+        self.h = [0] * (self.n + 1)
+        self.p = [1] * (self.n + 1)
+        for i in range(1, self.n + 1):
+            self.h[i] = (self.h[i-1] * self.B + s[i]) & self.MASK
+            self.p[i] = self.p[i-1] * self.B & self.MASK
+
+    def get(self, l, r):
+        return (self.h[r] - self.h[l-1] * self.p[r-l+1]) & self.MASK
+
+
+# 单模 M = 10**9 + 7 版本（少一个哈希，同样易被卡）：
+#   self.h[i] = (self.h[i-1] * B + s[i]) % M
+#   get(l, r) = (self.h[r] - self.h[l-1] * self.p[r-l+1]) % M
+#
+# 风险：q 次比较的失败概率 ≈ q**2 / (2*M)
+#       q = 10**5, M = 10**9  ⇒  ≈ 5（完全不安全）
+# 公开评测 / 有 hack 机制时必须改用双哈希 + 随机进制
+`,
+
+randhash: `
+import random
+
+class RandHash:
+    """随机进制 + 双模：防卡哈希
+       失败概率 ≈ 1/(M1*M2) ≈ 1e-18"""
+    def __init__(self, s, seed=1234567):
+        rnd = random.Random(seed)                  # 固定 seed，多次运行结果一致
+        self.B = rnd.randrange(257, 10**9) | 1     # 奇数、大于字符集
+        self.M1 = 10**9 + 7
+        self.M2 = 10**9 + 9
+
+        self.n = len(s) - 1
+        self.h1 = [0] * (self.n + 1)
+        self.h2 = [0] * (self.n + 1)
+        self.p1 = [1] * (self.n + 1)
+        self.p2 = [1] * (self.n + 1)
+        for i in range(1, self.n + 1):
+            v = s[i]                               # 映射必须 >= 1
+            self.h1[i] = (self.h1[i-1] * self.B + v) % self.M1
+            self.h2[i] = (self.h2[i-1] * self.B + v) % self.M2
+            self.p1[i] = self.p1[i-1] * self.B % self.M1
+            self.p2[i] = self.p2[i-1] * self.B % self.M2
+
+    def get(self, l, r):
+        return (
+            (self.h1[r] - self.h1[l-1] * self.p1[r-l+1]) % self.M1,
+            (self.h2[r] - self.h2[l-1] * self.p2[r-l+1]) % self.M2,
+        )
+
+    def key(self, l, r):
+        """合成单值，做 dict/set 键更快"""
+        a, b = self.get(l, r)
+        return (a << 32) ^ b
+
+
+# 三哈希版本：再加一组 (h3, p3, M3=10**9+21)，比较三元组
+# 2**61 - 1（梅森素数）：更快且安全，但需手写快速取模
+`,
+
+lcp: `
+class StringHash:
+    """（精简版）单模前缀哈希，供 LCP 使用"""
+    def __init__(self, s, B=131, M=10**9 + 7):
+        self.s = s
+        self.n = len(s) - 1
+        self.B, self.M = B, M
+        self.h = [0] * (self.n + 1)
+        self.p = [1] * (self.n + 1)
+        for i in range(1, self.n + 1):
+            self.h[i] = (self.h[i-1] * B + s[i]) % M
+            self.p[i] = self.p[i-1] * B % M
+
+    def get(self, l, r):
+        return (self.h[r] - self.h[l-1] * self.p[r-l+1]) % self.M
+
+    def equal(self, l1, r1, l2, r2):
+        return self.get(l1, r1) == self.get(l2, r2)
+
+    def lcp(self, i, j):
+        """s[i..] 与 s[j..] 的最长公共前缀长度，O(log n)
+           谓词单调：长度 L 相等 ⇒ 长度 L-1 相等，故可二分"""
+        lo, hi = 0, self.n - max(i, j) + 1
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if self.equal(i, i + mid - 1, j, j + mid - 1):
+                lo = mid
+            else:
+                hi = mid - 1
+        return lo
+
+    def lcs_length(self, other):
+        """与另一串的最长公共子串长度：二分长度 + 集合
+           复杂度 O((n+m) * log min(n, m))"""
+        n, m = self.n, other.n
+        lo, hi = 0, min(n, m)
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            seen = set()
+            for i in range(1, n - mid + 2):
+                seen.add(self.get(i, i + mid - 1))
+            ok = any(other.get(j, j + mid - 1) in seen
+                     for j in range(1, m - mid + 2))
+            if ok:
+                lo = mid
+            else:
+                hi = mid - 1
+        return lo
+
+
+# 注意：最长公共【子序列】不适用哈希，用 DP
+`,
+
+palindrome: `
+class Palindrome:
+    """正反两套前缀哈希：O(1) 判断子串回文"""
+    def __init__(self, s):
+        self.n = len(s) - 1
+        self.f = _Pre(s)                            # 正向
+        rs = [0] + list(reversed(s[1:]))            # 反转串
+        self.r = _Pre(rs)
+
+    def is_pal(self, l, r):
+        """s[l..r] 是否回文，O(1)
+           反转串中的区间：[n-r+1, n-l+1]"""
+        return self.f.get(l, r) == self.r.get(self.n - r + 1, self.n - l + 1)
+
+    def radius_odd(self, c):
+        """奇回文中心 c 的最大半径（含中心），O(log n)"""
+        lo, hi = 1, min(c, self.n - c + 1)
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if self.is_pal(c - mid + 1, c + mid - 1):
+                lo = mid
+            else:
+                hi = mid - 1
+        return lo
+
+    def radius_even(self, c):
+        """偶回文中心（c 与 c+1 之间）的最大半径，O(log n)"""
+        lo, hi = 0, min(c, self.n - c)
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if self.is_pal(c - mid + 1, c + mid):
+                lo = mid
+            else:
+                hi = mid - 1
+        return lo
+
+
+class _Pre:
+    """内部：单模前缀哈希"""
+    B, M = 131, 10**9 + 7
+
+    def __init__(self, s):
+        self.n = len(s) - 1
+        self.h = [0] * (self.n + 1)
+        self.p = [1] * (self.n + 1)
+        for i in range(1, self.n + 1):
+            self.h[i] = (self.h[i-1] * self.B + s[i]) % self.M
+            self.p[i] = self.p[i-1] * self.B % self.M
+
+    def get(self, l, r):
+        return (self.h[r] - self.h[l-1] * self.p[r-l+1]) % self.M
+
+
+# 若只要求"某区间是否回文"，哈希比 Manacher 更方便
+`,
+
+rk: `
+def rabin_karp(text, pat):
+    """滚动哈希找所有出现位置；期望 O(n + m)
+       text / pat 为 1-indexed 的整数列表"""
+    n, m = len(text) - 1, len(pat) - 1
+    B, M = 131, 10**9 + 7
+
+    # 模式串哈希
+    ph = 0
+    for i in range(1, m + 1):
+        ph = (ph * B + pat[i]) % M
+
+    pB = pow(B, m, M)            # B^m mod M
+    res = []
+    cur = 0
+    for i in range(1, n + 1):
+        if i <= m:
+            cur = (cur * B + text[i]) % M
+        else:
+            # 滚动：去最左、加最右
+            cur = (cur * B - text[i - m] * pB + text[i]) % M
+
+        if i >= m and cur == ph:
+            # 哈希相等 ≠ 真匹配，必须二次逐字符验证（防碰撞）
+            if text[i-m+1:i+1] == pat[1:m+1]:
+                res.append(i - m + 1)
+    return res
+
+
+# 复杂度：期望 O(n + m)，最坏 O(nm)（被构造碰撞时）
+# 对比 KMP：确定性 O(n + m)，但 KMP 不能做任意子串比较
+`,
+
+distinct: `
+def distinct_substrings(H, n):
+    """所有子串哈希去重；O(n^2) 时间 / 空间
+       注意：结果是"哈希去重"，碰撞时会偏小"""
+    seen = set()
+    for l in range(1, n + 1):
+        for r in range(l, n + 1):
+            seen.add(H.get(l, r))
+    return len(seen)
+
+
+# 用双哈希 tuple 作键可大幅降低碰撞概率：
+#   seen.add(H.get(l, r))   # H.get 返回 (h1, h2)
+#
+# 要求精确答案时不可用哈希去重，改用：
+#   后缀数组：ans = sum(n - sa[i] + 1 - lcp[i])
+#   后缀自动机（SAM）：O(n)
+#
+# 适用规模：n <= 2000 左右；再大要用 SA / SAM
+`,
+
+cycle: `
+def is_period(H, n, p):
+    """判断 p 是否为 s 的周期，O(1)
+       周期定义：s[i] == s[i+p] 对所有合法 i 成立
+       等价于：hash(1, n-p) == hash(1+p, n)"""
+    return p >= n or H.get(1, n - p) == H.get(1 + p, n)
+
+
+def min_period(H, n):
+    """最小循环节长度，O(n)
+       枚举 p，第一个满足的就是最小周期"""
+    for p in range(1, n):
+        if is_period(H, n, p):
+            return p
+    return n
+
+
+# 为什么不能二分"最长 border"：
+#   border 谓词不单调。反例 s = "abcdefabc"（n=9）
+#     border 长度只有 3，长度 1、2 都不是
+#     二分路径会落到 0，答案错误
+#   正确做法：枚举 p（如上）或用 KMP 的 pi 数组
+#
+# 若 n % p == 0，则 s 恰由 s[1..p] 循环 n//p 次构成
+`,
+
+hash2d: `
+class Hash2D:
+    """二维多项式哈希：O(1) 子矩阵比较
+       h[i][j] = h[i-1][j]*B1 + h[i][j-1]*B2 - h[i-1][j-1]*B1*B2 + a[i][j]
+       单模；要更稳就用两个 (B1,B2,M) 组合跑两遍"""
+    B1, B2, M = 131, 13331, 10**9 + 7
+
+    def __init__(self, a, n, m):
+        """a[i][j] 为 1-indexed 的字符或整数（>= 1）"""
+        self.n, self.m = n, m
+        self.p1 = [1] * (n + 1)          # p1[i] = B1^i
+        self.p2 = [1] * (m + 1)          # p2[j] = B2^j
+        for i in range(1, n + 1):
+            self.p1[i] = self.p1[i-1] * self.B1 % self.M
+        for j in range(1, m + 1):
+            self.p2[j] = self.p2[j-1] * self.B2 % self.M
+
+        self.h = [[0] * (m + 1) for _ in range(n + 1)]
+        for i in range(1, n + 1):
+            for j in range(1, m + 1):
+                self.h[i][j] = (
+                    self.h[i-1][j] * self.B1
+                    + self.h[i][j-1] * self.B2
+                    - self.h[i-1][j-1] * self.B1 * self.B2
+                    + a[i][j]
+                ) % self.M
+
+    def get(self, x1, y1, x2, y2):
+        """子矩阵 [x1..x2] x [y1..y2] 的哈希，O(1)"""
+        dx, dy = x2 - x1 + 1, y2 - y1 + 1
+        res = self.h[x2][y2]
+        res -= self.h[x1-1][y2] * self.p1[dx] % self.M
+        res -= self.h[x2][y1-1] * self.p2[dy] % self.M
+        res += (self.h[x1-1][y1-1]
+                * self.p1[dx] % self.M
+                * self.p2[dy]) % self.M      # 容斥：加回一次
+        return res % self.M
+
+
+# 应用：子矩阵相等判定、最大全 1 子正方形（二分 + 判定）、矩阵模式匹配
+# 空间 O(n*m)，预处理 O(n*m)
+`,
+
+tree: `
+def tree_hash(u, p, g, B=131, M=10**9 + 7, SEED=1):
+    """有根树哈希：子节点哈希【排序后】多项式合并
+       两棵树（作为有根树）同构 <=> 哈希相等（高概率）
+       复杂度 O(n log n)（排序主导）"""
+    vals = []
+    for v in g[u]:
+        if v != p:
+            vals.append(tree_hash(v, u, g, B, M, SEED))
+    vals.sort()                    # 无序树：子节点顺序不重要，必须排序
+    h = SEED
+    for x in vals:
+        h = (h * B + x) % M
+    return h
+
+
+def centers(g, n):
+    """找树的中心（1 或 2 个），用于无根树同构"""
+    deg = [0] * (n + 1)
+    q = []
+    for i in range(1, n + 1):
+        deg[i] = len(g[i])
+        if deg[i] <= 1:
+            q.append(i)
+    left = n
+    head = 0
+    while left > 2:
+        for _ in range(len(q) - head):
+            u = q[head]; head += 1
+            left -= 1
+            for v in g[u]:
+                deg[v] -= 1
+                if deg[v] == 1:
+                    q.append(v)
+    return q[head:]
+
+
+def unrooted_hash(g, n):
+    """无根树签名：取所有中心为根的哈希的最小值"""
+    cs = centers(g, n)
+    hs = sorted(tree_hash(c, 0, g) for c in cs)
+    return hs[0], len(cs)          # (最小哈希, 中心个数)
+
+
+# 用法：
+#   g = [[] for _ in range(n + 1)]
+#   for x, y in edges: g[x].append(y); g[y].append(x)
+#   sig1 = unrooted_hash(g, n)
+#   sig2 = unrooted_hash(g2, n2)
+#   isomorphic = (sig1 == sig2)
+#
+# 注意：必须对子节点哈希排序；否则会把同构树判成不同
+`,
+
+toolbox: `
+import random
+
+
+class _Pre:
+    """内部：单套前缀哈希（h[i] = h[i-1]*B + s[i]）"""
+    def __init__(self, s, B, M):
+        self.n = len(s) - 1
+        self.B, self.M = B, M
+        self.h = [0] * (self.n + 1)
+        self.p = [1] * (self.n + 1)
+        for i in range(1, self.n + 1):
+            self.h[i] = (self.h[i-1] * B + s[i]) % M
+            self.p[i] = self.p[i-1] * B % M
+
+    def get(self, l, r):
+        return (self.h[r] - self.h[l-1] * self.p[r-l+1]) % self.M
+
+
+class StringHash:
+    """字符串哈希工具箱（双模）
+       - get(l, r)      子串哈希 O(1)
+       - equal(...)     子串比较 O(1)
+       - lcp(i, j)      最长公共前缀 O(log n)
+       - is_pal(l, r)   回文判定 O(1)
+       - radius_*       回文半径 O(log n)
+       - lcs_length     最长公共子串 O((n+m) log)
+       约定：s 为 1-indexed 的整数列表，长度 n+1，值 >= 1
+    """
+
+    def __init__(self, s, base=None, mods=(10**9 + 7, 10**9 + 9), seed=20250607):
+        self.s = s
+        self.n = len(s) - 1
+        rnd = random.Random(seed)
+        self.B = base if base else (rnd.randrange(257, 10**9) | 1)   # 奇数、> 字符集
+        self.M1, self.M2 = mods
+
+        self.f1 = _Pre(s, self.B, self.M1)
+        self.f2 = _Pre(s, self.B, self.M2)
+        rs = [0] + list(reversed(s[1:]))            # 反转串，供回文用
+        self.r1 = _Pre(rs, self.B, self.M1)
+        self.r2 = _Pre(rs, self.B, self.M2)
+
+    # ---------- 核心 ----------
+    def get(self, l, r):
+        """子串双哈希 tuple"""
+        return (self.f1.get(l, r), self.f2.get(l, r))
+
+    def key(self, l, r):
+        """合成单值（dict/set 键更快）"""
+        a, b = self.get(l, r)
+        return (a << 32) ^ b
+
+    def equal(self, l1, r1, l2, r2):
+        """子串相等判定；先比长度，再比双哈希"""
+        if r1 - l1 != r2 - l2:
+            return False
+        return self.get(l1, r1) == self.get(l2, r2)
+
+    # ---------- LCP ----------
+    def lcp(self, i, j):
+        """s[i..] 与 s[j..] 最长公共前缀长度；谓词单调，可二分"""
+        lo, hi = 0, self.n - max(i, j) + 1
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if self.equal(i, i + mid - 1, j, j + mid - 1):
+                lo = mid
+            else:
+                hi = mid - 1
+        return lo
+
+    def lcs_length(self, other):
+        """与另一串的最长公共子串长度"""
+        n, m = self.n, other.n
+        lo, hi = 0, min(n, m)
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            seen = set()
+            for i in range(1, n - mid + 2):
+                seen.add(self.get(i, i + mid - 1))
+            if any(other.get(j, j + mid - 1) in seen
+                   for j in range(1, m - mid + 2)):
+                lo = mid
+            else:
+                hi = mid - 1
+        return lo
+
+    # ---------- 回文 ----------
+    def is_pal(self, l, r):
+        """s[l..r] 是否回文；反转串区间为 [n-r+1, n-l+1]"""
+        return (self.f1.get(l, r), self.f2.get(l, r)) == (
+            self.r1.get(self.n - r + 1, self.n - l + 1),
+            self.r2.get(self.n - r + 1, self.n - l + 1),
+        )
+
+    def radius_odd(self, c):
+        lo, hi = 1, min(c, self.n - c + 1)
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if self.is_pal(c - mid + 1, c + mid - 1):
+                lo = mid
+            else:
+                hi = mid - 1
+        return lo
+
+    def radius_even(self, c):
+        lo, hi = 0, min(c, self.n - c)
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if self.is_pal(c - mid + 1, c + mid):
+                lo = mid
+            else:
+                hi = mid - 1
+        return lo
+
+    # ---------- 周期 ----------
+    def is_period(self, p):
+        return p >= self.n or self.get(1, self.n - p) == self.get(1 + p, self.n)
+
+    def min_period(self):
+        """最小循环节；枚举 p（border 谓词不单调，不能二分）"""
+        for p in range(1, self.n):
+            if self.is_period(p):
+                return p
+        return self.n
+
+
+# 换题只需改三处：映射函数、进制模数、查询方法
+# 公开评测请保持「双模 + 随机进制」，勿退回单哈希
+`
+};
+
+function applyCode(){
+  document.querySelectorAll('code[data-src]').forEach(el => {
+    const raw = CODE[el.dataset.src];
+    if (typeof raw === 'string') {
+      el.textContent = raw.replace(/^\n+/, '').replace(/\s+$/, '');
+    }
+  });
+  if (window.Prism && Prism.highlightAll) { Prism.highlightAll(); }
+}
+
+const deck = document.getElementById('deck');
+function fit(){
+  const s = Math.min(window.innerWidth / 1320, window.innerHeight / 780);
+  deck.style.transform = 'scale(' + s + ')';
+}
+
+function fitCode(){
+  document.querySelectorAll('pre.code').forEach(pre => {
+    pre.style.fontSize = '';
+    let fs = 12.4, guard = 0;
+    while (pre.scrollHeight > pre.clientHeight + 2 && fs > 10.2 && guard < 40) {
+      fs -= 0.15;
+      pre.style.fontSize = fs.toFixed(2) + 'px';
+      guard++;
+    }
+  });
+}
+function relayout(){ fit(); requestAnimationFrame(fitCode); }
+window.addEventListener('resize', relayout);
+window.addEventListener('load', relayout);
+
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let idx = 0;
+document.getElementById('tot').textContent = total;
+
+function show(n){
+  idx = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('on', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('prog').style.width = ((idx + 1) / total * 100) + '%';
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  requestAnimationFrame(fitCode);
+}
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(total - 1);
+  else if (e.key.toLowerCase() === 'o') document.getElementById('toc').classList.toggle('on');
+  else if (e.key === 'Escape') document.getElementById('toc').classList.remove('on');
+});
+document.getElementById('fullBtn').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+const tocGrid = document.getElementById('tocGrid');
+slides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + (i + 1);
+  a.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b>' + (s.dataset.title || '');
+  a.onclick = e => { e.preventDefault(); show(i); document.getElementById('toc').classList.remove('on'); };
+  tocGrid.appendChild(a);
+});
+document.getElementById('tocBtn').onclick = () => document.getElementById('toc').classList.toggle('on');
+document.getElementById('toc').onclick = e => { if (e.target.id === 'toc') e.classList.remove('on'); };
+
+applyCode();
+const h = parseInt(location.hash.replace('#', ''), 10);
+show(isNaN(h) ? 0 : h - 1);
+relayout();
+</script>
+</body>
+</html>

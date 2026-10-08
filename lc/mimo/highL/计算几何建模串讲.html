@@ -1,0 +1,2734 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>计算几何建模串讲：叉积 / 凸包 / 半平面交</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{
+  --paper:#FFF8F0; --card:#FFFFFF;
+  --ink:#2B1D12; --ink2:#6E5842; --line:#EEDCC2;
+  --accent:#E2612F; --amber:#F2A63B; --teal:#0F7B6C; --plum:#A33A64;
+  --code-bg:#2C2117;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EFE0C8;font-family:var(--sans);color:var(--ink);overflow:hidden}
+body{background:
+  radial-gradient(1200px 700px at 12% -10%, #FBE9CE 0%, rgba(251,233,206,0) 60%),
+  radial-gradient(900px 600px at 105% 110%, #F7DCC0 0%, rgba(247,220,192,0) 55%), #EFE0C8;}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center center;
+  border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(90,52,18,.28),0 4px 12px rgba(90,52,18,.14)}
+
+.slide{position:absolute;inset:0;padding:22px 38px 26px;opacity:0;visibility:hidden;
+  transform:translateX(22px) scale(.996);transition:opacity .38s ease,transform .38s ease,visibility .38s;
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(160deg,#FFFBF5 0%,#FFF4E6 55%,#FDEBD3 100%)}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.slide::after{content:"";position:absolute;right:-120px;top:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(242,166,59,.18),rgba(242,166,59,0) 70%);pointer-events:none}
+.slide::before{content:"";position:absolute;left:-90px;bottom:-140px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,rgba(226,97,47,.11),rgba(226,97,47,0) 70%);pointer-events:none}
+.slide>*{position:relative;z-index:2}
+
+.kicker{display:inline-flex;align-items:center;gap:7px;font-size:10.6px;font-weight:700;letter-spacing:.13em;
+  color:var(--accent);background:#FFEEDC;border:1px solid #F6D2B2;padding:3px 11px;border-radius:999px}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+.kicker.teal{color:var(--teal);background:#E9F7F2;border-color:#BEE6D8}
+.kicker.teal i{background:var(--teal)}
+.kicker.plum{color:var(--plum);background:#FDF1F5;border-color:#EFCBD8}
+.kicker.plum i{background:var(--plum)}
+.kicker.amber{color:#A9700B;background:#FFF3DC;border-color:#F1D6A2}
+.kicker.amber i{background:#F2A63B}
+
+.sl-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+  border-bottom:2px solid var(--line);padding-bottom:8px}
+.sl-head h2{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1.14;margin-top:5px}
+.sl-head h2 em{font-style:normal;color:var(--accent)}
+.sl-head h2 em.t{color:var(--teal)}
+.sl-head h2 em.p{color:var(--plum)}
+.sl-head h2 em.a{color:#C9830F}
+.sl-head .hint{font-size:11.6px;color:var(--ink2);text-align:right;max-width:340px;line-height:1.5}
+.sl-head .hint b{color:#8A5A2C}
+.lead{font-size:15px;line-height:1.66;color:#42301F}
+.muted{color:var(--ink2)}
+
+.cols{display:grid;gap:11px;min-height:0;flex:1 1 auto}
+.c2{grid-template-columns:1fr 1fr}
+.c2a{grid-template-columns:1.08fr .92fr}
+.c2b{grid-template-columns:.92fr 1.08fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+.cols > div{min-height:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.card h3 .n{width:21px;height:21px;border-radius:7px;background:var(--accent);color:#fff;font-size:11.5px;
+  display:grid;place-items:center;font-family:var(--sans);font-weight:700;flex:none}
+.card h3 .n.t{background:var(--teal)}
+.card h3 .n.p{background:var(--plum)}
+.card h3 .n.a{background:var(--amber)}
+.card p,.card li{font-size:13px;line-height:1.6;color:#4A3722}
+.card ul,ol{padding-left:16px}
+.card li{margin:2px 0}
+.card.tint-teal{background:#F2FBF7;border-color:#BEE6D8}
+.card.tint-amber{background:#FFF7E6;border-color:#F4DCAC}
+.card.tint-plum{background:#FDF1F5;border-color:#EFCBD8}
+.card.tint-rose{background:#FFF1EA;border-color:#F7CDB4}
+
+.formula{font-family:var(--mono);font-size:14.5px;background:#2E2118;color:#FFEBD2;border-radius:11px;
+  padding:10px 14px;line-height:1.55;flex:none;overflow-x:auto}
+.formula .hl{color:#FFB169;font-weight:600}
+.formula .ok{color:#7FE0C2;font-weight:600}
+.formula .dim{color:#A8846A}
+
+.codewrap{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;
+  border:1px solid #4B3823;border-radius:12px;overflow:hidden;background:var(--code-bg)}
+.code-head{flex:none;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#241A12;
+  border-bottom:1px solid #46341F}
+.code-head .dot{width:9px;height:9px;border-radius:50%;background:#6B5238}
+.code-head .dot.r{background:#B9471B}
+.code-head .dot.g{background:#0F7B6C}
+.code-head .dot.p{background:#A33A64}
+.code-head .dot.a{background:#C9830F}
+.code-head em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B29272;letter-spacing:.08em;margin-left:6px}
+.code-head .lang{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7A5F45;letter-spacing:.12em}
+pre.code{margin:0;flex:1 1 auto;min-height:0;overflow:auto;background:var(--code-bg)!important;
+  padding:11px 14px;font-family:var(--mono);font-size:12.4px;line-height:1.56;white-space:pre;tab-size:4}
+pre.code::-webkit-scrollbar{height:8px;width:8px}
+pre.code::-webkit-scrollbar-track{background:#241A12}
+pre.code::-webkit-scrollbar-thumb{background:#6B5238;border-radius:8px}
+pre.code::-webkit-scrollbar-thumb:hover{background:#8E6E4C}
+pre.code code,code[class*="language-"]{font-family:var(--mono)!important;font-size:inherit;
+  background:transparent!important;color:#F0E0CC!important;text-shadow:none!important}
+pre.code .token.comment,pre.code .token.prolog,pre.code .token.doctype,pre.code .token.cdata{color:#A8846A!important;font-style:italic}
+pre.code .token.punctuation{color:#C0A183!important}
+pre.code .token.keyword,pre.code .token.atrule,pre.code .token.rule,pre.code .token.important{color:#FFB169!important;font-weight:600}
+pre.code .token.string,pre.code .token.char,pre.code .token.attr-value{color:#9BE0BE!important}
+pre.code .token.function,pre.code .token.class-name,pre.code .token.builtin{color:#FFD9A8!important}
+pre.code .token.number,pre.code .token.boolean,pre.code .token.constant,pre.code .token.symbol{color:#F4A9C0!important}
+pre.code .token.operator{color:#FFC98B!important}
+
+.note{border-left:4px solid var(--amber);background:#FFF6E4;padding:8px 12px;border-radius:0 11px 11px 0;
+  font-size:12.6px;line-height:1.58;flex:none}
+.note.warn{border-color:var(--plum);background:#FDF0F4}
+.note.good{border-color:var(--teal);background:#EFF9F5}
+.note b{color:var(--accent)}.note.warn b{color:var(--plum)}.note.good b{color:var(--teal)}
+code:not([class*="language-"]){font-family:var(--mono);font-size:.93em;background:#F6EADA;padding:1px 5px;border-radius:5px}
+
+table{width:100%;border-collapse:collapse;font-size:12.1px;background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);flex:none}
+th,td{padding:5.5px 10px;text-align:left;border-bottom:1px solid var(--line);line-height:1.45}
+th{background:#F7E7CF;font-family:var(--serif);font-size:12.6px;color:#7A4A22}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:11px}
+td.no{color:#A33A64;font-weight:700}
+td.yes{color:#0F7B6C;font-weight:700}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:7px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.2px;
+  font-weight:600;color:#5B4429}
+.pill.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill.tq{background:var(--teal);color:#fff;border-color:var(--teal)}
+.pill.pl{background:var(--plum);color:#fff;border-color:var(--plum)}
+.pill.am{background:var(--amber);color:#fff;border-color:var(--amber)}
+ul.tick{list-style:none;padding:0}
+ul.tick li{position:relative;padding-left:20px;margin:3px 0;font-size:12.8px;line-height:1.55}
+ul.tick li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:4px;
+  background:#FFE2C6;border:2px solid var(--accent)}
+ul.tick.ok li::before{background:#CDEEE2;border-color:var(--teal)}
+ul.tick.no li::before{background:#F7D6E1;border-color:var(--plum);border-radius:50%}
+ul.tick.arr li::before{background:#FBD9A2;border-color:var(--amber);border-radius:2px;transform:rotate(45deg);width:9px;height:9px}
+
+.a-link{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:11px;padding:8px 11px;transition:.18s;box-shadow:0 4px 10px rgba(120,70,20,.06);overflow:hidden}
+.a-link:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 20px rgba(226,97,47,.16)}
+.a-link .t{font-size:12.4px;font-weight:700;color:#7A3A12;display:block;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link .d{font-size:11px;color:var(--ink2);line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.a-link .src{font-size:9.6px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--teal);
+  padding:1px 7px;border-radius:999px;display:inline-block;margin-bottom:4px}
+.a-link .src.crs{background:var(--accent)}
+.a-link .src.hpf{background:var(--plum)}
+.a-link .src.cal{background:var(--amber)}
+.a-link .src.loc{background:#7A4A22}
+
+.step{display:flex;gap:9px;align-items:flex-start}
+.step .idx{flex:none;width:23px;height:23px;border-radius:7px;background:#2E2118;color:#FFD9A8;
+  display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.split-line{height:2px;background:linear-gradient(90deg,#E2612F,#F2A63B,rgba(242,166,59,0));border-radius:2px;margin:6px 0;flex:none}
+.split-line.t{background:linear-gradient(90deg,#0F7B6C,#7FE0C2,rgba(127,224,194,0))}
+.split-line.p{background:linear-gradient(90deg,#A33A64,#F4A9C0,rgba(244,169,192,0))}
+.num-huge{font-family:var(--serif);font-size:110px;font-weight:900;line-height:.9;
+  background:linear-gradient(160deg,#E2612F,#F2A63B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.t{background:linear-gradient(160deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.p{background:linear-gradient(160deg,#A33A64,#F4A9C0);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+svg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;overflow:visible}
+.dfnlab{font-family:var(--mono);font-size:11.5px;font-weight:700;fill:#0F7B6C}
+.dfnlab.r{fill:#B9471B}
+.dfnlab.p{fill:#A33A64}
+.dfnlab.g{fill:#8A6A45}
+.dfnlab.a{fill:#C9830F}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.62;transform:scale(1.07)}}
+.dash{stroke-dasharray:8 8;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.cover{background:linear-gradient(150deg,#FFF6E8 0%,#FFE9CD 48%,#FFDCB4 100%)}
+.cover .badge{display:inline-flex;gap:8px;align-items:center;background:#2E2118;color:#FFD9A8;
+  padding:6px 14px;border-radius:999px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.cover h1{font-family:var(--serif);font-size:50px;line-height:1.1;font-weight:900}
+.cover h1 em{font-style:normal;background:linear-gradient(92deg,#E2612F,#F2A63B);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.cover h1 em.t{background:linear-gradient(92deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cover .sub{font-size:15.5px;color:#6B4A2C;line-height:1.66;max-width:600px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta span{background:rgba(255,255,255,.72);border:1px solid #F0D2AC;padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#7A4A22}
+.section-slide{background:linear-gradient(150deg,#FFF3E0,#FFE0BC)}
+.section-slide.teal{background:linear-gradient(150deg,#EFF9F4,#CFE9DE)}
+.section-slide.plum{background:linear-gradient(150deg,#FDF0F4,#F5CBD8)}
+.section-slide.rose{background:linear-gradient(150deg,#FFF1EA,#F9D3BC)}
+.section-slide .big{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1.18}
+
+.hud{position:fixed;right:18px;bottom:14px;display:flex;gap:7px;align-items:center;z-index:50}
+.hud button{border:1px solid rgba(120,70,20,.2);background:rgba(255,250,242,.92);color:#7A4A22;
+  width:34px;height:34px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:700;backdrop-filter:blur(6px);transition:.16s}
+.hud button:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.pgn{background:rgba(255,250,242,.92);border:1px solid rgba(120,70,20,.2);border-radius:10px;height:34px;
+  display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:12.5px;color:#7A4A22;font-weight:600}
+.prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,#E2612F,#F2A63B);z-index:60;
+  transition:width .35s ease;box-shadow:0 1px 6px rgba(226,97,47,.5)}
+.brand{position:fixed;left:18px;bottom:14px;z-index:50;background:rgba(255,250,242,.9);border:1px solid rgba(120,70,20,.2);
+  border-radius:10px;padding:8px 13px;font-size:10.5px;color:#7A4A22;letter-spacing:.1em;font-weight:700}
+.toc{position:fixed;inset:0;background:rgba(46,33,24,.82);backdrop-filter:blur(8px);z-index:80;display:none;
+  padding:42px 56px;overflow:auto}
+.toc.on{display:block}
+.toc h4{color:#FFE2BF;font-family:var(--serif);font-size:24px;margin-bottom:16px}
+.toc .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.toc a{background:rgba(255,246,232,.94);border-radius:10px;padding:9px 12px;text-decoration:none;color:#4A3722;
+  font-size:12.2px;line-height:1.4;border:1px solid rgba(255,255,255,.18);transition:.16s}
+.toc a:hover{background:#FFB169;transform:translateY(-2px)}
+.toc a b{display:block;font-family:var(--mono);font-size:10px;color:#B9471B;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- ═══ 01 封面 ═══ -->
+<section class="slide cover on" data-title="封面">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">COMPUTATIONAL GEOMETRY · 80 MIN</div>
+      <h1>计算几何建模串讲<br><em>把几何翻译成代数</em></h1>
+      <p class="sub">叉积判<b>方向</b>，凸包压<b>极值</b>，半平面交出<b>可行域</b>。<br>
+        三条主线横向对比，看清<b>什么时候用哪个、什么时候用了就错</b>。</p>
+      <div class="meta">
+        <span>45 页 · 约 80 分钟</span><span>12 个可运行 Python 模板</span>
+        <span>含跨工具交叉对拍</span><span>POJ / 洛谷题单</span>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 500 310" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <pattern id="cgrid" width="25" height="25" patternUnits="userSpaceOnUse">
+            <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#E9D5B7" stroke-width="0.7"/>
+          </pattern>
+        </defs>
+        <rect x="0" y="0" width="500" height="310" fill="url(#cgrid)" opacity="0.55"/>
+
+        <!-- 旋转卡壳双切线 -->
+        <g stroke="#F2A63B" stroke-width="2.6" stroke-linecap="round">
+          <line x1="72" y1="84" x2="215" y2="8"/>
+          <line x1="85" y1="280" x2="228" y2="204"/>
+        </g>
+        <text x="222" y="14" class="dfnlab a" font-size="10">支撑线</text>
+        <text x="234" y="202" class="dfnlab a" font-size="10">支撑线</text>
+
+        <!-- 凸包 -->
+        <polygon points="60,200 85,75 160,35 235,70 250,175 170,235 95,225"
+                 fill="#0F7B6C" fill-opacity="0.13" stroke="#0F7B6C" stroke-width="3.2" stroke-linejoin="round"/>
+
+        <!-- 内部点 -->
+        <g fill="#C8A882">
+          <circle cx="140" cy="140" r="4.2"/><circle cx="175" cy="165" r="4.2"/>
+          <circle cx="115" cy="165" r="4.2"/><circle cx="195" cy="115" r="4.2"/>
+          <circle cx="155" cy="195" r="4.2"/><circle cx="128" cy="105" r="4.2"/>
+        </g>
+
+        <!-- 包上顶点 -->
+        <g fill="#fff" stroke="#0F7B6C" stroke-width="2.6">
+          <circle cx="60" cy="200" r="6"/><circle cx="85" cy="75" r="6"/><circle cx="160" cy="35" r="6"/>
+          <circle cx="235" cy="70" r="6"/><circle cx="250" cy="175" r="6"/><circle cx="170" cy="235" r="6"/>
+          <circle cx="95" cy="225" r="6"/>
+        </g>
+
+        <!-- 直径 -->
+        <line x1="235" y1="70" x2="95" y2="225" stroke="#E2612F" stroke-width="2.4" stroke-dasharray="6 5"/>
+        <circle cx="235" cy="70" r="9" fill="none" stroke="#E2612F" stroke-width="2.4"/>
+        <circle cx="95" cy="225" r="9" fill="none" stroke="#E2612F" stroke-width="2.4"/>
+        <rect x="128" y="130" width="76" height="24" rx="10" fill="#E2612F"/>
+        <text x="166" y="146" text-anchor="middle" fill="#fff" font-family="monospace" font-size="11">直径</text>
+
+        <!-- 三问标签 -->
+        <g font-family="monospace" font-size="10.6" text-anchor="middle">
+          <rect x="298" y="42" width="176" height="26" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/>
+          <text x="386" y="59" class="dfnlab r">叉积 → 方向</text>
+          <rect x="298" y="80" width="176" height="26" rx="11" fill="#E9F7F2" stroke="#BEE6D8"/>
+          <text x="386" y="97" class="dfnlab">凸包 → 极值</text>
+          <rect x="298" y="118" width="176" height="26" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/>
+          <text x="386" y="135" class="dfnlab p">半平面 → 可行域</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 路线图 ═══ -->
+<section class="slide" data-title="路线图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>ROADMAP</div><h2>六站，一条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>这份讲义怎么走？<br>每站先给"要解决的问题"，再给"为什么这样写"。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>建模总纲</h3><p>几何建模五问 · 三大工具速查 · 识别信号 → 工具</p></div>
+    <div class="card tint-rose"><h3><span class="n">2</span>判定层</h3><p>叉积与方向 · 点积与投影 · 线段相交 · 精度策略</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>形状层</h3><p>凸包 Andrew · 点定位 · 半平面交 · 面积与绕数</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>最优层</h3><p>旋转卡壳 · 二分答案 + 判定 · 最近点对 · 最小圆覆盖</p></div>
+    <div class="card tint-amber"><h3><span class="n a">5</span>横向对比</h3><p>同题三解 · 归约关系 · 六轴雷达 · 不可替代性</p></div>
+    <div class="card"><h3><span class="n">6</span>工程</h3><p>数值稳定性 · 易错清单 · 模板合集 · 对拍 · 题单</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>时间分配</h3><p class="muted">总纲 10' · 判定 12' · 形状 16' · 最优 14' · 对比 18' · 工程 10'</p></div>
+    <div class="card"><h3>验收标准</h3><p class="muted">能对一道题<b>说出五问</b>并选定工具；能说明<b>另外两条主线为什么不适用</b>；能独立写出<b>精度安全</b>的叉积与凸包。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 03 钩子 ═══ -->
+<section class="slide" data-title="三道长得像的题">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HOOK</div><h2>三道"长得像"的题，<em>三条主线</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么不能背模板？<br>因为选错工具 = 全错。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3><span class="n">A</span>判定</h3>
+      <p><b>题意：</b>给三角形 ABC，问 C 在有向边 AB 的左侧还是右侧？</p>
+      <div class="split-line"></div>
+      <p class="muted">→ <b>叉积</b>，一行，<code>O(1)</code>。<br>整数坐标下<b>精确</b>，不用 EPS。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">B</span>形状</h3>
+      <p><b>题意：</b>n 个木桩，用最短的绳子全圈住，绳子多长？</p>
+      <div class="split-line t"></div>
+      <p class="muted">→ <b>凸包</b>周长，<code>O(n log n)</code>。<br>n 个点被压成 <b>h 个极值点</b>。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">C</span>可行域</h3>
+      <p><b>题意：</b>n 条线性限制（如 x+y≤5、x≥0、y≤3），是否存在解？面积多大？</p>
+      <div class="split-line p"></div>
+      <p class="muted">→ <b>半平面交</b>，<code>O(n log n)</code>。<br>约束求交成<b>凸多边形</b>。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n a">★</span>共同点与差异</h3>
+      <p class="lead">三者都在做同一件事：<b>把几何描述翻译成代数判定</b>。区别在<b>翻译的对象</b>——方向、形状、约束。选错工具不是"略差"，而是<b>答案就错</b>或<b>复杂度爆炸</b>。</p>
+      <div class="note"><b>一句话：</b>建模第一步不是画图，而是<b>问清楚"要判定什么"</b>。</div>
+    </div>
+    <div class="card">
+      <h3>三个判断题</h3>
+      <div class="pill-row">
+        <span class="pill hot">要判方向吗</span>
+        <span class="pill tq">要压极值吗</span>
+        <span class="pill pl">要求交吗</span>
+      </div>
+      <div class="split-line"></div>
+      <p class="muted">答对这三题，工具就定了一大半。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 建模五问 ═══ -->
+<section class="slide" data-title="几何建模五问">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · PROBLEM</div><h2>几何建模是什么：<em>五个问题</em></h2></div>
+    <div class="hint"><b>本页回答：</b>拿到几何题该问什么？<br>每一问都指向一个工具。</div>
+  </div>
+  <table>
+    <tr><th style="width:110px">问题</th><th style="width:210px">问的是</th><th style="width:160px">答案指向</th><th>典型陷阱</th></tr>
+    <tr><td><b>① 判定</b></td><td>原子判定是什么？方向 / 共线 / 相交 / 在内</td><td class="yes">→ 叉积</td><td>浮点 <code>== 0</code> 判共线</td></tr>
+    <tr><td><b>② 压缩</b></td><td>点集能不能先凸包化？极值是否只在边界上</td><td class="yes">→ 凸包</td><td>共线点保留/丢弃搞反</td></tr>
+    <tr><td><b>③ 约束</b></td><td>约束是线性不等式吗？</td><td class="yes">→ 半平面交</td><td>非线性约束（圆）硬套</td></tr>
+    <tr><td><b>④ 最优</b></td><td>最优目标有单调性 / 凸性吗？</td><td class="yes">→ 卡壳 / 二分</td><td>用 <code>min/max</code> 暴力 <code>O(n²)</code> 超时</td></tr>
+    <tr><td><b>⑤ 精度</b></td><td>坐标范围？整数还是浮点？</td><td>决定比较方式</td><td>大坐标 <code>int64</code> 溢出</td></tr>
+    <tr><td><b>⑥ 方案</b></td><td>只要数值还是要具体点集？</td><td>决定怎么读输出</td><td>只报数字，不报顶点</td></tr>
+    <tr><td><b>⑦ 规模</b></td><td>n 多大？h（凸包大小）多大？</td><td>选算法</td><td>用 <code>O(n³)</code> 跑 n=2000</td></tr>
+    <tr><td><b>⑧ 退化</b></td><td>有没有重合点、共线点、重复边？</td><td>决定特判</td><td>三点共线时 <code>on_segment</code> 漏判</td></tr>
+    <tr><td><b>⑨ 维度</b></td><td>二维还是三维？</td><td>选叉积 / 混合积</td><td>三维凸包套二维代码</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>三个最常见的错</h3>
+      <ul class="tick no">
+        <li>用<b>浮点 <code>== 0</code></b> 判共线 → 边界全错</li>
+        <li>把<b>最近点对</b>当凸包问题 → 最近点对<b>不必在凸包上</b></li>
+        <li>把<b>非线性约束</b>塞进半平面交 → 圆/二次约束要用别的工具</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>好的几何建模长什么样</h3>
+      <p>三句话说清：<b>判定什么 → 压缩什么 → 求什么</b>。说不出来 = 还没想清楚，先别写代码。</p>
+      <div class="note good"><b>习惯：</b>写题解时固定写"<b>坐标是整数还是浮点 → 用叉积还是点积 → 极值在哪取到</b>"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 取舍链 ═══ -->
+<section class="slide" data-title="取舍链">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · ROADMAP</div><h2>取舍链：<em>判定 → 压缩 → 求交 → 搜索</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么有这么多工具？<br>各自的甜点在哪、边界在哪。</div>
+  </div>
+  <table>
+    <tr><th style="width:175px">工具</th><th>时间</th><th>代码量</th><th>核心能力</th><th>边界</th></tr>
+    <tr><td><b>叉积 / 点积</b></td><td class="mono">O(1)</td><td>15 行</td><td>方向 / 共线 / 投影 / 距离</td><td>只做单点判定</td></tr>
+    <tr><td>线段相交</td><td class="mono">O(1)</td><td>20 行</td><td>跨立试验 + 退化</td><td>只判两条线段</td></tr>
+    <tr><td><b>凸包</b></td><td class="mono">O(n log n)</td><td>25 行</td><td>极值压缩 / 包络</td><td>对象是<b>点集</b></td></tr>
+    <tr><td>旋转卡壳</td><td class="mono">O(n)</td><td>30 行</td><td>直径 / 宽度 / 对径点</td><td>必须先有凸包</td></tr>
+    <tr><td><b>半平面交</b></td><td class="mono">O(n log n)</td><td>60 行</td><td>可行域 / 线性规划</td><td>约束必须<b>线性</b></td></tr>
+    <tr><td>点在多边形内</td><td class="mono">O(n)</td><td>25 行</td><td>射线法 / 转角法</td><td>多边形须简单</td></tr>
+    <tr><td>最近点对</td><td class="mono">O(n log n)</td><td>35 行</td><td>分治 + 条带</td><td>不走凸包路线</td></tr>
+    <tr><td>最小圆覆盖</td><td class="mono">O(n) 期望</td><td>45 行</td><td>随机增量 Welzl</td><td>浮点，退化需特判</td></tr>
+    <tr><td>二分答案</td><td class="mono">O(log)·判定</td><td>—</td><td>最优转判定</td><td>须单调 / 凸</td></tr>
+    <tr><td>NP-hard 类</td><td>—</td><td>—</td><td>一般多边形分解 / TSP</td><td class="no">不可用上述任何工具</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>不可替代的三件事</h3>
+      <ul class="tick">
+        <li><b>叉积</b>：所有几何判定的原子，<code>O(1)</code> 整数精确</li>
+        <li><b>凸包</b>：极值压缩，直径 / 宽度 / 包含 / 面积</li>
+        <li><b>半平面交</b>：多线性约束的可行域，线性规划入口</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>心智模型</h3>
+      <p>三者都是"<b>把几何翻译成代数</b>"，区别在<b>翻译的对象</b>：方向 / 点集 / 约束。</p>
+      <div class="note good"><b>建议：</b>先练<b>识别信号</b>（第 9 页），再练建图。识别错了，代码再漂亮也没用。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：建模总纲">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 01</div>
+      <div class="big">建模总纲：<em style="color:var(--accent)">五问 · 速查 · 识别</em></div>
+      <p class="lead">几何建模五问 · 三大工具速查表 · 识别信号 → 工具<br>先把"选工具"这一步变成可操作的流程。</p>
+    </div>
+    <div><div class="num-huge">01</div>
+      <div class="note good"><b>目标：</b>拿到几何题 30 秒内能说出"要判定什么、该用哪个工具"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 五问详解 ═══ -->
+<section class="slide" data-title="五问详解">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · FIVE QUESTIONS</div><h2>五问<em>逐条展开</em></h2></div>
+    <div class="hint"><b>本页回答：</b>每一问具体怎么答？<br>答错了会怎样。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3><span class="n">1</span>要判方向吗</h3>
+      <ul class="tick">
+        <li>左转 / 右转 / 共线</li>
+        <li>在线段上 / 之外</li>
+        <li>相交 / 不相交</li>
+      </ul>
+      <div class="split-line"></div>
+      <p class="muted">⇒ <b>叉积 + 点积</b>，<code>O(1)</code> 精确。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">2</span>要压极值吗</h3>
+      <ul class="tick ok">
+        <li>最远 / 最近 / 最大三角形</li>
+        <li>包络 / 周长 / 面积</li>
+        <li>包含 / 可见性</li>
+      </ul>
+      <div class="split-line t"></div>
+      <p class="muted">⇒ <b>先凸包化</b>，再在 h 个点上做。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">3</span>要求交吗</h3>
+      <ul class="tick no">
+        <li>n 条线性不等式</li>
+        <li>可行域 / 覆盖区</li>
+        <li>线性目标的最优</li>
+      </ul>
+      <div class="split-line p"></div>
+      <p class="muted">⇒ <b>半平面交</b>，<code>O(n log n)</code>。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>三问的"叠加性"</h3>
+      <p>一道题可以同时要判定、要压缩、要求交（例如"<b>先凸包化，再用卡壳找极值，最后判约束</b>"）。这时<b>按顺序叠加工具</b>，而不是三选一。</p>
+    </div>
+    <div class="card tint-amber"><h3>常见组合</h3>
+      <ul class="tick arr">
+        <li>叉积 → 凸包 → 旋转卡壳（直径 / 宽度）</li>
+        <li>叉积 → 半平面交 → 顶点枚举（线性规划）</li>
+        <li>叉积 → 二分答案 → 判定（最小化最大距离）</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>工具是<b>可叠加</b>的积木，不是互斥的标签。</div>
+  </div>
+</section>
+
+<!-- ═══ 08 三大工具速查 ═══ -->
+<section class="slide" data-title="三大工具速查">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · CHEAT SHEET</div><h2>三大工具<em>速查表</em>（核心页）</h2></div>
+    <div class="hint"><b>本页回答：</b>一页看懂三条主线。<br>建议打印贴墙上。</div>
+  </div>
+  <table>
+    <tr><th style="width:112px">维度</th><th style="width:245px">叉积 / 向量</th><th style="width:245px">凸包</th><th>半平面交</th></tr>
+    <tr><td><b>核心对象</b></td><td>两点之差（向量）</td><td>点集的极值点</td><td>线性约束（点 + 方向）</td></tr>
+    <tr><td><b>核心问题</b></td><td>左 / 右 / 共线？</td><td>谁是边界？</td><td>哪里可行？</td></tr>
+    <tr><td><b>典型问题</b></td><td>方向、相交、投影、距离</td><td>包络、极值、直径、面积</td><td>可行域、线性规划</td></tr>
+    <tr><td><b>关键操作</b></td><td class="mono">cross / dot</td><td class="mono">排序 + 栈</td><td class="mono">极角排序 + 双端队列</td></tr>
+    <tr><td><b>核心定理</b></td><td>右手定则（符号判左右）</td><td>线性函数最值在顶点</td><td>凸集之交仍是凸集</td></tr>
+    <tr><td><b>复杂度</b></td><td class="mono">O(1)</td><td class="mono">O(n log n)</td><td class="mono">O(n log n)</td></tr>
+    <tr><td><b>代码量</b></td><td>15 行</td><td>25 行</td><td>60 行</td></tr>
+    <tr><td><b>精度</b></td><td>整数坐标 <b>精确</b></td><td>整数坐标 <b>精确</b></td><td>须浮点 EPS</td></tr>
+    <tr><td><b>方案输出</b></td><td>符号 / 交点</td><td>顶点序列</td><td>可行域多边形</td></tr>
+    <tr><td><b>不适用</b></td><td class="no">全局最优化</td><td class="no">约束求交</td><td class="no">单点判定、非线性约束</td></tr>
+    <tr><td><b>扩展</b></td><td>三维叉积 / 混合积</td><td>旋转卡壳 / 闵可夫斯基和</td><td>半平面交 + 顶点枚举</td></tr>
+    <tr><td><b>颜色</b></td><td><span class="pill hot">陶土</span></td><td><span class="pill tq">青绿</span></td><td><span class="pill pl">李子</span></td></tr>
+  </table>
+  <div class="note good"><b>记忆：</b>叉积问"<b>在左还是右</b>"、凸包问"<b>谁是边界</b>"、半平面交问"<b>哪里可行</b>"。三个问句就是三条主线。</div>
+</section>
+
+<!-- ═══ 09 识别信号 ═══ -->
+<section class="slide" data-title="识别信号">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · SIGNALS</div><h2>识别信号 <em>→ 工具</em></h2></div>
+    <div class="hint"><b>本页回答：</b>看到这些词就想到那个工具。<br>速查 + 决策口诀。</div>
+  </div>
+  <table>
+    <tr><th style="width:290px">题面关键词</th><th style="width:165px">工具</th><th>关键建模</th></tr>
+    <tr><td>左侧 / 右侧 / 左转 / 右转</td><td class="yes">叉积</td><td class="mono">orient(a,b,c)</td></tr>
+    <tr><td>共线 / 在线段上 / 交点</td><td class="yes">叉积 + 点积</td><td class="mono">orient + 投影</td></tr>
+    <tr><td>距离 / 投影 / 垂足</td><td class="yes">点积</td><td class="mono">t = ap·ab / |ab|²</td></tr>
+    <tr><td>线段相交 / 线段是否接触</td><td class="yes">跨立试验</td><td class="mono">o1*o2 &lt; 0 and o3*o4 &lt; 0</td></tr>
+    <tr><td>包住 / 外壳 / 边界 / 周长</td><td class="yes">凸包</td><td class="mono">Andrew 单调链</td></tr>
+    <tr><td>最远点对 / 直径</td><td class="yes">凸包 + 旋转卡壳</td><td class="mono">对径点</td></tr>
+    <tr><td>宽度 / 最小外接矩形</td><td class="yes">凸包 + 旋转卡壳</td><td class="mono">平行支撑线</td></tr>
+    <tr><td>最大面积三角形</td><td class="yes">凸包 + 枚举</td><td class="mono">三点都在包上</td></tr>
+    <tr><td>点在多边形内 / 可见性</td><td class="yes">射线法 / 转角法</td><td class="mono">绕数 wn</td></tr>
+    <tr><td>多边形面积 / 方向</td><td class="yes">鞋带公式</td><td class="mono">Σ cross / 2</td></tr>
+    <tr><td>多个线性约束 / 可行域</td><td class="yes">半平面交</td><td class="mono">保留左侧</td></tr>
+    <tr><td>最小覆盖 / 最小圆</td><td class="yes">随机增量</td><td class="mono">Welzl</td></tr>
+    <tr><td>最小化最大 / 最大化最小</td><td class="yes">二分答案 + 判定</td><td class="mono">二分 T 再判定</td></tr>
+    <tr><td>平面最近点对</td><td class="yes">分治 / 条带</td><td class="mono">按 y 合并</td></tr>
+    <tr><td>圆 / 二次约束 / 一般多边形分解</td><td class="no">不可用半平面交</td><td class="mono">需别的工具</td></tr>
+    <tr><td>一般 TSP / 装箱类几何</td><td class="no">NP-hard</td><td class="mono">—</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>决策口诀</h3>
+      <p><b>先问判定，再问压缩，最后问求交。</b>三问都问完再下笔。</p>
+    </div>
+    <div class="card tint-plum"><h3>反向检查</h3>
+      <p>如果答案是"<b>某个点的坐标</b>"或"<b>某个判定的真假</b>"，却上了半平面交——<b>杀鸡用牛刀</b>，还容易在 EPS 上翻车。</p>
+    </div>
+    <div class="note"><b>关键：</b>识别不出关键词时，回到<b>第 4 页的五问</b>逐条问一遍。</div>
+  </div>
+</section>
+
+<!-- ═══ 10 章节 ═══ -->
+<section class="slide section-slide rose" data-title="章节：判定层">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 02</div>
+      <div class="big">判定层：<em style="color:var(--accent)">叉积 · 点积 · 相交</em></div>
+      <p class="lead">方向判别 · 投影与距离 · 跨立试验 · 精度策略<br>一切几何判定的<b>原子操作</b>。</p>
+    </div>
+    <div><div class="num-huge">02</div>
+      <div class="note good"><b>目标：</b>能写出<b>整数精确</b>的叉积与线段相交，并解释为什么不用 EPS。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 叉积与方向 ═══ -->
+<section class="slide" data-title="叉积与方向判别">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · CROSS</div><h2>叉积：<em>一个符号判三态</em></h2></div>
+    <div class="hint"><b>本页回答：</b>叉积到底在判什么？<br>符号怎么来的。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>核心公式</h3>
+        <div class="formula" style="font-size:11.8px">
+          <code>(b-a) × (c-a)</code> = (bx-ax)(cy-ay) − (by-ay)(cx-ax)<br><br>
+          <span class="ok">&gt; 0</span> → c 在 ab <b>左侧</b>（左转 / 逆时针）<br>
+          <span class="hl">&lt; 0</span> → c 在 ab <b>右侧</b>（右转 / 顺时针）<br>
+          <span class="dim">= 0</span> → 三点<b>共线</b>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>为什么不用 EPS</h3>
+        <p>整数坐标下叉积是<b>整数</b>，符号完全精确。只有当坐标是<b>浮点</b>、或经过<b>除法 / 开方</b>之后，才需要 EPS。</p>
+      </div>
+      <div class="note good"><b>心法：</b>能用整数就别用浮点——<b>精度是算出来的，不是调出来的</b>。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 430 232" preserveAspectRatio="xMidYMid meet">
+          <!-- 三态示意 -->
+          <g font-family="monospace" font-size="10.5" text-anchor="middle">
+            <text x="78" y="22" class="dfnlab">× &gt; 0 · 左侧</text>
+            <text x="215" y="22" class="dfnlab a">× = 0 · 共线</text>
+            <text x="352" y="22" class="dfnlab p">× &lt; 0 · 右侧</text>
+          </g>
+
+          <!-- 左：左转 -->
+          <g stroke="#E2612F" stroke-width="2.4" fill="none">
+            <path d="M32 128 L124 128"/>
+            <path d="M118 122 L126 128 L118 134" stroke-linejoin="round"/>
+          </g>
+          <g fill="#FFF3E2" stroke="#B9471B" stroke-width="2.4">
+            <circle cx="32" cy="128" r="6"/><circle cx="124" cy="128" r="6"/>
+            <circle cx="92" cy="72" r="7" fill="#E2612F"/>
+          </g>
+          <g text-anchor="middle" class="dfnlab r" font-size="9.6">
+            <text x="32" y="150">a</text><text x="124" y="150">b</text><text x="92" y="62">c</text>
+          </g>
+          <path d="M78 112 A 22 22 0 0 1 100 108" fill="none" stroke="#B9471B" stroke-width="1.6"/>
+
+          <!-- 中：共线 -->
+          <g stroke="#C9830F" stroke-width="2.4" fill="none">
+            <path d="M168 128 L262 128"/>
+            <path d="M256 122 L264 128 L256 134" stroke-linejoin="round"/>
+          </g>
+          <g fill="#FFF7E6" stroke="#C9830F" stroke-width="2.4">
+            <circle cx="168" cy="128" r="6"/><circle cx="262" cy="128" r="6"/>
+            <circle cx="215" cy="128" r="7" fill="#F2A63B"/>
+          </g>
+          <g text-anchor="middle" class="dfnlab a" font-size="9.6">
+            <text x="168" y="150">a</text><text x="262" y="150">b</text><text x="215" y="112">c</text>
+          </g>
+
+          <!-- 右：右转 -->
+          <g stroke="#A33A64" stroke-width="2.4" fill="none">
+            <path d="M304 128 L396 128"/>
+            <path d="M390 122 L398 128 L390 134" stroke-linejoin="round"/>
+          </g>
+          <g fill="#FDF1F5" stroke="#A33A64" stroke-width="2.4">
+            <circle cx="304" cy="128" r="6"/><circle cx="396" cy="128" r="6"/>
+            <circle cx="364" cy="188" r="7" fill="#A33A64"/>
+          </g>
+          <g text-anchor="middle" class="dfnlab p" font-size="9.6">
+            <text x="304" y="150">a</text><text x="396" y="150">b</text><text x="364" y="206">c</text>
+          </g>
+
+          <rect x="34" y="212" width="362" height="24" rx="9" fill="#2E2118"/>
+          <text x="215" y="228" text-anchor="middle" fill="#7FE0C2" font-family="monospace" font-size="10.5">
+            orient(a,b,c) = (b-a) × (c-a)　符号即方位
+          </text>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>点积在判什么</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>(p-a)·(b-a) &gt; 0</code> → p 在 a 侧 <b>之后</b><br>
+          <code>(p-a)·(b-a) &lt; 0</code> → p 在 a 侧 <b>之前</b><br>
+          <span class="dim">叉积判"左右"，点积判"前后"。二者配合 = 点在不在线段上</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 模板：向量基础 ═══ -->
+<section class="slide" data-title="模板：向量基础">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · TEMPLATE</div><h2>模板一：<em>向量基础</em></h2></div>
+    <div class="hint"><b>本页回答：</b>标准写法。<br>四个关键点。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li><code>P</code> 类必须定义 <code>__hash__</code>（否则 <code>set</code> 会炸）</li>
+          <li>坐标<b>尽量用整数</b> → 叉积精确</li>
+          <li><code>on_segment</code> = 共线 + 投影<b>落在两端之间</b></li>
+          <li><code>point_seg_dist</code> 先判垂足是否在内部</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>精度</h3>
+        <div class="formula" style="font-size:11.6px">
+          整数坐标：叉积 <span class="ok">精确</span>，比较直接用 <code>== 0</code><br>
+          浮点坐标：比较必须 <code>abs(x) &lt; EPS</code><br>
+          <span class="dim">Python 的 int 任意精度，不会溢出</span>
+        </div>
+      </div>
+      <div class="note good"><b>用途：</b>所有几何判定的底座，后面每个模板都依赖它。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>geom_base.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="geom_base"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 13 点积投影距离 ═══ -->
+<section class="slide" data-title="点积、投影与距离">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · DOT</div><h2>点积：<em>投影与距离</em></h2></div>
+    <div class="hint"><b>本页回答：</b>点积判什么？<br>与叉积怎么配合。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>三个用法</h3>
+        <ul class="tick arr">
+          <li><b>前后</b>：<code>(p-a)·(b-a)</code> 的符号</li>
+          <li><b>投影</b>：<code>t = (p-a)·(b-a) / |b-a|²</code></li>
+          <li><b>距离</b>：<code>|(p-a)×(b-a)| / |b-a|</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>点到线段的距离</h3>
+        <div class="formula" style="font-size:11.6px">
+          <span class="hl">t ≤ 0</span> → 最近点是 a<br>
+          <span class="hl">t ≥ 1</span> → 最近点是 b<br>
+          <span class="ok">0 &lt; t &lt; 1</span> → 垂足，距离 = |叉积| / |ab|<br>
+          <span class="dim">先判 t，再算距离——顺序不能反</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>叉积 vs 点积</h3>
+        <table style="margin-top:2px">
+          <tr><th></th><th>叉积</th><th>点积</th></tr>
+          <tr><td><b>判什么</b></td><td>左右（方位）</td><td>前后（投影）</td></tr>
+          <tr><td><b>公式</b></td><td class="mono">x₁y₂ − x₂y₁</td><td class="mono">x₁x₂ + y₁y₂</td></tr>
+          <tr><td><b>几何</b></td><td>有向面积</td><td>投影长度</td></tr>
+          <tr><td><b>典型</b></td><td>共线、相交、方向</td><td>距离、垂足、夹角</td></tr>
+        </table>
+      </div>
+      <div class="card tint-plum"><h3>易错</h3>
+        <ul class="tick no">
+          <li>忘了判垂足区间 → 垂足落在线段外也当垂足</li>
+          <li>距离开方过早 → 精度丢失，应<b>全程用平方</b>直到最后</li>
+          <li>把点积当叉积用 → 方位判反</li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>叉积管"<b>哪边</b>"，点积管"<b>多远</b>"，两个一起用才完整。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 14 模板：线段相交 ═══ -->
+<section class="slide" data-title="模板：线段相交">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · TEMPLATE</div><h2>模板二：<em>线段相交</em></h2></div>
+    <div class="hint"><b>本页回答：</b>跨立试验怎么写？<br>退化情况怎么处理。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个关键</h3>
+        <ul class="tick">
+          <li>严格相交：<code>o1*o2 &lt; 0 and o3*o4 &lt; 0</code></li>
+          <li>退化（端点 / 共线重叠）单独特判</li>
+          <li>Python <code>int</code> 不溢出，C++ 用 <code>__int128</code> 判号</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>为什么用乘积判号</h3>
+        <p><code>(o1 &gt; 0) != (o2 &gt; 0)</code> 在 <code>o = 0</code> 时会误判（共线点在线外也被当成相交）。<b>乘积判号 + 退化特判</b>才是稳的。</p>
+      </div>
+      <div class="note good"><b>用途：</b>可见性、拾取（Pick-up sticks）、Jack Straws、线段交计数。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>seg_intersect.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="seg_intersect"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 15 精度处理 ═══ -->
+<section class="slide" data-title="精度：EPS 与整数化">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · PRECISION</div><h2>精度处理：<em>整数化优先</em></h2></div>
+    <div class="hint"><b>本页回答：</b>误差从哪来？<br>怎么规避。</div>
+  </div>
+  <table>
+    <tr><th style="width:185px">来源</th><th style="width:125px">风险</th><th>规避策略</th></tr>
+    <tr><td>整数 + 叉积</td><td class="yes">无</td><td>直接比较，<b>不要</b>套 EPS</td></tr>
+    <tr><td>浮点加减法</td><td>灾难性抵消</td><td>避免 <code>a + b - a</code> 类运算；用 <code>long double</code></td></tr>
+    <tr><td>浮点乘除</td><td>相对误差累积</td><td>控制运算次数；用 <code>decimal</code> / 有理数</td></tr>
+    <tr><td>开方 / 三角函数</td><td>不可逆</td><td>全程用<b>平方</b>比较，最后才开方</td></tr>
+    <tr><td>排序比较</td><td>不一致导致 TLE / RE</td><td>比较器必须<b>严格弱序</b>，EPS 不参与排序</td></tr>
+    <tr><td>坐标范围大</td><td><code>int64</code> 溢出</td><td>Python 任意精度安全；C++ 用 <code>__int128</code> / <code>long double</code></td></tr>
+    <tr><td>退化（重合 / 共线）</td><td>分母为 0</td><td>特判或<b>符号扰动</b>（微小随机偏移）</td></tr>
+    <tr><td>输出精度</td><td>格式错误</td><td>按题目要求固定小数位，不要自己猜</td></tr>
+  </table>
+  <div class="cols c3">
+    <div class="card tint-teal"><h3>整数化技巧</h3>
+      <ul class="tick ok">
+        <li>坐标乘以 <code>10^k</code> 转整数</li>
+        <li>距离比较用<b>平方</b></li>
+        <li>面积用<b>叉积和</b>（精确）</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>EPS 该怎么定</h3>
+      <ul class="tick arr">
+        <li>相对误差：<code>abs(a-b) &lt; EPS * max(1, abs(a), abs(b))</code></li>
+        <li>常见 <code>1e-9</code>（double）、<code>1e-12</code>（long double）</li>
+        <li>绝不参与<b>排序</b></li>
+      </ul>
+    </div>
+    <div class="card tint-plum"><h3>终极方案</h3>
+      <ul class="tick no">
+        <li><b>有理数精确算术</b>（分数类）</li>
+        <li><b>符号扰动</b>处理退化</li>
+        <li>Shewchuk 的<b>精确谓词</b>库</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>精度是<b>设计出来的</b>——能用整数就用整数，非用浮点就<b>全程平方比较</b>。</div>
+  </div>
+</section>
+
+<!-- ═══ 16 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：形状层">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 03</div>
+      <div class="big">形状层：<em style="color:var(--teal)">凸包 · 定位 · 求交</em></div>
+      <p class="lead">Andrew 单调链 · 射线法 / 转角法 · 半平面交 · 面积与绕数<br>把"点集"和"约束"压成<b>形状</b>。</p>
+    </div>
+    <div><div class="num-huge t">03</div>
+      <div class="note good"><b>目标：</b>能独立写出凸包与半平面交，并解释共线点的取舍。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 17 凸包 ═══ -->
+<section class="slide" data-title="凸包：Andrew 单调链">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · HULL</div><h2>凸包：<em class="t">把 n 个点压成 h 个极值点</em></h2></div>
+    <div class="hint"><b>本页回答：</b>凸包为什么有用？<br>Andrew 怎么跑。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>为什么有用</h3>
+        <ul class="tick arr">
+          <li><b>线性函数</b>的最值一定在凸包<b>顶点</b>上</li>
+          <li>直径、宽度、最大三角形的顶点都在<b>凸包上</b></li>
+          <li>n 个点 → h 个点，<b>降维</b>效果显著</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>Andrew 单调链</h3>
+        <ul class="tick">
+          <li>按 <code>(x, y)</code> 排序去重</li>
+          <li>扫下凸壳，再扫上凸壳</li>
+          <li>比较用 <code>orient(...) &lt;= 0</code> → <b>丢掉边上的共线点</b></li>
+          <li>合并时各去掉末尾重复点</li>
+        </ul>
+      </div>
+      <div class="note good"><b>复杂度：</b><code>O(n log n)</code>（瓶颈在排序）。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 430 232" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <pattern id="hgrid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E4D0B0" stroke-width="0.6"/>
+            </pattern>
+          </defs>
+          <rect x="0" y="0" width="430" height="232" fill="url(#hgrid)" opacity="0.5"/>
+
+          <!-- 凸包 -->
+          <polygon points="52,178 68,68 152,32 236,58 262,152 178,206 96,200"
+                   fill="#0F7B6C" fill-opacity="0.13" stroke="#0F7B6C" stroke-width="3" stroke-linejoin="round"/>
+
+          <!-- 内部点 -->
+          <g fill="#C8A882">
+            <circle cx="120" cy="120" r="4.2"/><circle cx="168" cy="140" r="4.2"/>
+            <circle cx="100" cy="140" r="4.2"/><circle cx="196" cy="100" r="4.2"/>
+            <circle cx="150" cy="176" r="4.2"/><circle cx="130" cy="86" r="4.2"/>
+            <circle cx="186" cy="168" r="4.2"/><circle cx="112" cy="98" r="4.2"/>
+          </g>
+
+          <!-- 包上顶点 -->
+          <g fill="#fff" stroke="#0F7B6C" stroke-width="2.5">
+            <circle cx="52" cy="178" r="6"/><circle cx="68" cy="68" r="6"/><circle cx="152" cy="32" r="6"/>
+            <circle cx="236" cy="58" r="6"/><circle cx="262" cy="152" r="6"/><circle cx="178" cy="206" r="6"/>
+            <circle cx="96" cy="200" r="6"/>
+          </g>
+
+          <!-- 标注 -->
+          <text x="330" y="48" class="dfnlab" font-size="11">凸包顶点 h = 7</text>
+          <text x="330" y="72" class="dfnlab g" font-size="11">内部点 8 个被丢弃</text>
+          <text x="330" y="96" class="dfnlab r" font-size="11">O(n log n) 压缩</text>
+          <path d="M282 42 L262 56" stroke="#0F7B6C" stroke-width="1.6" fill="none"/>
+          <path d="M322 78 L212 128" stroke="#B9471B" stroke-width="1.6" fill="none" stroke-dasharray="4 3"/>
+
+          <rect x="330" y="118" width="88" height="92" rx="10" fill="#fff" stroke="#BEE6D8"/>
+          <text x="374" y="140" text-anchor="middle" class="dfnlab" font-size="10.5">单调链</text>
+          <g stroke="#0F7B6C" stroke-width="1.8" fill="none">
+            <path d="M342 178 L358 162 L374 170 L390 154 L406 162"/>
+            <path d="M342 188 L358 200 L374 192 L390 204 L406 196"/>
+          </g>
+          <text x="374" y="224" text-anchor="middle" class="dfnlab g" font-size="9">下壳 / 上壳</text>
+        </svg>
+      </div>
+      <div class="card tint-plum"><h3>共线点的取舍</h3>
+        <ul class="tick no">
+          <li><code>&lt;= 0</code>：丢掉边上的点（只留端点）</li>
+          <li><code>&lt; 0</code>：保留边上的点</li>
+          <li>看题目要<b>周长</b>还是<b>顶点集</b></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 18 模板：凸包 ═══ -->
+<section class="slide" data-title="模板：凸包">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · TEMPLATE</div><h2>模板三：<em class="t">凸包 + 鞋带面积</em></h2></div>
+    <div class="hint"><b>本页回答：</b>Andrew 怎么写？<br>面积公式是什么。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li><code>sorted(set(points))</code> 去重</li>
+          <li>下壳 + 上壳，<code>&lt;= 0</code> 丢共线点</li>
+          <li>合并时 <code>lower[:-1] + upper[:-1]</code></li>
+          <li>面积用<b>鞋带公式</b>，逆时针为正</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>鞋带公式</h3>
+        <div class="formula" style="font-size:11.8px">
+          <code>S = ½ Σ p[i] × p[i+1]</code><br>
+          <span class="ok">逆时针 → 正</span>　<span class="hl">顺时针 → 负</span><br>
+          <span class="dim">符号即多边形方向，别取 abs 后丢掉信息</span>
+        </div>
+      </div>
+      <div class="note good"><b>验证：</b>单位正方形 → <code>[(0,0),(1,0),(1,1),(0,1)]</code>，面积 <code>1.0</code>；全共线三点 → <code>[(0,0),(2,0)]</code>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>convex_hull.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="convex_hull"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 19 点在多边形内 ═══ -->
+<section class="slide" data-title="点在多边形内">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · POINT LOCATION</div><h2>点定位：<em class="t">射线法 vs 转角法</em></h2></div>
+    <div class="hint"><b>本页回答：</b>两种判定怎么选？<br>绕数是什么。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>射线法（Ray Casting）</h3>
+        <ul class="tick arr">
+          <li>向右发射水平射线</li>
+          <li>统计与边的<b>交点个数</b></li>
+          <li>奇数 → 内部，偶数 → 外部</li>
+          <li>边界点单独判（<code>on_segment</code>）</li>
+        </ul>
+        <div class="note"><b>技巧：</b>条件写成 <code>(a.y &gt; p.y) != (b.y &gt; p.y)</code>，自动处理顶点重复计数。</div>
+      </div>
+      <div class="card tint-amber"><h3>转角法（Winding Number）</h3>
+        <ul class="tick ok">
+          <li>累加<b>有向转角</b>（或绕数）</li>
+          <li><code>wn == 0</code> → 外部；否则内部</li>
+          <li>比射线法<b>更稳</b>（退化边多时）</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>对比</h3>
+        <table style="margin-top:2px">
+          <tr><th></th><th>射线法</th><th>转角法</th></tr>
+          <tr><td><b>返回</b></td><td>内外（可含边界）</td><td>绕数（含嵌套信息）</td></tr>
+          <tr><td><b>退化</b></td><td>需特判水平边</td><td>天然稳健</td></tr>
+          <tr><td><b>复杂度</b></td><td class="mono">O(n)</td><td class="mono">O(n)</td></tr>
+          <tr><td><b>适用</b></td><td>简单多边形</td><td>简单 / 带孔</td></tr>
+        </table>
+      </div>
+      <div class="card tint-plum"><h3>易错</h3>
+        <ul class="tick no">
+          <li>忘记判<b>边界点</b> → 答案少一个状态</li>
+          <li>射线方向恰好过顶点 → 重复计数</li>
+          <li>多边形<b>不简单</b>（自交）→ 两种方法都不对</li>
+        </ul>
+      </div>
+      <div class="card tint-teal"><h3>升级</h3>
+        <p>多边形<b>固定</b>时，预处理成<b>梯形剖分</b>或<b>三角剖分</b>，可用二分做到 <code>O(log n)</code> 定位。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 20 模板：点定位 ═══ -->
+<section class="slide" data-title="模板：点定位">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · TEMPLATE</div><h2>模板四：<em class="t">点定位</em></h2></div>
+    <div class="hint"><b>本页回答：</b>射线法与转角法的标准实现。<br>含自检。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个关键</h3>
+        <ul class="tick">
+          <li>先判<b>边界</b>（<code>on_segment</code>）</li>
+          <li>射线法：<code>x &gt; p.x</code> 才翻转</li>
+          <li>转角法：用 <code>orient</code> 判转向，累加 <code>wn</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>自检</h3>
+        <div class="formula" style="font-size:11.6px">
+          对<b>凸包</b>当多边形：<br>
+          <code>point_in_polygon(p, hull)</code><br>
+          应与 <code>winding_number(p, hull) != 0</code> 一致
+        </div>
+      </div>
+      <div class="note good"><b>用途：</b>可见性、拾取、点集归属判定。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>point_loc.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="point_in_polygon"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 21 半平面交 ═══ -->
+<section class="slide" data-title="半平面交：可行域">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>03 · HALF-PLANE</div><h2>半平面交：<em class="p">把约束变成可行域</em></h2></div>
+    <div class="hint"><b>本页回答：</b>半平面是什么？<br>交集为什么是凸的。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>核心</h3>
+        <div class="formula" style="font-size:11.8px">
+          半平面 = 直线的<b>一侧</b>（线性不等式）<br>
+          <code>a·x + b·y ≤ c</code> ⇔ 一个半平面<br>
+          <span class="ok">n 个半平面的交 = 凸多边形（或空）</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>算法骨架</h3>
+        <ul class="tick arr">
+          <li>按<b>极角</b>排序</li>
+          <li>同一极角只保留<b>最内侧</b></li>
+          <li><b>双端队列</b>维护候选边界</li>
+          <li>收尾时两头再清理一遍</li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>把"<b>约束</b>"编码成半平面，把"<b>可行</b>"编码成交集，把"<b>最优</b>"编码成顶点枚举。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 430 232" preserveAspectRatio="xMidYMid meet">
+          <defs>
+            <pattern id="ggrid" width="20" height="20" patternUnits="userSpaceOnUse">
+              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E4D0B0" stroke-width="0.6"/>
+            </pattern>
+            <clipPath id="feasible">
+              <polygon points="118,64 246,86 262,168 152,192 100,140"/>
+            </clipPath>
+          </defs>
+          <rect x="0" y="0" width="430" height="232" fill="url(#ggrid)" opacity="0.5"/>
+
+          <!-- 可行域 -->
+          <polygon points="118,64 246,86 262,168 152,192 100,140"
+                   fill="#A33A64" fill-opacity="0.16" stroke="#A33A64" stroke-width="2.6"/>
+
+          <!-- 四条约束线（延长线） -->
+          <g stroke="#B9471B" stroke-width="1.9" stroke-dasharray="7 5">
+            <line x1="82" y1="42" x2="330" y2="126"/>
+            <line x1="262" y1="32" x2="230" y2="212"/>
+            <line x1="60" y1="196" x2="330" y2="146"/>
+            <line x1="76" y1="34" x2="128" y2="216"/>
+          </g>
+          <!-- 保留左侧箭头 -->
+          <g stroke="#F2A63B" stroke-width="2.2" fill="none">
+            <path d="M150 72 L138 82"/><path d="M134 78 L138 82 L136 88"/>
+            <path d="M256 110 L244 118"/><path d="M242 112 L244 118 L238 119"/>
+          </g>
+
+          <!-- 顶点 -->
+          <g fill="#fff" stroke="#A33A64" stroke-width="2.4">
+            <circle cx="118" cy="64" r="5"/><circle cx="246" cy="86" r="5"/>
+            <circle cx="262" cy="168" r="5"/><circle cx="152" cy="192" r="5"/>
+            <circle cx="100" cy="140" r="5"/>
+          </g>
+
+          <text x="180" y="132" class="dfnlab p" font-size="12">可行域</text>
+          <text x="316" y="122" class="dfnlab r" font-size="10">保留左侧</text>
+
+          <rect x="286" y="152" width="132" height="66" rx="10" fill="#fff" stroke="#EFCBD8"/>
+          <text x="352" y="174" text-anchor="middle" class="dfnlab p" font-size="10.5">极角排序</text>
+          <text x="352" y="192" text-anchor="middle" class="dfnlab g" font-size="10.5">双端队列</text>
+          <text x="352" y="210" text-anchor="middle" class="dfnlab r" font-size="10.5">O(n log n)</text>
+        </svg>
+      </div>
+      <div class="card tint-plum"><h3>三个易错</h3>
+        <ul class="tick no">
+          <li>同极角没保留最内侧 → 队列错乱</li>
+          <li>没加<b>包围盒</b> → 无界区域返回空</li>
+          <li>EPS 取太大 → 真实顶点被误删</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 22 模板：半平面交 ═══ -->
+<section class="slide" data-title="模板：半平面交">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>03 · TEMPLATE</div><h2>模板五：<em class="p">半平面交</em></h2></div>
+    <div class="hint"><b>本页回答：</b>极角排序 + 双端队列怎么写？<br>怎么保证有界。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键</h3>
+        <ul class="tick">
+          <li><code>inside</code> = <b>方向向量的左侧</b>（符号约定见代码）</li>
+          <li>极角相同的半平面只留<b>最内侧</b></li>
+          <li>队列两头都要清（<b>环绕约束</b>）</li>
+          <li>需要面积时加<b>包围盒</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.6px">
+          单位正方形四条约束<br>
+          <code>x≥0, y≥0, x≤1, y≤1</code><br>
+          → 顶点 <code>[(0,0),(1,0),(1,1),(0,1)]</code><br>
+          <span class="ok">面积 = 1.0</span>
+        </div>
+      </div>
+      <div class="note good"><b>用途：</b>可行域面积、线性规划、最大内切圆、平面交。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot p"></span><span class="dot"></span><span class="dot"></span><em>halfplane.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="halfplane"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 23 形状层案例 ═══ -->
+<section class="slide" data-title="形状层建模案例">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · CASES</div><h2>形状层<em class="t">建模案例</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪类题想到凸包 / 半平面交？<br>四个典型。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-teal"><h3><span class="n t">A</span>围墙</h3>
+      <p><b>题意：</b>城堡外围建一圈等距围墙，求围墙长度。</p>
+      <div class="split-line t"></div>
+      <p class="muted"><b>建模：</b>凸包周长 + <code>2πL</code>（圆角）。<br><b>答案：</b>周长 + 圆周。</p></div>
+    <div class="card"><h3><span class="n t">B</span>可见性</h3>
+      <p><b>题意：</b>给多边形和两点，判断能否直线可见。</p>
+      <div class="split-line t"></div>
+      <p class="muted"><b>建模：</b>线段与多边形<b>每条边</b>判相交。<br><b>答案：</b>无交即可见。</p></div>
+    <div class="card tint-amber"><h3><span class="n a">C</span>最大空圆</h3>
+      <p><b>题意：</b>n 个点中放一个圆不覆盖任何点，半径最大多少？</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>凸包 + <b>三角剖分</b>，候选圆心在中垂线交点。<br><b>答案：</b>最大半径。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">D</span>多约束选址</h3>
+      <p><b>题意：</b>工厂受 n 条线性限制（风向、河流、红线），求可行区域。</p>
+      <div class="split-line p"></div>
+      <p class="muted"><b>建模：</b>半平面交 → 可行域多边形。<br><b>答案：</b>面积 / 顶点。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>共同结构</h3>
+      <p>都是"<b>把几何描述翻译成形状</b>"。识别信号：<b>包住、边界、约束、可行</b>。</p>
+    </div>
+    <div class="card tint-plum"><h3>什么时候不够用</h3>
+      <ul class="tick no">
+        <li>要<b>最优值</b>（不是形状）→ 旋转卡壳 / 二分</li>
+        <li>约束是<b>圆 / 二次</b> → 不是半平面</li>
+        <li>多边形<b>自交</b> → 射线法失效</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>看到"<b>包住 / 边界 / 约束 / 可行</b>"，第一反应是凸包或半平面交。</div>
+  </div>
+</section>
+
+<!-- ═══ 24 形状层速查 ═══ -->
+<section class="slide" data-title="形状层速查">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · CHEAT SHEET</div><h2>形状层<em class="t">速查表</em></h2></div>
+    <div class="hint"><b>本页回答：</b>形状问题都怎么办？<br>一页看全。</div>
+  </div>
+  <table>
+    <tr><th style="width:215px">问题</th><th style="width:185px">工具</th><th>复杂度</th><th>注意</th></tr>
+    <tr><td>凸包</td><td class="yes">Andrew 单调链</td><td class="mono">O(n log n)</td><td>共线点取舍</td></tr>
+    <tr><td>多边形面积</td><td class="yes">鞋带公式</td><td class="mono">O(n)</td><td>符号 = 方向</td></tr>
+    <tr><td>点在多边形内</td><td class="yes">射线法 / 转角法</td><td class="mono">O(n)</td><td>边界点单独判</td></tr>
+    <tr><td>凸包直径 / 最远点对</td><td class="yes">旋转卡壳</td><td class="mono">O(n)</td><td>先凸包</td></tr>
+    <tr><td>凸包宽度</td><td class="yes">旋转卡壳</td><td class="mono">O(n)</td><td>对踵点对</td></tr>
+    <tr><td>最小外接矩形</td><td class="yes">旋转卡壳</td><td class="mono">O(n)</td><td>枚举边方向</td></tr>
+    <tr><td>最大面积三角形</td><td class="yes">凸包 + 枚举</td><td class="mono">O(h²)</td><td>三点都在包上</td></tr>
+    <tr><td>两个凸包的交</td><td class="yes">旋转卡壳 / 二分</td><td class="mono">O(n+m)</td><td>都须凸</td></tr>
+    <tr><td>半平面交</td><td class="yes">极角排序 + 队列</td><td class="mono">O(n log n)</td><td>加包围盒</td></tr>
+    <tr><td>闵可夫斯基和</td><td class="yes">边向量归并</td><td class="mono">O(n+m)</td><td>凸包之和</td></tr>
+    <tr><td>最大内切圆</td><td class="yes">半平面交 + 枚举</td><td class="mono">O(n²) ~ O(n log n)</td><td>候选在顶点 / 边</td></tr>
+    <tr><td>一般多边形分解</td><td class="no">需专用算法</td><td>—</td><td>不是凸包问题</td></tr>
+    <tr><td>圆 / 二次约束</td><td class="no">非半平面</td><td>—</td><td>需别的工具</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>公式速记</h3>
+      <div class="formula" style="font-size:11.6px">
+        面积 = ½ |Σ p[i] × p[i+1]|<br>
+        直径 = 旋转卡壳 <code>O(h)</code><br>
+        宽度 = 对踵点到边的距离最小值
+      </div>
+    </div>
+    <div class="card tint-teal"><h3>什么时候升级</h3>
+      <ul class="tick arr">
+        <li>凸包 + <b>单调指针</b> → 旋转卡壳</li>
+        <li>约束求交 → 半平面交</li>
+        <li>最优 + 单调 → 二分答案</li>
+      </ul>
+    </div>
+    <div class="note"><b>关键：</b>形状问题的通用套路是<b>"先凸包化，再找极值"</b>。</div>
+  </div>
+</section>
+
+<!-- ═══ 25 章节 ═══ -->
+<section class="slide section-slide plum" data-title="章节：最优层">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker plum"><i></i>CHAPTER 04</div>
+      <div class="big">最优层：<em style="color:#C9830F">卡壳 · 二分 · 分治</em></div>
+      <p class="lead">旋转卡壳 · 二分答案 + 几何判定 · 最近点对 · 最小圆覆盖<br>把"形状"变成<b>最优值</b>。</p>
+    </div>
+    <div><div class="num-huge p">04</div>
+      <div class="note warn"><b>要领：</b>最优层的难点不在代码，而在<b>证明单调性</b>——证不出来就别上二分。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 26 旋转卡壳 ═══ -->
+<section class="slide" data-title="旋转卡壳">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>04 · CALIPERS</div><h2>旋转卡壳：<em class="a">凸包上的双指针</em></h2></div>
+    <div class="hint"><b>本页回答：</b>卡壳为什么 O(n)？<br>对径点怎么找。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>核心思想</h3>
+        <ul class="tick arr">
+          <li>两条<b>平行支撑线</b>夹住凸包</li>
+          <li>绕凸包<b>旋转一圈</b>，两个切点单调前进</li>
+          <li>每个顶点各访问一次 → <code>O(n)</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>三个应用</h3>
+        <div class="formula" style="font-size:11.6px">
+          <b>直径</b> = 对径点距离最大值<br>
+          <b>宽度</b> = 对径点到边距离最小值<br>
+          <b>最小外接矩形</b> = 枚举边方向
+        </div>
+      </div>
+      <div class="note good"><b>前提：</b>必须先有<b>凸包</b>，且顶点<b>逆时针</b>有序。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 430 232" preserveAspectRatio="xMidYMid meet">
+          <defs><marker id="ma" markerWidth="8" markerHeight="8" refX="6.5" refY="4" orient="auto">
+            <path d="M0 0 L8 4 L0 8 z" fill="#F2A63B"/></marker></defs>
+
+          <!-- 双切线 -->
+          <g stroke="#F2A63B" stroke-width="2.4" stroke-linecap="round">
+            <line x1="62" y1="66" x2="262" y2="26"/>
+            <line x1="82" y1="202" x2="282" y2="162"/>
+          </g>
+
+          <!-- 凸包 -->
+          <polygon points="70,168 92,62 176,32 254,66 268,152 192,192 118,196"
+                   fill="#0F7B6C" fill-opacity="0.13" stroke="#0F7B6C" stroke-width="3" stroke-linejoin="round"/>
+
+          <!-- 对径点 -->
+          <circle cx="176" cy="32" r="9" fill="none" stroke="#E2612F" stroke-width="2.6"/>
+          <circle cx="118" cy="196" r="9" fill="none" stroke="#E2612F" stroke-width="2.6"/>
+          <line x1="176" y1="32" x2="118" y2="196" stroke="#E2612F" stroke-width="2.2" stroke-dasharray="6 5"/>
+          <text x="136" y="118" class="dfnlab r" font-size="11">直径</text>
+
+          <!-- 旋转方向 -->
+          <path d="M322 96 A 46 46 0 1 1 300 62" fill="none" stroke="#F2A63B" stroke-width="2.2" marker-end="url(#ma)"/>
+          <text x="326" y="128" class="dfnlab a" font-size="10.5">旋转一圈</text>
+
+          <g fill="#fff" stroke="#0F7B6C" stroke-width="2.3">
+            <circle cx="70" cy="168" r="5"/><circle cx="92" cy="62" r="5"/><circle cx="176" cy="32" r="5"/>
+            <circle cx="254" cy="66" r="5"/><circle cx="268" cy="152" r="5"/><circle cx="192" cy="192" r="5"/>
+            <circle cx="118" cy="196" r="5"/>
+          </g>
+
+          <rect x="286" y="152" width="132" height="66" rx="10" fill="#fff" stroke="#F4DCAC"/>
+          <text x="352" y="174" text-anchor="middle" class="dfnlab a" font-size="10.5">两指针单调前进</text>
+          <text x="352" y="192" text-anchor="middle" class="dfnlab g" font-size="10.5">各访问一次</text>
+          <text x="352" y="210" text-anchor="middle" class="dfnlab r" font-size="10.5">O(n)</text>
+        </svg>
+      </div>
+      <div class="card tint-plum"><h3>易错</h3>
+        <ul class="tick no">
+          <li>卡壳指针<b>不单调</b>（用 <code>&gt;</code> 严格比较）</li>
+          <li>只测 <code>hull[j]</code>，漏测 <code>hull[i]</code> / <code>hull[i+1]</code></li>
+          <li>退化：全部共线 → 凸包只有 2 个点</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 27 模板：旋转卡壳 ═══ -->
+<section class="slide" data-title="模板：旋转卡壳">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>04 · TEMPLATE</div><h2>模板六：<em class="a">旋转卡壳</em></h2></div>
+    <div class="hint"><b>本页回答：</b>对径点、直径、宽度的标准实现。<br>含自检。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个关键</h3>
+        <ul class="tick">
+          <li>用<b>叉积面积</b>判远近（避免开方）</li>
+          <li>指针 <code>j</code> 只前进，<code>&gt;</code> 严格比较</li>
+          <li>每个 <code>i</code> 测 <code>hull[j]</code> 与 <code>hull[i]</code>、<code>hull[i+1]</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.6px">
+          单位正方形 → <b>直径平方 = 2</b>，<b>宽度 = 1.0</b><br>
+          <span class="dim">矩形 (0,0),(2,0),(2,1),(0,1) → 直径平方 = 5</span>
+        </div>
+      </div>
+      <div class="note good"><b>自检：</b>与 <code>brute_diameter2</code> 对拍，答案必须相等。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot a"></span><span class="dot"></span><span class="dot"></span><em>rotating_calipers.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="rotating_calipers"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 28 二分答案 ═══ -->
+<section class="slide" data-title="二分答案 + 几何判定">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>04 · BINARY SEARCH</div><h2>二分答案：<em class="a">最优 → 判定</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么时候能二分？<br>判定怎么做。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>适用条件</h3>
+        <ul class="tick arr">
+          <li>目标<b>单调</b>：最小化最大 / 最大化最小</li>
+          <li>判定问题<b>容易</b>（比原问题简单得多）</li>
+          <li>值域有界、可离散或可实数二分</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>骨架</h3>
+        <div class="formula" style="font-size:11.6px">
+          <span class="hl">while lo &lt; hi:</span><br>
+          &nbsp;&nbsp;mid = (lo + hi) // 2<br>
+          &nbsp;&nbsp;<span class="ok">if check(mid):</span> hi = mid<br>
+          &nbsp;&nbsp;else: lo = mid + 1<br>
+          <span class="dim">check = 一个几何判定（叉积 / 凸包 / 半平面交）</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>几何里的典型判定</h3>
+        <ul class="tick">
+          <li>能否用半径 <code>T</code> 的圆覆盖所有点？</li>
+          <li>所有点到某直线的距离是否 ≤ <code>T</code>？</li>
+          <li>是否存在一条线把两类点分开且间距 ≥ <code>T</code>？</li>
+          <li>可行域在目标方向上是否非空？</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>易错</h3>
+        <ul class="tick no">
+          <li>二分<b>实数</b>时终止条件写成 <code>==</code> → 死循环</li>
+          <li>判定函数<b>不单调</b> → 答案错</li>
+          <li>取 <code>mid</code> 用 <code>(lo+hi)/2</code> 但没处理负数 → <code>floor</code> 语义错</li>
+          <li>忘了<b>扩大值域</b>（初值上下界太窄）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>先证明<b>单调性</b>，再写二分——证不出来就换方法。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 29 最近点对 ═══ -->
+<section class="slide" data-title="最近点对">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>04 · CLOSEST PAIR</div><h2>最近点对：<em class="a">分治 + 条带</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么不用凸包？<br>条带怎么剪。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>关键洞察</h3>
+        <ul class="tick no">
+          <li>最近点对<b>不在凸包上</b>（反例：内部两点很近）</li>
+          <li>所以<b>不能</b>凸包化，只能走<b>分治</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>分治骨架</h3>
+        <ul class="tick arr">
+          <li>按 <code>x</code> 排序，从中点分开</li>
+          <li>递归求左右最小距离 <code>d</code></li>
+          <li>条带内按 <code>y</code> 排序，只检查<b>下 7 个</b>邻居</li>
+        </ul>
+      </div>
+      <div class="note good"><b>复杂度：</b>用 <code>sorted</code> 归并是 <code>O(n log² n)</code>；真正归并可达 <code>O(n log n)</code>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot a"></span><span class="dot"></span><span class="dot"></span><em>closest_pair.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="closest_pair"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 30 最优层案例 ═══ -->
+<section class="slide" data-title="最优层建模案例">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>04 · CASES</div><h2>最优层<em class="a">建模案例</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪类题想到卡壳 / 二分 / 分治？<br>四个典型。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-amber"><h3><span class="n a">A</span>最远点对</h3>
+      <p><b>题意：</b>n 个点，求最远两点距离。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>凸包 + 旋转卡壳。<br><b>答案：</b><code>O(n log n)</code>。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">B</span>最小圆覆盖</h3>
+      <p><b>题意：</b>找最小的圆覆盖所有点。</p>
+      <div class="split-line t"></div>
+      <p class="muted"><b>建模：</b>Welzl <b>随机增量</b>。<br><b>答案：</b>期望 <code>O(n)</code>。</p></div>
+    <div class="card"><h3><span class="n">C</span>最近点对</h3>
+      <p><b>题意：</b>n 个点，求最近两点距离。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>分治 + 条带。<br><b>答案：</b><code>O(n log² n)</code>。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">D</span>最小间隙</h3>
+      <p><b>题意：</b>找一条直线分两类点，间距最大。</p>
+      <div class="split-line p"></div>
+      <p class="muted"><b>建模：</b><b>二分答案</b> + 半平面交判定。<br><b>答案：</b>最大间距。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>共同结构</h3>
+      <p>都是"<b>在形状上找最优</b>"。识别信号：<b>最大 / 最小 + 单调 / 凸</b>。</p>
+    </div>
+    <div class="card tint-plum"><h3>什么时候不够用</h3>
+      <ul class="tick no">
+        <li>目标<b>不单调</b> → 二分失效</li>
+        <li>点集<b>不是静态</b> → 需 KD 树 / 动态结构</li>
+        <li>维度 ≥ 3 → 三维凸包 / 空间划分</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>先判断<b>最优值的结构</b>（凸 / 单调 / 局部），再选搜索策略。</div>
+  </div>
+</section>
+
+<!-- ═══ 31 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：横向对比">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker amber"><i></i>CHAPTER 05</div>
+      <div class="big">横向对比：<em style="color:#C9830F">同题三解 · 归约 · 雷达</em></div>
+      <p class="lead">同题三解 · 归约关系图 · 六轴雷达 · 不可替代性<br>看清每条主线的<b>甜点区与失效区</b>。</p>
+    </div>
+    <div><div class="num-huge">05</div>
+      <div class="note warn"><b>本章重点：</b>知道"<b>什么时候用了就错</b>"，比"都能做"更重要。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 32 同题三解 A ═══ -->
+<section class="slide" data-title="同题三解 A：最远点对">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · CROSS A</div><h2>同题三解 A：<em class="a">最远点对（直径）</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一题，三种解法怎么选？<br>凸包降了多少维。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>题意</h3>
+        <p>给 n 个点，求<b>最远两点</b>的欧氏距离。</p>
+      </div>
+      <div class="card tint-amber"><h3>三种建模</h3>
+        <ul class="tick arr">
+          <li><b>暴力</b> ✅ <code>O(n²)</code> —— 小数据 / 验证</li>
+          <li><b>凸包 + 包上暴力</b> ✅ <code>O(h²)</code> —— 中间态（凸包降维）</li>
+          <li><b>凸包 + 旋转卡壳</b> ✅ <code>O(n log n)</code> —— 主解</li>
+          <li><b>半平面交</b> ❌ 不适用（不是约束问题）</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>结论：</b>凸包把 <code>O(n²)</code> 降到 <code>O(h²)</code>，卡壳再降到 <code>O(h)</code>。<b>半平面交在这题上完全用不上</b>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot a"></span><span class="dot"></span><span class="dot"></span><em>cross_diameter.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="model_cross"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 33 同题三解 B ═══ -->
+<section class="slide" data-title="同题三解 B：最大三角形 / 最小圆">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · CROSS B</div><h2>同题三解 B：<em class="a">最大面积三角形 · 最小圆覆盖</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一模式（凸包 + 极值）<br>怎么迁移到不同目标。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>最大面积三角形</h3>
+        <ul class="tick arr">
+          <li><b>暴力</b> <code>O(n³)</code> ✅ 小数据</li>
+          <li><b>凸包 + 暴力</b> <code>O(h²)</code> ✅ 三点都在包上</li>
+          <li><b>凸包 + 卡壳</b> <code>O(h²)</code> ✅ Fischer-Heun</li>
+          <li><b>半平面交</b> ❌ 不适用</li>
+        </ul>
+        <div class="note good"><b>模式：</b>与 A 题<b>完全同构</b>——先凸包化，再在包上找极值。</div>
+      </div>
+      <div class="card tint-teal"><h3>最小圆覆盖</h3>
+        <ul class="tick ok">
+          <li><b>随机增量（Welzl）</b> <code>O(n)</code> 期望 ✅ 最优</li>
+          <li><b>凸包预处理</b> ✅ 边界点必在包上，常数优化</li>
+          <li><b>二分答案 + 判定</b> ⚠️ 理论可行但判定本身 <code>O(n)</code>，不划算</li>
+        </ul>
+        <div class="note warn"><b>模式：</b>与 A 题<b>不同构</b>——最优圆的边界点<b>不必是对径点</b>，卡壳不适用。</div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>最小圆覆盖（Welzl 随机增量）</h3>
+        <div class="formula" style="font-size:11.6px">
+          <span class="hl">核心：</span>三点定圆（外接圆）<br>
+          <code>circumcircle(a,b,c)</code> → 圆心 + 半径<br>
+          <span class="dim">共线时退化为最远两点的直径圆</span>
+        </div>
+        <div class="split-line t"></div>
+        <p>期望 <code>O(n)</code>：随机打乱点序，逐点检查；不在当前圆内的点<b>成为新边界点</b>，递归重算。</p>
+      </div>
+      <div class="card tint-amber"><h3>关键差异</h3>
+        <ul class="tick">
+          <li><b>直径</b>：凸包 + 卡壳（确定性）</li>
+          <li><b>最小圆</b>：随机增量（随机算法）</li>
+          <li><b>最大三角形</b>：凸包 + 枚举（同一模式）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>识别"<b>最优值的边界点在哪</b>"——在凸包上？在对径点上？在三点上？答案不同，工具就不同。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 34 同题三解 C ═══ -->
+<section class="slide" data-title="同题三解 C：多约束可行性">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · CROSS C</div><h2>同题三解 C：<em class="a">多约束可行性</em></h2></div>
+    <div class="hint"><b>本页回答：</b>"求交"归谁？<br>凸包为什么不行。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-plum"><h3><span class="n p">Q1</span>可行域是什么？</h3>
+      <p><b>题意：</b>给 n 条线性约束 <code>aᵢx + bᵢy ≤ cᵢ</code>，求可行域。</p>
+      <div class="split-line p"></div>
+      <ul class="tick">
+        <li><b>半平面交</b> ✅ 直接</li>
+        <li>凸包 ❌（不是点集问题）</li>
+        <li>卡壳 ❌（没有凸包）</li>
+      </ul>
+      <p class="muted"><b>答案：</b>可行域多边形 / 面积。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">Q2</span>最优在哪取到？</h3>
+      <p><b>题意：</b>在可行域上最大化 <code>px·x + qy·y</code>。</p>
+      <div class="split-line t"></div>
+      <ul class="tick ok">
+        <li><b>半平面交 + 顶点枚举</b> ✅</li>
+        <li><b>二分答案 + 判定</b> ✅</li>
+        <li>凸包 ❌（可行域不是点集）</li>
+      </ul>
+      <p class="muted"><b>答案：</b>最优值（在顶点取到）。</p></div>
+    <div class="card tint-amber"><h3><span class="n a">Q3</span>最小距离？</h3>
+      <p><b>题意：</b>可行域内一点到定点 s 的最小距离。</p>
+      <div class="split-line"></div>
+      <ul class="tick arr">
+        <li><b>凸包 + 卡壳</b> ✅（若可行域是凸包）</li>
+        <li><b>二分答案 + 判定</b> ✅</li>
+        <li>半平面交 ⚠️ 需先求交再算</li>
+      </ul>
+      <p class="muted"><b>答案：</b>最小距离。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>一句话对照</h3>
+      <p class="lead">"<b>求交</b>"问的是<b>形状</b>，用半平面交；"<b>求极值</b>"问的是<b>最优</b>，用卡壳 / 二分。两者<b>方向不同</b>，不能互换。</p>
+    </div>
+    <div class="card tint-plum"><h3>凸包在哪</h3>
+      <p>Q1 上<b>完全用不上凸包</b>——凸包是"点集的最小凸集"，不是"约束的交"。强行套凸包，答非所问。</p>
+      <div class="note warn"><b>提醒：</b>工具不是越多越好，<b>选对一个</b>比套三个更重要。</div>
+    </div>
+    <div class="note good"><b>心法：</b>问"<b>要求形状还是求最优</b>"——这一个词就能定工具。</div>
+  </div>
+</section>
+
+<!-- ═══ 35 归约关系 ═══ -->
+<section class="slide" data-title="归约关系">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · REDUCTION</div><h2><em class="a">归约关系</em>：谁是谁的特例</h2></div>
+    <div class="hint"><b>本页回答：</b>三者能互相转化吗？<br>哪些不能。</div>
+  </div>
+  <table>
+    <tr><th style="width:285px">归约</th><th style="width:120px">方向</th><th>说明</th></tr>
+    <tr><td>旋转卡壳 → 凸包</td><td class="yes">✅ 前提</td><td>必须先有凸包，且顶点逆时针有序</td></tr>
+    <tr><td>凸包 → 极值求解</td><td class="yes">✅ 成立</td><td>线性函数最值在<b>顶点</b></td></tr>
+    <tr><td>凸包 → 直径 / 宽度 / 最小外接矩形</td><td class="yes">✅ 成立</td><td>旋转卡壳 <code>O(n)</code></td></tr>
+    <tr><td>二分答案 → 几何判定</td><td class="yes">✅ 成立</td><td>最优转可行性</td></tr>
+    <tr><td>凸包 ↔ 半平面交（对偶）</td><td class="yes">✅ 成立</td><td>点 ↔ 直线，凸壳 ↔ 可行域</td></tr>
+    <tr><td>半平面交 → 线性规划</td><td class="yes">✅ 成立</td><td>线性目标在顶点取最</td></tr>
+    <tr><td>最大面积三角形 → 凸包</td><td class="yes">✅ 成立</td><td>三点都在包上</td></tr>
+    <tr><td>最小圆覆盖 → 凸包</td><td class="yes">⚠️ 部分</td><td>边界点在包上，但算法仍需随机增量</td></tr>
+    <tr><td>最近点对 → 凸包</td><td class="no">❌ 不成立</td><td>最近点对<b>不必</b>在凸包上</td></tr>
+    <tr><td>圆 / 二次约束 → 半平面交</td><td class="no">❌ 不成立</td><td>非线性约束需别的工具</td></tr>
+    <tr><td>三维凸包 → 二维凸包</td><td class="no">❌ 不成立</td><td>三维需混合积 / 面剔除</td></tr>
+    <tr><td>高精度要求 → 浮点实现</td><td class="no">❌ 不成立</td><td>需整数 / 有理数 / 精确谓词</td></tr>
+    <tr><td>一般多边形分解 → 凸包</td><td class="no">❌ 不成立</td><td>需耳切 / 分治</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>重要结论</h3>
+      <ul class="tick arr">
+        <li>凸包 <b>⊂</b> 极值求解（降维的入口）</li>
+        <li>半平面交 <b>⊂</b> 线性规划（可行域的入口）</li>
+        <li>但<b>三者不可互相替代</b>——各有失效区</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>为什么归约有用</h3>
+      <p>把<b>新问题</b>归约到<b>已知工具</b>，就能直接复用代码与复杂度结论。<br>但要先确认<b>归约条件成立</b>（凸性、线性、单调……）。</p>
+      <div class="note good"><b>心法：</b>归约前先问"<b>这个转化保不保最优解</b>"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 36 六轴雷达 ═══ -->
+<section class="slide" data-title="六轴能力雷达">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · RADAR</div><h2>六轴<em class="a">能力雷达</em></h2></div>
+    <div class="hint"><b>本页回答：</b>三条主线各擅长什么？<br>一图看懂。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>读图方式</h3>
+        <ul class="tick">
+          <li>轴越外 = 越擅长</li>
+          <li><b>陶土</b> 叉积 · <b>青绿</b> 凸包 · <b>李子</b> 半平面交</li>
+          <li>重叠区 = 都能做，选快的</li>
+          <li>单边突出区 = 该工具的<b>主场</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>三个结论</h3>
+        <ul class="tick arr">
+          <li><b>精确判定 / 通用性 / 简洁</b> → 叉积碾压</li>
+          <li><b>点集压缩 / 极值</b> → 凸包最优</li>
+          <li><b>可行域 / 约束求交</b> → 半平面交唯一解</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 312" preserveAspectRatio="xMidYMid meet">
+          <!-- 网格 -->
+          <g stroke="#E4CBA3" stroke-width="1.2" fill="none">
+            <polygon points="210,40 309.5,97.5 309.5,212.5 210,270 110.5,212.5 110.5,97.5"/>
+            <polygon points="210,63 289.6,109 289.6,201 210,247 130.4,201 130.4,109"/>
+            <polygon points="210,86 269.7,120.5 269.7,189.5 210,224 150.3,189.5 150.3,120.5"/>
+            <polygon points="210,109 249.8,132 249.8,178 210,201 170.2,178 170.2,132"/>
+            <polygon points="210,132 229.9,143.5 229.9,166.5 210,178 190.1,166.5 190.1,143.5"/>
+          </g>
+          <g stroke="#E4CBA3" stroke-width="1">
+            <path d="M210 155 L210 40"/><path d="M210 155 L309.5 97.5"/><path d="M210 155 L309.5 212.5"/>
+            <path d="M210 155 L210 270"/><path d="M210 155 L110.5 212.5"/><path d="M210 155 L110.5 97.5"/>
+          </g>
+
+          <!-- 轴标签 -->
+          <g text-anchor="middle" class="dfnlab g" font-size="10">
+            <text x="210" y="26">精确判定</text>
+            <text x="330" y="92">点集压缩</text>
+            <text x="330" y="222">极值求解</text>
+            <text x="210" y="290">可行域</text>
+            <text x="90" y="222">通用性</text>
+            <text x="90" y="92">代码简洁</text>
+          </g>
+
+          <!-- 三条多边形 -->
+          <polygon points="210,40 229.9,143.5 249.8,178 210,178 110.5,212.5 110.5,97.5"
+                   fill="#E2612F" fill-opacity=".22" stroke="#E2612F" stroke-width="2.6"/>
+          <polygon points="210,86 309.5,97.5 309.5,212.5 210,201 130.4,201 130.4,109"
+                   fill="#0F7B6C" fill-opacity=".22" stroke="#0F7B6C" stroke-width="2.6"/>
+          <polygon points="210,86 249.8,132 269.7,189.5 210,270 150.3,189.5 170.2,132"
+                   fill="#A33A64" fill-opacity=".22" stroke="#A33A64" stroke-width="2.6"/>
+
+          <!-- 图例 -->
+          <g font-family="monospace" font-size="10">
+            <rect x="34" y="296" width="118" height="22" rx="8" fill="#E2612F"/>
+            <text x="93" y="311" text-anchor="middle" fill="#fff">叉积 5/1/2/1/5/5</text>
+            <rect x="158" y="296" width="118" height="22" rx="8" fill="#0F7B6C"/>
+            <text x="217" y="311" text-anchor="middle" fill="#fff">凸包 3/5/5/2/4/4</text>
+            <rect x="282" y="296" width="118" height="22" rx="8" fill="#A33A64"/>
+            <text x="341" y="311" text-anchor="middle" fill="#fff">半平面 3/2/3/5/3/2</text>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>记忆：</b>叉积 = <b>在左还是右</b>；凸包 = <b>谁是边界</b>；半平面交 = <b>哪里可行</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 37 不可替代性 ═══ -->
+<section class="slide" data-title="不可替代性">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · IRREPLACEABLE</div><h2>什么时候<em class="a">必须用哪个</em></h2></div>
+    <div class="hint"><b>本页回答：</b>三个"不换不行"的场景。<br>以及换掉会怎样。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3><span class="n">叉积</span></h3>
+      <ul class="tick">
+        <li><b>所有几何判定的原子</b>：<code>O(1)</code> 精确</li>
+        <li><b>共线 / 相交 / 方向</b>的基础</li>
+        <li>整数坐标下<b>零误差</b></li>
+        <li>浮点版本也能做，但会丢精度</li>
+      </ul>
+      <div class="split-line"></div>
+      <p class="muted"><b>换掉会：</b>精度崩坏，边界全错。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">凸包</span></h3>
+      <ul class="tick ok">
+        <li><b>极值压缩</b>：n → h 个点</li>
+        <li>直径 / 宽度 / 面积 / 包含</li>
+        <li>线性函数最值的<b>唯一入口</b></li>
+        <li>最小圆覆盖的<b>边界点</b>也在包上</li>
+      </ul>
+      <div class="split-line t"></div>
+      <p class="muted"><b>换掉会：</b>慢 2~3 个数量级，或根本做不了。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">半平面交</span></h3>
+      <ul class="tick no">
+        <li><b>多线性约束的可行域</b>：唯一自然解</li>
+        <li>线性规划的<b>几何入口</b></li>
+        <li>可行域面积 / 顶点 / 包含</li>
+        <li>最大内切圆的<b>候选顶点</b></li>
+      </ul>
+      <div class="split-line p"></div>
+      <p class="muted"><b>换掉会：</b>问题无解（其他工具表达不了）。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>三种"选错"的后果</h3>
+      <ul class="tick no">
+        <li>把<b>最近点对</b>当凸包问题 → 答案错</li>
+        <li>把<b>圆约束</b>塞进半平面交 → 无意义解</li>
+        <li>用<b>浮点 <code>== 0</code></b> 判共线 → 边界全崩</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>决策口诀</h3>
+      <p class="lead"><b>先问判定什么</b>，再问<b>要不要压缩</b>，最后问<b>要求交还是求极值</b>。三问定工具。</p>
+    </div>
+    <div class="note good"><b>升华：</b>几何建模能力 = <b>"把几何描述翻译成代数判定"</b>，而不是背模板。</div>
+  </div>
+</section>
+
+<!-- ═══ 38 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：工程">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 06</div>
+      <div class="big">工程：<em style="color:var(--teal)">精度 · 避坑 · 对拍</em></div>
+      <p class="lead">数值稳定性 · 易错清单 · 模板合集 · 跨工具对拍 · 题单<br>把几何写成"永不写错"。</p>
+    </div>
+    <div><div class="num-huge t">06</div>
+      <div class="note good"><b>要领：</b>几何题的 bug <b>九成在精度和退化</b>，不在算法。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 39 数值稳定性 ═══ -->
+<section class="slide" data-title="数值稳定性">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · NUMERICS</div><h2>数值稳定性：<em>设计出来的</em></h2></div>
+    <div class="hint"><b>本页回答：</b>误差从哪来？<br>怎么在设计期规避。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>五条铁律</h3>
+        <ul class="tick arr">
+          <li><b>整数优先</b>：叉积、面积、行列式全用整数</li>
+          <li><b>平方比较</b>：距离、半径全程平方，最后才开方</li>
+          <li><b>符号扰动</b>处理退化（重合点、共线）</li>
+          <li><b>相对误差</b>：<code>abs(a-b) &lt; EPS * max(1, |a|, |b|)</code></li>
+          <li><b>绝不</b>让 EPS 参与<b>排序</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>误差累积链</h3>
+        <div class="formula" style="font-size:11.6px">
+          加减 → 灾难性抵消（<code>a+b-a</code>）<br>
+          乘除 → 相对误差累积<br>
+          开方 / 三角 → <b>不可逆</b>，最后再算<br>
+          <span class="dim">运算次数越多，误差越大——减少运算</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>各精度方案对比</h3>
+        <table style="margin-top:2px">
+          <tr><th>方案</th><th>精度</th><th>速度</th><th>适用</th></tr>
+          <tr><td>整数坐标</td><td class="yes">精确</td><td>最快</td><td>题目允许</td></tr>
+          <tr><td><code>long double</code></td><td>高</td><td>快</td><td>常规浮点</td></tr>
+          <tr><td>有理数 / 分数</td><td class="yes">精确</td><td>慢</td><td>必须精确</td></tr>
+          <tr><td>符号扰动</td><td class="yes">精确判定</td><td>快</td><td>退化多</td></tr>
+          <tr><td>精确谓词库</td><td class="yes">精确</td><td>快</td><td>竞赛终极</td></tr>
+        </table>
+      </div>
+      <div class="card tint-plum"><h3>典型翻车</h3>
+        <ul class="tick no">
+          <li>浮点 <code>== 0</code> 判共线</li>
+          <li>排序比较器含 EPS → 不严格弱序 → <code>sort</code> 报错</li>
+          <li><code>int64</code> 溢出（C++）→ Python 安全</li>
+          <li>面积取 <code>abs</code> 后丢掉方向信息</li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>精度是<b>设计出来的</b>——在写第一行代码前就定好"用什么数、怎么比"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 40 易错清单 ═══ -->
+<section class="slide" data-title="易错清单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PITFALLS</div><h2>易错清单 <em>Checklist</em></h2></div>
+    <div class="hint"><b>本页回答：</b>提交前自检什么？<br>（每条都对应本讲义的坑）</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3>叉积 / 判定</h3>
+      <ul class="tick no">
+        <li>浮点 <code>== 0</code> 判共线</li>
+        <li>叉积符号约定搞反（左 / 右）</li>
+        <li><code>on_segment</code> 漏判投影区间</li>
+        <li><code>o1*o2</code> 在 C++ 里溢出</li>
+        <li>线段相交漏掉<b>共线重叠</b></li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>凸包 / 形状</h3>
+      <ul class="tick ok">
+        <li><code>P</code> 类忘定义 <code>__hash__</code> → <code>set</code> 炸</li>
+        <li>共线点 <code>&lt;= 0</code> 与 <code>&lt; 0</code> 搞反</li>
+        <li>没去重 → 重复点</li>
+        <li>合并漏掉 <code>[:-1]</code> → 顶点重复</li>
+        <li>多边形顶点顺序（顺 / 逆时针）没约定</li>
+        <li>射线法漏判<b>边界点</b></li>
+      </ul>
+    </div>
+    <div class="card tint-plum"><h3>半平面 / 最优 / 精度</h3>
+      <ul class="tick no">
+        <li><code>inside</code> 左右符号写反</li>
+        <li>同极角没保留<b>最内侧</b></li>
+        <li>没加<b>包围盒</b> → 无界返空</li>
+        <li>卡壳指针不单调（用 <code>&gt;</code>）</li>
+        <li>二分实数终止写成 <code>==</code></li>
+        <li>最近点对 <code>midx</code> 在递归<b>后</b>读</li>
+        <li>退化（三点共线）没特判</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>提交前 30 秒三连问：</b>① 坐标是<b>整数还是浮点</b>，比较方式对吗 ② <b>退化</b>（重合 / 共线 / 重复）处理了吗 ③ 另外两条主线<b>为什么不适用</b>。</div>
+</section>
+
+<!-- ═══ 41 模板合集 ═══ -->
+<section class="slide" data-title="模板合集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · TOOLBOX</div><h2>模板合集：<em>一页速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>实战里需要的都在这里。<br>建议直接抄进模板库。</div>
+  </div>
+  <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>geom_toolbox.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="geom_toolbox"></code></pre></pre>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3>选类口诀</h3><p>要<b>判方向</b>→叉积；要<b>压极值</b>→凸包；要<b>求交</b>→半平面交。</p></div>
+    <div class="card tint-teal"><h3>多组数据</h3><p>每组新建对象，不要复用 <code>pts</code> / <code>hull</code>。</p></div>
+    <div class="card"><h3>输入</h3><p>坐标用 <code>int</code> 读入；只在最后输出时转浮点。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 42 对拍验证 ═══ -->
+<section class="slide" data-title="跨工具对拍">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · VERIFY</div><h2>怎么验证<em>工具选对了</em></h2></div>
+    <div class="hint"><b>本页回答：</b>三种工具怎么互相对拍？<br>边界用例有哪些。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card tint-teal"><h3><span class="n t">1</span>跨工具对拍</h3>
+        <p>能用<b>两种工具</b>解的题，必须对拍。<code>brute_diameter2</code> vs <code>hull_diameter2</code>，答案必须相等——这是最强的正确性检查。</p>
+      </div>
+      <div class="card tint-amber"><h3><span class="n a">3</span>边界用例</h3>
+        <ul class="tick">
+          <li>空点集 / 单点 / 两点</li>
+          <li>全部共线 / 全部重合</li>
+          <li>正方形 / 矩形 / 正三角形</li>
+          <li>凸包只有 2 个点（退化卡壳）</li>
+          <li>半平面交空集 / 无界</li>
+          <li>大坐标（<code>10⁹</code>，测溢出）</li>
+          <li>小数坐标（测 EPS）</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3><span class="n">2</span>不变量检查</h3>
+        <ul class="tick ok">
+          <li><b>凸包正确性</b>：所有点在包内或包上（<code>orient ≥ 0</code>）</li>
+          <li><b>直径</b> = 暴力（必查）</li>
+          <li><b>最近点对</b> = 暴力（必查）</li>
+          <li><b>射线法</b> ≡ <b>转角法</b>（非边界点）</li>
+          <li><b>鞋带面积</b> ≡ 三角剖分面积</li>
+          <li><b>半平面交</b>：每个顶点满足<b>所有</b>约束</li>
+          <li><b>最小圆</b>：所有点在圆内，至少 2~3 点在圆上</li>
+        </ul>
+      </div>
+      <div class="note good"><b>小技巧：</b>随机<b>整体旋转 / 平移</b>点集重跑，答案应不变（旋转卡壳对刚体变换不变）。</div>
+      <div class="note warn"><b>最强自检：</b>能用两种工具的题，<b>一定对拍</b>；不能的题，<b>用暴力小数据对拍</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 43 题单 ═══ -->
+<section class="slide" data-title="练习题单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PRACTICE</div><h2>练习题单（POJ / 洛谷 / 本地）</h2></div>
+    <div class="hint"><b>本页回答：</b>课后练什么？<br>按工具分组，每张卡都写了<b>题意</b>。</div>
+  </div>
+  <div class="cols c3" style="gap:8px">
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2742" target="_blank"><span class="src crs">洛谷 · 凸包</span><span class="t">P2742 【模板】二维凸包</span><span class="d">题意：求点集凸包周长。闭卷默写 Andrew，重点验共线取舍。</span></a>
+    <a class="a-link" href="http://poj.org/problem?id=2187" target="_blank"><span class="src cal">POJ · 卡壳</span><span class="t">2187 Beauty Contest</span><span class="d">题意：n 个点最远点对距离平方。旋转卡壳入门，先凸包再卡壳。</span></a>
+    <a class="a-link" href="http://poj.org/problem?id=1113" target="_blank"><span class="src crs">POJ · 凸包</span><span class="t">1113 Wall</span><span class="d">题意：城堡外围建等距围墙求长度。凸包周长 + 圆角 2πL。</span></a>
+    <a class="a-link" href="http://poj.org/problem?id=3714" target="_blank"><span class="src cal">POJ · 分治</span><span class="t">3714 Raid</span><span class="d">题意：两组点中各取一个求最小距离。最近点对分治，注意两类点。</span></a>
+    <a class="a-link" href="http://poj.org/problem?id=1265" target="_blank"><span class="src crs">POJ · 面积</span><span class="t">1265 Area</span><span class="d">题意：多边形内格点数。鞋带面积 + Pick 定理（S = I + B/2 - 1）。</span></a>
+    <a class="a-link" href="http://poj.org/problem?id=1127" target="_blank"><span class="src crs">POJ · 相交</span><span class="t">1127 Jack Straws</span><span class="d">题意：多根木棍连通性判定。线段相交 + 并查集（跨工具组合）。</span></a>
+    <a class="a-link" href="http://poj.org/problem?id=2318" target="_blank"><span class="src crs">POJ · 定位</span><span class="t">2318 TOYS</span><span class="d">题意：玩具落在哪个格子。叉积二分定位，重点测退化边界。</span></a>
+    <a class="a-link" href="http://poj.org/problem?id=2398" target="_blank"><span class="src crs">POJ · 定位</span><span class="t">2398 TOY STORAGE</span><span class="d">题意：同 2318 但格子未排序。先排序再叉积二分，统计每格个数。</span></a>
+    <a class="a-link" href="http://poj.org/problem?id=3335" target="_blank"><span class="src hpf">POJ · 半平面</span><span class="t">3335 Rotating Scoreboard</span><span class="d">题意：多边形能否被看见（半平面交）。约束求交成可行域，判非空。</span></a>
+    <a class="a-link" href="http://poj.org/problem?id=2653" target="_blank"><span class="src crs">POJ · 相交</span><span class="t">2653 Pick-up sticks</span><span class="d">题意：依次放棍子，求最上面的。线段相交 + 栈，注意 O(n²) 会 TLE。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">跨工具交叉验证</span><span class="d">跑 cross_check：暴力 / 凸包暴力 / 旋转卡壳 三者必须一致。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">半平面交自检</span><span class="d">随机 n 条约束，验算每个可行域顶点满足所有约束。</span></a>
+  </div>
+  <div class="note"><b>节奏建议：</b>叉积 4 题（P2742 → POJ 1127 → POJ 2318 → POJ 2398）→ 形状 3 题（POJ 1113 → POJ 1265 → POJ 2653）→ 最优 3 题（POJ 2187 → POJ 3714 → POJ 3335）→ 本地 2 题。每题写 100 字题解：<b>判定什么 → 用哪个工具 → 另外两条主线为什么不行</b>。</div>
+</section>
+
+<!-- ═══ 44 总结 ═══ -->
+<section class="slide" data-title="总结">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · SUMMARY</div><h2>带走这 <em>五句话</em></h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记住一页，<br>就记这一页。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><div class="step"><div class="idx">1</div><div><b>几何建模 = 把几何描述翻译成代数判定。</b>问清楚"要判定什么"。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">2</div><div><b>整数优先。</b>叉积、面积、行列式全用整数，精确比较不套 EPS。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">3</div><div><b>先凸包化，再找极值。</b>线性函数最值在顶点，直径宽度在对径点。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">4</div><div><b>约束求交是半平面交的主场。</b>凸包是点集的最小凸集，不是约束的交。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">5</div><div><b>最近点对不在凸包上。</b>识别"最优值的边界点在哪"，工具就定了一大半。</div></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 350 262" preserveAspectRatio="xMidYMid meet">
+          <circle cx="175" cy="130" r="115" fill="#E2612F" opacity=".12" class="pulse"/>
+          <circle cx="175" cy="130" r="52" fill="#2E2118"/>
+          <text x="175" y="122" text-anchor="middle" fill="#FFD9A8" font-family="serif" font-size="15" font-weight="700">几何建模</text>
+          <text x="175" y="141" text-anchor="middle" fill="#FFB169" font-family="monospace" font-size="9.5">翻译成代数</text>
+          <g font-family="monospace" font-size="10" fill="#7A4A22">
+            <rect x="112" y="10" width="126" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="30" text-anchor="middle">方向 → 叉积</text>
+            <rect x="240" y="58" width="102" height="30" rx="11" fill="#E9F7F2" stroke="#BEE6D8"/><text x="291" y="78" text-anchor="middle">极值 → 凸包</text>
+            <rect x="248" y="170" width="94" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="295" y="190" text-anchor="middle">交 → 半平面</text>
+            <rect x="100" y="216" width="150" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="236" text-anchor="middle">单调 → 二分</text>
+            <rect x="8" y="170" width="112" height="30" rx="11" fill="#E9F7F2" stroke="#BEE6D8"/><text x="64" y="190" text-anchor="middle">对径 → 卡壳</text>
+            <rect x="14" y="58" width="110" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="69" y="78" text-anchor="middle">投影 → 点积</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" class="dash" fill="none">
+            <path d="M175 78 L175 42"/><path d="M224 110 L242 82"/><path d="M224 154 L250 184"/>
+            <path d="M175 182 L175 216"/><path d="M126 154 L118 184"/><path d="M126 110 L122 82"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>升华：</b>几何建模最值得学的不是模板，而是"<b>把几何翻译成代数"</b>的判断力——<strong>方向、极值、约束、单调</strong>，四个词定一切。这一条判断力，比任何单个算法都值钱。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 45 结语 ═══ -->
+<section class="slide cover" data-title="结语 Q&A">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">THANKS · Q&A</div>
+      <h1>谢谢！<br><em class="t">开始提问</em></h1>
+      <p class="sub">课后三步：<br>
+        ① 10 分钟默写 <b>叉积 + 凸包 + 半平面交</b> 三段核心<br>
+        ② 手推单位正方形的半平面交（应得 <code>[(0,0),(1,0),(1,1),(0,1)]</code>），确认 <code>inside</code> 符号<br>
+        ③ 跑一遍 <code>stress_geometry()</code> 与 <code>cross_check</code>，跨工具对拍通过后再刷 12 题</p>
+      <div class="meta"><span>判定</span><span>压缩</span><span>求交</span></div>
+    </div>
+    <div>
+      <svg viewBox="0 0 460 300" preserveAspectRatio="xMidYMid meet">
+        <circle cx="230" cy="150" r="145" fill="#E2612F" opacity=".16" class="pulse"/>
+        <g stroke="#E2612F" stroke-width="3" fill="none"><path d="M230 236 L158 158"/><path d="M230 236 L302 158"/><path d="M230 236 L230 118"/></g>
+        <path d="M302 158 L230 236" stroke="#A33A64" stroke-width="3" stroke-dasharray="7 7" fill="none"/>
+        <g class="float">
+          <g><circle cx="230" cy="236" r="32" fill="#E2612F" stroke="#B9471B" stroke-width="3"/><text x="230" y="244" font-size="12" text-anchor="middle" fill="#fff" font-family="serif">建模</text></g>
+          <g><circle cx="158" cy="158" r="26" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="158" y="165" font-size="11" text-anchor="middle" fill="#0B6356" font-family="monospace">凸包</text></g>
+          <g><circle cx="302" cy="158" r="26" fill="#FDF0F4" stroke="#A33A64" stroke-width="3"/><text x="302" y="165" font-size="10" text-anchor="middle" fill="#8A2A4E" font-family="monospace">半平面</text></g>
+          <g><circle cx="230" cy="118" r="26" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/><text x="230" y="125" font-size="11" text-anchor="middle" fill="#B9471B" font-family="monospace">叉积</text></g>
+        </g>
+      </svg>
+      <div class="note"><b>快捷键：</b><code>O</code> 目录 · <code>←/→</code> 翻页 · <code>⛶</code> 全屏</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="brand">COMPUTATIONAL GEOMETRY · 80MIN</div>
+<div class="hud">
+  <button id="tocBtn" title="目录">☰</button>
+  <button id="prevBtn" title="上一页">←</button>
+  <div class="pgn"><span id="cur">1</span> / <span id="tot">45</span></div>
+  <button id="nextBtn" title="下一页">→</button>
+  <button id="fullBtn" title="全屏">⛶</button>
+</div>
+
+<div class="toc" id="toc"><h4>目录 · 45 页</h4><div class="grid" id="tocGrid"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+const CODE = {
+
+geom_base: `
+from math import hypot
+
+EPS = 1e-9
+
+
+class P:
+    """二维点 / 向量
+       坐标尽量用【整数】-> 叉积精确，比较无需 EPS
+       定义了 __eq__ 就必须定义 __hash__，否则 set(points) 会炸"""
+    __slots__ = ('x', 'y')
+
+    def __init__(self, x=0, y=0):
+        self.x, self.y = x, y
+
+    def __add__(self, o):  return P(self.x + o.x, self.y + o.y)
+    def __sub__(self, o):  return P(self.x - o.x, self.y - o.y)
+    def __mul__(self, k):  return P(self.x * k, self.y * k)
+    def __rmul__(self, k): return self * k
+    def __eq__(self, o):   return self.x == o.x and self.y == o.y
+    def __hash__(self):    return hash((self.x, self.y))
+    def __lt__(self, o):   return (self.x, self.y) < (o.x, o.y)
+
+    def dot(self, o):   return self.x * o.x + self.y * o.y
+    def cross(self, o): return self.x * o.y - self.y * o.x
+    def norm2(self):    return self.x * self.x + self.y * self.y
+    def norm(self):     return hypot(self.x, self.y)
+
+    def __repr__(self): return f"({self.x}, {self.y})"
+
+
+def orient(a, b, c):
+    """(b-a) x (c-a)
+       >0 -> c 在向量 ab 左侧（左转 / 逆时针）
+       <0 -> 右侧（右转 / 顺时针）
+       =0 -> 三点共线
+       整数坐标下完全精确，【不要】套 EPS"""
+    return (b - a).cross(c - a)
+
+
+def on_segment(a, b, p):
+    """p 是否在线段 ab 上（含端点）；要求 a != b"""
+    return orient(a, b, p) == 0 and (p - a).dot(p - b) <= 0
+
+
+def point_seg_dist(p, a, b):
+    """点 p 到线段 ab 的距离（先判垂足区间，再算距离）"""
+    ab = b - a
+    L2 = ab.norm2()
+    if L2 == 0:
+        return (p - a).norm()
+    t = (p - a).dot(ab)            # 投影参数（未归一）
+    if t <= 0:   return (p - a).norm()
+    if t >= L2:  return (p - b).norm()
+    return abs((p - a).cross(ab)) / (L2 ** 0.5)
+
+
+# 验证：
+#   a, b = P(0,0), P(1,0)
+#   print(orient(a, b, P(1, 1)))     #  1  -> 左侧
+#   print(orient(a, b, P(1,-1)))     # -1  -> 右侧
+#   print(on_segment(a, b, P(0,0)))  # True（端点）
+#
+# 叉积判"哪边"，点积判"多远"；两个一起用才完整
+`,
+
+seg_intersect: `
+def seg_intersect(a, b, c, d):
+    """线段 ab 与 cd 是否相交（含端点、共线重叠）
+       跨立试验 + 退化特判"""
+    o1 = orient(a, b, c)
+    o2 = orient(a, b, d)
+    o3 = orient(c, d, a)
+    o4 = orient(c, d, b)
+    # 严格相交（X 形）
+    if o1 * o2 < 0 and o3 * o4 < 0:
+        return True
+    # 退化：端点落在对方线段上 / 共线重叠
+    if o1 == 0 and on_segment(a, b, c): return True
+    if o2 == 0 and on_segment(a, b, d): return True
+    if o3 == 0 and on_segment(c, d, a): return True
+    if o4 == 0 and on_segment(c, d, b): return True
+    return False
+
+
+def line_intersection(a, b, c, d):
+    """直线 ab 与 cd 的交点（要求不平行）；平行返回 None"""
+    r = b - a
+    s = d - c
+    den = r.cross(s)
+    if den == 0:
+        return None
+    t = (c - a).cross(s) / den
+    return a + r * t
+
+
+# 验证：
+#   seg_intersect(P(0,0), P(2,2), P(0,2), P(2,0))   # True（X 形）
+#   seg_intersect(P(0,0), P(1,0), P(0,1), P(1,1))   # False
+#   seg_intersect(P(0,0), P(2,0), P(1,0), P(3,0))   # True（共线重叠）
+#
+# 为什么用乘积判号而不是 (o1>0)!=(o2>0)：
+#   o = 0 时符号比较会误判（共线点在线外也被当成相交）
+#
+# 注意：
+#   Python 的 int 任意精度，o1*o2 不会溢出
+#   C++ 需用 __int128 或 long long 判号，避免乘法溢出
+`,
+
+convex_hull: `
+def convex_hull(points):
+    """Andrew 单调链凸包，O(n log n)
+       返回【逆时针】顶点列表
+       - 先去重
+       - 比较用 <= 0 -> 丢掉包边上的共线点（只留端点）
+       - 比较用 <  0 -> 保留边上的点"""
+    pts = sorted(set(points))
+    if len(pts) <= 1:
+        return pts
+    lower = []
+    for p in pts:
+        while len(lower) >= 2 and orient(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    upper = []
+    for p in reversed(pts):
+        while len(upper) >= 2 and orient(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return lower[:-1] + upper[:-1]
+
+
+def polygon_area(poly):
+    """多边形有向面积（鞋带公式）
+       逆时针 -> 正，顺时针 -> 负
+       符号即方向，别取 abs 后丢掉信息"""
+    s = 0
+    n = len(poly)
+    for i in range(n):
+        s += poly[i].cross(poly[(i + 1) % n])
+    return s / 2
+
+
+# 验证：
+#   square = [P(0,0), P(1,0), P(1,1), P(0,1)]
+#   print(convex_hull(square))            # [(0,0), (1,0), (1,1), (0,1)]
+#   print(polygon_area(convex_hull(square)))   # 1.0
+#
+#   退化：全部共线 -> 返回两端点
+#   print(convex_hull([P(0,0), P(1,0), P(2,0)]))   # [(0,0), (2,0)]
+#
+# 为什么有用：
+#   线性函数的最值一定在凸包顶点上
+#   直径 / 宽度 / 最大三角形的顶点都在凸包上
+#   n 个点 -> h 个点，降维效果显著
+`,
+
+point_in_polygon: `
+def point_in_polygon(p, poly):
+    """射线法：点是否在多边形内部
+       poly = 逆时针顶点序列（不含重复尾点）
+       返回 1=内部, 0=边界, -1=外部
+       复杂度 O(n)"""
+    n = len(poly)
+    for i in range(n):
+        if on_segment(poly[i], poly[(i + 1) % n], p):
+            return 0
+    inside = False
+    for i in range(n):
+        a, b = poly[i], poly[(i + 1) % n]
+        if (a.y > p.y) != (b.y > p.y):
+            # 边 ab 与水平线 y = p.y 的交点 x
+            x = a.x + (p.y - a.y) * (b.x - a.x) / (b.y - a.y)
+            if x > p.x:
+                inside = not inside
+    return 1 if inside else -1
+
+
+def winding_number(p, poly):
+    """转角法：绕数。0 = 外部，非 0 = 内部
+       比射线法更稳（退化边多时）"""
+    n = len(poly)
+    wn = 0
+    for i in range(n):
+        a, b = poly[i], poly[(i + 1) % n]
+        if a.y <= p.y:
+            if b.y > p.y and orient(a, b, p) > 0:
+                wn += 1
+        else:
+            if b.y <= p.y and orient(a, b, p) < 0:
+                wn -= 1
+    return wn
+
+
+# 验证：
+#   sq = [P(0,0), P(1,0), P(1,1), P(0,1)]
+#   print(point_in_polygon(P(0.5, 0.5), sq))   # 1
+#   print(point_in_polygon(P(1.5, 0.5), sq))   # -1
+#   print(point_in_polygon(P(0, 0),   sq))     # 0
+#   print(winding_number(P(0.5, 0.5), sq))     # 1（非 0 -> 内部）
+#
+# 射线法技巧：(a.y > p.y) != (b.y > p.y) 自动处理顶点重复计数
+# 注意：多边形若自交，两种方法都不对
+`,
+
+halfplane: `
+from collections import deque
+from math import atan2
+
+
+def halfplane_intersection(hps):
+    """半平面交（极角排序 + 双端队列）
+       hps = [(P点, P方向)]，保留向量【左侧】
+         即 inside(h, p) <=> (方向) x (p - 点) > 0
+       返回可行域多边形（顶点顺序由算法决定）；空集 / 无界返回 []
+       复杂度 O(n log n)"""
+    EPS = 1e-9
+
+    def angle(h):
+        return atan2(h[1].y, h[1].x)
+
+    def cross_line(h1, h2):
+        p1, d1 = h1
+        p2, d2 = h2
+        den = d1.cross(d2)
+        if abs(den) < EPS:
+            return None               # 平行
+        t = (p2 - p1).cross(d2) / den
+        return p1 + d1 * t
+
+    def inside(h, p):
+        """p 是否在半平面内（方向向量的【左侧】）"""
+        return h[1].cross(p - h[0]) > -EPS
+
+    hps = sorted(hps, key=angle)
+    uniq = []
+    for h in hps:                     # 同极角只留最内侧
+        if uniq and abs(angle(h) - angle(uniq[-1])) < EPS:
+            continue
+        uniq.append(h)
+    hps = uniq
+
+    q = deque()
+    for h in hps:
+        while len(q) >= 2 and not inside(h, cross_line(q[-2], q[-1])):
+            q.pop()
+        while len(q) >= 2 and not inside(h, cross_line(q[0], q[1])):
+            q.popleft()
+        q.append(h)
+    while len(q) >= 3 and not inside(q[0], cross_line(q[-2], q[-1])):
+        q.pop()
+    while len(q) >= 3 and not inside(q[-1], cross_line(q[0], q[1])):
+        q.popleft()
+
+    if len(q) < 3:
+        return []
+    res = []
+    n = len(q)
+    for i in range(n):
+        pt = cross_line(q[i], q[(i + 1) % n])
+        if pt is None:
+            return []
+        res.append(pt)
+    return res
+
+
+def bounded_halfplane(hps, B=1e4):
+    """加一个大方框，把无界区域截成有界，便于计算面积"""
+    box = [P(-B, -B), P(B, -B), P(B, B), P(-B, B)]
+    for i in range(4):
+        hps.append((box[i], box[(i + 1) % 4] - box[i]))
+    return halfplane_intersection(hps)
+
+
+# 验证（单位正方形 x>=0, y>=0, x<=1, y<=1）：
+#   hps = [(P(0, 0), P(0, -1)),    # x >= 0
+#          (P(0, 0), P(1,  0)),    # y >= 0
+#          (P(1, 0), P(0,  1)),    # x <= 1
+#          (P(0, 1), P(-1, 0))]    # y <= 1
+#   print(halfplane_intersection(hps))
+#   # [(0,0), (1,0), (1,1), (0,1)]
+#   print(polygon_area(halfplane_intersection(hps)))   # 1.0
+#
+# 三个易错：
+#   1) inside 的左右符号写反 -> 保留了错误一侧
+#   2) 同极角没保留最内侧 -> 队列错乱
+#   3) 没加包围盒 -> 无界区域返回空
+`,
+
+rotating_calipers: `
+def antipodal_pairs(hull):
+    """枚举凸包对踵点对，O(n)
+       hull 为逆时针凸包（不含重复尾点）
+       用叉积面积比较"离边的远近"，避免开方"""
+    n = len(hull)
+    if n < 2:
+        return []
+    res = []
+    j = 1
+    for i in range(n):
+        ni = (i + 1) % n
+        while True:
+            nj = (j + 1) % n
+            if abs((hull[ni] - hull[i]).cross(hull[nj] - hull[i])) > \\
+               abs((hull[ni] - hull[i]).cross(hull[j] - hull[i])):
+                j = nj
+            else:
+                break
+        res.append((i, j))
+    return res
+
+
+def hull_diameter2(hull):
+    """凸包直径的平方（最远点对），O(n)"""
+    if len(hull) <= 1:
+        return 0
+    if len(hull) == 2:
+        return (hull[1] - hull[0]).norm2()
+    best = 0
+    for i, j in antipodal_pairs(hull):
+        ni = (i + 1) % len(hull)
+        best = max(best, (hull[j] - hull[i]).norm2(),
+                        (hull[j] - hull[ni]).norm2())
+    return best
+
+
+def hull_width(hull):
+    """凸包宽度（两平行支撑线最小距离），O(n)"""
+    if len(hull) <= 1:
+        return 0.0
+    best = float('inf')
+    for i, j in antipodal_pairs(hull):
+        ni = (i + 1) % len(hull)
+        e = hull[ni] - hull[i]
+        d = abs((hull[j] - hull[i]).cross(e)) / e.norm()
+        best = min(best, d)
+    return best
+
+
+# 验证：
+#   sq = convex_hull([P(0,0), P(1,0), P(1,1), P(0,1)])
+#   print(hull_diameter2(sq))    # 2   (对角线平方)
+#   print(hull_width(sq))        # 1.0
+#
+#   rect = convex_hull([P(0,0), P(2,0), P(2,1), P(0,1)])
+#   print(hull_diameter2(rect))  # 5   (对角线平方)
+#
+# 三个关键：
+#   1) 用叉积面积判远近（避免开方）
+#   2) 指针 j 只前进，用 > 严格比较
+#   3) 每个 i 测 hull[j] 与 hull[i]、hull[i+1]
+# 前提：必须先有凸包，且顶点逆时针有序
+`,
+
+closest_pair: `
+def closest_pair(points):
+    """平面最近点对（分治 + 条带），O(n log^2 n)
+       （把 sorted 换成真正的归并可降到 O(n log n)）
+       返回最小距离的【平方】（整数坐标下精确）"""
+    pts = sorted(points, key=lambda p: (p.x, p.y))
+    INF = float('inf')
+
+    def solve(l, r):
+        n = r - l
+        if n <= 3:
+            best = INF
+            for i in range(l, r):
+                for j in range(i + 1, r):
+                    best = min(best, (pts[j] - pts[i]).norm2())
+            pts[l:r] = sorted(pts[l:r], key=lambda p: p.y)
+            return best
+
+        m = (l + r) // 2
+        midx = pts[m].x               # 必须在递归【前】读，递归会打乱 x 序
+        d = min(solve(l, m), solve(m, r))
+        pts[l:r] = sorted(pts[l:r], key=lambda p: p.y)   # 按 y 归并
+        strip = [p for p in pts[l:r] if (p.x - midx) ** 2 < d]
+        for i in range(len(strip)):
+            for j in range(i + 1, min(i + 8, len(strip))):
+                d = min(d, (strip[j] - strip[i]).norm2())
+        return d
+
+    return solve(0, len(pts))
+
+
+# 验证：
+#   pts = [P(0,0), P(3,0), P(1,1), P(4,1)]
+#   print(closest_pair(pts))    # 2  ((0,0) 与 (1,1) 距离平方 = 2)
+#
+# 关键洞察：
+#   最近点对【不在】凸包上 -> 不能凸包化，只能走分治
+#   条带内按 y 排序后只检查下 7 个邻居（几何论证）
+`,
+
+min_circle: `
+import random
+
+
+def circumcircle(a, b, c):
+    """过三点的外接圆；三点共线时退化为最远两点的直径圆"""
+    d = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y))
+    if abs(d) < 1e-9:
+        pts = [a, b, c]
+        best = (0, a, b)
+        for i in range(3):
+            for j in range(i + 1, 3):
+                dd = (pts[j] - pts[i]).norm2()
+                if dd > best[0]:
+                    best = (dd, pts[i], pts[j])
+        _, p, q = best
+        return P((p.x + q.x) / 2, (p.y + q.y) / 2), (q - p).norm() / 2
+    a2, b2, c2 = a.norm2(), b.norm2(), c.norm2()
+    ux = (a2 * (b.y - c.y) + b2 * (c.y - a.y) + c2 * (a.y - b.y)) / d
+    uy = (a2 * (c.x - b.x) + b2 * (a.x - c.x) + c2 * (b.x - a.x)) / d
+    center = P(ux, uy)
+    return center, (center - a).norm()
+
+
+def min_circle(points):
+    """最小圆覆盖（Welzl 随机增量），期望 O(n)
+       返回 (圆心 P, 半径)"""
+    pts = points[:]
+    random.shuffle(pts)
+    c = P(0.0, 0.0)
+    r = 0.0
+    for i in range(len(pts)):
+        if (pts[i] - c).norm() > r + 1e-9:
+            c = P(float(pts[i].x), float(pts[i].y))
+            r = 0.0
+            for j in range(i):
+                if (pts[j] - c).norm() > r + 1e-9:
+                    c = P((pts[i].x + pts[j].x) / 2, (pts[i].y + pts[j].y) / 2)
+                    r = (pts[j] - pts[i]).norm() / 2
+                    for k in range(j):
+                        if (pts[k] - c).norm() > r + 1e-9:
+                            c, r = circumcircle(pts[i], pts[j], pts[k])
+    return c, r
+
+
+# 验证：
+#   c, r = min_circle([P(0,0), P(1,0), P(0,1)])
+#   print(c, r)     # (0.5, 0.5) 约 0.7071  (= sqrt(2)/2)
+#
+# 三点定圆公式（外接圆）：
+#   D  = 2*(ax(by-cy) + bx(cy-ay) + cx(ay-by))
+#   Ux = (a2(by-cy) + b2(cy-ay) + c2(ay-by)) / D
+#   Uy = (a2(cx-bx) + b2(ax-cx) + c2(bx-ax)) / D
+#
+# 注意：浮点，退化（共线 / 重合）需特判
+`,
+
+model_cross: `
+# 同题三解 A：最远点对（直径）
+#   给 n 个点，求最远两点的欧氏距离
+#
+#   模型 1：暴力 O(n^2)                 —— 小数据 / 验证
+#   模型 2：凸包 + 包上暴力 O(h^2)       —— 中间态（凸包降维）
+#   模型 3：凸包 + 旋转卡壳 O(n log n)   —— 主解
+#   模型 4：半平面交                    —— 不适用
+
+def brute_diameter2(pts):
+    """暴力求最远点对距离平方"""
+    best = 0
+    for i in range(len(pts)):
+        for j in range(i + 1, len(pts)):
+            best = max(best, (pts[j] - pts[i]).norm2())
+    return best
+
+
+def hull_only_diameter2(pts):
+    """只在凸包上暴力（凸包降维的中间态）"""
+    hull = convex_hull(pts)
+    return brute_diameter2(hull)
+
+
+def calipers_diameter2(pts):
+    """凸包 + 旋转卡壳（主解）"""
+    hull = convex_hull(pts)
+    return hull_diameter2(hull)
+
+
+def cross_check(pts):
+    """三种模型必须给出同一答案"""
+    a = brute_diameter2(pts)
+    b = hull_only_diameter2(pts)
+    c = calipers_diameter2(pts)
+    assert a == b == c, (pts, a, b, c)
+    return a
+
+
+# 验证：
+#   pts = [P(0,0), P(1,0), P(1,1), P(0,1), P(0.5,0.5)]
+#   print(cross_check(pts))    # 2  (对角线平方)
+#
+# 模式总结：
+#   1) 先【凸包化】把 n 个点压成 h 个极值点
+#   2) 再在凸包上用【单调指针】（旋转卡壳）把 O(h^2) 降到 O(h)
+#   3) 暴力版保留做【交叉验证】
+#   4) 半平面交在这题上完全用不上 -> 识别失效区
+`,
+
+geom_toolbox: `
+from math import hypot, atan2
+from collections import deque
+import random
+
+EPS = 1e-9
+
+
+# ===== 1. 点 / 向量 =====
+class P:
+    __slots__ = ('x', 'y')
+    def __init__(self, x=0, y=0):
+        self.x, self.y = x, y
+    def __add__(self, o):  return P(self.x + o.x, self.y + o.y)
+    def __sub__(self, o):  return P(self.x - o.x, self.y - o.y)
+    def __mul__(self, k):  return P(self.x * k, self.y * k)
+    def __rmul__(self, k): return self * k
+    def __eq__(self, o):   return self.x == o.x and self.y == o.y
+    def __hash__(self):    return hash((self.x, self.y))
+    def __lt__(self, o):   return (self.x, self.y) < (o.x, o.y)
+    def dot(self, o):   return self.x * o.x + self.y * o.y
+    def cross(self, o): return self.x * o.y - self.y * o.x
+    def norm2(self):    return self.x * self.x + self.y * self.y
+    def norm(self):     return hypot(self.x, self.y)
+
+
+# ===== 2. 判定层 =====
+def orient(a, b, c):
+    return (b - a).cross(c - a)
+
+def on_segment(a, b, p):
+    return orient(a, b, p) == 0 and (p - a).dot(p - b) <= 0
+
+def seg_intersect(a, b, c, d):
+    o1, o2 = orient(a, b, c), orient(a, b, d)
+    o3, o4 = orient(c, d, a), orient(c, d, b)
+    if o1 * o2 < 0 and o3 * o4 < 0:
+        return True
+    if o1 == 0 and on_segment(a, b, c): return True
+    if o2 == 0 and on_segment(a, b, d): return True
+    if o3 == 0 and on_segment(c, d, a): return True
+    if o4 == 0 and on_segment(c, d, b): return True
+    return False
+
+
+# ===== 3. 形状层 =====
+def convex_hull(points):
+    pts = sorted(set(points))
+    if len(pts) <= 1: return pts
+    lower = []
+    for p in pts:
+        while len(lower) >= 2 and orient(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    upper = []
+    for p in reversed(pts):
+        while len(upper) >= 2 and orient(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return lower[:-1] + upper[:-1]
+
+def polygon_area(poly):
+    n = len(poly)
+    return sum(poly[i].cross(poly[(i + 1) % n]) for i in range(n)) / 2
+
+def point_in_polygon(p, poly):
+    n = len(poly)
+    for i in range(n):
+        if on_segment(poly[i], poly[(i + 1) % n], p): return 0
+    inside = False
+    for i in range(n):
+        a, b = poly[i], poly[(i + 1) % n]
+        if (a.y > p.y) != (b.y > p.y):
+            x = a.x + (p.y - a.y) * (b.x - a.x) / (b.y - a.y)
+            if x > p.x: inside = not inside
+    return 1 if inside else -1
+
+
+# ===== 4. 最优层 =====
+def antipodal_pairs(hull):
+    n = len(hull)
+    if n < 2: return []
+    res, j = [], 1
+    for i in range(n):
+        ni = (i + 1) % n
+        while True:
+            nj = (j + 1) % n
+            if abs((hull[ni] - hull[i]).cross(hull[nj] - hull[i])) > \\
+               abs((hull[ni] - hull[i]).cross(hull[j] - hull[i])):
+                j = nj
+            else:
+                break
+        res.append((i, j))
+    return res
+
+def hull_diameter2(hull):
+    if len(hull) <= 1: return 0
+    if len(hull) == 2: return (hull[1] - hull[0]).norm2()
+    best = 0
+    for i, j in antipodal_pairs(hull):
+        ni = (i + 1) % len(hull)
+        best = max(best, (hull[j] - hull[i]).norm2(),
+                        (hull[j] - hull[ni]).norm2())
+    return best
+
+
+# 选类口诀：
+#   要判方向 -> orient / seg_intersect
+#   要压极值 -> convex_hull -> antipodal_pairs
+#   要求交   -> halfplane_intersection
+#   要单调最优 -> 二分答案 + 判定
+#
+# 三条铁律：
+#   1) 整数坐标优先，叉积精确比较不套 EPS
+#   2) 距离全程平方比较，最后才开方
+#   3) 退化（重合 / 共线）一定特判
+`,
+
+verify: `
+import random
+
+
+def stress_geometry(trials=500, seed=1):
+    """随机小数据对拍：
+       1) 凸包正确性：所有点在包内或包上
+       2) 直径：暴力 vs 旋转卡壳
+       3) 最近点对：分治 vs 暴力
+       4) 点定位：射线法 vs 转角法
+       5) 面积：鞋带 vs 三角剖分"""
+    rnd = random.Random(seed)
+    for _ in range(trials):
+        n = rnd.randint(1, 30)
+        pts = [P(rnd.randint(-20, 20), rnd.randint(-20, 20)) for _ in range(n)]
+
+        # ---- 1) 凸包正确性 ----
+        hull = convex_hull(pts)
+        for p in pts:
+            for i in range(len(hull)):
+                a = hull[i]
+                b = hull[(i + 1) % len(hull)]
+                assert orient(a, b, p) >= 0, (pts, hull, p)
+
+        # ---- 2) 直径 ----
+        a = brute_diameter2(pts)
+        b = hull_diameter2(hull) if len(hull) >= 2 else 0
+        assert a == b, (pts, hull, a, b)
+
+        # ---- 3) 最近点对 ----
+        if n >= 2:
+            a = min((pts[j] - pts[i]).norm2()
+                    for i in range(n) for j in range(i + 1, n))
+            b = closest_pair(pts)
+            assert a == b, (pts, a, b)
+
+        # ---- 4) 点定位 ----
+        if len(hull) >= 3:
+            for _ in range(10):
+                p = P(rnd.randint(-25, 25), rnd.randint(-25, 25))
+                r1 = point_in_polygon(p, hull)
+                if r1 == 0:
+                    continue           # 边界点，跳过
+                r2 = winding_number(p, hull)
+                assert (r1 == 1) == (r2 != 0), (hull, p, r1, r2)
+
+        # ---- 5) 面积 ----
+        if len(hull) >= 3:
+            s = sum(hull[i].cross(hull[(i + 1) % len(hull)])
+                    for i in range(len(hull))) / 2
+            assert abs(s - polygon_area(hull)) < 1e-9
+    print("all ok")
+
+
+# 还可以：
+#   - 随机整体平移 / 旋转点集重跑，答案应不变
+#   - 构造边界：空集、单点、两点、全共线、全重合、正方形、矩形
+#   - 半平面交：随机约束，验算每个顶点满足所有约束
+#   - 最小圆：所有点在圆内，至少 2~3 点在圆上
+`
+};
+
+function applyCode(){
+  document.querySelectorAll('code[data-src]').forEach(el => {
+    const raw = CODE[el.dataset.src];
+    if (typeof raw === 'string') {
+      el.textContent = raw.replace(/^\n+/, '').replace(/\s+$/, '');
+    }
+  });
+  if (window.Prism && Prism.highlightAll) { Prism.highlightAll(); }
+}
+
+const deck = document.getElementById('deck');
+function fit(){
+  const s = Math.min(window.innerWidth / 1320, window.innerHeight / 780);
+  deck.style.transform = 'scale(' + s + ')';
+}
+
+function fitCode(){
+  document.querySelectorAll('pre.code').forEach(pre => {
+    pre.style.fontSize = '';
+    let fs = 12.4, guard = 0;
+    while (pre.scrollHeight > pre.clientHeight + 2 && fs > 10.2 && guard < 40) {
+      fs -= 0.15;
+      pre.style.fontSize = fs.toFixed(2) + 'px';
+      guard++;
+    }
+  });
+}
+function relayout(){ fit(); requestAnimationFrame(fitCode); }
+window.addEventListener('resize', relayout);
+window.addEventListener('load', relayout);
+
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let idx = 0;
+document.getElementById('tot').textContent = total;
+
+function show(n){
+  idx = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('on', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('prog').style.width = ((idx + 1) / total * 100) + '%';
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  requestAnimationFrame(fitCode);
+}
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(total - 1);
+  else if (e.key.toLowerCase() === 'o') document.getElementById('toc').classList.toggle('on');
+  else if (e.key === 'Escape') document.getElementById('toc').classList.remove('on');
+});
+document.getElementById('fullBtn').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+const tocGrid = document.getElementById('tocGrid');
+slides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + (i + 1);
+  a.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b>' + (s.dataset.title || '');
+  a.onclick = e => { e.preventDefault(); show(i); document.getElementById('toc').classList.remove('on'); };
+  tocGrid.appendChild(a);
+});
+document.getElementById('tocBtn').onclick = () => document.getElementById('toc').classList.toggle('on');
+document.getElementById('toc').onclick = e => { if (e.target.id === 'toc') e.classList.remove('on'); };
+
+applyCode();
+const h = parseInt(location.hash.replace('#', ''), 10);
+show(isNaN(h) ? 0 : h - 1);
+relayout();
+</script>
+</body>
+</html>

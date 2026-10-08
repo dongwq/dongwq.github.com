@@ -1,0 +1,2634 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>分块算法：把 √n 一分为二</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{
+  --paper:#FFF8F0; --card:#FFFFFF;
+  --ink:#2B1D12; --ink2:#6E5842; --line:#EEDCC2;
+  --accent:#E2612F; --amber:#F2A63B; --teal:#0F7B6C; --plum:#A33A64;
+  --code-bg:#2C2117;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EFE0C8;font-family:var(--sans);color:var(--ink);overflow:hidden}
+body{background:
+  radial-gradient(1200px 700px at 12% -10%, #FBE9CE 0%, rgba(251,233,206,0) 60%),
+  radial-gradient(900px 600px at 105% 110%, #F7DCC0 0%, rgba(247,220,192,0) 55%), #EFE0C8;}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center center;
+  border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(90,52,18,.28),0 4px 12px rgba(90,52,18,.14)}
+
+.slide{position:absolute;inset:0;padding:22px 38px 26px;opacity:0;visibility:hidden;
+  transform:translateX(22px) scale(.996);transition:opacity .38s ease,transform .38s ease,visibility .38s;
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(160deg,#FFFBF5 0%,#FFF4E6 55%,#FDEBD3 100%)}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.slide::after{content:"";position:absolute;right:-120px;top:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(242,166,59,.18),rgba(242,166,59,0) 70%);pointer-events:none}
+.slide::before{content:"";position:absolute;left:-90px;bottom:-140px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,rgba(226,97,47,.11),rgba(226,97,47,0) 70%);pointer-events:none}
+.slide>*{position:relative;z-index:2}
+
+.kicker{display:inline-flex;align-items:center;gap:7px;font-size:10.6px;font-weight:700;letter-spacing:.13em;
+  color:var(--accent);background:#FFEEDC;border:1px solid #F6D2B2;padding:3px 11px;border-radius:999px}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+.kicker.teal{color:var(--teal);background:#E9F7F2;border-color:#BEE6D8}
+.kicker.teal i{background:var(--teal)}
+.kicker.plum{color:var(--plum);background:#FDF1F5;border-color:#EFCBD8}
+.kicker.plum i{background:var(--plum)}
+.sl-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+  border-bottom:2px solid var(--line);padding-bottom:8px}
+.sl-head h2{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1.14;margin-top:5px}
+.sl-head h2 em{font-style:normal;color:var(--accent)}
+.sl-head h2 em.t{color:var(--teal)}
+.sl-head h2 em.p{color:var(--plum)}
+.sl-head .hint{font-size:11.6px;color:var(--ink2);text-align:right;max-width:340px;line-height:1.5}
+.sl-head .hint b{color:#8A5A2C}
+.lead{font-size:15px;line-height:1.66;color:#42301F}
+.muted{color:var(--ink2)}
+
+.cols{display:grid;gap:11px;min-height:0;flex:1 1 auto}
+.c2{grid-template-columns:1fr 1fr}
+.c2a{grid-template-columns:1.08fr .92fr}
+.c2b{grid-template-columns:.92fr 1.08fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+.cols > div{min-height:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.card h3 .n{width:21px;height:21px;border-radius:7px;background:var(--accent);color:#fff;font-size:11.5px;
+  display:grid;place-items:center;font-family:var(--sans);font-weight:700;flex:none}
+.card h3 .n.t{background:var(--teal)}
+.card h3 .n.p{background:var(--plum)}
+.card p,.card li{font-size:13px;line-height:1.6;color:#4A3722}
+.card ul,ol{padding-left:16px}
+.card li{margin:2px 0}
+.card.tint-teal{background:#F2FBF7;border-color:#BEE6D8}
+.card.tint-amber{background:#FFF7E6;border-color:#F4DCAC}
+.card.tint-plum{background:#FDF1F5;border-color:#EFCBD8}
+
+.formula{font-family:var(--mono);font-size:14.5px;background:#2E2118;color:#FFEBD2;border-radius:11px;
+  padding:10px 14px;line-height:1.55;flex:none;overflow-x:auto}
+.formula .hl{color:#FFB169;font-weight:600}
+.formula .ok{color:#7FE0C2;font-weight:600}
+.formula .dim{color:#A8846A}
+
+.codewrap{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;
+  border:1px solid #4B3823;border-radius:12px;overflow:hidden;background:var(--code-bg)}
+.code-head{flex:none;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#241A12;
+  border-bottom:1px solid #46341F}
+.code-head .dot{width:9px;height:9px;border-radius:50%;background:#6B5238}
+.code-head .dot.r{background:#B9471B}
+.code-head .dot.g{background:#0F7B6C}
+.code-head em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B29272;letter-spacing:.08em;margin-left:6px}
+.code-head .lang{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7A5F45;letter-spacing:.12em}
+pre.code{margin:0;flex:1 1 auto;min-height:0;overflow:auto;background:var(--code-bg)!important;
+  padding:11px 14px;font-family:var(--mono);font-size:12.4px;line-height:1.56;white-space:pre;tab-size:4}
+pre.code::-webkit-scrollbar{height:8px;width:8px}
+pre.code::-webkit-scrollbar-track{background:#241A12}
+pre.code::-webkit-scrollbar-thumb{background:#6B5238;border-radius:8px}
+pre.code::-webkit-scrollbar-thumb:hover{background:#8E6E4C}
+pre.code code,code[class*="language-"]{font-family:var(--mono)!important;font-size:inherit;
+  background:transparent!important;color:#F0E0CC!important;text-shadow:none!important}
+pre.code .token.comment,pre.code .token.prolog,pre.code .token.doctype,pre.code .token.cdata{color:#A8846A!important;font-style:italic}
+pre.code .token.punctuation{color:#C0A183!important}
+pre.code .token.keyword,pre.code .token.atrule,pre.code .token.rule,pre.code .token.important{color:#FFB169!important;font-weight:600}
+pre.code .token.string,pre.code .token.char,pre.code .token.attr-value{color:#9BE0BE!important}
+pre.code .token.function,pre.code .token.class-name,pre.code .token.builtin{color:#FFD9A8!important}
+pre.code .token.number,pre.code .token.boolean,pre.code .token.constant,pre.code .token.symbol{color:#F4A9C0!important}
+pre.code .token.operator{color:#FFC98B!important}
+pre.code .token.decorator,pre.code .token.annotation{color:#F4A9C0!important}
+
+.note{border-left:4px solid var(--amber);background:#FFF6E4;padding:8px 12px;border-radius:0 11px 11px 0;
+  font-size:12.6px;line-height:1.58;flex:none}
+.note.warn{border-color:var(--plum);background:#FDF0F4}
+.note.good{border-color:var(--teal);background:#EFF9F5}
+.note b{color:var(--accent)}.note.warn b{color:var(--plum)}.note.good b{color:var(--teal)}
+code:not([class*="language-"]){font-family:var(--mono);font-size:.93em;background:#F6EADA;padding:1px 5px;border-radius:5px}
+
+table{width:100%;border-collapse:collapse;font-size:12.1px;background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);flex:none}
+th,td{padding:5.5px 10px;text-align:left;border-bottom:1px solid var(--line);line-height:1.45}
+th{background:#F7E7CF;font-family:var(--serif);font-size:12.6px;color:#7A4A22}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:11px}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:7px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.2px;
+  font-weight:600;color:#5B4429}
+.pill.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill.tq{background:var(--teal);color:#fff;border-color:var(--teal)}
+.pill.pl{background:var(--plum);color:#fff;border-color:var(--plum)}
+ul.tick{list-style:none;padding:0}
+ul.tick li{position:relative;padding-left:20px;margin:3px 0;font-size:12.8px;line-height:1.55}
+ul.tick li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:4px;
+  background:#FFE2C6;border:2px solid var(--accent)}
+ul.tick.ok li::before{background:#CDEEE2;border-color:var(--teal)}
+ul.tick.no li::before{background:#F7D6E1;border-color:var(--plum);border-radius:50%}
+
+.a-link{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:11px;padding:8px 11px;transition:.18s;box-shadow:0 4px 10px rgba(120,70,20,.06);overflow:hidden}
+.a-link:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 20px rgba(226,97,47,.16)}
+.a-link .t{font-size:12.4px;font-weight:700;color:#7A3A12;display:block;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link .d{font-size:11px;color:var(--ink2);line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.a-link .src{font-size:9.6px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--teal);
+  padding:1px 7px;border-radius:999px;display:inline-block;margin-bottom:4px}
+.a-link .src.lg{background:var(--accent)}
+
+.step{display:flex;gap:9px;align-items:flex-start}
+.step .idx{flex:none;width:23px;height:23px;border-radius:7px;background:#2E2118;color:#FFD9A8;
+  display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.split-line{height:2px;background:linear-gradient(90deg,#E2612F,#F2A63B,rgba(242,166,59,0));border-radius:2px;margin:6px 0;flex:none}
+.split-line.t{background:linear-gradient(90deg,#0F7B6C,#7FE0C2,rgba(127,224,194,0))}
+.split-line.p{background:linear-gradient(90deg,#A33A64,#F4A9C0,rgba(244,169,192,0))}
+.num-huge{font-family:var(--serif);font-size:110px;font-weight:900;line-height:.9;
+  background:linear-gradient(160deg,#E2612F,#F2A63B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.t{background:linear-gradient(160deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+svg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;overflow:visible}
+.dfnlab{font-family:var(--mono);font-size:11.5px;font-weight:700;fill:#0F7B6C}
+.dfnlab.r{fill:#B9471B}
+.dfnlab.p{fill:#A33A64}
+.dfnlab.g{fill:#8A6A45}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.62;transform:scale(1.07)}}
+.dash{stroke-dasharray:8 8;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.cover{background:linear-gradient(150deg,#FFF6E8 0%,#FFE9CD 48%,#FFDCB4 100%)}
+.cover .badge{display:inline-flex;gap:8px;align-items:center;background:#2E2118;color:#FFD9A8;
+  padding:6px 14px;border-radius:999px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.cover h1{font-family:var(--serif);font-size:52px;line-height:1.1;font-weight:900}
+.cover h1 em{font-style:normal;background:linear-gradient(92deg,#E2612F,#F2A63B);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.cover h1 em.t{background:linear-gradient(92deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cover .sub{font-size:15.5px;color:#6B4A2C;line-height:1.66;max-width:600px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta span{background:rgba(255,255,255,.72);border:1px solid #F0D2AC;padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#7A4A22}
+.section-slide{background:linear-gradient(150deg,#FFF3E0,#FFE0BC)}
+.section-slide.teal{background:linear-gradient(150deg,#EFF9F4,#CFE9DE)}
+.section-slide.plum{background:linear-gradient(150deg,#FDF0F4,#F5CBD8)}
+.section-slide .big{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1.18}
+
+.hud{position:fixed;right:18px;bottom:14px;display:flex;gap:7px;align-items:center;z-index:50}
+.hud button{border:1px solid rgba(120,70,20,.2);background:rgba(255,250,242,.92);color:#7A4A22;
+  width:34px;height:34px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:700;backdrop-filter:blur(6px);transition:.16s}
+.hud button:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.pgn{background:rgba(255,250,242,.92);border:1px solid rgba(120,70,20,.2);border-radius:10px;height:34px;
+  display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:12.5px;color:#7A4A22;font-weight:600}
+.prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,#E2612F,#F2A63B);z-index:60;
+  transition:width .35s ease;box-shadow:0 1px 6px rgba(226,97,47,.5)}
+.brand{position:fixed;left:18px;bottom:14px;z-index:50;background:rgba(255,250,242,.9);border:1px solid rgba(120,70,20,.2);
+  border-radius:10px;padding:8px 13px;font-size:10.5px;color:#7A4A22;letter-spacing:.1em;font-weight:700}
+.toc{position:fixed;inset:0;background:rgba(46,33,24,.82);backdrop-filter:blur(8px);z-index:80;display:none;
+  padding:42px 56px;overflow:auto}
+.toc.on{display:block}
+.toc h4{color:#FFE2BF;font-family:var(--serif);font-size:24px;margin-bottom:16px}
+.toc .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.toc a{background:rgba(255,246,232,.94);border-radius:10px;padding:9px 12px;text-decoration:none;color:#4A3722;
+  font-size:12.2px;line-height:1.4;border:1px solid rgba(255,255,255,.18);transition:.16s}
+.toc a:hover{background:#FFB169;transform:translateY(-2px)}
+.toc a b{display:block;font-family:var(--mono);font-size:10px;color:#B9471B;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- ═══ 01 封面 ═══ -->
+<section class="slide cover on" data-title="封面">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">DATA STRUCTURE · SQRT DECOMPOSITION · 80 MIN</div>
+      <h1>分块算法<br><em>把 √n 一分为二</em></h1>
+      <p class="sub">块数 <b>n/B</b> 与块大小 <b>B</b> 各占一个 √n，两边一平衡就是最优。<br>
+        散块暴力 + 整块标记 + 块内排序 —— 三招吃掉一大类"线段树写不动"的题。</p>
+      <div class="meta">
+        <span>45 页 · 约 80 分钟</span><span>12 个可运行 Python 模板</span>
+        <span>含手算与验算</span><span>洛谷 / LibreOJ / LeetCode 题单</span>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 520 300" preserveAspectRatio="xMidYMid meet">
+        <text x="260" y="22" text-anchor="middle" class="dfnlab r">查询 [3,10] = 2 散块 + 1 整块 + 2 散块</text>
+        <!-- 12 格 -->
+        <g font-family="monospace" font-size="11" text-anchor="middle">
+          <!-- 块1 -->
+          <rect x="30" y="60" width="34" height="40" fill="#FFF3E2" stroke="#D9B98D" stroke-width="1.6"/>
+          <rect x="64" y="60" width="34" height="40" fill="#FFF3E2" stroke="#D9B98D" stroke-width="1.6"/>
+          <rect x="98" y="60" width="34" height="40" fill="#E2612F" opacity=".28" stroke="#B9471B" stroke-width="1.6"/>
+          <rect x="132" y="60" width="34" height="40" fill="#E2612F" opacity=".28" stroke="#B9471B" stroke-width="1.6"/>
+          <!-- 块2 -->
+          <rect x="166" y="60" width="34" height="40" fill="#0F7B6C" opacity=".24" stroke="#0B6356" stroke-width="1.6"/>
+          <rect x="200" y="60" width="34" height="40" fill="#0F7B6C" opacity=".24" stroke="#0B6356" stroke-width="1.6"/>
+          <rect x="234" y="60" width="34" height="40" fill="#0F7B6C" opacity=".24" stroke="#0B6356" stroke-width="1.6"/>
+          <rect x="268" y="60" width="34" height="40" fill="#0F7B6C" opacity=".24" stroke="#0B6356" stroke-width="1.6"/>
+          <!-- 块3 -->
+          <rect x="302" y="60" width="34" height="40" fill="#E2612F" opacity=".28" stroke="#B9471B" stroke-width="1.6"/>
+          <rect x="336" y="60" width="34" height="40" fill="#E2612F" opacity=".28" stroke="#B9471B" stroke-width="1.6"/>
+          <rect x="370" y="60" width="34" height="40" fill="#FFF3E2" stroke="#D9B98D" stroke-width="1.6"/>
+          <rect x="404" y="60" width="34" height="40" fill="#FFF3E2" stroke="#D9B98D" stroke-width="1.6"/>
+          <g fill="#7A4A22">
+            <text x="47" y="85">1</text><text x="81" y="85">2</text><text x="115" y="85">3</text><text x="149" y="85">4</text>
+            <text x="183" y="85">5</text><text x="217" y="85">6</text><text x="251" y="85">7</text><text x="285" y="85">8</text>
+            <text x="319" y="85">9</text><text x="353" y="85">10</text><text x="387" y="85">11</text><text x="421" y="85">12</text>
+          </g>
+        </g>
+        <!-- 块边界 -->
+        <g stroke="#8A6A45" stroke-width="3">
+          <path d="M30 54 L30 106"/><path d="M166 54 L166 106"/><path d="M302 54 L302 106"/><path d="M438 54 L438 106"/>
+        </g>
+        <g font-family="monospace" font-size="11" text-anchor="middle">
+          <rect x="30" y="112" width="136" height="26" rx="9" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+          <text x="98" y="129" fill="#B9471B">块1 [1,4]</text>
+          <rect x="166" y="112" width="136" height="26" rx="9" fill="#E9F7F2" stroke="#BEE6D8" stroke-width="2"/>
+          <text x="234" y="129" fill="#0B6356">块2 [5,8]</text>
+          <rect x="302" y="112" width="136" height="26" rx="9" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+          <text x="370" y="129" fill="#B9471B">块3 [9,12]</text>
+        </g>
+        <!-- 三段说明 -->
+        <g font-family="monospace" font-size="11" text-anchor="middle">
+          <rect x="98" y="160" width="68" height="30" rx="9" fill="#E2612F"/>
+          <text x="132" y="180" fill="#fff">散块 O(B)</text>
+          <rect x="166" y="160" width="136" height="30" rx="9" fill="#0F7B6C"/>
+          <text x="234" y="180" fill="#fff">整块 O(1) 打标记</text>
+          <rect x="302" y="160" width="68" height="30" rx="9" fill="#E2612F"/>
+          <text x="336" y="180" fill="#fff">散块 O(B)</text>
+        </g>
+        <g stroke="#8A6A45" stroke-width="2.5" fill="none">
+          <path d="M132 156 L132 142"/><path d="M234 156 L234 142"/><path d="M336 156 L336 142"/>
+        </g>
+        <rect x="120" y="212" width="280" height="44" rx="11" fill="#2E2118"/>
+        <text x="260" y="232" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="12">复杂度 O(B + n/B)</text>
+        <text x="260" y="248" text-anchor="middle" fill="#FFB169" font-family="monospace" font-size="12">B = √n 时最小 ⇒ O(√n)</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 路线图 ═══ -->
+<section class="slide" data-title="路线图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>ROADMAP</div><h2>六站，一条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>这份讲义怎么走？<br>每站先给"要解决的问题"，再给"为什么这样写"。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>基础</h3><p>√n 从哪来 · 块的划分 · 散块/整块 · 区间加区间和 · 块大小选择</p></div>
+    <div class="card tint-teal"><h3><span class="n t">2</span>标记与信息</h3><p>赋值 · 最值 · 加乘双标记 · 区间开方 · 区间众数</p></div>
+    <div class="card tint-amber"><h3><span class="n">3</span>查询技巧</h3><p>块内排序 + 二分 · 二分答案 · 莫队 · 树上莫队 · 值域分块</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>变体</h3><p>块状链表 · 分块套结构 · 常见套路清单</p></div>
+    <div class="card"><h3><span class="n">5</span>对比选型</h3><p>vs 线段树 / 树状数组 · 何时必须分块 · 常数优化</p></div>
+    <div class="card tint-teal"><h3><span class="n t">6</span>工程</h3><p>易错清单 · 模板合集 · 对拍验证 · 题单</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>时间分配</h3><p class="muted">基础 20' · 标记 16' · 查询 16' · 变体 10' · 对比 8' · 工程 10'</p></div>
+    <div class="card"><h3>验收标准</h3><p class="muted">能独立写出"区间加+区间和"与"区间第 k 小"；能默写莫队的四段指针移动。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 03 钩子 ═══ -->
+<section class="slide" data-title="四道题一个套路">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HOOK</div><h2>四道"线段树写不动"的题，<em>一个套路</em></h2></div>
+    <div class="hint"><b>本页回答：</b>分块能干什么？<br>它擅长哪一类题。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3>题 A</h3><p><b>题意：</b>区间加值，询问区间内 <b>≥ x 的元素个数</b>。</p><div class="split-line"></div><p class="muted">→ 散块暴力 + 整块懒标记。</p></div>
+    <div class="card"><h3>题 B</h3><p><b>题意：</b>区间整体<b>开平方</b>（向下取整），询问区间和。</p><div class="split-line"></div><p class="muted">→ 均摊：一个数最多开方 6 次。</p></div>
+    <div class="card"><h3>题 C</h3><p><b>题意：</b>静态区间<b>众数</b>。</p><div class="split-line t"></div><p class="muted">→ 块间预处理 + 散块候选。</p></div>
+    <div class="card"><h3>题 D</h3><p><b>题意：</b>离线多次询问区间<b>不同数的个数</b>。</p><div class="split-line p"></div><p class="muted">→ 莫队：分块排序 + 双指针。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n">★</span>统一模型</h3>
+      <p class="lead">把序列切成 <b>√n 块</b>：区间操作时<b>整块打标记</b>、<b>散块暴力改</b>；
+        查询时<b>整块用预聚合值</b>、<b>散块逐个算</b>。于是"难合并的信息"也能 O(√n) 处理。</p>
+      <div class="note"><b>一句话：</b>分块是"<b>放弃精细的 log，换取对信息的宽容</b>"——只要能 O(B) 暴力，就能上。</div>
+    </div>
+    <div class="card">
+      <h3>三个判断题</h3>
+      <div class="pill-row">
+        <span class="pill hot">信息能 O(B) 暴力吗</span>
+        <span class="pill tq">整块能 O(1) 标记吗</span>
+        <span class="pill pl">要不要离线</span>
+      </div>
+      <div class="split-line"></div>
+      <p class="muted">答对这三题，就知道该不该上分块。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 问题定义 ═══ -->
+<section class="slide" data-title="问题定义">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · PROBLEM</div><h2>先把问题<em>说清楚</em></h2></div>
+    <div class="hint"><b>本页回答：</b>分块支持哪些操作？<br>各自代价多少。</div>
+  </div>
+  <table>
+    <tr><th style="width:230px">操作组合</th><th style="width:130px">整块代价</th><th style="width:130px">散块代价</th><th>说明</th></tr>
+    <tr><td>区间加 + 区间和</td><td class="mono">O(1) 打标记</td><td class="mono">O(B) 暴力</td><td>最基础（本讲义主线）</td></tr>
+    <tr><td>区间赋值 + 区间和</td><td class="mono">O(1)</td><td class="mono">O(B)</td><td>assign 标记</td></tr>
+    <tr><td>区间加 + 区间最值</td><td class="mono">O(1)</td><td class="mono">O(B)</td><td>mx[b] += v</td></tr>
+    <tr><td>区间开方 + 区间和</td><td class="mono">O(B) 均摊</td><td class="mono">O(B)</td><td>维护"全 ≤ 1"跳过</td></tr>
+    <tr><td>区间加 + 区间 &lt; x 个数</td><td class="mono">O(1) + 排序二分</td><td class="mono">O(B)</td><td>块内排序副本</td></tr>
+    <tr><td>区间第 k 小（静态）</td><td class="mono">二分</td><td class="mono">O(B log B)</td><td>块内二分</td></tr>
+    <tr><td>区间众数</td><td class="mono">O(1) 查表</td><td class="mono">O(B log n)</td><td>预处理 f[i][j]</td></tr>
+    <tr><td>离线区间不同数 / 第 k 小</td><td class="mono">莫队 O(1) 增删</td><td class="mono">O(√q) 移动</td><td>分块排序</td></tr>
+    <tr><td>序列区间插入 / 删除</td><td class="mono">分裂合并</td><td class="mono">O(B)</td><td>块状链表</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>共同点</h3><p>都利用了<b>"整块有标记、散块才逐个"</b>；代价是常数大、代码长。</p></div>
+    <div class="card tint-plum"><h3>不适合</h3><p>只求和/求异或、要严格 log、要在线 O(log) 最值 → 用线段树或树状数组更香。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 05 主线 ═══ -->
+<section class="slide" data-title="为什么需要分块">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · ROADMAP</div><h2>取舍链：<em>暴力 → 线段树 → 分块 → 莫队</em></h2></div>
+    <div class="hint"><b>本页回答：</b>已有线段树，为什么还要分块？<br>它的不可替代性。</div>
+  </div>
+  <table>
+    <tr><th style="width:130px">方案</th><th>区间加+和</th><th>区间 &lt; x 个数</th><th>区间开方</th><th>区间众数</th><th>离线不同数</th></tr>
+    <tr><td>暴力</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td class="mono">O(nq)</td></tr>
+    <tr><td>树状数组</td><td class="mono">O(log n)</td><td>⚠️ 难</td><td>❌</td><td>❌</td><td class="mono">O(n log n) 在线</td></tr>
+    <tr><td>线段树</td><td class="mono">O(log n)</td><td>⚠️ 需树套树</td><td>⚠️ 需特判</td><td>❌</td><td class="mono">O(n log n)</td></tr>
+    <tr><td><b>分块</b></td><td class="mono">O(√n)</td><td class="mono">O(√n log)</td><td class="mono">均摊 O(√n)</td><td class="mono">O(√n log)</td><td class="mono">O(n√q) 莫队</td></tr>
+    <tr><td>主席树</td><td>❌</td><td>⚠️ 仅静态</td><td>❌</td><td>❌</td><td>❌</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>不可替代的三件事</h3>
+      <ul class="tick">
+        <li>信息<b>不好合并</b>（众数、&lt; x 个数、第 k 小）</li>
+        <li>操作<b>不是线性</b>（开方、取 min、模运算）</li>
+        <li>要<b>离线批量</b>处理（莫队：把排序变成武器）</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>心智模型</h3>
+      <p>分块 = <b>"分而治之 + 两边都只做粗活"</b>：块内逐个（√n），块间看标记（√n）。</p>
+      <div class="note good"><b>建议：</b>先把"区间加+区间和"写到闭卷，再玩莫队；莫队是分块思想最漂亮的延伸。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：基础">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 01</div>
+      <div class="big">基础：<em style="color:var(--accent)">√n 的由来与三个操作</em></div>
+      <p class="lead">块的划分 · 散块/整块 · 区间加区间和 · 块大小选择<br>先想明白"为什么是 √n"。</p>
+    </div>
+    <div><div class="num-huge">01</div>
+      <div class="note good"><b>目标：</b>能画出任意区间的"散块—整块—散块"三段，并解释复杂度。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 核心思想 ═══ -->
+<section class="slide" data-title="核心思想：√n 平衡">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · IDEA</div><h2>核心思想：<em>块数 × 块大小 = n</em></h2></div>
+    <div class="hint"><b>本页回答：</b>√n 是怎么算出来的？<br>为什么不是 ³√n。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>两个代价</h3>
+        <div class="formula" style="font-size:12.6px">
+          散块（逐个改）：<span class="hl">O(B)</span><br>
+          整块（逐块改标记）：<span class="hl">O(n / B)</span><br>
+          总计：<span class="ok">O(B + n/B) ≥ 2√n</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>最优点</h3>
+        <p>由均值不等式 <code>B + n/B ≥ 2√n</code>，等号当且仅当 <code>B = √n</code>。</p>
+        <p class="muted">所以块大小取 √n，块数也约 √n。</p>
+      </div>
+      <div class="note good"><b>直观理解：</b>块太少 → 每块太大（散块贵）；块太多 → 整块太多（标记贵）。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">n = 100 时，总代价 B + n/B</text>
+          <!-- 基线 -->
+          <line x1="40" y1="185" x2="392" y2="185" stroke="#8A6A45" stroke-width="2"/>
+          <line x1="40" y1="34" x2="40" y2="185" stroke="#8A6A45" stroke-width="2"/>
+          <!-- 三根柱 -->
+          <g font-family="monospace" font-size="11" text-anchor="middle">
+            <rect x="82" y="55" width="62" height="130" fill="#E2612F" opacity=".28" stroke="#B9471B" stroke-width="2"/>
+            <text x="113" y="50" fill="#B9471B">52</text>
+            <text x="113" y="204" fill="#7A4A22">B = 2</text>
+            <text x="113" y="222" fill="#A8846A">50 + 2</text>
+
+            <rect x="182" y="135" width="62" height="50" fill="#0F7B6C" opacity=".30" stroke="#0B6356" stroke-width="2"/>
+            <text x="213" y="130" fill="#0B6356">20</text>
+            <text x="213" y="204" fill="#0B6356">B = 10 = √n</text>
+            <text x="213" y="222" fill="#A8846A">10 + 10</text>
+
+            <rect x="282" y="122" width="62" height="63" fill="#E2612F" opacity=".28" stroke="#B9471B" stroke-width="2"/>
+            <text x="313" y="117" fill="#B9471B">25</text>
+            <text x="313" y="204" fill="#7A4A22">B = 20</text>
+            <text x="313" y="222" fill="#A8846A">5 + 20</text>
+          </g>
+          <circle cx="213" cy="112" r="7" fill="#0F7B6C" class="pulse"/>
+          <text x="213" y="88" text-anchor="middle" class="dfnlab">最优</text>
+        </svg>
+      </div>
+      <div class="note"><b>常数提醒：</b>实际常数比线段树大，B 会略微调大（见第 13 页）。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 块划分 ═══ -->
+<section class="slide" data-title="块划分与编号">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · BLOCK</div><h2>块的划分与<em>四个数组</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪些数组必须开？<br>下标怎么算。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个必备数组</h3>
+        <table style="box-shadow:none">
+          <tr><th>数组</th><th>含义</th></tr>
+          <tr><td class="mono">bel[i]</td><td>i 属于第几块</td></tr>
+          <tr><td class="mono">L[b] / R[b]</td><td>第 b 块的左右边界</td></tr>
+          <tr><td class="mono">s[b]</td><td>块内聚合值（和 / 最值）</td></tr>
+          <tr><td class="mono">add[b] / assign[b]</td><td>块级标记</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>公式</h3>
+        <div class="formula" style="font-size:12.4px">
+          <span class="hl">B = max(1, isqrt(n))</span>　块数 <span class="hl">m = ⌈n / B⌉</span><br>
+          <code>bel[i] = (i - 1) // B + 1</code><br>
+          <code>L[b] = (b-1)*B + 1</code>，<code>R[b] = min(b*B, n)</code>
+        </div>
+      </div>
+      <div class="note warn"><b>用 <code>math.isqrt</code> 而非 <code>int(n**0.5)</code></b>：浮点开方对大 n 可能差 1。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">n = 9, B = 3, m = 3</text>
+          <g font-family="monospace" font-size="12" text-anchor="middle">
+            <rect x="24" y="52" width="372" height="52" rx="8" fill="#FFF3E2" stroke="#D9B98D" stroke-width="2"/>
+            <g stroke="#D9B98D"><path d="M148 52 L148 104 M272 52 L272 104"/></g>
+            <g fill="#7A4A22">
+              <text x="42" y="82">1</text><text x="66" y="82">2</text><text x="90" y="82">3</text>
+              <text x="166" y="82">4</text><text x="190" y="82">5</text><text x="214" y="82">6</text>
+              <text x="290" y="82">7</text><text x="314" y="82">8</text><text x="338" y="82">9</text>
+            </g>
+            <rect x="24" y="112" width="124" height="26" rx="8" fill="#E2612F"/>
+            <text x="86" y="130" fill="#fff">bel 1 · [1,3]</text>
+            <rect x="148" y="112" width="124" height="26" rx="8" fill="#0F7B6C"/>
+            <text x="210" y="130" fill="#fff">bel 2 · [4,6]</text>
+            <rect x="272" y="112" width="124" height="26" rx="8" fill="#E2612F"/>
+            <text x="334" y="130" fill="#fff">bel 3 · [7,9]</text>
+          </g>
+          <g font-family="monospace" font-size="11.5">
+            <rect x="24" y="152" width="372" height="62" rx="10" fill="#fff" stroke="#EEDCC2" stroke-width="2"/>
+            <text x="42" y="176" class="dfnlab r">bel[i] = (i-1)//B + 1</text>
+            <text x="42" y="198" class="dfnlab r">L[b] = (b-1)*B + 1   R[b] = min(b*B, n)</text>
+            <text x="42" y="212" class="dfnlab g">注意最后一块可能不满（此处 n=9 恰好整除）</text>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>命名习惯：</b>下标 1-based、块号 1-based，与线段树/树状数组保持一致。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 09 三种位置 ═══ -->
+<section class="slide" data-title="三种位置">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · POSITIONS</div><h2>三种位置：<em class="t">散块 / 整块 / 单块</em></h2></div>
+    <div class="hint"><b>本页回答：</b>一个区间被拆成几段？<br>各自怎么处理。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>分类讨论</h3>
+        <table style="box-shadow:none">
+          <tr><th>情形</th><th>处理</th></tr>
+          <tr><td><code>bel[l] == bel[r]</code></td><td>整段暴力，只动一个块</td></tr>
+          <tr><td>左散块</td><td>暴力改 <code>[l, R[bl]]</code></td></tr>
+          <tr><td>中间整块</td><td>只改标记 <code>bl+1 .. br-1</code></td></tr>
+          <tr><td>右散块</td><td>暴力改 <code>[L[br], r]</code></td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>为什么"单块"要特判</h3>
+        <p>若 <code>bl == br</code>，左右散块是同一块，不特判会<b>重复加</b>或把整块标记用错。</p>
+      </div>
+      <div class="note warn"><b>第一大坑：</b>忘记 <code>bl == br</code> 的分支，所有分块代码都会挂在这里。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">查询 [2,10] 在 n=12, B=4 上</text>
+          <g font-family="monospace" font-size="11" text-anchor="middle">
+            <rect x="20" y="42" width="380" height="42" rx="8" fill="#FFF3E2" stroke="#D9B98D" stroke-width="2"/>
+            <g stroke="#D9B98D"><path d="M147 42 L147 84 M273 42 L273 84"/></g>
+            <g fill="#7A4A22">
+              <text x="38" y="68">1</text><text x="70" y="68">2</text><text x="102" y="68">3</text><text x="134" y="68">4</text>
+              <text x="165" y="68">5</text><text x="197" y="68">6</text><text x="229" y="68">7</text><text x="261" y="68">8</text>
+              <text x="290" y="68">9</text><text x="322" y="68">10</text><text x="354" y="68">11</text><text x="386" y="68">12</text>
+            </g>
+          </g>
+          <!-- 高亮 -->
+          <g>
+            <rect x="53" y="42" width="94" height="42" fill="#E2612F" opacity=".30"/>
+            <rect x="147" y="42" width="126" height="42" fill="#0F7B6C" opacity=".26"/>
+            <rect x="273" y="42" width="81" height="42" fill="#E2612F" opacity=".30"/>
+          </g>
+          <g font-family="monospace" font-size="11" text-anchor="middle">
+            <rect x="53" y="98" width="94" height="28" rx="9" fill="#E2612F"/>
+            <text x="100" y="117" fill="#fff">左散块 O(B)</text>
+            <rect x="147" y="98" width="126" height="28" rx="9" fill="#0F7B6C"/>
+            <text x="210" y="117" fill="#fff">整块 O(1) 标记</text>
+            <rect x="273" y="98" width="81" height="28" rx="9" fill="#E2612F"/>
+            <text x="313" y="117" fill="#fff">右散块 O(B)</text>
+            <g stroke="#8A6A45" stroke-width="2" fill="none">
+              <path d="M100 92 L100 86"/><path d="M210 92 L210 86"/><path d="M313 92 L313 86"/>
+            </g>
+          </g>
+          <g font-family="monospace" font-size="11">
+            <rect x="20" y="140" width="380" height="72" rx="11" fill="#2E2118"/>
+            <text x="38" y="164" fill="#FFB169">if bl == br:   整段暴力 [l, r]</text>
+            <text x="38" y="184" fill="#FFB169">else:          暴力左散 + 标记中段 + 暴力右散</text>
+            <text x="38" y="204" fill="#7FE0C2">复杂度 O(B) + O(n/B) = O(√n)</text>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>规律：</b>区间越"整"，越省事；最坏就是被劈成两个散块 + 0 个整块。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 模板 ═══ -->
+<section class="slide" data-title="区间加+区间和">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · TEMPLATE</div><h2>区间加 + 区间和：<em class="t">标准模板</em></h2></div>
+    <div class="hint"><b>本页回答：</b>最常用的分块长什么样？<br>四个函数各干什么。</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>sqrt_basic.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="core"></code></pre></pre>
+    <div>
+      <div class="card"><h3>四件套</h3>
+        <div class="formula" style="font-size:12.4px">
+          <span class="ok">_push(b)</span>：把块 b 的 lazy 写回元素<br>
+          <span class="hl">add(l,r,v)</span>：散块改元素、整块改标记<br>
+          <span class="ok">query(l,r)</span>：散块读元素、整块读 sum<br>
+          <span class="hl">_recalc(b)</span>：改完重算块聚合值
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>两个约定</h3>
+        <ul class="tick">
+          <li><code>a[i]</code> 存<b>基值</b>（不含 lazy）</li>
+          <li>真实值 = <code>a[i] + lazy[bel[i]]</code></li>
+        </ul>
+        <p class="muted">写回时必须先 push，否则会把旧 lazy 丢掉。</p>
+      </div>
+      <div class="note good"><b>验证：</b>n=9、B=3，<code>add(2,8,+2)</code> 后 <code>query(2,8) == 49</code>（第 12 页手算）。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 push 与 lazy ═══ -->
+<section class="slide" data-title="push 与 lazy 分工">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · LAZY</div><h2>push 与 lazy 的<em class="t">分工</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么时候必须 push？<br>什么时候可以只读标记。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>必须 push 的时机</h3>
+        <ul class="tick">
+          <li>要<b>逐元素修改</b>散块之前</li>
+          <li>要<b>逐元素重算</b>块聚合值之前</li>
+          <li>要<b>导出真实值</b>（比如排序、取具体元素）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>可以只读标记的时机</h3>
+        <ul class="tick ok">
+          <li>查询整块的 <code>s[b] / mx[b]</code></li>
+          <li>查询散块的单个值（<code>a[i] + add[bel[i]]</code>）</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>二选一：</b>要么"查询也 push"（代码简单、略慢），要么"读时加标记"（快、易错）。<b>全篇必须统一</b>。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">一个块的状态</text>
+          <g font-family="monospace" font-size="11">
+            <rect x="24" y="38" width="372" height="52" rx="10" fill="#fff" stroke="#EEDCC2" stroke-width="2"/>
+            <text x="42" y="60" class="dfnlab r">a[i]  = 基值（不含标记）</text>
+            <text x="42" y="80" class="dfnlab r">lazy[b] = 块级未兑现的加法</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" fill="none" class="dash">
+            <path d="M210 94 L210 116"/>
+          </g>
+          <g font-family="monospace" font-size="11">
+            <rect x="24" y="118" width="180" height="80" rx="10" fill="#E9F7F2" stroke="#BEE6D8" stroke-width="2"/>
+            <text x="114" y="142" text-anchor="middle" class="dfnlab">读单元素</text>
+            <text x="114" y="164" text-anchor="middle" class="dfnlab g">a[i] + lazy[bel[i]]</text>
+            <text x="114" y="186" text-anchor="middle" class="dfnlab g">不用 push</text>
+            <rect x="216" y="118" width="180" height="80" rx="10" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+            <text x="306" y="142" text-anchor="middle" class="dfnlab r">改单元素</text>
+            <text x="306" y="164" text-anchor="middle" class="dfnlab r">先 _push(b)</text>
+            <text x="306" y="186" text-anchor="middle" class="dfnlab r">再改 a[i]、_recalc(b)</text>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>与线段树对比：</b>线段树 pushdown 是"进孩子前"；分块 push 是"动元素前"。都是"延迟兑现"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 手算 ═══ -->
+<section class="slide" data-title="区间加 手算">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · TRACE</div><h2>手算：<em class="t">n = 9, B = 3, add(2,8,+2)</em></h2></div>
+    <div class="hint"><b>本页回答：</b>标记打在哪个块？<br>查询结果对不对。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>逐块过程</h3>
+        <table style="box-shadow:none">
+          <tr><th>段</th><th>范围</th><th>动作</th><th>结果</th></tr>
+          <tr><td>左散</td><td class="mono">[2,3]</td><td>push 块1 → 逐个 +2</td><td class="mono">a=1,4,5　s1=10</td></tr>
+          <tr><td>整块</td><td class="mono">块2 [4,6]</td><td><b>只改标记</b></td><td class="mono">lazy2=2　s2=21</td></tr>
+          <tr><td>右散</td><td class="mono">[7,8]</td><td>push 块3 → 逐个 +2</td><td class="mono">a=9,10,9　s3=28</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>关键观察</h3>
+        <p>块 2 的 <code>a[4..6]</code> 仍是 <b>4,5,6</b>（基值），真实值靠 <code>+ lazy2</code> 还原。这就是"懒"。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>校验</h3>
+        <table style="box-shadow:none">
+          <tr><th>查询</th><th>拆解</th><th>结果</th><th>暴力</th></tr>
+          <tr><td class="mono">query(2,8)</td><td>9 + 21 + 19</td><td class="mono">49</td><td class="mono">49 ✓</td></tr>
+          <tr><td class="mono">query(1,5)</td><td>1+4+5 + 6+7</td><td class="mono">23</td><td class="mono">23 ✓</td></tr>
+          <tr><td class="mono">query(4,6)</td><td>s2</td><td class="mono">21</td><td class="mono">21 ✓</td></tr>
+        </table>
+      </div>
+      <div class="card tint-teal"><h3>操作数对比</h3>
+        <ul class="tick ok">
+          <li>逐元素改动：<b>4 个</b>（2,3,7,8）</li>
+          <li>标记改动：<b>1 个块</b></li>
+          <li>总元素 9，若用暴力要改 7 个</li>
+        </ul>
+      </div>
+      <div class="note"><b>规律：</b>块越大越省标记、越费散块；√n 是平衡点。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 13 块大小 ═══ -->
+<section class="slide" data-title="块大小怎么选">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · BLOCK SIZE</div><h2>块大小 <em>B</em> 到底取多少</h2></div>
+    <div class="hint"><b>本页回答：</b>理论值 √n，实际取多少？<br>不同题型有没有特例。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>经验表</h3>
+        <table style="box-shadow:none">
+          <tr><th>场景</th><th>建议 B</th></tr>
+          <tr><td>通用（在线）</td><td class="mono">isqrt(n) ~ 2·isqrt(n)</td></tr>
+          <tr><td>莫队（q 次询问）</td><td class="mono">n / √q</td></tr>
+          <tr><td>带修莫队</td><td class="mono">n^(2/3)</td></tr>
+          <tr><td>块状链表</td><td class="mono">isqrt(n)，块维持 [B/2, 2B]</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>常数修正</h3>
+        <p>分块常数比线段树大，实践中 B 取 <code>500~1000</code>（n = 10⁵）往往比严格 √n 快。<b>压不过就调参</b>。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>代码</h3>
+        <div class="formula" style="font-size:12.6px">
+          <span class="ok">import math</span><br>
+          <span class="hl">B = max(1, math.isqrt(n))</span><br>
+          <span class="dim"># 不要 int(n ** 0.5)，浮点误差可能差 1</span>
+        </div>
+      </div>
+      <div class="card tint-plum"><h3>为什么莫队是 n/√q</h3>
+        <p>指针总移动量 ≈ <code>q·B + n²/B</code>，对 B 求最小得 <code>B = n/√q</code>，总代价 <code>O(n√q)</code>。</p>
+      </div>
+      <div class="note warn"><b>注意：</b>B 太小会让块数暴涨，<code>bel / L / R</code> 的缓存命中变差；B 太大则散块变慢。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 14 复杂度 ═══ -->
+<section class="slide" data-title="复杂度分析">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · COMPLEXITY</div><h2>复杂度：<em>一条 O(√n) 的直线</em></h2></div>
+    <div class="hint"><b>本页回答：</b>分块到底多快？<br>和线段树比谁赢。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>各项开销</h3>
+        <table style="box-shadow:none">
+          <tr><th>操作</th><th>复杂度</th></tr>
+          <tr><td>建块（划分 + 聚合）</td><td class="mono">O(n)</td></tr>
+          <tr><td>区间修改</td><td class="mono">O(B + n/B)</td></tr>
+          <tr><td>区间查询</td><td class="mono">O(B + n/B)</td></tr>
+          <tr><td>单点修改</td><td class="mono">O(1) 均摊</td></tr>
+          <tr><td>空间</td><td class="mono">O(n)</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>对比线段树</h3>
+        <p>n = 10⁵ 时：线段树 <code>≈ 17</code> 步；分块 <code>≈ 632</code> 步。但分块<b>常数小、无递归、代码好写</b>，而且能做线段树做不了的事。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>莫队的复杂度</h3>
+        <div class="formula" style="font-size:12.4px">
+          排序后指针总移动 <span class="hl">O(n·√q)</span><br>
+          每次移动增删 <span class="ok">O(1)</span><br>
+          总计 <span class="hl">O((n + q)·√n)</span>
+        </div>
+      </div>
+      <div class="card tint-teal"><h3>均摊的操作</h3>
+        <ul class="tick ok">
+          <li>区间开方：每个数最多 6 次</li>
+          <li>块状链表：分裂/合并维持块大小</li>
+          <li>区间取 min / mod：同理</li>
+        </ul>
+      </div>
+      <div class="note good"><b>结论：</b>分块不是"更慢的线段树"，而是"<b>能吃更多操作的 O(√n)</b>"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 15 均摊 ═══ -->
+<section class="slide" data-title="均摊与最坏">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>01 · AMORTIZED</div><h2>均摊思维：<em>什么时候能"骗过"复杂度</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么区间开方能 O(√n)？<br>均摊怎么想。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>区间开方</h3>
+        <p>64 → 8 → 2 → 1 → 1：一个 <code>long long</code> 最多被开方 <b>6 次</b>就稳定在 1。</p>
+        <div class="split-line"></div>
+        <p>维护"<b>块内是否全 ≤ 1</b>"，是则整块跳过 ⇒ 总复杂度 <code>O((n + q)·√n)</code> 的常数倍。</p>
+      </div>
+      <div class="card tint-amber"><h3>块状链表</h3>
+        <p>插入后块过大就<b>分裂</b>，过小就<b>与邻块合并</b>；块大小维持 <code>[B/2, 2B]</code> ⇒ 每次均摊 <code>O(√n)</code>。</p>
+      </div>
+      <div class="note good"><b>共同套路：</b>找一个<b>单调且有界</b>的量，证明"每次要么便宜、要么消耗了这个量"。</div>
+    </div>
+    <div>
+      <div class="card"><h3>不是均摊的场景</h3>
+        <ul class="tick no">
+          <li>区间加、区间赋值：<b>每次都是</b> O(√n)</li>
+          <li>莫队：总移动量有界，属于<b>整体</b>均摊</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>均摊的坑</h3>
+        <p>均摊 ≠ 单次上界。若题面要求<b>单次操作上限</b>（如实时系统），分块的"均摊 O(1)"写法不达标。</p>
+      </div>
+      <div class="card tint-teal"><h3>怎么验证</h3>
+        <p>写个计数器统计实际执行的循环次数，跑随机数据看<b>总次数 / 操作数</b>是否稳定在常数附近。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 16 空间与常数 ═══ -->
+<section class="slide" data-title="空间与常数">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · SPACE</div><h2>空间、下标与<em>容易翻车的细节</em></h2></div>
+    <div class="hint"><b>本页回答：</b>数组开多大？<br>下标从 0 还是 1。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>数组清单</h3>
+      <p><code>a[n+1]</code>、<code>bel[n+1]</code>、<code>L[m+1]</code>、<code>R[m+1]</code>、<code>s[m+1]</code>、<code>add[m+1]</code>、<code>assign[m+1]</code>。共 <b>O(n)</b>。</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>下标约定</h3>
+      <p>统一 <b>1-indexed</b>；块号也从 1 开始。<code>bel[i] = (i-1)//B + 1</code>。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>最后一块</h3>
+      <p><code>R[m] = min(m*B, n)</code>，<b>最后一块可能不满</b>；越界写 <code>L[m], R[m]</code> 是高频 bug。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>标记初值</h3>
+      <p><code>add = 0</code>、<code>assign = None</code>、<code>mx = -inf</code>。初值写错极难查。</p></div>
+    <div class="card"><h3><span class="n">5</span>聚合值更新</h3>
+      <p>整块加时 <code>s[b] += v*len</code>、<code>mx[b] += v</code>；改散块后<b>必须 _recalc(b)</b>。</p></div>
+    <div class="card tint-amber"><h3><span class="n">6</span>递归深度</h3>
+      <p>分块基本<b>不递归</b>，没有爆栈问题；这是它比线段树更稳的一面。</p></div>
+  </div>
+  <div class="note warn"><b>记忆：</b>四件套 <code>1-indexed</code>、<code>R[m] = min(m*B, n)</code>、<code>bl == br 特判</code>、<code>改散块后 _recalc</code>。</div>
+</section>
+
+<!-- ═══ 17 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：标记与信息">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 02</div>
+      <div class="big">标记与信息：<em style="color:var(--teal)">整块能打什么标记</em></div>
+      <p class="lead">赋值 · 最值 · 加乘双标记 · 区间开方 · 区间众数<br>分块的"宽容性"就体现在这里。</p>
+    </div>
+    <div><div class="num-huge t">02</div>
+      <div class="note good"><b>目标：</b>能为新操作设计块标记，并说清 push 的时机。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 18 区间赋值 ═══ -->
+<section class="slide" data-title="区间赋值">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>02 · ASSIGN</div><h2>区间赋值：<em class="t">覆盖语义与优先级</em></h2></div>
+    <div class="hint"><b>本页回答：</b>assign 标记怎么写？<br>和 add 同存时谁赢。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>要点</h3>
+        <ul class="tick">
+          <li>整块：<code>assign[b] = v</code>、<code>add[b] = 0</code></li>
+          <li>散块：先 <code>_push(b)</code>，逐个 <code>a[i] = v</code></li>
+          <li>聚合：<code>s[b] = v * len</code>、<code>mx[b] = v</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>优先级</h3>
+        <div class="formula" style="font-size:12.4px">
+          语义：<span class="hl">先赋值，再加</span><br>
+          读单元素：<code>(assign[b] 或 a[i]) + add[b]</code><br>
+          <span class="dim">assign 会清掉 add；反过来 add 累加</span>
+        </div>
+      </div>
+      <div class="note warn"><b>陷阱：</b>assign 之后忘清 add，会出现"赋完值还多加一段"。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>sqrt_assign.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="assign"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 19 区间最值 ═══ -->
+<section class="slide" data-title="区间最值">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>02 · MIN/MAX</div><h2>区间加 + 区间最值：<em class="t">平移即可</em></h2></div>
+    <div class="hint"><b>本页回答：</b>最值怎么维护？<br>乘负数有什么坑。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三件事</h3>
+        <div class="formula" style="font-size:12.4px">
+          聚合：<span class="ok">mx[b] = max(a[i] + add[b])</span><br>
+          整块加：<span class="hl">mx[b] += v</span>（整体平移）<br>
+          零元：<span class="hl">-∞</span>，不是 0
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>支持什么</h3>
+        <ul class="tick">
+          <li>区间加 + 区间最值 ✓</li>
+          <li>区间赋值 + 区间最值 ✓</li>
+          <li>区间加 + 区间最小值 ✓（换成 min）</li>
+          <li>区间乘（含负数）→ 要同时维护 max 与 min</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>乘负数：</b><code>×(-1)</code> 会把最大值变成最小值；必须两者都存、乘负时交换。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>sqrt_max.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="minmax"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 20 加乘双标记 ═══ -->
+<section class="slide" data-title="加乘双标记">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>02 · MUL + ADD</div><h2>加乘双标记：<em class="p">合成顺序不能错</em></h2></div>
+    <div class="hint"><b>本页回答：</b>两个标记怎么共存？<br>合成公式是什么。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>合成公式</h3>
+        <div class="formula" style="font-size:12.4px">
+          当前：<code>v → v·mul + add</code><br>
+          再来 <code>(k, b)</code>：<br>
+          <span class="dim">(v·mul + add)·k + b = v·(mul·k) + (add·k + b)</span><br>
+          ⇒ <span class="hl">mul' = mul·k</span>，<span class="hl">add' = add·k + b</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>块聚合</h3>
+        <div class="formula" style="font-size:12.4px">
+          <span class="ok">s[b] = s[b]·k + b·len</span><br>
+          <span class="ok">mx[b] = mx[b]·k + b</span>（k &gt; 0）<br>
+          <span class="dim">k &lt; 0 时 max / min 互换</span>
+        </div>
+      </div>
+      <div class="note warn"><b>顺序不能反：</b>必须是 <code>add·k + b</code>，写成 <code>add + b·k</code> 就错。</div>
+    </div>
+    <div>
+      <div class="card"><h3>与赋值合并</h3>
+        <table style="box-shadow:none">
+          <tr><th>新操作 \ 已有</th><th>add</th><th>mul</th><th>assign</th></tr>
+          <tr><td>add(d)</td><td class="mono">add += d</td><td class="mono">add += d</td><td class="mono">assign += d</td></tr>
+          <tr><td>mul(k)</td><td class="mono">add *= k</td><td class="mono">mul *= k</td><td class="mono">assign *= k</td></tr>
+          <tr><td>assign(v)</td><td class="mono">add = 0</td><td class="mono">mul = 1</td><td class="mono">assign = v</td></tr>
+        </table>
+      </div>
+      <div class="card tint-plum"><h3>固定次序</h3>
+        <p>先 <b>乘</b>，再 <b>加</b>，最后 <b>赋值</b>。赋值抹掉之前一切未兑现标记。</p>
+      </div>
+      <div class="note good"><b>自检：</b>推一遍 <code>(v·mul + add)·k + b</code>，比背公式稳。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 21 区间开方 ═══ -->
+<section class="slide" data-title="区间开方">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>02 · SQRT OP</div><h2>区间开方：<em class="p">均摊的代表作</em></h2></div>
+    <div class="hint"><b>本页回答：</b>非线性操作怎么上分块？<br>为什么能均摊。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>思路</h3>
+        <ul class="tick">
+          <li>开方不可合并 ⇒ <b>不能用标记</b></li>
+          <li>但每个数最多变 6 次（<code>2⁶⁴ → 1</code>）</li>
+          <li>维护"<b>块内全 ≤ 1</b>"，是则整块跳过</li>
+          <li>否则逐个开方并 <code>_recalc(b)</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>细节</h3>
+        <div class="formula" style="font-size:12.2px">
+          用 <span class="hl">math.isqrt(x)</span>，不要 <code>int(x ** 0.5)</code><br>
+          <span class="dim">大数浮点开方会差 1，是经典翻车点</span>
+        </div>
+      </div>
+      <div class="note good"><b>复杂度：</b>总开方次数 ≤ 6n ⇒ <code>O((n + q)·√n)</code> 量级。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>sqrt_op.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="sqrt_op"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 22 区间众数 ═══ -->
+<section class="slide" data-title="区间众数">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · MODE</div><h2>区间众数：<em>块间查表 + 散块候选</em></h2></div>
+    <div class="hint"><b>本页回答：</b>众数怎么预处理？<br>查询为什么是 O(√n log n)。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>预处理</h3>
+        <ul class="tick">
+          <li><code>f[i][j]</code> = 块 i..j 的众数（并列取较小）</li>
+          <li><code>c[i][j]</code> = 该众数的出现次数</li>
+          <li>转移：<code>f[i][j] = f[i][j-1]</code> 与块 j 合并</li>
+          <li>空间 <code>m² = O(n)</code>，时间 <code>O(n√n)</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>查询</h3>
+        <ul class="tick ok">
+          <li>候选 = 整块众数 + <b>两个散块里的值</b>（≤ 2B 个）</li>
+          <li>每个候选用 <code>pos[x]</code> 二分求区间内次数</li>
+          <li>复杂度 <code>O(B log n)</code></li>
+        </ul>
+      </div>
+      <div class="note good"><b>替代：</b>离线用<b>莫队 + 值域分块</b>，也能 O(n√n)。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>sqrt_mode.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="mode"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 23 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：查询技巧">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 03</div>
+      <div class="big">查询技巧：<em style="color:var(--accent)">排序 · 二分 · 莫队</em></div>
+      <p class="lead">块内排序 + 二分 · 二分答案 · 莫队 · 树上莫队 · 值域分块<br>把"难查的信息"也变成 O(√n)。</p>
+    </div>
+    <div><div class="num-huge">03</div>
+      <div class="note good"><b>目标：</b>能根据查询类型选"块内排序"还是"莫队"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 24 块内排序+二分 ═══ -->
+<section class="slide" data-title="块内排序 + 二分">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · SORT + BISECT</div><h2>块内排序 + 二分：<em>区间第 k 小</em></h2></div>
+    <div class="hint"><b>本页回答：</b>静态第 k 小怎么用分块做？<br>复杂度多少。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三步</h3>
+        <ul class="tick">
+          <li>每块维护<b>排序后副本</b></li>
+          <li>二分答案 x，统计 <code>≤ x</code> 的个数</li>
+          <li>整块二分 <code>bisect_right</code>、散块暴力</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <div class="formula" style="font-size:12.4px">
+          单次 check：<span class="hl">O(√n log B)</span><br>
+          二分值域：<span class="hl">O(log n)</span><br>
+          合计：<span class="ok">O(√n log² n)</span>
+        </div>
+      </div>
+      <div class="note good"><b>对比：</b>主席树 <code>O(log n)</code> 更快；分块胜在<b>好写、可改</b>（比如带修改时块内重构）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>sqrt_kth.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="kth"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 25 二分答案 ═══ -->
+<section class="slide" data-title="二分答案 + 分块">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · BISECT</div><h2>二分答案 + 分块：<em>一个通用套路</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪类题能这样套？<br>check 函数怎么设计。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>适用题型</h3>
+        <ul class="tick">
+          <li>区间第 k 小 / 第 k 大 / 中位数</li>
+          <li>"能否选出 k 个数使得…"（判定）</li>
+          <li>最小化最大值 / 最大化最小值</li>
+          <li>区间内 ≥ x 的个数、&lt; x 的前驱</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>check 的骨架</h3>
+        <div class="formula" style="font-size:12.2px">
+          <span class="hl">def check(x):</span><br>
+          &nbsp;&nbsp;# 整块：块内二分 O(log B)<br>
+          &nbsp;&nbsp;# 散块：逐个 O(B)<br>
+          &nbsp;&nbsp;<span class="ok">return 统计量 &gt;= k</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>复杂度公式</h3>
+        <div class="formula" style="font-size:12.6px">
+          <span class="ok">O( log(值域) · (n/B)·log B + B )</span><br>
+          <span class="dim">B = √n 时 ≈ O(√n · log² n)</span>
+        </div>
+      </div>
+      <div class="card tint-teal"><h3>优化点</h3>
+        <ul class="tick ok">
+          <li>块内改成<b>值域计数</b>，check 变 O(√n)</li>
+          <li>值域离散化，二分只到 <code>log n</code> 层</li>
+          <li>整体二分（离线）可降到 <code>O(n log² n)</code></li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>只要 check 能写成"<b>整块查表 + 散块暴力</b>"，就可以套这个套路。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 26 莫队 ═══ -->
+<section class="slide" data-title="莫队：原理">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>03 · MO'S</div><h2>莫队：<em class="p">把排序变成武器</em></h2></div>
+    <div class="hint"><b>本页回答：</b>莫队怎么工作？<br>为什么是 O(n√q)。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三步</h3>
+        <ul class="tick">
+          <li>询问按 <code>(bel[l], r)</code> <b>排序</b></li>
+          <li>维护当前区间 <code>[cur_l, cur_r]</code>，用 <b>add / remove</b> 移动指针</li>
+          <li>指针总移动 <code>O(n√q)</code> ⇒ 每次 <code>add/remove</code> 必须 <b>O(1)</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>能做 / 不能做</h3>
+        <p><b>能：</b>不同数个数、区间众数、区间 mex、区间第 k 小（值域分块）。<br>
+          <b>不能：</b>需要在线、需要修改（带修莫队另算）、add/remove 不 O(1)。</p>
+      </div>
+      <div class="note warn"><b>前提：</b>离线！所有询问一次性给出。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>mo_basic.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="mo"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 27 莫队优化 ═══ -->
+<section class="slide" data-title="莫队：优化与带修">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>03 · MO TUNING</div><h2>莫队的<em class="p">四种进阶</em></h2></div>
+    <div class="hint"><b>本页回答：</b>还能更快吗？<br>带修改怎么做。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3><span class="n p">1</span>奇偶优化</h3>
+      <p>奇数块 <code>r</code> 降序，减少回跳。常数几乎砍半。</p>
+      <div class="split-line p"></div>
+      <p class="muted">代码见第 26 页的 sort key。</p></div>
+    <div class="card"><h3><span class="n p">2</span>块大小</h3>
+      <p><code>B = n / √q</code>；若 q ≈ n 则 <code>B = √n</code>。</p>
+      <div class="split-line p"></div>
+      <p class="muted">实测可微调 2 倍。</p></div>
+    <div class="card"><h3><span class="n p">3</span>带修莫队</h3>
+      <p>三关键字 <code>(bel[l], bel[r], t)</code>；块大小 <code>n^(2/3)</code>，总复杂度 <code>O(n^(5/3))</code>。</p>
+      <div class="split-line p"></div>
+      <p class="muted">要维护"撤销修改"。</p></div>
+    <div class="card"><h3><span class="n p">4</span>回滚莫队</h3>
+      <p>只支持 add 不支持 remove 时（如区间 mex），用"只加不删 + 回滚"。</p>
+      <div class="split-line p"></div>
+      <p class="muted">常数更小，技巧性强。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-plum"><h3>带修莫队的骨架</h3>
+      <div class="formula" style="font-size:12.2px">
+        排序键：<span class="hl">(bel[l], bel[r], t)</span><br>
+        移动：先调时间轴 <code>t</code>，再调左右指针<br>
+        <span class="dim">时间轴只能在"整块区间"时移动，代价靠块大小平衡</span>
+      </div>
+    </div>
+    <div class="card tint-teal"><h3>何时选哪个</h3>
+      <ul class="tick ok">
+        <li>无修改、add/remove 好写 → <b>普通莫队</b></li>
+        <li>有修改 → <b>带修莫队</b> 或改成在线结构</li>
+        <li>只能 add → <b>回滚莫队</b></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 28 树上莫队 ═══ -->
+<section class="slide" data-title="树上莫队">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>03 · TREE MO</div><h2>树上莫队：<em class="p">欧拉序 + 奇偶 toggle</em></h2></div>
+    <div class="hint"><b>本页回答：</b>路径询问怎么变成区间？<br>LCA 怎么补。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三步</h3>
+        <ul class="tick">
+          <li>求 <b>欧拉序</b>（进入/离开各记一次，长 2n）</li>
+          <li>路径 <code>(u,v)</code> 映射成区间：<br>
+            <code>LCA == u</code> → <code>[tin[u], tin[v]]</code><br>
+            否则 → <code>[tout[u], tin[v]]</code> <b>+ LCA</b></li>
+          <li><code>toggle(x)</code>：出现奇数次 = 在路径上</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>关键</h3>
+        <p>一个点在欧拉序里出现两次，<b>toggle 两次等于取消</b>；这正好实现了"在不在路径上"的开关语义。</p>
+      </div>
+      <div class="note warn"><b>易错：</b>LCA 不在区间里，必须<b>单独计入再还原</b>，否则答案少 1。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>mo_tree.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="mo_tree"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 29 莫队+值域分块 ═══ -->
+<section class="slide" data-title="莫队 + 值域分块">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>03 · VALUE BLOCK</div><h2>莫队 + 值域分块：<em class="p">O(1) 增删、O(√V) 查询</em></h2></div>
+    <div class="hint"><b>本页回答：</b>区间第 k 小 / 众数怎么做？<br>值域分块是什么。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>值域分块</h3>
+        <ul class="tick">
+          <li>把<b>值域</b>切成 √V 块，维护每块的<b>计数和</b></li>
+          <li><code>add(x)</code> / <code>remove(x)</code>：O(1) 更新 <code>cnt[x]</code> 与所在值块</li>
+          <li>求第 k 小：先扫值块找块（O(√V)），再在块内枚举值（O(√V)）</li>
+          <li>求众数：扫所有值块取最大（O(√V)）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>组合复杂度</h3>
+        <div class="formula" style="font-size:12.4px">
+          莫队 <span class="hl">O(n√q)</span> × 增删 <span class="ok">O(1)</span><br>
+          + 查询 <span class="hl">O(q·√V)</span><br>
+          <span class="dim">V = 值域大小（离散化后 ≈ n）</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>三种方案对比</h3>
+        <table style="box-shadow:none">
+          <tr><th>问题</th><th>方案</th><th>复杂度</th></tr>
+          <tr><td>区间众数（在线）</td><td class="mono">块间 f[i][j]</td><td class="mono">O(√n log n)</td></tr>
+          <tr><td>区间众数（离线）</td><td class="mono">莫队+值域分块</td><td class="mono">O(n√n)</td></tr>
+          <tr><td>区间第 k 小（静态）</td><td class="mono">主席树</td><td class="mono">O(log n)</td></tr>
+          <tr><td>区间第 k 小（离线）</td><td class="mono">莫队+值域分块</td><td class="mono">O(n√n)</td></tr>
+        </table>
+      </div>
+      <div class="card tint-teal"><h3>心法</h3>
+        <p><b>"值域也分块"</b>是分块的第二层玩法：把"数值"当成第二根轴，同样用 √ 平衡。</p>
+      </div>
+      <div class="note good"><b>连招：</b>分块（下标） + 值域分块（数值） = 能处理"区间 + 数值"二维的信息。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 30 章节 ═══ -->
+<section class="slide section-slide plum" data-title="章节：变体">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker plum"><i></i>CHAPTER 04</div>
+      <div class="big">变体：<em style="color:var(--plum)">同一个思想的七十二变</em></div>
+      <p class="lead">块状链表 · 分块套结构 · 常见套路清单<br>换的是落地方式，不变的是 √ 平衡。</p>
+    </div>
+    <div><div class="num-huge t">04</div>
+      <div class="note good"><b>目标：</b>识别题型属于哪一种变体，直接套骨架。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 31 块状链表 ═══ -->
+<section class="slide" data-title="块状链表">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · BLOCK LIST</div><h2>块状链表：<em class="p">序列的插入与删除</em></h2></div>
+    <div class="hint"><b>本页回答：</b>要插入/删除怎么办？<br>块大小怎么保持。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>思路</h3>
+        <ul class="tick">
+          <li>把序列存成<b>块的链表</b>，每块 √n 个元素</li>
+          <li>定位 = 逐块减长度（O(√n)）</li>
+          <li>插入后块太大 → <b>分裂</b></li>
+          <li>块太小 → <b>与邻块合并</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>不变量</h3>
+        <div class="formula" style="font-size:12.4px">
+          每块大小 ∈ <span class="hl">(0, 2B]</span><br>
+          块数 ≈ <span class="ok">n / B</span><br>
+          <span class="dim">违反就分裂/合并 ⇒ 均摊 O(√n)</span>
+        </div>
+      </div>
+      <div class="note good"><b>适用：</b>区间插入、区间删除、区间翻转（如文艺平衡树的低配版）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>block_list.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="blocklist"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 32 分块套结构 ═══ -->
+<section class="slide" data-title="分块套结构">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · NESTED</div><h2>分块套结构：<em class="p">块内可以随便放</em></h2></div>
+    <div class="hint"><b>本页回答：</b>块内能放什么？<br>什么时候值得。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>常见组合</h3>
+        <table style="box-shadow:none">
+          <tr><th>块内放什么</th><th>解决什么</th></tr>
+          <tr><td>排序数组</td><td>区间 &lt; x 个数、前驱/后继</td></tr>
+          <tr><td>平衡树 / multiset</td><td>区间第 k 小（带修改）</td></tr>
+          <tr><td>值域计数</td><td>区间众数、区间 mex</td></tr>
+          <tr><td>栈 / 单调队列</td><td>区间最值的滑动版</td></tr>
+          <tr><td>bitset</td><td>区间 OR / AND / 存在性</td></tr>
+        </table>
+      </div>
+      <div class="note warn"><b>代价：</b>块内结构的复杂度会乘进来，如 <code>O(√n log B)</code>。先估总量再上。</div>
+    </div>
+    <div>
+      <div class="card"><h3>反向：数据结构套分块</h3>
+        <ul class="tick ok">
+          <li><b>树上分块</b>：按 DFS 序分块，处理路径/子树信息</li>
+          <li><b>图上分块</b>：块内 BFS 预处理最短路</li>
+          <li><b>二维分块</b>：矩阵的子矩阵加、子矩阵和</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>二维分块复杂度</h3>
+        <p>n × m 矩阵分块成 <code>√n × √m</code> 块，子矩阵加/和 <code>O(√n·√m)</code>。比二维树状数组常数友好。</p>
+      </div>
+      <div class="note good"><b>启发：</b>遇到"套不进线段树"的信息，先想<b>能不能在块里放个别的结构</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 33 常见套路 ═══ -->
+<section class="slide" data-title="分块常见套路">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · PATTERNS</div><h2>六个<em>常见套路</em>清单</h2></div>
+    <div class="hint"><b>本页回答：</b>拿到题怎么套？<br>建议贴在机位旁。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>整块标记 + 散块暴力</h3>
+      <p>最经典。区间加/赋值/乘。关键是"<b>整块 O(1) 打标记</b>"。</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>块内排序副本</h3>
+      <p>需要"区间 &lt; x 的个数/前驱"时，每块维护排序数组 + 二分。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>块间预处理表</h3>
+      <p><code>f[i][j]</code> 类：块 i..j 的答案预处理，查询 O(1) + 散块修正。如众数、区间最值。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>均摊跳过</h3>
+      <p>维护"块内是否已稳定"（如全 ≤ 1、全相等），是则整块跳过。开方、取 min、mod。</p></div>
+    <div class="card"><h3><span class="n">5</span>值域分块</h3>
+      <p>把数值当第二根轴，O(1) 增删 + O(√V) 查询第 k 小/众数。</p></div>
+    <div class="card tint-amber"><h3><span class="n">6</span>分块排序 + 双指针</h3>
+      <p>莫队：离线询问按 <code>(bel[l], r)</code> 排序，指针移动总量有界。</p></div>
+  </div>
+  <div class="note good"><b>选型口诀：</b>能标记 → ①；要统计 → ②；要查表 → ③；操作不线性 → ④；值域维度 → ⑤；离线 → ⑥。</div>
+</section>
+
+<!-- ═══ 34 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：对比选型">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 05</div>
+      <div class="big">选型：<em style="color:var(--accent)">什么时候用分块</em></div>
+      <p class="lead">对比线段树 / 树状数组 · 决策树 · 常数优化<br>选对工具比写得快更重要。</p>
+    </div>
+    <div><div class="num-huge">05</div>
+      <div class="note good"><b>要领：</b>信息好合并就上 log 结构；信息难合并就上 √ 结构。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 35 对比 ═══ -->
+<section class="slide" data-title="三大结构对比">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>05 · COMPARE</div><h2>三大结构<em class="p">对比</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一道题该用哪个？<br>各自的甜点区。</div>
+  </div>
+  <table>
+    <tr><th style="width:110px">结构</th><th>区间加+和</th><th>区间 &lt; x 个数</th><th>区间开方</th><th>区间众数</th><th>区间插入</th><th>常数</th></tr>
+    <tr><td>暴力</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td class="mono">O(n)</td><td><b>极小</b></td></tr>
+    <tr><td>树状数组</td><td class="mono">O(log n)</td><td>❌</td><td>❌</td><td>❌</td><td>❌</td><td><b>极小</b></td></tr>
+    <tr><td>线段树</td><td class="mono">O(log n)</td><td>⚠️ 树套树</td><td>⚠️ 特判</td><td>❌</td><td>❌</td><td>中</td></tr>
+    <tr><td><b>分块</b></td><td class="mono">O(√n)</td><td class="mono">O(√n log)</td><td class="mono">均摊 O(√n)</td><td class="mono">O(√n log)</td><td class="mono">O(√n)</td><td>大</td></tr>
+    <tr><td>平衡树</td><td class="mono">O(log n)</td><td class="mono">O(log²)</td><td>❌</td><td>❌</td><td class="mono">O(log n)</td><td>大</td></tr>
+    <tr><td>主席树</td><td>❌</td><td>⚠️ 静态</td><td>❌</td><td>❌</td><td>❌</td><td>中</td></tr>
+    <tr><td>莫队</td><td>❌</td><td class="mono">O(n√n)</td><td class="mono">O(n√n)</td><td class="mono">O(n√n)</td><td>❌</td><td>中</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>分块的甜点</h3>
+      <p>信息<b>不好合并</b>、操作<b>不线性</b>、允许<b>离线</b>、常数可以牺牲换取<b>写法自由</b>。</p></div>
+    <div class="card tint-teal"><h3>不该用分块</h3>
+      <p>只求和/求异或 → 树状数组；要严格 log 在线 → 线段树；纯静态第 k 小 → 主席树。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 36 决策树 ═══ -->
+<section class="slide" data-title="选型决策树">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · DECISION</div><h2>三步决策树</h2></div>
+    <div class="hint"><b>本页回答：</b>拿到题怎么判断？<br>建议打印贴在机位旁。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>第一步：信息能不能合并</h3>
+        <ul class="tick">
+          <li>能 O(1) 合并（和/最值/xor）→ 线段树/BIT</li>
+          <li>不好合并（众数、&lt; x 个数）→ <b>分块</b></li>
+          <li>不可合并但可暴力（开方、mod）→ <b>分块均摊</b></li>
+        </ul>
+      </div>
+      <div class="card"><h3>第二步：在线还是离线</h3>
+        <ul class="tick ok">
+          <li>在线 → 分块 / 线段树</li>
+          <li>离线 + 询问多 → <b>莫队</b></li>
+          <li>离线 + 有修改 → 带修莫队</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>第三步：规模与常数</h3>
+        <ul class="tick">
+          <li>n ≤ 10⁵、时限 1s → 严格 √n 或线段树</li>
+          <li>常数敏感 / 卡 log → 分块 + 调 B</li>
+          <li>要插入删除 → <b>块状链表</b></li>
+          <li>值域维度 → 值域分块</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>速判表</h3>
+        <table style="box-shadow:none">
+          <tr><th>题面关键词</th><th>方案</th></tr>
+          <tr><td>区间加、区间 &lt; x 个数</td><td class="mono">块内排序</td></tr>
+          <tr><td>区间开方、区间 mod</td><td class="mono">均摊跳过</td></tr>
+          <tr><td>区间众数</td><td class="mono">f[i][j] 或莫队</td></tr>
+          <tr><td>离线区间不同数</td><td class="mono">莫队</td></tr>
+          <tr><td>区间插入/删除</td><td class="mono">块状链表</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 37 优化 ═══ -->
+<section class="slide" data-title="常数与优化">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · TUNING</div><h2>常数与<em>优化清单</em></h2></div>
+    <div class="hint"><b>本页回答：</b>能再快一点吗？<br>按性价比排序。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3><span class="n">1</span>调块大小</h3>
+      <p>最有效。从 <code>√n</code> 出发，试 <code>0.7× / 1.5× / 2×</code>，实测选最快。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">2</span>减少函数调用</h3>
+      <p>把 <code>_push / _recalc</code> 内联；循环里把 <code>self.xxx</code> 取到局部变量。</p></div>
+    <div class="card"><h3><span class="n">3</span>避免重复 push</h3>
+      <p>只在"必须逐元素"时 push；查询直接读 <code>a[i] + add[bel[i]]</code>。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>莫队奇偶优化</h3>
+      <p>奇数块 <code>r</code> 降序，实测常数接近砍半。</p></div>
+    <div class="card"><h3><span class="n">5</span>输入输出</h3>
+      <p><code>sys.stdin.buffer.read().split()</code> + 一次性 join；莫队离线时批量输出。</p></div>
+    <div class="card tint-amber"><h3><span class="n">6</span>数据结构选择</h3>
+      <p>块内需要排序就用 <code>sorted + bisect</code>；计数用 <code>array</code> / <code>list</code> 而非 dict。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>Python 特有</h3>
+      <ul class="tick">
+        <li>热路径别用 <code>min/max</code> 内建在大循环里（改手写 if）</li>
+        <li><code>__slots__</code> 与局部变量别名</li>
+        <li>莫队的 add/remove 写成内联代码块</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>C++ 特有</h3>
+      <ul class="tick ok">
+        <li>块内用 <code>vector</code> + <code>lower_bound</code></li>
+        <li>聚合数组按块连续存放（缓存友好）</li>
+        <li>开启 <code>-O2</code>，避免在循环里除法</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 38 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：工程">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 06</div>
+      <div class="big">工程：<em style="color:var(--teal)">避坑 · 提速 · 验证</em></div>
+      <p class="lead">易错清单 · 模板合集 · 对拍方法 · 题单<br>把分块代码写成"永不写错"。</p>
+    </div>
+    <div><div class="num-huge t">06</div>
+      <div class="note good"><b>要领：</b>分块的 bug 集中在 <b>bl==br 分支、标记写回、最后一块边界</b> 三处。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 39 易错清单 ═══ -->
+<section class="slide" data-title="易错清单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PITFALLS</div><h2>易错清单 <em>Checklist</em></h2></div>
+    <div class="hint"><b>本页回答：</b>提交前自检什么？<br>（每条都对应本讲义的坑）</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-plum"><h3>分支与边界</h3>
+      <ul class="tick no">
+        <li>忘了 <code>bel[l] == bel[r]</code> 特判</li>
+        <li>左右散块重叠导致重复加</li>
+        <li><code>R[m] = min(m*B, n)</code> 写成 <code>m*B</code> 越界</li>
+        <li>块号从 0 开始、元素从 1 开始，混用</li>
+        <li>区间为空（<code>l &gt; r</code>）没处理</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>标记与聚合</h3>
+      <ul class="tick">
+        <li>改散块后忘了 <code>_recalc(b)</code></li>
+        <li>整块加时忘了 <code>s[b] += v*len</code></li>
+        <li>assign 后忘了清 add</li>
+        <li>读单元素忘了加 <code>add[bel[i]]</code></li>
+        <li>乘负数忘了交换 max / min</li>
+        <li>零元写成 0（最值应为 -∞）</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>数值与常数</h3>
+      <ul class="tick ok">
+        <li><code>int(n**0.5)</code> → 用 <code>math.isqrt(n)</code></li>
+        <li><code>int(x**0.5)</code> → 用 <code>math.isqrt(x)</code></li>
+        <li>块大小取死值 √n，没试常数</li>
+        <li>莫队忘了奇偶优化</li>
+        <li>树上莫队忘了补 LCA</li>
+        <li>块状链表忘了分裂/合并 → 退化 O(n)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>提交前 30 秒四连问：</b>① bl == br 分支写了吗 ② 改散块后 _recalc 了吗 ③ 最后一块边界对吗 ④ 读单元素加 lazy 了吗。</div>
+</section>
+
+<!-- ═══ 40 模板合集 ═══ -->
+<section class="slide" data-title="模板合集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · TOOLBOX</div><h2>模板合集：<em>一页速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>实战里需要的都在这里。<br>建议直接抄进模板库。</div>
+  </div>
+  <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>sqrt_toolbox.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="toolbox"></code></pre></pre>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3>扩展点</h3><p>加区间乘 → 多两个标记 <code>mul / add</code>，合成见第 20 页。</p></div>
+    <div class="card tint-teal"><h3>多组数据</h3><p>分块重建 O(n)，多测也能承受；但别在循环里反复 new 大数组。</p></div>
+    <div class="card"><h3>输入</h3><p>大数据一次性读入，避免 <code>input()</code> 慢速循环。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 41 改一改就能用 ═══ -->
+<section class="slide" data-title="改一改就能用">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · ADAPT</div><h2>改一改<em>就能用</em>：四个改点</h2></div>
+    <div class="hint"><b>本页回答：</b>换一道题要改哪里？<br>只有四处。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3><span class="n">1</span>聚合函数</h3>
+      <p><code>_recalc</code> 里的 <code>s[b]</code> / <code>mx[b]</code> 换成你要的信息（gcd、or、计数……）。</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>标记语义</h3>
+      <p><code>add / assign / mul</code> 换成你的操作；记住"<b>赋值 &gt; 加 &gt; 乘</b>"的次序。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>查询函数</h3>
+      <p>散块逐个怎么算、整块怎么用聚合值。若要二分，就加块内排序副本。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>块大小</h3>
+      <p>通用 <code>isqrt(n)</code>；莫队 <code>n/√q</code>；带修莫队 <code>n^(2/3)</code>。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>换题检查表</h3>
+      <ul class="tick">
+        <li>这个操作能整块 O(1) 打标记吗？</li>
+        <li>散块能不能 O(B) 暴力？</li>
+        <li>查询需要预处理表吗（f[i][j]）？</li>
+        <li>是否离线（可以上莫队）？</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>什么时候该放弃分块</h3>
+      <p>信息能 O(1) 合并且要严格 log → 用线段树；空间紧张 → 用 BIT；数据随机且 q 小 → 直接暴力。</p>
+      <div class="note"><b>别硬上：</b>分块常数大，"能做"不等于"该做"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 42 验证 ═══ -->
+<section class="slide" data-title="调试与验证">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · VERIFY</div><h2>怎么验证答案<em>是对的</em></h2></div>
+    <div class="hint"><b>本页回答：</b>分块怎么对拍？<br>边界用例有哪些。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card tint-teal"><h3><span class="n t">1</span>暴力对拍</h3>
+        <p>写一个 O(n) 朴素数组当参照；随机 n ≤ 100、操作 500 次，<b>对拍 1 万组</b>。重点覆盖"散块 + 整块 + 单块"三种分支。</p>
+      </div>
+      <div class="card tint-amber"><h3><span class="n">3</span>边界用例</h3>
+        <ul class="tick">
+          <li>n = 1（只有一个块、一块一元素）</li>
+          <li>l = r（单点）</li>
+          <li>查询 = 全区间 / 只跨一个块</li>
+          <li>恰好跨块边界（l = R[bl] 或 r = L[br]）</li>
+          <li>赋值与加法交替</li>
+          <li>全 1 / 全 0（测均摊跳过）</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3><span class="n">2</span>不变量检查</h3>
+        <ul class="tick ok">
+          <li>无操作时 <code>query(1,n) == sum(a)</code></li>
+          <li>单点：<code>query(i,i) == a[i] + add[bel[i]]</code></li>
+          <li>每个块：<code>s[b] == Σ(a[i] + add[b])</code></li>
+          <li>众数：并列时返回较小值</li>
+          <li>块状链表：<code>len(to_list())</code> 与实际元素数一致</li>
+        </ul>
+      </div>
+      <div class="note good"><b>小技巧：</b>写一个 <code>dump()</code> 打印每个块的 <code>a / add / assign / s</code>，对照理论值逐块核对，标记 bug 一眼可见。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 43 题单 ═══ -->
+<section class="slide" data-title="练习题单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PRACTICE</div><h2>练习题单（LibreOJ / 洛谷 / LeetCode）</h2></div>
+    <div class="hint"><b>本页回答：</b>课后练什么？<br>每题都写了<b>题意</b>，可按图索骥。</div>
+  </div>
+  <div class="cols c3" style="gap:8px">
+    <a class="a-link" href="https://loj.ac/p/6277" target="_blank"><span class="src lg">LOJ</span><span class="t">#6277 数列分块入门 1</span><span class="d">题意：区间加值、单点查询。最基础的分块，先闭卷默写。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6278" target="_blank"><span class="src lg">LOJ</span><span class="t">#6278 数列分块入门 2</span><span class="d">题意：区间加值、询问区间内 ≤ x 的元素个数。块内排序副本的入门。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6280" target="_blank"><span class="src lg">LOJ</span><span class="t">#6280 数列分块入门 4</span><span class="d">题意：区间加值、区间求和。本讲义主线模板的实战。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6281" target="_blank"><span class="src lg">LOJ</span><span class="t">#6281 数列分块入门 5</span><span class="d">题意：区间开平方、区间求和。均摊技巧的经典题。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6282" target="_blank"><span class="src lg">LOJ</span><span class="t">#6282 数列分块入门 6</span><span class="d">题意：区间插入、单点查询。块状链表入门。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6283" target="_blank"><span class="src lg">LOJ</span><span class="t">#6283 数列分块入门 7</span><span class="d">题意：区间加值、区间乘、区间求和（取模）。双标记合成。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6284" target="_blank"><span class="src lg">LOJ</span><span class="t">#6284 数列分块入门 8</span><span class="d">题意：区间赋值、询问区间内等于 x 的元素个数。assign 标记 + 计数。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6285" target="_blank"><span class="src lg">LOJ</span><span class="t">#6285 数列分块入门 9</span><span class="d">题意：静态区间众数。块间 f[i][j] + 散块候选的经典题。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P4145" target="_blank"><span class="src lg">洛谷</span><span class="t">P4145 花神游历各国</span><span class="d">题意：区间开方、区间求和。均摊分块的代表作。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1494" target="_blank"><span class="src lg">洛谷</span><span class="t">P1494 小 Z 的袜子</span><span class="d">题意：离线询问区间内两次取到同色袜子的概率。莫队入门必刷。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P4074" target="_blank"><span class="src lg">洛谷</span><span class="t">P4074 糖果公园</span><span class="d">题意：树上带修莫队，路径上按时间贡献求和。综合天花板题。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/contains-duplicate-iii/" target="_blank"><span class="src">LeetCode</span><span class="t">220. 存在重复元素 III</span><span class="d">题意：判断是否存在两个数差 ≤ t 且下标差 ≤ k。桶/值域分块的经典应用。</span></a>
+  </div>
+  <div class="note"><b>节奏建议：</b>入门 4 题（6277/6278/6280/6281）→ 标记与结构 4 题（6283/6284/6282/6285）→ 莫队 3 题（P1494、LC 220、P4074）。每题写 100 字题解：<b>问题 → 整块打什么标记 → 散块怎么暴力</b>。</div>
+</section>
+
+<!-- ═══ 44 总结 ═══ -->
+<section class="slide" data-title="总结">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · SUMMARY</div><h2>带走这 <em>五句话</em></h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记住一页，<br>就记这一页。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><div class="step"><div class="idx">1</div><div><b>√n 来自平衡：</b>散块 O(B) + 整块 O(n/B)，B = √n 时最优。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">2</div><div><b>三件套：</b>整块打标记、散块暴力、改完 _recalc；<code>bl == br</code> 必须特判。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">3</div><div><b>push 是"动元素前"：</b>读单元素可加标记，改单元素必须先写回。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">4</div><div><b>分块的宽容性：</b>信息难合并、操作不线性、允许离线，都是它的主场。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">5</div><div><b>莫队是分块的延伸：</b>把询问排序，让指针移动总量有界。</div></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 350 260" preserveAspectRatio="xMidYMid meet">
+          <circle cx="175" cy="130" r="115" fill="#E2612F" opacity=".12" class="pulse"/>
+          <circle cx="175" cy="130" r="52" fill="#2E2118"/>
+          <text x="175" y="122" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="11">√n 平衡</text>
+          <text x="175" y="140" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="11">整块/散块</text>
+          <g font-family="monospace" font-size="10.5" fill="#7A4A22">
+            <rect x="112" y="10" width="126" height="30" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="175" y="30" text-anchor="middle">区间加 + 和</text>
+            <rect x="248" y="58" width="96" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="296" y="78" text-anchor="middle">块内排序</text>
+            <rect x="252" y="170" width="92" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="298" y="190" text-anchor="middle">莫队</text>
+            <rect x="100" y="216" width="150" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="236" text-anchor="middle">区间众数</text>
+            <rect x="6" y="170" width="106" height="30" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="59" y="190" text-anchor="middle">块状链表</text>
+            <rect x="8" y="58" width="102" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="59" y="78" text-anchor="middle">均摊开方</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" class="dash" fill="none">
+            <path d="M175 78 L175 42"/><path d="M224 110 L250 82"/><path d="M224 154 L254 184"/>
+            <path d="M175 182 L175 216"/><path d="M126 154 L110 184"/><path d="M126 110 L108 82"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>升华：</b>分块最值得学的不是模板，而是"<b>用两个 √n 换取对信息的宽容</b>"这种成本核算的思路。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 45 结语 ═══ -->
+<section class="slide cover" data-title="结语 Q&A">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">THANKS · Q&A</div>
+      <h1>谢谢！<br><em class="t">开始提问</em></h1>
+      <p class="sub">课后三步：<br>
+        ① 10 分钟默写"区间加 + 区间和"分块四件套<br>
+        ② 对 n=9, B=3 手算 <code>add(2,8,+2)</code> 后 <code>query(2,8)</code>（答案 49）并与代码对照<br>
+        ③ 按题单刷 12 题，每题写 100 字题解（问题 → 整块标记 → 散块暴力）</p>
+      <div class="meta"><span>B = isqrt(n)</span><span>bl == br 特判</span><span>O(√n)</span></div>
+    </div>
+    <div>
+      <svg viewBox="0 0 460 300" preserveAspectRatio="xMidYMid meet">
+        <circle cx="230" cy="150" r="145" fill="#E2612F" opacity=".16" class="pulse"/>
+        <g stroke="#E2612F" stroke-width="3" fill="none"><path d="M230 236 L158 158"/><path d="M230 236 L302 158"/><path d="M230 236 L230 118"/></g>
+        <path d="M302 158 L230 236" stroke="#A33A64" stroke-width="3" stroke-dasharray="7 7" fill="none"/>
+        <g class="float">
+          <g><circle cx="230" cy="236" r="30" fill="#E2612F" stroke="#B9471B" stroke-width="3"/><text x="230" y="244" font-size="14" text-anchor="middle" fill="#fff" font-family="monospace">a[]</text></g>
+          <g><circle cx="158" cy="158" r="24" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="158" y="165" font-size="12" text-anchor="middle" fill="#0B6356" font-family="monospace">散块</text></g>
+          <g><circle cx="302" cy="158" r="24" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="302" y="165" font-size="12" text-anchor="middle" fill="#0B6356" font-family="monospace">整块</text></g>
+          <g><circle cx="230" cy="118" r="24" fill="#fff" stroke="#D9B98D" stroke-width="3"/><text x="230" y="125" font-size="12" text-anchor="middle" fill="#4A3722" font-family="monospace">标记</text></g>
+        </g>
+      </svg>
+      <div class="note"><b>快捷键：</b><code>O</code> 目录 · <code>←/→</code> 翻页 · <code>⛶</code> 全屏</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="brand">SQRT DECOMPOSITION · 80MIN</div>
+<div class="hud">
+  <button id="tocBtn" title="目录">☰</button>
+  <button id="prevBtn" title="上一页">←</button>
+  <div class="pgn"><span id="cur">1</span> / <span id="tot">45</span></div>
+  <button id="nextBtn" title="下一页">→</button>
+  <button id="fullBtn" title="全屏">⛶</button>
+</div>
+
+<div class="toc" id="toc"><h4>目录 · 45 页</h4><div class="grid" id="tocGrid"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+const CODE = {
+
+core: `
+import math
+
+class SqrtDecomp:
+    """分块：区间加、区间求和；下标 1..n"""
+    def __init__(self, a):
+        """a 为 1-indexed，长度 n+1"""
+        self.n = len(a) - 1
+        self.B = max(1, math.isqrt(self.n))          # 块大小
+        self.m = (self.n + self.B - 1) // self.B      # 块数
+        self.a = a[:]
+
+        self.bel = [0] * (self.n + 1)
+        self.L = [0] * (self.m + 1)
+        self.R = [0] * (self.m + 1)
+        for b in range(1, self.m + 1):
+            self.L[b] = (b - 1) * self.B + 1
+            self.R[b] = min(b * self.B, self.n)       # 最后一块可能不满
+        for i in range(1, self.n + 1):
+            self.bel[i] = (i - 1) // self.B + 1
+
+        self.s = [0] * (self.m + 1)      # 块内和（含 lazy 的效果）
+        self.lazy = [0] * (self.m + 1)   # 块级加法标记
+        for i in range(1, self.n + 1):
+            self.s[self.bel[i]] += self.a[i]
+
+    # ---------- 基础操作 ----------
+    def _push(self, b):
+        """把块 b 的标记写回每个元素；动元素之前必须调用"""
+        if self.lazy[b]:
+            d = self.lazy[b]
+            for i in range(self.L[b], self.R[b] + 1):
+                self.a[i] += d
+            self.lazy[b] = 0
+
+    def _recalc(self, b):
+        t = 0
+        for i in range(self.L[b], self.R[b] + 1):
+            t += self.a[i]
+        self.s[b] = t
+
+    def _val(self, i):
+        """单元素真实值 = 基值 + 块标记"""
+        return self.a[i] + self.lazy[self.bel[i]]
+
+    # ---------- 区间加 ----------
+    def add(self, l, r, v):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:                       # 单块：只动一个块
+            self._push(bl)
+            for i in range(l, r + 1):
+                self.a[i] += v
+            self._recalc(bl)
+            return
+        self._push(bl)
+        for i in range(l, self.R[bl] + 1):
+            self.a[i] += v
+        self._recalc(bl)
+        self._push(br)
+        for i in range(self.L[br], r + 1):
+            self.a[i] += v
+        self._recalc(br)
+        for b in range(bl + 1, br):        # 中间整块：只打标记
+            self.lazy[b] += v
+            self.s[b] += v * (self.R[b] - self.L[b] + 1)
+
+    # ---------- 区间求和 ----------
+    def query(self, l, r):
+        bl, br = self.bel[l], self.bel[r]
+        res = 0
+        if bl == br:
+            for i in range(l, r + 1):
+                res += self._val(i)
+            return res
+        for i in range(l, self.R[bl] + 1):
+            res += self._val(i)            # 散块：逐个
+        for b in range(bl + 1, br):
+            res += self.s[b]               # 整块：直接用聚合值
+        for i in range(self.L[br], r + 1):
+            res += self._val(i)
+        return res
+
+
+# 验算：a = [_,1..9]，B = 3，add(2,8,2) 后 query(2,8) == 49
+`,
+
+trace: `
+# 手工模拟：n = 9, B = 3 -> 块 [1,3] / [4,6] / [7,9]
+# a = [_, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+import math
+
+class SqrtDecomp:
+    def __init__(self, a, B):
+        self.n = len(a) - 1
+        self.B = B
+        self.m = (self.n + self.B - 1) // self.B
+        self.a = a[:]
+        self.bel = [0] * (self.n + 1)
+        self.L = [0] * (self.m + 1)
+        self.R = [0] * (self.m + 1)
+        for b in range(1, self.m + 1):
+            self.L[b] = (b - 1) * self.B + 1
+            self.R[b] = min(b * self.B, self.n)
+        for i in range(1, self.n + 1):
+            self.bel[i] = (i - 1) // self.B + 1
+        self.s = [0] * (self.m + 1)
+        self.lazy = [0] * (self.m + 1)
+        for i in range(1, self.n + 1):
+            self.s[self.bel[i]] += self.a[i]
+
+    def _push(self, b):
+        if self.lazy[b]:
+            for i in range(self.L[b], self.R[b] + 1):
+                self.a[i] += self.lazy[b]
+            self.lazy[b] = 0
+
+    def _recalc(self, b):
+        self.s[b] = sum(self.a[self.L[b]:self.R[b] + 1])
+
+    def add(self, l, r, v):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            self._push(bl)
+            for i in range(l, r + 1):
+                self.a[i] += v
+            self._recalc(bl)
+            return
+        self._push(bl)
+        for i in range(l, self.R[bl] + 1):
+            self.a[i] += v
+        self._recalc(bl)
+        self._push(br)
+        for i in range(self.L[br], r + 1):
+            self.a[i] += v
+        self._recalc(br)
+        for b in range(bl + 1, br):
+            self.lazy[b] += v
+            self.s[b] += v * (self.R[b] - self.L[b] + 1)
+
+    def query(self, l, r):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            return sum(self.a[i] + self.lazy[bl] for i in range(l, r + 1))
+        res = sum(self.a[i] + self.lazy[bl] for i in range(l, self.R[bl] + 1))
+        res += sum(self.s[bl + 1:br])
+        res += sum(self.a[i] + self.lazy[br] for i in range(self.L[br], r + 1))
+        return res
+
+    def dump(self):
+        for b in range(1, self.m + 1):
+            print('block', b, self.L[b], self.R[b],
+                  'base', self.a[self.L[b]:self.R[b] + 1],
+                  'lazy', self.lazy[b], 'sum', self.s[b])
+
+a = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+seg = SqrtDecomp(a, 3)
+seg.add(2, 8, 2)
+seg.dump()
+print(seg.query(2, 8))   # 49
+print(seg.query(1, 5))   # 23
+print(seg.query(4, 6))   # 21
+`,
+
+assign: `
+class SqrtAssign:
+    """分块：区间赋值、区间求和"""
+    def __init__(self, a):
+        self.n = len(a) - 1
+        self.B = max(1, int(self.n ** 0.5))
+        self.m = (self.n + self.B - 1) // self.B
+        self.a = a[:]
+        self.bel = [0] * (self.n + 1)
+        self.L = [0] * (self.m + 1)
+        self.R = [0] * (self.m + 1)
+        for b in range(1, self.m + 1):
+            self.L[b] = (b - 1) * self.B + 1
+            self.R[b] = min(b * self.B, self.n)
+        for i in range(1, self.n + 1):
+            self.bel[i] = (i - 1) // self.B + 1
+        self.s = [0] * (self.m + 1)
+        self.tag = [None] * (self.m + 1)     # None = 无赋值标记
+        self._recalc_all()
+
+    def _recalc_all(self):
+        for b in range(1, self.m + 1):
+            self.s[b] = sum(self.a[self.L[b]:self.R[b] + 1])
+
+    def _recalc(self, b):
+        self.s[b] = sum(self.a[self.L[b]:self.R[b] + 1])
+
+    def _push(self, b):
+        if self.tag[b] is not None:
+            v = self.tag[b]
+            for i in range(self.L[b], self.R[b] + 1):
+                self.a[i] = v
+            self.tag[b] = None
+            self._recalc(b)
+
+    def _val(self, i):
+        b = self.bel[i]
+        return self.tag[b] if self.tag[b] is not None else self.a[i]
+
+    def assign(self, l, r, v):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            self._push(bl)
+            for i in range(l, r + 1):
+                self.a[i] = v
+            self._recalc(bl)
+            return
+        self._push(bl)
+        for i in range(l, self.R[bl] + 1):
+            self.a[i] = v
+        self._recalc(bl)
+        self._push(br)
+        for i in range(self.L[br], r + 1):
+            self.a[i] = v
+        self._recalc(br)
+        for b in range(bl + 1, br):          # 整块：只打赋值标记
+            self.tag[b] = v
+            self.s[b] = v * (self.R[b] - self.L[b] + 1)
+
+    def query(self, l, r):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            return sum(self._val(i) for i in range(l, r + 1))
+        res = sum(self._val(i) for i in range(l, self.R[bl] + 1))
+        res += sum(self.s[bl + 1:br])
+        res += sum(self._val(i) for i in range(self.L[br], r + 1))
+        return res
+
+
+# 若要同时支持'区间加'：tag 为赋值标记，add 为加法标记，
+# 语义 = 先 assign 再 add；assign 到来时清掉 add
+`,
+
+minmax: `
+class SqrtMax:
+    """分块：区间加、区间最大值"""
+    NEG = -(10 ** 18)
+
+    def __init__(self, a):
+        self.n = len(a) - 1
+        self.B = max(1, int(self.n ** 0.5))
+        self.m = (self.n + self.B - 1) // self.B
+        self.a = a[:]
+        self.bel = [0] * (self.n + 1)
+        self.L = [0] * (self.m + 1)
+        self.R = [0] * (self.m + 1)
+        for b in range(1, self.m + 1):
+            self.L[b] = (b - 1) * self.B + 1
+            self.R[b] = min(b * self.B, self.n)
+        for i in range(1, self.n + 1):
+            self.bel[i] = (i - 1) // self.B + 1
+        self.mx = [self.NEG] * (self.m + 1)
+        self.add = [0] * (self.m + 1)
+        for b in range(1, self.m + 1):
+            self._recalc(b)
+
+    def _recalc(self, b):
+        self.mx[b] = max(self.a[self.L[b]:self.R[b] + 1])
+
+    def _push(self, b):
+        if self.add[b]:
+            d = self.add[b]
+            for i in range(self.L[b], self.R[b] + 1):
+                self.a[i] += d
+            self.add[b] = 0
+            self._recalc(b)
+
+    def _val(self, i):
+        return self.a[i] + self.add[self.bel[i]]
+
+    def add_range(self, l, r, v):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            self._push(bl)
+            for i in range(l, r + 1):
+                self.a[i] += v
+            self._recalc(bl)
+            return
+        self._push(bl)
+        for i in range(l, self.R[bl] + 1):
+            self.a[i] += v
+        self._recalc(bl)
+        self._push(br)
+        for i in range(self.L[br], r + 1):
+            self.a[i] += v
+        self._recalc(br)
+        for b in range(bl + 1, br):
+            self.add[b] += v
+            self.mx[b] += v              # 整体平移
+
+    def query_max(self, l, r):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            return max(self._val(i) for i in range(l, r + 1))
+        res = max(self._val(i) for i in range(l, self.R[bl] + 1))
+        res = max(res, max(self.mx[bl + 1:br], default=self.NEG))
+        res = max(res, max(self._val(i) for i in range(self.L[br], r + 1)))
+        return res
+
+
+# 若还要区间乘：乘负数时必须同时维护 max 与 min，并在负乘时互换
+`,
+
+sqrt_op: `
+import math
+
+class SqrtBlockSqrtOp:
+    """区间开方（向下取整）、区间求和；均摊 O((n+q)·√n)"""
+    def __init__(self, a):
+        self.n = len(a) - 1
+        self.B = max(1, math.isqrt(self.n))
+        self.m = (self.n + self.B - 1) // self.B
+        self.a = a[:]
+        self.bel = [0] * (self.n + 1)
+        self.L = [0] * (self.m + 1)
+        self.R = [0] * (self.m + 1)
+        for b in range(1, self.m + 1):
+            self.L[b] = (b - 1) * self.B + 1
+            self.R[b] = min(b * self.B, self.n)
+        for i in range(1, self.n + 1):
+            self.bel[i] = (i - 1) // self.B + 1
+        self.s = [0] * (self.m + 1)
+        self.ok = [True] * (self.m + 1)     # 块内是否全 <= 1（开方不再变化）
+        for b in range(1, self.m + 1):
+            self._recalc(b)
+
+    def _recalc(self, b):
+        self.s[b] = sum(self.a[self.L[b]:self.R[b] + 1])
+        self.ok[b] = all(self.a[i] <= 1 for i in range(self.L[b], self.R[b] + 1))
+
+    def _sqrt_part(self, l, r):
+        """对 [l, r] 逐元素开方，返回增量"""
+        delta = 0
+        for i in range(l, r + 1):
+            v = math.isqrt(self.a[i])        # 不要用 int(x ** 0.5)
+            delta += v - self.a[i]
+            self.a[i] = v
+        return delta
+
+    def sqrt_range(self, l, r):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            if self.ok[bl]:
+                return                        # 整块已稳定，跳过
+            self.s[bl] += self._sqrt_part(l, r)
+            self._recalc(bl)
+            return
+        if not self.ok[bl]:
+            self.s[bl] += self._sqrt_part(l, self.R[bl])
+            self._recalc(bl)
+        for b in range(bl + 1, br):
+            if self.ok[b]:
+                continue
+            self.s[b] += self._sqrt_part(self.L[b], self.R[b])
+            self._recalc(b)
+        if not self.ok[br]:
+            self.s[br] += self._sqrt_part(self.L[br], r)
+            self._recalc(br)
+
+    def query(self, l, r):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            return sum(self.a[l:r + 1])
+        res = sum(self.a[l:self.R[bl] + 1])
+        res += sum(self.s[bl + 1:br])
+        res += sum(self.a[self.L[br]:r + 1])
+        return res
+
+
+# 洛谷 P4145 花神游历各国：注意值可能为 0，isqrt(0) == 0
+`,
+
+mode: `
+from bisect import bisect_left, bisect_right
+
+class BlockMode:
+    """静态区间众数：块间预处理 f[i][j] + 散块候选二分
+       并列时取较小的值"""
+    def __init__(self, a):
+        self.n = len(a) - 1
+        self.B = max(1, int(self.n ** 0.5))
+        self.m = (self.n + self.B - 1) // self.B
+        self.a = a
+        self.bel = [0] * (self.n + 1)
+        self.L = [0] * (self.m + 1)
+        self.R = [0] * (self.m + 1)
+        for b in range(1, self.m + 1):
+            self.L[b] = (b - 1) * self.B + 1
+            self.R[b] = min(b * self.B, self.n)
+        for i in range(1, self.n + 1):
+            self.bel[i] = (i - 1) // self.B + 1
+
+        # 每个值的出现位置（用于 O(log n) 区间计数）
+        self.pos = {}
+        for i in range(1, self.n + 1):
+            self.pos.setdefault(a[i], []).append(i)
+
+        # f[i][j] / c[i][j]：块 i..j 的众数与次数
+        self.f = [[0] * (self.m + 1) for _ in range(self.m + 1)]
+        self.c = [[0] * (self.m + 1) for _ in range(self.m + 1)]
+        for i in range(1, self.m + 1):
+            freq = {}
+            best, bestc = 0, 0
+            for j in range(i, self.m + 1):
+                for k in range(self.L[j], self.R[j] + 1):
+                    x = a[k]
+                    freq[x] = freq.get(x, 0) + 1
+                    if freq[x] > bestc or (freq[x] == bestc and x < best):
+                        best, bestc = x, freq[x]
+                self.f[i][j], self.c[i][j] = best, bestc
+
+    def _count(self, x, l, r):
+        p = self.pos.get(x, [])
+        return bisect_right(p, r) - bisect_left(p, l)
+
+    def query(self, l, r):
+        bl, br = self.bel[l], self.bel[r]
+        if bl + 1 > br - 1:                  # 整块为空，直接暴力
+            freq, best, bestc = {}, 0, 0
+            for i in range(l, r + 1):
+                x = self.a[i]
+                freq[x] = freq.get(x, 0) + 1
+                if freq[x] > bestc or (freq[x] == bestc and x < best):
+                    best, bestc = x, freq[x]
+            return best
+
+        best, bestc = self.f[bl + 1][br - 1], self.c[bl + 1][br - 1]
+        cand = set(self.a[l:self.R[bl] + 1]) | set(self.a[self.L[br]:r + 1])
+        for x in cand:                       # 候选 <= 2B 个
+            cnt = self._count(x, l, r)       # 散块次数 + 整块次数
+            if cnt > bestc or (cnt == bestc and x < best):
+                best, bestc = x, cnt
+        return best
+
+
+# 复杂度：预处理 O(n·√n)，查询 O(√n·log n)
+`,
+
+kth: `
+from bisect import bisect_right
+
+class SqrtKth:
+    """静态区间第 k 小：块内排序 + 二分答案"""
+    def __init__(self, a):
+        self.n = len(a) - 1
+        self.B = max(1, int(self.n ** 0.5))
+        self.m = (self.n + self.B - 1) // self.B
+        self.a = a[:]
+        self.bel = [0] * (self.n + 1)
+        self.L = [0] * (self.m + 1)
+        self.R = [0] * (self.m + 1)
+        for b in range(1, self.m + 1):
+            self.L[b] = (b - 1) * self.B + 1
+            self.R[b] = min(b * self.B, self.n)
+        for i in range(1, self.n + 1):
+            self.bel[i] = (i - 1) // self.B + 1
+
+        self.sorted = [None] * (self.m + 1)   # 每块排序副本
+        for b in range(1, self.m + 1):
+            self.sorted[b] = sorted(self.a[self.L[b]:self.R[b] + 1])
+        self.vals = sorted(set(a[1:]))        # 离散化后的值域
+
+    def _count_le(self, l, r, x):
+        """[l, r] 中 <= x 的元素个数"""
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            return sum(1 for i in range(l, r + 1) if self.a[i] <= x)
+        res = sum(1 for i in range(l, self.R[bl] + 1) if self.a[i] <= x)
+        for b in range(bl + 1, br):
+            res += bisect_right(self.sorted[b], x)   # 整块二分
+        res += sum(1 for i in range(self.L[br], r + 1) if self.a[i] <= x)
+        return res
+
+    def kth(self, l, r, k):
+        lo, hi = 0, len(self.vals) - 1
+        while lo < hi:
+            mid = (lo + hi) // 2
+            if self._count_le(l, r, self.vals[mid]) >= k:
+                hi = mid
+            else:
+                lo = mid + 1
+        return self.vals[lo]
+
+
+# 复杂度：O(log n) 次 check，每次 O(√n·log B) ⇒ O(√n·log² n)
+`,
+
+mo: `
+def mo_query(n, a, queries):
+    """莫队：离线区间查询
+       queries = [(l, r, idx)]；例：区间内不同元素个数
+       a 为 1-indexed"""
+    B = max(1, int(n ** 0.5))
+    bel = [0] * (n + 1)
+    for i in range(1, n + 1):
+        bel[i] = (i - 1) // B + 1
+
+    # 奇偶优化：奇数块 r 降序，减少回跳
+    queries = sorted(
+        queries,
+        key=lambda q: (bel[q[0]], q[1] if bel[q[0]] % 2 == 0 else -q[1])
+    )
+
+    cnt = {}
+    cur_ans = 0
+    cur_l, cur_r = 1, 0                     # 当前区间为空
+
+    def add(pos):
+        nonlocal cur_ans
+        x = a[pos]
+        if cnt.get(x, 0) == 0:
+            cur_ans += 1
+        cnt[x] = cnt.get(x, 0) + 1
+
+    def remove(pos):
+        nonlocal cur_ans
+        x = a[pos]
+        cnt[x] -= 1
+        if cnt[x] == 0:
+            cur_ans -= 1
+
+    res = [0] * len(queries)
+    for l, r, idx in queries:
+        while cur_l > l:
+            cur_l -= 1
+            add(cur_l)
+        while cur_r < r:
+            cur_r += 1
+            add(cur_r)
+        while cur_l < l:
+            remove(cur_l)
+            cur_l += 1
+        while cur_r > r:
+            remove(cur_r)
+            cur_r -= 1
+        res[idx] = cur_ans
+    return res
+
+
+# 复杂度 O((n + q)·√n)；add / remove 必须 O(1)
+# 带修莫队：排序键改 (bel[l], bel[r], t)，块大小 n^(2/3)
+`,
+
+mo_tree: `
+def tree_mo(n, edges, color, queries):
+    """树上莫队：求路径 u-v 上不同颜色数
+       edges = [(x, y)]，color 1-indexed，queries = [(u, v)]"""
+    g = [[] for _ in range(n + 1)]
+    for x, y in edges:
+        g[x].append(y)
+        g[y].append(x)
+
+    LOG = (n).bit_length()
+    tin = [0] * (n + 1)
+    tout = [0] * (n + 1)
+    depth = [0] * (n + 1)
+    up = [[0] * (n + 1) for _ in range(LOG)]
+    euler = [0] * (2 * n + 1)              # 欧拉序，长 2n
+    timer = 0
+
+    def dfs(u, p):
+        nonlocal timer
+        timer += 1
+        euler[timer] = u
+        tin[u] = timer
+        up[0][u] = p
+        for k in range(1, LOG):
+            up[k][u] = up[k - 1][up[k - 1][u]]
+        for v in g[u]:
+            if v == p:
+                continue
+            depth[v] = depth[u] + 1
+            dfs(v, u)
+        timer += 1
+        euler[timer] = u
+        tout[u] = timer
+
+    dfs(1, 1)
+
+    def lca(u, v):
+        if depth[u] < depth[v]:
+            u, v = v, u
+        d = depth[u] - depth[v]
+        for k in range(LOG):
+            if d >> k & 1:
+                u = up[k][u]
+        if u == v:
+            return u
+        for k in range(LOG - 1, -1, -1):
+            if up[k][u] != up[k][v]:
+                u = up[k][u]
+                v = up[k][v]
+        return up[0][u]
+
+    B = max(1, int((2 * n) ** 0.5))
+    qlist = []
+    for i, (u, v) in enumerate(queries):
+        if tin[u] > tin[v]:
+            u, v = v, u
+        w = lca(u, v)
+        if w == u:
+            qlist.append((tin[u], tin[v], -1, i))
+        else:
+            qlist.append((tout[u], tin[v], w, i))
+    qlist.sort(key=lambda q: (q[0] // B,
+                              q[1] if (q[0] // B) % 2 == 0 else -q[1]))
+
+    cnt = {}
+    vis = [False] * (n + 1)
+    cur = 0
+
+    def toggle(x):
+        nonlocal cur
+        if vis[x]:
+            c = color[x]
+            cnt[c] -= 1
+            if cnt[c] == 0:
+                cur -= 1
+            vis[x] = False
+        else:
+            c = color[x]
+            if cnt.get(c, 0) == 0:
+                cur += 1
+            cnt[c] = cnt.get(c, 0) + 1
+            vis[x] = True
+
+    ans = [0] * len(queries)
+    L, R = 1, 0
+    for l, r, extra, i in qlist:
+        while L > l:
+            L -= 1
+            toggle(euler[L])
+        while R < r:
+            R += 1
+            toggle(euler[R])
+        while L < l:
+            toggle(euler[L])
+            L += 1
+        while R > r:
+            toggle(euler[R])
+            R -= 1
+        if extra != -1:                     # LCA 不在区间里，单独计入
+            toggle(extra)
+            ans[i] = cur
+            toggle(extra)                   # 还原
+        else:
+            ans[i] = cur
+    return ans
+
+
+# 关键：toggle 两次等于取消，正好实现"在不在路径上"的开关语义
+`,
+
+blocklist: `
+class BlockList:
+    """块状链表：支持任意位置插入 / 删除一段；均摊 O(√n)
+       不变量：每块大小 ∈ (0, 2B]，块数 ≈ n/B"""
+    def __init__(self, seq=(), B=None):
+        seq = list(seq)
+        self.B = B or max(1, int(len(seq) ** 0.5))
+        self.blocks = [seq[i:i + self.B] for i in range(0, len(seq), self.B)]
+
+    def _locate(self, k):
+        """k: 0-based 位置，返回 (块下标, 块内偏移)；k == len(seq) 时返回末尾"""
+        for bi, blk in enumerate(self.blocks):
+            if k < len(blk):
+                return bi, k
+            k -= len(blk)
+        return len(self.blocks), 0
+
+    def _fix(self, bi):
+        """块过大就分裂，块过小就与邻块合并"""
+        if bi >= len(self.blocks):
+            return
+        blk = self.blocks[bi]
+        if not blk:
+            del self.blocks[bi]
+            return
+        if len(blk) > 2 * self.B:
+            self.blocks[bi] = blk[:self.B]
+            self.blocks.insert(bi + 1, blk[self.B:])
+        elif bi > 0 and len(self.blocks[bi - 1]) + len(blk) <= 2 * self.B:
+            self.blocks[bi - 1].extend(blk)
+            del self.blocks[bi]
+
+    def insert(self, k, values):
+        values = list(values)
+        if not self.blocks:
+            self.blocks.append(values)
+            self._fix(0)
+            return
+        bi, off = self._locate(k)
+        if bi == len(self.blocks):
+            self.blocks[-1].extend(values)
+            self._fix(len(self.blocks) - 1)
+        else:
+            self.blocks[bi][off:off] = values
+            self._fix(bi)
+
+    def delete(self, k, length):
+        bi, off = self._locate(k)
+        rest = length
+        while rest > 0 and bi < len(self.blocks):
+            blk = self.blocks[bi]
+            take = min(rest, len(blk) - off)
+            del blk[off:off + take]
+            rest -= take
+            if not blk:
+                del self.blocks[bi]
+            else:
+                self._fix(bi)
+                bi += 1
+            off = 0
+
+    def get(self, k):
+        bi, off = self._locate(k)
+        return self.blocks[bi][off]
+
+    def to_list(self):
+        return [x for blk in self.blocks for x in blk]
+
+
+# _fix 是均摊 O(1) 的关键：忘了它会退化成 O(n)
+`,
+
+toolbox: `
+import math
+
+class SqrtBlock:
+    """分块四合一：区间加、区间赋值、区间求和、区间最大值
+       约定：先乘、再加、最后赋值（此处只实现加与赋值）"""
+    NEG = -(10 ** 18)
+
+    def __init__(self, a):
+        """a 为 1-indexed，长度 n+1"""
+        self.n = len(a) - 1
+        self.B = max(1, math.isqrt(self.n))
+        self.m = (self.n + self.B - 1) // self.B
+        self.a = a[:]
+        self.bel = [0] * (self.n + 1)
+        self.L = [0] * (self.m + 1)
+        self.R = [0] * (self.m + 1)
+        for b in range(1, self.m + 1):
+            self.L[b] = (b - 1) * self.B + 1
+            self.R[b] = min(b * self.B, self.n)      # 最后一块可能不满
+        for i in range(1, self.n + 1):
+            self.bel[i] = (i - 1) // self.B + 1
+
+        self.s = [0] * (self.m + 1)
+        self.mx = [self.NEG] * (self.m + 1)
+        self.add = [0] * (self.m + 1)          # 块级加法标记
+        self.assign = [None] * (self.m + 1)    # 块级赋值标记（None = 无）
+        for b in range(1, self.m + 1):
+            self._recalc(b)
+
+    # ---------- 基础 ----------
+    def _val(self, i):
+        b = self.bel[i]
+        v = self.assign[b]
+        return (v if v is not None else self.a[i]) + self.add[b]
+
+    def _recalc(self, b):
+        s, mx = 0, self.NEG
+        for i in range(self.L[b], self.R[b] + 1):
+            s += self.a[i]
+            if self.a[i] > mx:
+                mx = self.a[i]
+        self.s[b], self.mx[b] = s, mx
+
+    def _push(self, b):
+        """把块 b 的标记写回元素；只在需要逐元素修改时调用"""
+        if self.assign[b] is not None or self.add[b]:
+            v, d = self.assign[b], self.add[b]
+            for i in range(self.L[b], self.R[b] + 1):
+                self.a[i] = (v if v is not None else self.a[i]) + d
+            self.assign[b] = None
+            self.add[b] = 0
+            self._recalc(b)
+
+    # ---------- 区间加 ----------
+    def add_range(self, l, r, val):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            self._push(bl)
+            for i in range(l, r + 1):
+                self.a[i] += val
+            self._recalc(bl)
+            return
+        self._push(bl)
+        for i in range(l, self.R[bl] + 1):
+            self.a[i] += val
+        self._recalc(bl)
+        self._push(br)
+        for i in range(self.L[br], r + 1):
+            self.a[i] += val
+        self._recalc(br)
+        for b in range(bl + 1, br):
+            if self.assign[b] is not None:
+                self.assign[b] += val
+            else:
+                self.add[b] += val
+            self.s[b] += val * (self.R[b] - self.L[b] + 1)
+            self.mx[b] += val
+
+    # ---------- 区间赋值 ----------
+    def assign_range(self, l, r, val):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            self._push(bl)
+            for i in range(l, r + 1):
+                self.a[i] = val
+            self._recalc(bl)
+            return
+        self._push(bl)
+        for i in range(l, self.R[bl] + 1):
+            self.a[i] = val
+        self._recalc(bl)
+        self._push(br)
+        for i in range(self.L[br], r + 1):
+            self.a[i] = val
+        self._recalc(br)
+        for b in range(bl + 1, br):
+            self.assign[b] = val            # 赋值抹掉未兑现的加
+            self.add[b] = 0
+            self.s[b] = val * (self.R[b] - self.L[b] + 1)
+            self.mx[b] = val
+
+    # ---------- 查询 ----------
+    def query_sum(self, l, r):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            return sum(self._val(i) for i in range(l, r + 1))
+        res = sum(self._val(i) for i in range(l, self.R[bl] + 1))
+        res += sum(self.s[bl + 1:br])
+        res += sum(self._val(i) for i in range(self.L[br], r + 1))
+        return res
+
+    def query_max(self, l, r):
+        bl, br = self.bel[l], self.bel[r]
+        if bl == br:
+            return max(self._val(i) for i in range(l, r + 1))
+        res = max(self._val(i) for i in range(l, self.R[bl] + 1))
+        res = max(res, max(self.mx[bl + 1:br], default=self.NEG))
+        res = max(res, max(self._val(i) for i in range(self.L[br], r + 1)))
+        return res
+
+
+# 换信息 = 换 _recalc；换操作 = 换标记与 _push 的写回规则
+`
+};
+
+function applyCode(){
+  document.querySelectorAll('code[data-src]').forEach(el => {
+    const raw = CODE[el.dataset.src];
+    if (typeof raw === 'string') {
+      el.textContent = raw.replace(/^\n+/, '').replace(/\s+$/, '');
+    }
+  });
+  if (window.Prism && Prism.highlightAll) { Prism.highlightAll(); }
+}
+
+const deck = document.getElementById('deck');
+function fit(){
+  const s = Math.min(window.innerWidth / 1320, window.innerHeight / 780);
+  deck.style.transform = 'scale(' + s + ')';
+}
+
+function fitCode(){
+  document.querySelectorAll('pre.code').forEach(pre => {
+    pre.style.fontSize = '';
+    let fs = 12.4, guard = 0;
+    while (pre.scrollHeight > pre.clientHeight + 2 && fs > 10.2 && guard < 40) {
+      fs -= 0.15;
+      pre.style.fontSize = fs.toFixed(2) + 'px';
+      guard++;
+    }
+  });
+}
+function relayout(){ fit(); requestAnimationFrame(fitCode); }
+window.addEventListener('resize', relayout);
+window.addEventListener('load', relayout);
+
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let idx = 0;
+document.getElementById('tot').textContent = total;
+
+function show(n){
+  idx = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('on', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('prog').style.width = ((idx + 1) / total * 100) + '%';
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  requestAnimationFrame(fitCode);
+}
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(total - 1);
+  else if (e.key.toLowerCase() === 'o') document.getElementById('toc').classList.toggle('on');
+  else if (e.key === 'Escape') document.getElementById('toc').classList.remove('on');
+});
+document.getElementById('fullBtn').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+const tocGrid = document.getElementById('tocGrid');
+slides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + (i + 1);
+  a.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b>' + (s.dataset.title || '');
+  a.onclick = e => { e.preventDefault(); show(i); document.getElementById('toc').classList.remove('on'); };
+  tocGrid.appendChild(a);
+});
+document.getElementById('tocBtn').onclick = () => document.getElementById('toc').classList.toggle('on');
+document.getElementById('toc').onclick = e => { if (e.target.id === 'toc') e.classList.remove('on'); };
+
+applyCode();
+const h = parseInt(location.hash.replace('#', ''), 10);
+show(isNaN(h) ? 0 : h - 1);
+relayout();
+</script>
+</body>
+</html>

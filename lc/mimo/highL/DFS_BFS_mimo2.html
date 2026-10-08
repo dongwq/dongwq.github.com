@@ -1,0 +1,2284 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DFS 与 BFS：一条升级链讲透图的遍历</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{
+  --paper:#FFF8F0; --card:#FFFFFF;
+  --ink:#2B1D12; --ink2:#6E5842; --line:#EEDCC2;
+  --accent:#E2612F; --amber:#F2A63B; --teal:#0F7B6C; --plum:#A33A64;
+  --code-bg:#2C2117;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EFE0C8;font-family:var(--sans);color:var(--ink);overflow:hidden}
+body{background:
+  radial-gradient(1200px 700px at 12% -10%, #FBE9CE 0%, rgba(251,233,206,0) 60%),
+  radial-gradient(900px 600px at 105% 110%, #F7DCC0 0%, rgba(247,220,192,0) 55%), #EFE0C8;}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center center;
+  border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(90,52,18,.28),0 4px 12px rgba(90,52,18,.14)}
+
+.slide{position:absolute;inset:0;padding:22px 38px 26px;opacity:0;visibility:hidden;
+  transform:translateX(22px) scale(.996);transition:opacity .38s ease,transform .38s ease,visibility .38s;
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(160deg,#FFFBF5 0%,#FFF4E6 55%,#FDEBD3 100%)}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.slide::after{content:"";position:absolute;right:-120px;top:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(242,166,59,.18),rgba(242,166,59,0) 70%);pointer-events:none}
+.slide::before{content:"";position:absolute;left:-90px;bottom:-140px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,rgba(226,97,47,.11),rgba(226,97,47,0) 70%);pointer-events:none}
+.slide>*{position:relative;z-index:2}
+
+.kicker{display:inline-flex;align-items:center;gap:7px;font-size:10.6px;font-weight:700;letter-spacing:.13em;
+  color:var(--accent);background:#FFEEDC;border:1px solid #F6D2B2;padding:3px 11px;border-radius:999px}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+.kicker.teal{color:var(--teal);background:#E9F7F2;border-color:#BEE6D8}
+.kicker.teal i{background:var(--teal)}
+.kicker.plum{color:var(--plum);background:#FDF1F5;border-color:#EFCBD8}
+.kicker.plum i{background:var(--plum)}
+.sl-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+  border-bottom:2px solid var(--line);padding-bottom:8px}
+.sl-head h2{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1.14;margin-top:5px}
+.sl-head h2 em{font-style:normal;color:var(--accent)}
+.sl-head h2 em.t{color:var(--teal)}
+.sl-head .hint{font-size:11.6px;color:var(--ink2);text-align:right;max-width:340px;line-height:1.5}
+.sl-head .hint b{color:#8A5A2C}
+.lead{font-size:15px;line-height:1.66;color:#42301F}
+.muted{color:var(--ink2)}
+
+.cols{display:grid;gap:11px;min-height:0;flex:1 1 auto}
+.c2{grid-template-columns:1fr 1fr}
+.c2a{grid-template-columns:1.08fr .92fr}
+.c2b{grid-template-columns:.92fr 1.08fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+.cols > div{min-height:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.card h3 .n{width:21px;height:21px;border-radius:7px;background:var(--accent);color:#fff;font-size:11.5px;
+  display:grid;place-items:center;font-family:var(--sans);font-weight:700;flex:none}
+.card h3 .n.t{background:var(--teal)}
+.card p,.card li{font-size:13px;line-height:1.6;color:#4A3722}
+.card ul,ol{padding-left:16px}
+.card li{margin:2px 0}
+.card.tint-teal{background:#F2FBF7;border-color:#BEE6D8}
+.card.tint-amber{background:#FFF7E6;border-color:#F4DCAC}
+.card.tint-plum{background:#FDF1F5;border-color:#EFCBD8}
+
+.formula{font-family:var(--mono);font-size:14.5px;background:#2E2118;color:#FFEBD2;border-radius:11px;
+  padding:10px 14px;line-height:1.55;flex:none;overflow-x:auto}
+.formula .hl{color:#FFB169;font-weight:600}
+.formula .ok{color:#7FE0C2;font-weight:600}
+.formula .dim{color:#A8846A}
+
+.codewrap{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;
+  border:1px solid #4B3823;border-radius:12px;overflow:hidden;background:var(--code-bg)}
+.code-head{flex:none;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#241A12;
+  border-bottom:1px solid #46341F}
+.code-head .dot{width:9px;height:9px;border-radius:50%;background:#6B5238}
+.code-head .dot.r{background:#B9471B}
+.code-head .dot.g{background:#0F7B6C}
+.code-head em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B29272;letter-spacing:.08em;margin-left:6px}
+.code-head .lang{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7A5F45;letter-spacing:.12em}
+pre.code{margin:0;flex:1 1 auto;min-height:0;overflow:auto;background:var(--code-bg)!important;
+  padding:11px 14px;font-family:var(--mono);font-size:12.4px;line-height:1.56;white-space:pre;tab-size:4}
+pre.code::-webkit-scrollbar{height:8px;width:8px}
+pre.code::-webkit-scrollbar-track{background:#241A12}
+pre.code::-webkit-scrollbar-thumb{background:#6B5238;border-radius:8px}
+pre.code::-webkit-scrollbar-thumb:hover{background:#8E6E4C}
+pre.code code,code[class*="language-"]{font-family:var(--mono)!important;font-size:inherit;
+  background:transparent!important;color:#F0E0CC!important;text-shadow:none!important}
+pre.code .token.comment,pre.code .token.prolog,pre.code .token.doctype,pre.code .token.cdata{color:#A8846A!important;font-style:italic}
+pre.code .token.punctuation{color:#C0A183!important}
+pre.code .token.keyword,pre.code .token.atrule,pre.code .token.rule,pre.code .token.important{color:#FFB169!important;font-weight:600}
+pre.code .token.string,pre.code .token.char,pre.code .token.attr-value{color:#9BE0BE!important}
+pre.code .token.function,pre.code .token.class-name,pre.code .token.builtin{color:#FFD9A8!important}
+pre.code .token.number,pre.code .token.boolean,pre.code .token.constant,pre.code .token.symbol{color:#F4A9C0!important}
+pre.code .token.operator{color:#FFC98B!important}
+pre.code .token.decorator,pre.code .token.annotation{color:#F4A9C0!important}
+
+.note{border-left:4px solid var(--amber);background:#FFF6E4;padding:8px 12px;border-radius:0 11px 11px 0;
+  font-size:12.6px;line-height:1.58;flex:none}
+.note.warn{border-color:var(--plum);background:#FDF0F4}
+.note.good{border-color:var(--teal);background:#EFF9F5}
+.note b{color:var(--accent)}.note.warn b{color:var(--plum)}.note.good b{color:var(--teal)}
+code:not([class*="language-"]){font-family:var(--mono);font-size:.93em;background:#F6EADA;padding:1px 5px;border-radius:5px}
+
+table{width:100%;border-collapse:collapse;font-size:12.1px;background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);flex:none}
+th,td{padding:5.5px 10px;text-align:left;border-bottom:1px solid var(--line);line-height:1.45}
+th{background:#F7E7CF;font-family:var(--serif);font-size:12.6px;color:#7A4A22}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:11px}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:7px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.2px;
+  font-weight:600;color:#5B4429}
+.pill.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill.tq{background:var(--teal);color:#fff;border-color:var(--teal)}
+ul.tick{list-style:none;padding:0}
+ul.tick li{position:relative;padding-left:20px;margin:3px 0;font-size:12.8px;line-height:1.55}
+ul.tick li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:4px;
+  background:#FFE2C6;border:2px solid var(--accent)}
+ul.tick.ok li::before{background:#CDEEE2;border-color:var(--teal)}
+ul.tick.no li::before{background:#F7D6E1;border-color:var(--plum);border-radius:50%}
+
+.a-link{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:11px;padding:8px 11px;transition:.18s;box-shadow:0 4px 10px rgba(120,70,20,.06);overflow:hidden}
+.a-link:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 20px rgba(226,97,47,.16)}
+.a-link .t{font-size:12.4px;font-weight:700;color:#7A3A12;display:block;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link .d{font-size:11px;color:var(--ink2);line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.a-link .src{font-size:9.6px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--teal);
+  padding:1px 7px;border-radius:999px;display:inline-block;margin-bottom:4px}
+.a-link .src.lg{background:var(--accent)}
+
+.step{display:flex;gap:9px;align-items:flex-start}
+.step .idx{flex:none;width:23px;height:23px;border-radius:7px;background:#2E2118;color:#FFD9A8;
+  display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.split-line{height:2px;background:linear-gradient(90deg,#E2612F,#F2A63B,rgba(242,166,59,0));border-radius:2px;margin:6px 0;flex:none}
+.split-line.t{background:linear-gradient(90deg,#0F7B6C,#7FE0C2,rgba(127,224,194,0))}
+.num-huge{font-family:var(--serif);font-size:110px;font-weight:900;line-height:.9;
+  background:linear-gradient(160deg,#E2612F,#F2A63B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.t{background:linear-gradient(160deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+svg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;overflow:visible}
+.gnode circle{fill:#fff;stroke:#D9B98D;stroke-width:3;transition:.45s}
+.gnode text{font-family:var(--mono);font-size:16px;font-weight:600;fill:#4A3722;text-anchor:middle}
+.gnode.root circle{fill:#E2612F;stroke:#B9471B}
+.gnode.root text{fill:#fff}
+.gnode.done circle{fill:#E9F7F2;stroke:#0F7B6C}
+.gnode.done text{fill:#0B6356}
+.gnode.cur circle{fill:#FFF1DC;stroke:#F2A63B;stroke-width:4}
+.gedge{stroke:#D8BC9B;stroke-width:3;fill:none}
+.gedge.up{stroke:#0F7B6C}
+.gedge.cut{stroke:#A33A64;stroke-width:3;stroke-dasharray:7 7}
+.gedge.tree{stroke:#E2612F;stroke-width:3.5}
+.dfnlab{font-family:var(--mono);font-size:11.5px;font-weight:700;fill:#0F7B6C}
+.dfnlab.r{fill:#B9471B}
+.dfnlab.p{fill:#A33A64}
+.dfnlab.g{fill:#8A6A45}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.62;transform:scale(1.07)}}
+.dash{stroke-dasharray:8 8;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.cover{background:linear-gradient(150deg,#FFF6E8 0%,#FFE9CD 48%,#FFDCB4 100%)}
+.cover .badge{display:inline-flex;gap:8px;align-items:center;background:#2E2118;color:#FFD9A8;
+  padding:6px 14px;border-radius:999px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.cover h1{font-family:var(--serif);font-size:52px;line-height:1.1;font-weight:900}
+.cover h1 em{font-style:normal;background:linear-gradient(92deg,#E2612F,#F2A63B);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.cover h1 em.t{background:linear-gradient(92deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cover .sub{font-size:15.5px;color:#6B4A2C;line-height:1.66;max-width:600px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta span{background:rgba(255,255,255,.72);border:1px solid #F0D2AC;padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#7A4A22}
+.section-slide{background:linear-gradient(150deg,#FFF3E0,#FFE0BC)}
+.section-slide.teal{background:linear-gradient(150deg,#EFF9F4,#CFE9DE)}
+.section-slide .big{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1.18}
+
+.hud{position:fixed;right:18px;bottom:14px;display:flex;gap:7px;align-items:center;z-index:50}
+.hud button{border:1px solid rgba(120,70,20,.2);background:rgba(255,250,242,.92);color:#7A4A22;
+  width:34px;height:34px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:700;backdrop-filter:blur(6px);transition:.16s}
+.hud button:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.pgn{background:rgba(255,250,242,.92);border:1px solid rgba(120,70,20,.2);border-radius:10px;height:34px;
+  display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:12.5px;color:#7A4A22;font-weight:600}
+.prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,#E2612F,#F2A63B);z-index:60;
+  transition:width .35s ease;box-shadow:0 1px 6px rgba(226,97,47,.5)}
+.brand{position:fixed;left:18px;bottom:14px;z-index:50;background:rgba(255,250,242,.9);border:1px solid rgba(120,70,20,.2);
+  border-radius:10px;padding:8px 13px;font-size:10.5px;color:#7A4A22;letter-spacing:.1em;font-weight:700}
+.toc{position:fixed;inset:0;background:rgba(46,33,24,.82);backdrop-filter:blur(8px);z-index:80;display:none;
+  padding:42px 56px;overflow:auto}
+.toc.on{display:block}
+.toc h4{color:#FFE2BF;font-family:var(--serif);font-size:24px;margin-bottom:16px}
+.toc .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.toc a{background:rgba(255,246,232,.94);border-radius:10px;padding:9px 12px;text-decoration:none;color:#4A3722;
+  font-size:12.2px;line-height:1.4;border:1px solid rgba(255,255,255,.18);transition:.16s}
+.toc a:hover{background:#FFB169;transform:translateY(-2px)}
+.toc a b{display:block;font-family:var(--mono);font-size:10px;color:#B9471B;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- ═══ 01 封面 ═══ -->
+<section class="slide cover on" data-title="封面">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">ALGORITHMS · DFS &amp; BFS · 80 MIN</div>
+      <h1><em>DFS</em> 与 <em class="t">BFS</em><br>一条升级链讲透图遍历</h1>
+      <p class="sub">同一个引擎，两种取法：<b>栈给你深度，队列给你层数。</b><br>
+        从递归写法到双向 BFS、Tarjan 时间戳，五十页把"怎么走图"一次讲完。</p>
+      <div class="meta">
+        <span>50 页 · 约 80 分钟</span><span>18 个可运行 Python 模板</span>
+        <span>含复杂度与易错</span><span>洛谷 / LeetCode 题单</span>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 520 330" preserveAspectRatio="xMidYMid meet">
+        <!-- 同一张图，两种次序 -->
+        <text x="132" y="26" text-anchor="middle" class="dfnlab r">DFS：先深入再回溯</text>
+        <text x="392" y="26" text-anchor="middle" class="dfnlab">BFS：逐层扩散</text>
+        <g class="gedge tree"><path d="M110 84 L62 148"/><path d="M110 84 L160 148"/><path d="M62 148 L108 216"/></g>
+        <path d="M160 148 L210 214" class="gedge cut"/>
+        <g class="gnode root"><circle cx="110" cy="84" r="24"/><text x="110" y="91" font-size="14">1</text></g>
+        <g class="gnode root"><circle cx="62" cy="148" r="22"/><text x="62" y="155" font-size="13">2</text></g>
+        <g class="gnode root"><circle cx="108" cy="216" r="22"/><text x="108" y="223" font-size="13">3</text></g>
+        <g class="gnode root"><circle cx="160" cy="148" r="22"/><text x="160" y="155" font-size="13">4</text></g>
+        <g class="gnode"><circle cx="210" cy="214" r="22"/><text x="210" y="221" font-size="13">5</text></g>
+        <text x="122" y="272" text-anchor="middle" class="dfnlab r">走一条路到底，再退回来</text>
+
+        <g class="gedge up"><path d="M370 78 L318 132"/><path d="M370 78 L422 132"/><path d="M318 132 L276 194"/><path d="M318 132 L362 194"/><path d="M422 132 L470 194"/></g>
+        <g class="gnode done"><circle cx="370" cy="78" r="24"/><text x="370" y="85" font-size="14">1</text></g>
+        <g class="gnode done"><circle cx="318" cy="132" r="21"/><text x="318" y="139" font-size="13">2</text></g>
+        <g class="gnode done"><circle cx="422" cy="132" r="21"/><text x="422" y="139" font-size="13">3</text></g>
+        <g class="gnode"><circle cx="276" cy="194" r="21"/><text x="276" y="201" font-size="13">4</text></g>
+        <g class="gnode"><circle cx="362" cy="194" r="21"/><text x="362" y="201" font-size="13">5</text></g>
+        <g class="gnode"><circle cx="470" cy="194" r="21"/><text x="470" y="201" font-size="13">6</text></g>
+        <g stroke="#0F7B6C" stroke-width="2" stroke-dasharray="5 6" fill="none">
+          <path d="M300 112 L340 112"/><path d="M258 172 L488 172"/>
+        </g>
+        <text x="392" y="242" text-anchor="middle" class="dfnlab">同一层先走完</text>
+        <text x="262" y="300" text-anchor="middle" class="dfnlab g">同一张图 · 同一个起点 · 不同次序 = 不同算法</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 路线图 ═══ -->
+<section class="slide" data-title="路线图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>ROADMAP</div><h2>八站，一条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>这份讲义怎么走？<br>每站先给"要解决的问题"，再给"为什么这样写"。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3><span class="n">1</span>基础</h3><p>存储 · 递归/迭代 · 标记时机 · 对比</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>连通性</h3><p>分块 · 网格 · 二分图 · 染色</p></div>
+    <div class="card tint-teal"><h3><span class="n">3</span>最短路</h3><p>BFS 分层 · 多源 · 0-1 BFS · Dijkstra</p></div>
+    <div class="card tint-plum"><h3><span class="n">4</span>DAG</h3><p>拓扑（DFS / Kahn）· DAG 上 DP</p></div>
+    <div class="card"><h3><span class="n">5</span>时间戳</h3><p>dfn/low · 割点桥 · 强连通分量</p></div>
+    <div class="card tint-amber"><h3><span class="n">6</span>搜索技巧</h3><p>状态空间 · 双向 BFS · 记忆化 · 剪枝</p></div>
+    <div class="card tint-teal"><h3><span class="n">7</span>工程</h3><p>复杂度 · 爆栈 · 常数优化</p></div>
+    <div class="card tint-plum"><h3><span class="n">8</span>实战</h3><p>选型 · 易错 · 验证 · 题单</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>时间分配</h3><p class="muted">基础 15' · 连通 12' · 最短路 15' · DAG 10' · 时间戳 10' · 技巧 10' · 工程 4' · 实战 4'</p></div>
+    <div class="card"><h3>验收标准</h3><p class="muted">能说清 DFS 与 BFS 的差别到底在哪，能默写三种模板，遇到"最短步数/能否到达/顺序约束"能立刻选型。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 03 钩子 ═══ -->
+<section class="slide" data-title="四道题一个引擎">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HOOK</div><h2>看似无关的四道题，<em>同一个引擎</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么值得把 DFS/BFS 讲五十页？<br>它们是图论问题的"万能起点"。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3>题 A</h3><p><b>题意：</b>01 迷宫，问从起点到终点<b>最少几步</b>。</p><div class="split-line t"></div><p class="muted">→ BFS 求无权最短路。</p></div>
+    <div class="card"><h3>题 B</h3><p><b>题意：</b>图中<b>有多少块</b>互相可达的区域。</p><div class="split-line"></div><p class="muted">→ DFS/并查集数连通块。</p></div>
+    <div class="card"><h3>题 C</h3><p><b>题意：</b>选课有先后，判断能否<b>修完所有课</b>并给出顺序。</p><div class="split-line"></div><p class="muted">→ 拓扑排序（DFS / Kahn）。</p></div>
+    <div class="card"><h3>题 D</h3><p><b>题意：</b>两人朋友关系，能否把所有人分成两组且<b>同组没有朋友</b>。</p><div class="split-line t"></div><p class="muted">→ 二分图判定。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n">★</span>统一模型</h3>
+      <p class="lead">所有题都在问：<b>"从某个状态出发，能到达哪些状态？以什么次序？"</b>
+        而答案永远来自两个集合 —— <b>已访问集 S</b> 与 <b>边界集 F</b>，区别只在"从 F 里取谁"。</p>
+      <div class="note"><b>判断口诀：</b>问"最短/最少步" → BFS；问"能否/存在/全部" → DFS；问"先后顺序" → 拓扑；问"分组" → 染色。</div>
+    </div>
+    <div class="card">
+      <h3>三个判断题</h3>
+      <div class="pill-row">
+        <span class="pill hot">边权是不是全 1</span>
+        <span class="pill tq">答案是否与"层数"有关</span>
+        <span class="pill">状态空间多大</span>
+      </div>
+      <div class="split-line"></div>
+      <p class="muted">三个答案直接决定用哪一版 —— 就是第 45 页的速查表。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 抽象 ═══ -->
+<section class="slide" data-title="抽象：边界集合">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · MODEL</div><h2>遍历 = 维护<em>两个集合</em>，差别只在取谁</h2></div>
+    <div class="hint"><b>本页回答：</b>DFS 与 BFS 的本质差别？<br>为什么说"数据结构决定次序"。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3><span class="n">1</span>两个集合</h3>
+        <p><b>S</b> = 已经访问过的点；<b>F</b> = 已经碰到但还没展开的点（frontier，边界）。</p>
+        <div class="formula" style="font-size:12.8px">不变量：<span class="hl">F 中的点都与 S 相邻</span>；每个点至多进入 F 一次</div>
+      </div>
+      <div class="card"><h3><span class="n">2</span>一次循环</h3>
+        <ul class="tick">
+          <li>从 F 取出一个点 u（放进 S）</li>
+          <li>枚举 u 的邻居，未访问的加进 F</li>
+          <li>重复到 F 为空</li>
+        </ul>
+      </div>
+      <div class="card"><h3><span class="n">3</span>取谁？</h3>
+        <table style="box-shadow:none">
+          <tr><th>F 的实现</th><th>次序</th><th>名字</th></tr>
+          <tr><td class="mono">栈 LIFO</td><td>深度优先</td><td>DFS</td></tr>
+          <tr><td class="mono">队列 FIFO</td><td>按层递增</td><td>BFS</td></tr>
+          <tr><td class="mono">双端队列</td><td>0-1 代价</td><td>0-1 BFS</td></tr>
+          <tr><td class="mono">优先队列</td><td>按距离</td><td>Dijkstra</td></tr>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 380 260" preserveAspectRatio="xMidYMid meet">
+          <circle cx="190" cy="130" r="118" fill="#0F7B6C" opacity=".10" class="pulse"/>
+          <!-- S 集合 -->
+          <rect x="128" y="86" width="126" height="92" rx="18" fill="#E9F7F2" stroke="#BEE6D8" stroke-width="2.5"/>
+          <text x="191" y="76" text-anchor="middle" class="dfnlab">S：已访问</text>
+          <g class="gnode done"><circle cx="166" cy="118" r="19"/><text x="166" y="125" font-size="13">a</text></g>
+          <g class="gnode done"><circle cx="218" cy="118" r="19"/><text x="218" y="125" font-size="13">b</text></g>
+          <g class="gnode root"><circle cx="192" cy="158" r="21"/><text x="192" y="165" font-size="13">u</text></g>
+          <!-- F 集合 -->
+          <rect x="16" y="200" width="348" height="46" rx="15" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2.5"/>
+          <text x="30" y="228" class="dfnlab r">F：</text>
+          <g class="gnode cur"><circle cx="86" cy="223" r="18"/><text x="86" y="230" font-size="12.5">c</text></g>
+          <g class="gnode cur"><circle cx="140" cy="223" r="18"/><text x="140" y="230" font-size="12.5">d</text></g>
+          <g class="gnode cur"><circle cx="194" cy="223" r="18"/><text x="194" y="230" font-size="12.5">e</text></g>
+          <g class="gnode cur"><circle cx="248" cy="223" r="18"/><text x="248" y="230" font-size="12.5">f</text></g>
+          <g class="gnode cur"><circle cx="302" cy="223" r="18"/><text x="302" y="230" font-size="12.5">g</text></g>
+          <g stroke="#B9471B" stroke-width="2.5" class="dash"><path d="M192 182 L192 200"/></g>
+          <text x="330" y="60" class="dfnlab r">栈：取 f</text>
+          <text x="330" y="82" class="dfnlab">队列：取 c</text>
+          <text x="190" y="258" text-anchor="middle" class="dfnlab g">唯一的差别 = 从 F 里拿哪一个</text>
+        </svg>
+      </div>
+      <div class="note good"><b>一句话：</b>DFS/BFS 不是两个算法，而是<b>同一个骨架的两种取点策略</b>；理解这一点，0-1 BFS、Dijkstra 都是"顺手的推广"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 主线 ═══ -->
+<section class="slide" data-title="主线：不变量与旋钮">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · MAINLINE</div><h2>一个不变量，<em>四个旋钮</em></h2></div>
+    <div class="hint"><b>本页回答：</b>写遍历时可以调什么？<br>什么绝对不能错。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-amber"><h3><span class="n">A</span>取点结构</h3><p>栈 / 队列 / 双端 / 优先队列 —— 决定<b>探索次序</b>。</p></div>
+    <div class="card tint-teal"><h3><span class="n">B</span>标记时机</h3><p>入队时标记（防重复入队）还是出队时标记（可见性不同）。</p></div>
+    <div class="card"><h3><span class="n">C</span>邻居次序</h3><p>递归版与迭代版要用 <code>reversed()</code> 才同序；要字典序就先排序。</p></div>
+    <div class="card tint-plum"><h3><span class="n">D</span>附加信息</h3><p>距离、父指针、颜色、时间戳、层号 —— 决定能回答什么。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>不变量（写完自查）</h3>
+      <ul class="tick ok">
+        <li>每个点至多被"展开"一次（否则会退化）</li>
+        <li>标记与展开的时机一致：不重复、不遗漏</li>
+        <li>起点先标记再入队/入栈</li>
+        <li>不连通时要对<b>每个未访问点</b>重启一次</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>心智模型</h3>
+      <p>遍历是<b>在状态空间里"刷油漆"</b>：每次取一个没刷过的格子，把它相邻的格子排进队伍。<b>刷的顺序</b>就是算法。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：基础写法">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 01</div>
+      <div class="big">基础写法：<br><em style="color:var(--accent)">递归 · 迭代 · 队列</em></div>
+      <p class="lead">存储方式 · DFS 两种写法 · BFS 模板 · 分层<br>先把三个模板写顺手，再谈应用。</p>
+    </div>
+    <div><div class="num-huge">01</div>
+      <div class="note good"><b>目标：</b>三种模板（DFS 递归 / DFS 迭代 / BFS）能不假思索默写。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 图的存储 ═══ -->
+<section class="slide" data-title="图的存储">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · STORAGE</div><h2>先存图：<em>邻接表是默认答案</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么存图最合适？<br>网格题要不要建图？</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>graph.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="storage"></code></pre></pre>
+    <div>
+      <div class="card"><h3>三种存储</h3>
+        <table style="box-shadow:none">
+          <tr><th>方式</th><th>空间</th><th>枚举邻居</th><th>适用</th></tr>
+          <tr><td>邻接表</td><td class="mono">O(V+E)</td><td class="mono">O(度)</td><td><b>默认</b></td></tr>
+          <tr><td>邻接矩阵</td><td class="mono">O(V²)</td><td class="mono">O(V)</td><td>稠密、判边</td></tr>
+          <tr><td>边集</td><td class="mono">O(E)</td><td class="mono">O(E)</td><td>排序类（Kruskal）</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>网格题的处理</h3>
+        <p>不必显式建图：用<b>方向数组</b> + 边界判断即可。省去建图常数，也少一处错点。</p>
+      </div>
+      <div class="note warn"><b>注意：</b>无向图要<u>两边都加</u>；有向图只加一次。<b>重边</b>会让 indeg、割点判定出错（第 46 页）。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 DFS 直觉 ═══ -->
+<section class="slide" data-title="DFS 直觉">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · DFS</div><h2>DFS：<em>一条路走到黑，撞墙再回头</em></h2></div>
+    <div class="hint"><b>本页回答：</b>DFS 的次序长什么样？<br>为什么会自然产生"前序/后序"。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>两个次序</h3>
+        <ul class="tick">
+          <li><b>前序</b>：进入节点时记录（访问顺序）</li>
+          <li><b>后序</b>：离开节点时记录（子树处理完）</li>
+          <li>后序的<b>逆</b> = 拓扑序（DAG 上）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>递归 = 隐式栈</h3>
+        <p>递归版本里"栈帧"就是你的栈；所以递归写法最短，但有<b>爆栈风险</b>。</p>
+      </div>
+      <div class="note good"><b>直觉：</b>DFS 的次序是"尽量深"；这给了它<b>回溯、判环、找连通分量、求 SCC</b> 的天然优势。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 380 250" preserveAspectRatio="xMidYMid meet">
+          <g class="gedge tree"><path d="M120 46 L72 108"/><path d="M120 46 L170 108"/><path d="M72 108 L44 176"/><path d="M170 108 L206 176"/><path d="M170 108 L142 176"/></g>
+          <path d="M44 176 L142 176" class="gedge cut"/>
+          <g class="gnode root"><circle cx="120" cy="46" r="23"/><text x="120" y="53" font-size="13">1</text></g>
+          <g class="gnode root"><circle cx="72" cy="108" r="21"/><text x="72" y="115" font-size="13">2</text></g>
+          <g class="gnode root"><circle cx="44" cy="176" r="21"/><text x="44" y="183" font-size="13">3</text></g>
+          <g class="gnode done"><circle cx="170" cy="108" r="21"/><text x="170" y="115" font-size="13">4</text></g>
+          <g class="gnode done"><circle cx="142" cy="176" r="21"/><text x="142" y="183" font-size="13">5</text></g>
+          <g class="gnode"><circle cx="206" cy="176" r="21"/><text x="206" y="183" font-size="13">6</text></g>
+          <path d="M44 196 Q 30 224 66 218 L160 218 Q 196 222 206 198" stroke="#B9471B" stroke-width="2.5" fill="none" class="dash"/>
+          <text x="122" y="238" text-anchor="middle" class="dfnlab r">回溯路径：3 → 2 → 1 → 4 → 5 → 6</text>
+          <text x="292" y="70" class="dfnlab p">树边：黑/红</text>
+          <text x="292" y="94" class="dfnlab p">虚线：回边</text>
+          <text x="292" y="118" class="dfnlab g">编号 = 前序</text>
+        </svg>
+      </div>
+      <div class="note"><b>回边的意义：</b>遇到<b>已访问</b>的邻居，说明是回边/横边；判环、找桥、求 SCC 全靠这一刻。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 09 DFS 递归模板 ═══ -->
+<section class="slide" data-title="DFS 递归模板">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · DFS RECURSIVE</div><h2>DFS 递归 <em>模板</em></h2></div>
+    <div class="hint"><b>本页回答：</b>标记放哪一行？<br>怎么顺带得到后序？</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>dfs_recursive.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="dfs_rec"></code></pre></pre>
+    <div>
+      <div class="card"><h3>三行关键</h3>
+        <ul class="tick">
+          <li>进入即 <code>visited[u] = True</code></li>
+          <li>递归前判 <code>not visited</code></li>
+          <li>递归后 = 后序（拓扑、SCC 用）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>覆盖所有点</h3>
+        <p>图可能不连通：外层再套一个 <code>for s in 1..n</code>，未访问就重启 DFS。</p>
+      </div>
+      <div class="note warn"><b>风险：</b>Python 默认递归深度约 1000；<b>链式图</b>（1-2-3-…-n）最先炸，见第 42 页。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 DFS 迭代 ═══ -->
+<section class="slide" data-title="DFS 迭代写法">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · DFS ITERATIVE</div><h2>DFS 迭代：<em>自己当递归</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么写与递归同序的迭代版？<br>两种写法各适合什么？</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>dfs_iterative.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="dfs_iter"></code></pre></pre>
+    <div>
+      <div class="card"><h3>两个易错点</h3>
+        <ul class="tick no">
+          <li><b>出栈才标记：</b>若入栈就标记，会丢路径；若不标记，会重复入栈</li>
+          <li><b>邻居逆序入栈：</b>栈是后进先出，不 reverse 会与递归次序相反</li>
+        </ul>
+      </div>
+      <div class="card tint-teal"><h3>什么时候用事件版</h3>
+        <p>需要<b>后序 / 进入-退出时间戳</b>时，用 <code>(u, done)</code> 双事件栈；一般搜索用第一种即可。</p>
+      </div>
+      <div class="note good"><b>结论：</b>迭代版不爆栈、可控次序，<b>深图用它</b>；递归版更短、更好改，<b>浅图用它</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 BFS 直觉 ═══ -->
+<section class="slide teal" data-title="BFS 直觉">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · BFS</div><h2>BFS：<em class="t">一圈一圈往外刷</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么 BFS 能求最短？<br>"层"是怎么产生的。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>分层的由来</h3>
+        <ul class="tick ok">
+          <li>起点在第 0 层</li>
+          <li>第 k 层的点，邻居未访问的都在 <b>第 k+1 层</b></li>
+          <li>第一次到达某点时，层数就是<b>最短距离</b></li>
+        </ul>
+      </div>
+      <div class="card tint-teal"><h3>为什么是最短</h3>
+        <div class="formula" style="font-size:12.8px">队列中的距离<span class="ok">单调不减</span>；<br>故第一次弹出 u 时的 dist[u] 即最短</div>
+      </div>
+      <div class="note good"><b>直觉：</b>BFS 是"按距离从小到大"的取点策略 —— 所以它天然是<b>边权为 1 时的 Dijkstra</b>。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 380 250" preserveAspectRatio="xMidYMid meet">
+          <ellipse cx="190" cy="126" rx="176" ry="112" fill="#0F7B6C" opacity=".07"/>
+          <ellipse cx="190" cy="126" rx="122" ry="78" fill="#0F7B6C" opacity=".10"/>
+          <ellipse cx="190" cy="126" rx="66" ry="42" fill="#0F7B6C" opacity=".16"/>
+          <g class="gnode root"><circle cx="190" cy="126" r="22"/><text x="190" y="133" font-size="13">s</text></g>
+          <g class="gnode done"><circle cx="128" cy="104" r="17"/><text x="128" y="111" font-size="12">a</text></g>
+          <g class="gnode done"><circle cx="252" cy="104" r="17"/><text x="252" y="111" font-size="12">b</text></g>
+          <g class="gnode done"><circle cx="152" cy="156" r="17"/><text x="152" y="163" font-size="12">c</text></g>
+          <g class="gnode cur"><circle cx="62" cy="88" r="16"/><text x="62" y="95" font-size="11.5">d</text></g>
+          <g class="gnode cur"><circle cx="238" cy="176" r="16"/><text x="238" y="183" font-size="11.5">e</text></g>
+          <g class="gnode cur"><circle cx="112" cy="204" r="16"/><text x="112" y="211" font-size="11.5">f</text></g>
+          <g class="gnode"><circle cx="316" cy="140" r="16"/><text x="316" y="147" font-size="11.5">g</text></g>
+          <text x="190" y="62" text-anchor="middle" class="dfnlab">第 0 层</text>
+          <text x="292" y="80" text-anchor="middle" class="dfnlab">第 1 层</text>
+          <text x="190" y="242" text-anchor="middle" class="dfnlab">第 2 层</text>
+          <g stroke="#0F7B6C" stroke-width="2" stroke-dasharray="5 6" fill="none">
+            <path d="M128 88 L252 88"/><path d="M46 120 L332 120"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note"><b>记住：</b>BFS 的<b>层号 = 最短距离</b>，这是它和 DFS 最本质的功能差别。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 BFS 模板 ═══ -->
+<section class="slide" data-title="BFS 模板">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · BFS TEMPLATE</div><h2>BFS <em class="t">模板</em>（含距离与路径重建）</h2></div>
+    <div class="hint"><b>本页回答：</b>模板里记什么？<br>怎么把路径还原出来？</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>bfs_template.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bfs_basic"></code></pre></pre>
+    <div>
+      <div class="card"><h3>三个数组</h3>
+        <ul class="tick ok">
+          <li><code>dist</code>：最短距离（-1 表示不可达）</li>
+          <li><code>parent</code>：前驱，用于还原路径</li>
+          <li>可选 <code>cnt / 方案数</code>：见第 31 页</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>用 <code>deque</code></h3>
+        <p>Python 的 <code>list.pop(0)</code> 是 O(n)；<code>collections.deque.popleft()</code> 才是 O(1)。</p>
+      </div>
+      <div class="note good"><b>还原路径：</b>从终点沿 parent 走回起点再反转；不可达时 <code>dist[t] == -1</code> 直接返回空。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 13 分层处理 ═══ -->
+<section class="slide" data-title="按层处理">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · LEVELS</div><h2>按层处理：<em class="t">层号就是答案</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么一次性拿到"每层的点"？<br>什么时候需要分层循环？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>分层循环的用处</h3>
+        <ul class="tick ok">
+          <li>求"最短路径条数"（只在<b>第一次</b>到达时累加）</li>
+          <li>逐层扩散类（腐烂橘子、病毒传播）</li>
+          <li>每次扩展一层的<b>最短变形</b>（如"每层只能走 K 步"）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>常见替代</h3>
+        <p>若只需要层号，直接存 <code>dist</code> 就够；只有要"整层一起处理"时才写 <code>sz = len(q)</code> 循环。</p>
+      </div>
+      <div class="note"><b>提醒：</b>分层 BFS 与普通 BFS 等价，只是把队列按层切片；别为分层牺牲可读性。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>bfs_levels.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bfs_levels"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 14 对比表 ═══ -->
+<section class="slide" data-title="DFS 与 BFS 对比">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>01 · COMPARE</div><h2>DFS 与 BFS：<em>一页看清</em></h2></div>
+    <div class="hint"><b>本页回答：</b>该选谁？<br>它们各自的"能力边界"。</div>
+  </div>
+  <table>
+    <tr><th style="width:120px">维度</th><th style="width:290px">DFS</th><th>BFS</th></tr>
+    <tr><td>取点结构</td><td>栈 / 递归</td><td>队列</td></tr>
+    <tr><td>次序</td><td>一条路到底，再回溯</td><td>逐层扩散</td></tr>
+    <tr><td>能否求最短路</td><td>❌ 不能（无权也不行）</td><td>✅ 边权全 1 时天然最短</td></tr>
+    <tr><td>空间</td><td>递归栈 O(深)；迭代栈 O(宽)</td><td>O(某层宽度)</td></tr>
+    <tr><td>擅长</td><td>连通分量、回溯、判环、SCC、可行性</td><td>最短路、分层、最少步数、最近目标</td></tr>
+    <tr><td>写法</td><td>递归最短；深图需迭代</td><td>天然迭代，无爆栈</td></tr>
+    <tr><td>易错</td><td>爆栈、漏标记、迭代次序</td><td>重复入队、list.pop(0)、层号算错</td></tr>
+    <tr><td>扩展</td><td>回溯 / 剪枝 / 记忆化</td><td>多源 / 双向 / 0-1 / 优先队列</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>选 DFS</h3><p>只问"<b>能不能 / 有没有 / 全部有哪些</b>"，与步数无关。</p></div>
+    <div class="card tint-teal"><h3>选 BFS</h3><p>问"<b>最少几步 / 最近的 / 第几层 / 按代价递增</b>"。</p></div>
+  </div>
+  <div class="note"><b>经验：</b>面试与竞赛里 80% 的网格题 = BFS（求最少步）或 flood fill（求连通块）；先问自己"答案与层数有关吗"。</div>
+</section>
+
+<!-- ═══ 15 边的分类 ═══ -->
+<section class="slide" data-title="DFS 与边的分类">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>01 · EDGES</div><h2>DFS 顺带给出<em>边的分类</em></h2></div>
+    <div class="hint"><b>本页回答：</b>四类边各是什么？<br>为什么只 DFS 能分、BFS 分不了？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四类边（有向图）</h3>
+        <table style="box-shadow:none">
+          <tr><th>名字</th><th>方向</th><th>含义</th></tr>
+          <tr><td>树边</td><td>→ 未访问</td><td>构成 DFS 树</td></tr>
+          <tr><td>回边</td><td>→ 祖先</td><td><b>有环</b>的证据</td></tr>
+          <tr><td>前向边</td><td>→ 后代</td><td>冗余</td></tr>
+          <tr><td>横边</td><td>→ 旁支</td><td>跨子树</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>无向图更简单</h3>
+        <p>只有<b>树边</b>与<b>回边</b>（指回非父的已访问点）。桥/割点判定正建立在这一点上。</p>
+      </div>
+      <div class="note good"><b>判定法：</b>记 <code>dfn</code>（进入时刻）：指向<b>更小 dfn 且在栈上</b> → 回边；指向<b>更大 dfn 且已完成</b> → 前向/横边。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 380 250" preserveAspectRatio="xMidYMid meet">
+          <g class="gedge tree"><path d="M120 42 L74 106"/><path d="M120 42 L188 106"/><path d="M74 106 L52 176"/><path d="M188 106 L166 176"/><path d="M188 106 L238 176"/></g>
+          <path d="M52 176 Q 34 122 74 92" class="gedge cut"/>
+          <path d="M120 56 Q 168 88 186 92" stroke="#0F7B6C" stroke-width="3" fill="none" stroke-dasharray="4 5"/>
+          <path d="M52 190 L166 190" stroke="#B48A5C" stroke-width="3" fill="none"/>
+          <g class="gnode root"><circle cx="120" cy="42" r="21"/><text x="120" y="49" font-size="12.5">1</text></g>
+          <g class="gnode root"><circle cx="74" cy="106" r="20"/><text x="74" y="113" font-size="12.5">2</text></g>
+          <g class="gnode root"><circle cx="188" cy="106" r="20"/><text x="188" y="113" font-size="12.5">3</text></g>
+          <g class="gnode"><circle cx="52" cy="176" r="19"/><text x="52" y="183" font-size="12">4</text></g>
+          <g class="gnode"><circle cx="166" cy="176" r="19"/><text x="166" y="183" font-size="12">5</text></g>
+          <g class="gnode"><circle cx="238" cy="176" r="19"/><text x="238" y="183" font-size="12">6</text></g>
+          <text x="304" y="60" class="dfnlab r">红虚：回边</text>
+          <text x="304" y="84" class="dfnlab">绿虚：前向边</text>
+          <text x="304" y="108" class="dfnlab g">棕实：横边</text>
+          <text x="304" y="132" class="dfnlab r">红实：树边</text>
+          <text x="190" y="222" text-anchor="middle" class="dfnlab g">回边 + 树边 = 无向图的全部</text>
+        </svg>
+      </div>
+      <div class="note"><b>为什么 BFS 分不干净：</b>BFS 树上可能出现"跨层"的边，前向/回边的界定不如 dfn 天然。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 16 时间戳 ═══ -->
+<section class="slide" data-title="时间戳与括号化">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>01 · TIMESTAMPS</div><h2>dfn / fin：<em>把遍历写成括号</em></h2></div>
+    <div class="hint"><b>本页回答：</b>时间戳有什么用？<br>"括号化定理"说了什么。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>两个时间戳</h3>
+        <div class="formula" style="font-size:12.8px">
+          dfn[u] = <span class="hl">进入</span> u 的时刻<br>
+          fin[u] = <span class="hl">离开</span> u 的时刻（子树处理完）
+        </div>
+        <p>一个点的活跃期是区间 <code>[dfn, fin]</code>，整个 DFS 形成嵌套括号。</p>
+      </div>
+      <div class="card tint-amber"><h3>括号化定理</h3>
+        <ul class="tick">
+          <li><b>u 是 v 的祖先</b> ⟺ <code>dfn[u] ≤ dfn[v] &lt; fin[u]</code>（区间包含）</li>
+          <li>两区间<b>互不包含</b> ⟺ 两棵不相交子树</li>
+          <li>后代的 dfn 一定更大</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 380 230" preserveAspectRatio="xMidYMid meet">
+          <g stroke="#E2612F" stroke-width="3" fill="none">
+            <path d="M40 40 L340 40"/><path d="M70 82 L250 82"/><path d="M92 124 L180 124"/><path d="M272 124 L322 124"/>
+          </g>
+          <g font-family="monospace" font-size="11.5" fill="#7A4A22">
+            <text x="40" y="32">1</text><text x="322" y="32">12</text>
+            <text x="70" y="74">2</text><text x="232" y="74">9</text>
+            <text x="92" y="116">3</text><text x="162" y="116">6</text>
+            <text x="272" y="116">7</text><text x="306" y="116">8</text>
+          </g>
+          <g class="gnode root"><circle cx="182" cy="40" r="19"/><text x="182" y="47" font-size="12">A</text></g>
+          <g class="gnode done"><circle cx="152" cy="82" r="17"/><text x="152" y="89" font-size="12">B</text></g>
+          <g class="gnode done"><circle cx="297" cy="82" r="17"/><text x="297" y="89" font-size="12">C</text></g>
+          <g class="gnode"><circle cx="132" cy="124" r="16"/><text x="132" y="131" font-size="11.5">D</text></g>
+          <g class="gnode"><circle cx="297" cy="124" r="16"/><text x="297" y="131" font-size="11.5">E</text></g>
+          <text x="190" y="170" text-anchor="middle" class="dfnlab r">A 的活跃期 [1, 12] 包含所有后代</text>
+          <text x="190" y="194" text-anchor="middle" class="dfnlab">B 的 [2, 9] ⊂ A 的 [1, 12] ⇒ B 是 A 的后代</text>
+          <text x="190" y="218" text-anchor="middle" class="dfnlab g">D 与 E 区间不重叠 ⇒ 互不是祖先</text>
+        </svg>
+      </div>
+      <div class="note good"><b>用途：</b>判祖先、找 LCA、求子树大小、SCC 的 low 值 —— 全部基于 dfn。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 17 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：连通性">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 02</div>
+      <div class="big">应用一：<em style="color:var(--accent)">连通性</em>与染色</div>
+      <p class="lead">数块 · 网格 · 二分图判定 · 奇环<br>这一类几乎是"模板填空"。</p>
+    </div>
+    <div><div class="num-huge">02</div>
+      <div class="note good"><b>目标：</b>三分钟内写出"岛屿数量 / 二分图判定"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 18 连通块 ═══ -->
+<section class="slide" data-title="连通块计数三法">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · COMPONENTS</div><h2>连通块计数：<em>三种写法</em></h2></div>
+    <div class="hint"><b>本页回答：</b>DFS、BFS、并查集怎么选？<br>各有什么附加价值。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>DFS</h3>
+      <p><b>写法：</b>外层循环 + 递归染色。每启动一次 = 新块。</p>
+      <div class="split-line"></div>
+      <p class="muted">附加：顺带得到块内节点、拓扑序、dfn。</p>
+    </div>
+    <div class="card tint-teal"><h3><span class="n t">2</span>BFS</h3>
+      <p><b>写法：</b>同上但用队列。天然给出块内<b>距离场</b>。</p>
+      <div class="split-line t"></div>
+      <p class="muted">附加：块内最短路、块的"直径"近似。</p>
+    </div>
+    <div class="card tint-amber"><h3><span class="n">3</span>并查集</h3>
+      <p><b>写法：</b>合并边，最后数代表元。</p>
+      <div class="split-line"></div>
+      <p class="muted">附加：<b>支持增量加边</b>、块大小、动态查询。</p>
+    </div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>选型</h3>
+      <ul class="tick">
+        <li>一次性静态图 → DFS/BFS（更直观）</li>
+        <li>边陆续加入、要在线回答 → 并查集</li>
+        <li>要块内最短距离 → BFS</li>
+        <li>要块内结构（树/序）→ DFS</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>计数不变量</h3>
+      <div class="formula" style="font-size:12.8px">
+        块数 = <span class="hl">启动遍历的次数</span><br>
+        = 未访问点中 dfs 启动次数
+      </div>
+      <p class="muted">别忘记：图可能不连通，外层循环不可省。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 19 网格 flood fill ═══ -->
+<section class="slide" data-title="网格 flood fill">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · FLOOD FILL</div><h2>网格遍历：<em>岛屿与填充</em></h2></div>
+    <div class="hint"><b>本页回答：</b>网格题的模板长什么样？<br>标记放哪一行最关键。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>题型速记</h3>
+        <ul class="tick">
+          <li>岛屿数量：计数 flood fill</li>
+          <li>最大面积：每次 fill 返回 size</li>
+          <li>被围绕的区域：从<b>边界</b>反向 fill</li>
+          <li>填涂颜色：多源 fill</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>关键：</b><code>grid[nx][ny] = '0'</code> 要在<b>入栈前</b>做，否则同一个格子会被重复入栈，复杂度退化。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>flood_fill.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="floodfill"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 20 网格技巧 ═══ -->
+<section class="slide" data-title="网格搜索技巧">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · GRID TRICKS</div><h2>网格搜索的<em>四个习惯</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么写又短又不出错？<br>为什么"入队即标记"。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>① 方向数组</h3><p>四连通/八连通写成常量元组，避免四段重复代码。</p></div>
+      <div class="card"><h3>② 入队即标记</h3>
+        <div class="formula" style="font-size:12.5px">
+          入队时：<span class="ok">seen[nx][ny] = True</span> 再 append<br>
+          <span class="dim">否则同一格会被多次入队，最坏 O(4^k)</span>
+        </div>
+      </div>
+      <div class="card"><h3>③ 边界判断写在一处</h3><p><code>0 ≤ ni &lt; R and 0 ≤ nj &lt; C</code> 一行写全；或用哨兵（外圈加障碍）省判断。</p></div>
+      <div class="card"><h3>④ 能就地修改</h3><p>题目允许时把 <code>grid</code> 当 visited 用，省内存；不允许就另开数组。</p></div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>grid_search.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="grid_trick"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 21 二分图 BFS ═══ -->
+<section class="slide" data-title="二分图判定（BFS）">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>02 · BIPARTITE</div><h2>二分图判定：<em class="t">BFS 染色</em></h2></div>
+    <div class="hint"><b>本页回答：</b>染色法为什么能判定？<br>奇环为什么是关键。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>原理</h3>
+        <ul class="tick ok">
+          <li>给起点染 0，邻居染 <code>1 - color</code></li>
+          <li>若相邻两点同色 ⇒ 出现<b>奇环</b> ⇒ 非二分图</li>
+          <li>定理：图是二分图 ⟺ 不含奇环</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>为什么要外层循环</h3>
+        <p>图可能不连通，每个连通分量都要染一遍；返回值要<b>与</b>起来。</p>
+      </div>
+      <div class="note good"><b>顺带产出：</b>染色方案就是<b>二分图的两侧</b>，可用于"分组、匹配前处理"。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>bipartite_bfs.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bip_bfs"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 22 二分图 DFS ═══ -->
+<section class="slide" data-title="二分图判定（DFS）">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · BIPARTITE DFS</div><h2>二分图判定：<em>DFS 版</em>与三种问法</h2></div>
+    <div class="hint"><b>本页回答：</b>DFS 版怎么写？<br>什么时候 DFS 更方便。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>DFS 版的形态</h3>
+        <p>递归函数带上"父亲颜色"，冲突即返回 <code>False</code>。代码更短，且能顺带输出每个分量的两侧。</p>
+      </div>
+      <div class="card tint-amber"><h3>三种常见问法</h3>
+        <ul class="tick">
+          <li>能否二分？（判定）</li>
+          <li>给一种分组方案（染色）</li>
+          <li>最少删几条边使其二分（→ 最大匹配）</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>注意：</b>自环（<code>(u, u)</code>）直接非二分图；重边不影响判定，但会重复扫描。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>bipartite_dfs.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bip_dfs"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 23 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：最短路">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 03</div>
+      <div class="big">应用二：<em style="color:var(--teal)">最短路</em>的升级链</div>
+      <p class="lead">BFS → 多源 BFS → 反向 BFS → 0-1 BFS → Dijkstra<br>同一套"边界集合"，四种取法。</p>
+    </div>
+    <div><div class="num-huge t">03</div>
+      <div class="note good"><b>目标：</b>看到边权特征，立刻知道该用哪一档。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 24 BFS 最短路 ═══ -->
+<section class="slide" data-title="BFS 求最短路">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · SHORTEST</div><h2>无权最短路：<em class="t">BFS 的主场</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么第一次到达即最优？<br>路径条数怎么数？</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>为什么正确</h3>
+        <div class="formula" style="font-size:12.8px">
+          队列中 dist <span class="ok">单调不减</span><br>
+          ⇒ 第一次访问 u 时，dist[u] 就是最短路
+        </div>
+        <p class="muted">因此<b>不能</b>先入队再松弛成更小值；只能一次性确定。</p>
+      </div>
+      <div class="card tint-amber"><h3>最短路径条数</h3>
+        <ul class="tick">
+          <li><code>cnt[v]</code> = 到 v 的最短路条数</li>
+          <li>第一次到达 v：cnt[v] = cnt[u]</li>
+          <li>再次到达且 dist 相等：<b>累加</b> cnt[u]</li>
+        </ul>
+        <p class="muted">注意取模，别用 DFS 数（会指数爆炸）。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>不可达怎么表示</h3>
+        <p>用 <code>-1</code> 或 <code>INF</code> 初始化；输出前一定要判。</p>
+      </div>
+      <div class="card tint-teal"><h3>常见变形</h3>
+        <ul class="tick ok">
+          <li>走 K 步内能到吗 → dist ≤ K</li>
+          <li>只能转弯若干次 → 状态里带上方向</li>
+          <li>带钥匙/门 → 状态里带上钥匙集合（状压 BFS）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>状态设计是关键：</b>当"点"不够表达时，把<b>(点, 附加状态)</b> 当作新节点，再 BFS。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 25 多源 BFS ═══ -->
+<section class="slide" data-title="多源 BFS 与反向 BFS">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · MULTI-SOURCE</div><h2>多源 BFS / 反向 BFS：<em class="t">换个起点看</em></h2></div>
+    <div class="hint"><b>本页回答：</b>多源怎么写？<br>什么时候反向搜索更好。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>多源 BFS</h3>
+        <p><b>做法：</b>把所有源点<b>一次性入队</b>，dist = 0。等价于加一个"超级源点"连向所有源（边权 0）。</p>
+        <div class="split-line t"></div>
+        <p class="muted">典型：腐烂橘子、距离场（01 矩阵）、多起点扩散。</p>
+      </div>
+      <div class="card tint-amber"><h3>反向 BFS</h3>
+        <p><b>做法：</b>从<b>目标集</b>出发往回搜。适用于"多个终点、一个起点"或"能到海边吗"这类问题。</p>
+        <div class="split-line"></div>
+        <p class="muted">典型：太平洋大西洋水流、能逃出的出口。</p>
+      </div>
+      <div class="note good"><b>好处：</b>把 O(起点数 × V) 的重复搜索压成一次。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>multi_source.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="multisrc"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 26 0-1 BFS ═══ -->
+<section class="slide" data-title="0-1 BFS">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>03 · 0-1 BFS</div><h2>0-1 BFS：<em>双端队列</em>就够</h2></div>
+    <div class="hint"><b>本页回答：</b>为什么边权只有 0/1 时不需要堆？<br>放队首还是队尾？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>做法</h3>
+        <ul class="tick">
+          <li>松弛成功时：<code>w == 0</code> 放<b>队首</b>，<code>w == 1</code> 放<b>队尾</b></li>
+          <li>队列里距离始终单调不减（只有两档）</li>
+          <li>每个点可能入队多次，但至多 2 次</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <div class="formula" style="font-size:12.8px">O(V + E)，比 Dijkstra 的 O((V+E) log V) 快一截</div>
+      </div>
+      <div class="note warn"><b>易错：</b>0-1 BFS <b>不能</b>用 visited 提前剪掉，只能用 <code>dist</code> 判断松弛；否则会错。</div>
+    </div>
+    <div>
+      <pre class="codewrap" style="max-height:240px"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>zero_one_bfs.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="zeroone"></code></pre></pre>
+      <div class="card" style="padding:6px 10px">
+        <svg viewBox="0 0 380 120" preserveAspectRatio="xMidYMid meet">
+          <rect x="24" y="40" width="332" height="40" rx="14" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2.5"/>
+          <text x="40" y="34" class="dfnlab r">队首</text>
+          <text x="336" y="34" class="dfnlab">队尾</text>
+          <g class="gnode done"><circle cx="80" cy="60" r="17"/><text x="80" y="67" font-size="11.5">d=0</text></g>
+          <g class="gnode done"><circle cx="134" cy="60" r="17"/><text x="134" y="67" font-size="11.5">d=1</text></g>
+          <g class="gnode cur"><circle cx="188" cy="60" r="17"/><text x="188" y="67" font-size="11.5">d=1</text></g>
+          <g class="gnode"><circle cx="242" cy="60" r="17"/><text x="242" y="67" font-size="11.5">d=2</text></g>
+          <g class="gnode"><circle cx="296" cy="60" r="17"/><text x="296" y="67" font-size="11.5">d=2</text></g>
+          <g stroke="#B9471B" stroke-width="2.5" fill="none"><path d="M62 100 L62 82 M46 96 L62 100 L78 96"/></g>
+          <text x="52" y="116" class="dfnlab r">w=0 → 队首</text>
+          <g stroke="#0F7B6C" stroke-width="2.5" fill="none"><path d="M318 100 L318 82 M302 96 L318 100 L334 96"/></g>
+          <text x="288" y="116" class="dfnlab">w=1 → 队尾</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 27 BFS→Dijkstra ═══ -->
+<section class="slide" data-title="BFS 到 Dijkstra 的升级链">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>03 · UPGRADE</div><h2>一条升级链：<em>BFS → 0-1 → Dijkstra</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么它们是同一族？<br>该在哪一档停下。</div>
+  </div>
+  <table>
+    <tr><th style="width:130px">边权特征</th><th style="width:170px">取点结构</th><th style="width:150px">复杂度</th><th>代表问题</th></tr>
+    <tr><td>全为 1</td><td class="mono">队列 FIFO</td><td class="mono">O(V+E)</td><td>最少步数、迷宫</td></tr>
+    <tr><td>只有 0 / 1</td><td class="mono">双端队列</td><td class="mono">O(V+E)</td><td>改一次代价、免费通道</td></tr>
+    <tr><td>小整数 (≤ C)</td><td class="mono">桶（Radix）</td><td class="mono">O(V+E+C)</td><td>小权图最短路</td></tr>
+    <tr><td>非负任意</td><td class="mono">优先队列</td><td class="mono">O((V+E) log V)</td><td>Dijkstra</td></tr>
+    <tr><td>可能负权、无负环</td><td class="mono">队列 + 松弛</td><td class="mono">O(VE)</td><td>Bellman-Ford / SPFA</td></tr>
+    <tr><td>全源</td><td class="mono">矩阵</td><td class="mono">O(V³)</td><td>Floyd</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-teal"><h3>多源 = 虚拟源点</h3>
+      <p>把所有源点同时入队（dist = 0），等价于加一个超级源点连边权 0 的边 —— <b>省掉建图</b>。</p>
+    </div>
+    <div class="card tint-amber"><h3>该停在哪一档</h3>
+      <p>不要见到最短路就上 Dijkstra。<b>先看边权</b>：全 1 用 BFS、0/1 用双端队列，代码更短更快。</p>
+    </div>
+  </div>
+  <div class="note"><b>共同点：</b>都是"从边界集里挑<b>当前代价最小</b>的点展开"；BFS 的代价 = 层数，所以它是 Dijkstra 的特例。</div>
+</section>
+
+<!-- ═══ 28 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：拓扑与 DAG">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 04</div>
+      <div class="big">应用三：<em style="color:var(--accent)">顺序</em>与 DAG</div>
+      <p class="lead">拓扑排序（DFS / Kahn）· 判环 · DAG 上 DP<br>有向无环图是"递推"的天然载体。</p>
+    </div>
+    <div><div class="num-huge">04</div>
+      <div class="note good"><b>目标：</b>两种拓扑写法都能默写，并知道各自顺带给了什么。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 29 DFS 拓扑 ═══ -->
+<section class="slide" data-title="DFS 求拓扑序">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · TOPO DFS</div><h2>拓扑排序：<em>后序取反</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么逆后序是拓扑序？<br>怎么判环。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>为什么对</h3>
+        <p>节点 u 在<b>子树全部处理完</b>后才进后序列表；所以 u 一定排在它的后代之后，反转后就排在前面 ⇒ 拓扑序。</p>
+      </div>
+      <div class="card tint-amber"><h3>判环</h3>
+        <div class="formula" style="font-size:12.8px">
+          visited = 0 未访问 · <span class="hl">1 在递归栈上</span> · 2 完成<br>
+          指向 1 的边 = <span style="color:#F4A9C0">回边</span> ⇒ 有环
+        </div>
+      </div>
+      <div class="note good"><b>顺带产出：</b>后序本身还给出"子树处理完成的顺序"，可用于 SCC（Tarjan）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>topo_dfs.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="topo_dfs"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 30 Kahn ═══ -->
+<section class="slide" data-title="Kahn 拓扑">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>04 · KAHN</div><h2>Kahn 算法：<em class="t">BFS 的拓扑</em></h2></div>
+    <div class="hint"><b>本页回答：</b>入度数组怎么用？<br>为什么它能同时求"字典序最小"。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>做法</h3>
+        <ul class="tick ok">
+          <li>入度为 0 的点入队</li>
+          <li>取出 u 输出，把 u 的出边"删除"（入度 −1）</li>
+          <li>新的 0 入度入队；重复</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>三种用法</h3>
+        <ul class="tick">
+          <li>判环：<code>len(order) &lt; n</code> 即有环</li>
+          <li>字典序最小：把队列换成<b>最小堆</b></li>
+          <li>分层求"最长路"：<b>第几轮出队 = 拓扑层</b></li>
+        </ul>
+      </div>
+      <div class="note"><b>对比：</b>Kahn 便于<b>并行/分层</b>与<b>字典序</b>；DFS 版代码短，且给后序。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>kahn.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="kahn"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 31 DAG DP ═══ -->
+<section class="slide" data-title="DAG 上的 DP">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · DAG DP</div><h2>拓扑序就是<em>递推序</em></h2></div>
+    <div class="hint"><b>本页回答：</b>DAG 上怎么 DP？<br>最长路、方案数怎么写。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>套路</h3>
+        <p>拿到拓扑序后，按序<b>逐点松弛</b>：状态只依赖前驱，天然无后效性。</p>
+        <div class="formula" style="font-size:12.6px">
+          最长路：<span class="hl">dp[v] = max(dp[v], dp[u] + cost[v])</span><br>
+          方案数：<span class="hl">ways[v] += ways[u]</span>（取模）
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>常见应用</h3>
+        <ul class="tick">
+          <li>课程表的"最少学期数"（= 拓扑层数）</li>
+          <li>选课的最大收益</li>
+          <li>编译顺序、任务调度</li>
+        </ul>
+      </div>
+      <div class="note good"><b>提醒：</b>若要求<b>最长路径</b>且图有环 → NP 难；先判环。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>dag_dp.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="dagdp"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 32 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：时间戳进阶">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 05</div>
+      <div class="big">进阶一：<em style="color:var(--accent)">dfn / low</em> 的三件套</div>
+      <p class="lead">割点 · 桥 · 强连通分量<br>同一套时间戳，三种结构信息。</p>
+    </div>
+    <div><div class="num-huge">05</div>
+      <div class="note warn"><b>前提：</b>会写递归 DFS + 时间戳；注意重边与根节点的特判。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 33 割点与桥 ═══ -->
+<section class="slide" data-title="割点与桥">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>05 · CUT &amp; BRIDGE</div><h2>割点与桥：<em>low 的意义</em></h2></div>
+    <div class="hint"><b>本页回答：</b>low[u] 是什么？<br>两个判据为何一字之差。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>low[u] 的定义</h3>
+        <div class="formula" style="font-size:12.6px">
+          low[u] = <span class="hl">u 及其子树经回边能到达的最小 dfn</span>
+        </div>
+      </div>
+      <div class="card"><h3>两个判据</h3>
+        <ul class="tick no">
+          <li><b>桥：</b><code>low[v] &gt; dfn[u]</code>（严格大于）</li>
+          <li><b>割点（非根）：</b><code>low[v] ≥ dfn[u]</code>（大于等于）</li>
+          <li><b>割点（根）：</b>子树数 ≥ 2</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>重边陷阱：</b>用 <code>v != parent</code> 判回边会把"反向重边"当成回边；要按<b>边的编号</b>去重。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>cut_bridge.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="cutbridge"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 34 SCC ═══ -->
+<section class="slide" data-title="强连通分量">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>05 · SCC</div><h2>强连通分量：<em>Tarjan 一次遍历</em></h2></div>
+    <div class="hint"><b>本页回答：</b>栈与 onstack 的作用？<br>缩点之后能做什么。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个要素</h3>
+        <ul class="tick">
+          <li><code>dfn / low</code>：同割点</li>
+          <li><code>stack + onstack</code>：当前搜索路径上的候选</li>
+          <li><code>low[u] == dfn[u]</code> ⇒ u 是一个 SCC 的根，弹栈到 u 为止</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>应用</h3>
+        <p>缩点后是 <b>DAG</b>：求条件可达性、2-SAT、求最少加几条边使之强连通。</p>
+      </div>
+      <div class="note good"><b>复杂度：</b>O(V + E)，一次遍历。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>scc_tarjan.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="scc"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 35 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：搜索技巧">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 06</div>
+      <div class="big">进阶二：<em style="color:var(--teal)">状态空间</em>与剪枝</div>
+      <p class="lead">把"点"推广成"状态" · 双向 BFS · 记忆化搜索<br>搜索能力的上限来自<b>状态设计</b>。</p>
+    </div>
+    <div><div class="num-huge t">06</div>
+      <div class="note good"><b>目标：</b>遇到滑动谜题这类"状态"题，敢直接上 BFS。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 36 状态空间 BFS ═══ -->
+<section class="slide" data-title="状态空间 BFS">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>06 · STATE SPACE</div><h2>状态空间 BFS：<em class="t">把状态当节点</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么把棋盘/字符串变成图？<br>状态数怎么估。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>三步走</h3>
+        <ul class="tick ok">
+          <li><b>定义状态：</b>能唯一描述局面的最小元组（如 3×3 棋盘的排列）</li>
+          <li><b>定义转移：</b>一个操作 = 一条边</li>
+          <li><b>去重：</b>状态用 <code>str / tuple / 位压缩</code> 作 visited 键</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>状态数估算</h3>
+        <div class="formula" style="font-size:12.6px">
+          滑动谜题 3×3：9! = <span class="hl">362880</span>，BFS 可行<br>
+          华容道 4×4：16! ≈ 2×10¹³，必须剪枝/ A*
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>典型题</h3>
+        <ul class="tick">
+          <li>单词接龙（字符串）</li>
+          <li>开锁 / 转盘锁（数字元组）</li>
+          <li>滑动谜题（棋盘排列）</li>
+          <li>带钥匙的门（点 × 钥匙集合，状压）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>成本思维：</b>BFS 的代价是<b>状态数 × 转移数</b>；先估状态数再动手，能省一小时。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 37 双向 BFS ═══ -->
+<section class="slide" data-title="双向 BFS">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>06 · BIDIRECTIONAL</div><h2>双向 BFS：<em>两边对撞</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么能快这么多？<br>相遇时怎么算答案。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>收益</h3>
+        <div class="formula" style="font-size:12.6px">
+          单向：O(b^d)　双向：<span class="hl">O(2 · b^(d/2))</span><br>
+          <span class="dim">d=10、b=26：约 10¹⁴ → 10⁸，量级差</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>两个要点</h3>
+        <ul class="tick">
+          <li>每轮<b>扩展较小的一侧</b>（保证不会失衡）</li>
+          <li>两侧各自记录距离，相遇时 <b>d₁ + d₂</b> 就是答案</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>易错：</b>只记录单侧距离、或每轮固定扩展起点侧 —— 都会算错层数。</div>
+    </div>
+    <div>
+      <pre class="codewrap" style="max-height:255px"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>bidirectional.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bidir"></code></pre></pre>
+      <div class="card" style="padding:6px 10px">
+        <svg viewBox="0 0 380 110" preserveAspectRatio="xMidYMid meet">
+          <ellipse cx="112" cy="56" rx="88" ry="38" fill="#E2612F" opacity=".14"/>
+          <ellipse cx="268" cy="56" rx="88" ry="38" fill="#0F7B6C" opacity=".14"/>
+          <path d="M196 24 L196 88" stroke="#A33A64" stroke-width="3" stroke-dasharray="6 6"/>
+          <text x="112" y="62" text-anchor="middle" class="dfnlab r">起点侧</text>
+          <text x="268" y="62" text-anchor="middle" class="dfnlab">终点侧</text>
+          <text x="196" y="16" text-anchor="middle" class="dfnlab p">相遇 ⇒ 答案 = d₁ + d₂</text>
+          <text x="196" y="106" text-anchor="middle" class="dfnlab g">每轮扩展较小的一侧</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 38 记忆化搜索 ═══ -->
+<section class="slide" data-title="记忆化搜索">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · MEMOIZATION</div><h2>记忆化搜索 = <em>DFS + DP</em></h2></div>
+    <div class="hint"><b>本页回答：</b>它和递推有什么区别？<br>什么时候写记忆化更好。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>等价性</h3>
+        <p>记忆化搜索是<b>自顶向下</b>的 DP；递推是<b>自底向上</b>。两者时间复杂度相同，状态转移也相同。</p>
+      </div>
+      <div class="card tint-amber"><h3>什么时候更好写</h3>
+        <ul class="tick">
+          <li>状态转移方向不规则（难定递推顺序）</li>
+          <li>很多状态根本用不到（<b>只算需要的</b>）</li>
+          <li>边界条件复杂（递归天然处理）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>写法：</b><code>functools.lru_cache</code> 一行搞定；注意状态必须是<b>可哈希</b>的（tuple / int）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>memo_search.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="memo"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 39 剪枝 ═══ -->
+<section class="slide" data-title="剪枝与可行性">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PRUNING</div><h2>剪枝、迭代加深、<em>什么时候上 A*</em></h2></div>
+    <div class="hint"><b>本页回答：</b>朴素搜索太大怎么办？<br>有哪些通用手段。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>可行性剪枝</h3>
+      <p><b>做法：</b>当前状态无论怎么走都到不了目标 → 立即返回。例如剩余步数 &lt; 曼哈顿距离。</p>
+    </div>
+    <div class="card tint-amber"><h3><span class="n">2</span>最优性剪枝</h3>
+      <p><b>做法：</b>当前代价已 ≥ 已知最优解 → 停。常见于"最少操作数"。</p>
+    </div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>迭代加深 IDDFS</h3>
+      <p><b>做法：</b>限制深度上限逐次 +1。空间 O(d)，适合深度小而分支大。</p>
+    </div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>什么时候上 A* / IDA*</h3>
+      <p>状态数 10⁷ 以上、且有<b>可采纳启发式</b>（不高估）时；否则双向 BFS + 剪枝通常够。</p>
+    </div>
+    <div class="card tint-plum"><h3>不要做的事</h3>
+      <p>不要一上来就写 A*：先<b>估状态数</b>，很多时候朴素 BFS（含双向）已经 AC。</p>
+    </div>
+  </div>
+  <div class="note"><b>顺序：</b>① 状态设计 ② 去重 ③ 双向 ④ 可行性剪枝 ⑤ 才考虑启发式。</div>
+</section>
+
+<!-- ═══ 40 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：工程与复杂度">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 07</div>
+      <div class="big">工程：<em style="color:var(--accent)">复杂度 · 爆栈 · 常数</em></div>
+      <p class="lead">O(V+E) 从哪来 · 递归的边界 · Python 常数优化<br>最后一公里，决定会不会 TLE / RE。</p>
+    </div>
+    <div><div class="num-huge">07</div>
+      <div class="note warn"><b>经验：</b>遍历题 WA 少、RE/TLE 多 —— 多数问题出在递归深度与重复入队。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 41 复杂度 ═══ -->
+<section class="slide" data-title="复杂度分析">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · COMPLEXITY</div><h2>复杂度：<em>O(V + E)</em> 从哪来</h2></div>
+    <div class="hint"><b>本页回答：</b>为什么是线性？<br>空间复杂度怎么算。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>时间</h3>
+        <div class="formula" style="font-size:12.8px">
+          每个点被展开 <span class="ok">1 次</span>：O(V)<br>
+          每条边被检查 <span class="ok">1 次</span>：O(E)<br>
+          合计 <span class="hl">O(V + E)</span>
+        </div>
+        <p class="muted">网格图 V = RC，E ≈ 4RC，所以是 O(RC)。</p>
+      </div>
+      <div class="card tint-amber"><h3>退化条件</h3>
+        <ul class="tick no">
+          <li>入队不标记 ⇒ 重复入队 ⇒ 可能退化</li>
+          <li>DFS 迭代不标记 ⇒ 栈爆炸</li>
+          <li>每轮都重建大数组 ⇒ 常数变大</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>空间</h3>
+        <table style="box-shadow:none">
+          <tr><th>项</th><th>量级</th></tr>
+          <tr><td>邻接表</td><td class="mono">O(V + E)</td></tr>
+          <tr><td>visited / dist</td><td class="mono">O(V)</td></tr>
+          <tr><td>BFS 队列</td><td class="mono">O(某层宽度)</td></tr>
+          <tr><td>DFS 递归栈</td><td class="mono">O(图的深度)</td></tr>
+          <tr><td>状态空间 BFS</td><td class="mono">O(状态数)</td></tr>
+        </table>
+      </div>
+      <div class="note good"><b>判 TLE 前先算：</b>10⁵ 点 + 2×10⁵ 边 → 常数为 1 时 3×10⁵ 次操作，完全无压力；TLE 通常意味着<b>有重复访问</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 42 爆栈 ═══ -->
+<section class="slide" data-title="递归爆栈与迭代化">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · STACK</div><h2>递归爆栈：<em>最先炸的是链式图</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么时候会 RE？<br>怎么安全处理。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>三道防线</h3>
+        <ul class="tick">
+          <li><code>sys.setrecursionlimit(10**6)</code>（只放宽 Python 层限制）</li>
+          <li>改<b>迭代</b>写法（第 10 页）—— 最稳</li>
+          <li>Java/C++ 手动扩栈或改迭代</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>危险用例</h3>
+        <p>链式图 <code>1-2-3-…-n</code>（深度 = n）、长条网格（深度 = R+C）、深 DFS 树。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card tint-plum"><h3>注意</h3>
+        <p><code>setrecursionlimit</code> 只改 Python 的计数，<b>不改 C 栈大小</b>；深度 10⁵+ 仍可能段错误。真正的解是迭代。</p>
+      </div>
+      <div class="card"><h3>实用规则</h3>
+        <div class="formula" style="font-size:12.8px">
+          n ≤ 10⁴ 且结构可控 → <span class="ok">递归 OK</span><br>
+          n ≥ 10⁵ 或图由数据给 → <span style="color:#F4A9C0">迭代 / 模拟栈</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="note"><b>对拍建议：</b>用 n = 2×10⁵ 的链式图专门测递归版，90% 的爆栈都能在对拍时暴露。</div>
+</section>
+
+<!-- ═══ 43 性能细节 ═══ -->
+<section class="slide" data-title="性能与实现细节">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · PERFORMANCE</div><h2>常数优化：<em>四件小事</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同样 O(V+E)，为什么有人更快？</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-teal"><h3><span class="n t">1</span>用 <code>deque</code></h3>
+      <p><code>list.pop(0)</code> 是 O(n)；<code>deque.popleft()</code> 才 O(1)。</p></div>
+    <div class="card"><h3><span class="n">2</span>入队即标记</h3>
+      <p>重复入队会把复杂度推向 O(V·E)。见第 20 页。</p></div>
+    <div class="card tint-amber"><h3><span class="n">3</span>早停</h3>
+      <p>BFS 找到目标立刻 <code>return</code>，别跑完整张图。</p></div>
+    <div class="card tint-plum"><h3><span class="n">4</span>复用数组</h3>
+      <p>多组数据时用时间戳 <code>vis[u] == cur_id</code> 代替重置，省 O(n)。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>输入规模大的处理</h3>
+      <ul class="tick">
+        <li>用 <code>sys.stdin.buffer.read()</code> 一次性读入</li>
+        <li>邻接表用 <code>list</code> 而非 <code>dict</code>（点编号连续时）</li>
+        <li>网格遍历用局部变量缓存 <code>R, C, DIRS</code></li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>什么时候不必优化</h3>
+      <p>10⁵ 量级的图，Python 的标准模板足够；<b>先保证正确</b>，TLE 时再做常数。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 44 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：实战">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 08</div>
+      <div class="big">实战：<em style="color:var(--accent)">选型 · 避坑 · 验证</em></div>
+      <p class="lead">速查表 · 易错清单 · 对拍方法 · 题单<br>把知识落到能提交的代码上。</p>
+    </div>
+    <div><div class="num-huge">08</div>
+      <div class="note good"><b>要领：</b>遍历代码写错，八成在<b>标记时机</b>与<b>边界判断</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 45 速查表 ═══ -->
+<section class="slide" data-title="选型速查表">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>08 · CHEATSHEET</div><h2>选型速查表</h2></div>
+    <div class="hint"><b>本页回答：</b>拿到题 10 秒定写法。<br>建议打印贴在机位旁。</div>
+  </div>
+  <table>
+    <tr><th style="width:280px">问题特征</th><th style="width:175px">推荐</th><th>关键点</th></tr>
+    <tr><td>最少步数 / 无权最短路</td><td>BFS</td><td>第一次到达即最短</td></tr>
+    <tr><td>多起点扩散、距离场</td><td>多源 BFS</td><td>源点一次性入队</td></tr>
+    <tr><td>一个起点、多个终点</td><td>反向 BFS / 双向</td><td>从目标集回搜</td></tr>
+    <tr><td>边权只有 0 / 1</td><td>0-1 BFS</td><td>双端队列，不用堆</td></tr>
+    <tr><td>非负边权任意</td><td>Dijkstra</td><td>优先队列</td></tr>
+    <tr><td>问"能否 / 存在 / 全部"</td><td>DFS</td><td>回溯、剪枝</td></tr>
+    <tr><td>连通块计数 / 面积</td><td>flood fill</td><td>入栈即标记</td></tr>
+    <tr><td>分组 / 二分图</td><td>染色（BFS/DFS）</td><td>奇环判定</td></tr>
+    <tr><td>先后顺序 / 判环（有向）</td><td>拓扑（Kahn/DFS）</td><td>入度 / 后序取反</td></tr>
+    <tr><td>DAG 上最值 / 方案数</td><td>拓扑 + DP</td><td>按拓扑序松弛</td></tr>
+    <tr><td>割点 / 桥 / SCC</td><td>dfn + low</td><td>根特判、重边</td></tr>
+    <tr><td>状态空间搜索</td><td>BFS（+双向）</td><td>状态数估算在先</td></tr>
+    <tr><td>复杂递推 / 只算需要的</td><td>记忆化搜索</td><td>状态可哈希</td></tr>
+    <tr><td>深图（n ≥ 10⁵）</td><td>迭代 DFS</td><td>防爆栈</td></tr>
+    <tr><td>增量加边、动态问连通</td><td>并查集</td><td>见并查集讲义</td></tr>
+  </table>
+  <div class="note"><b>决策顺序：</b>答案与层数有关吗 → 边权是 1 吗 → 图有向吗（要顺序吗）→ 状态有多大。</div>
+</section>
+
+<!-- ═══ 46 易错清单 ═══ -->
+<section class="slide" data-title="易错清单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>08 · PITFALLS</div><h2>易错清单 <em>Checklist</em></h2></div>
+    <div class="hint"><b>本页回答：</b>提交前自检什么？<br>（每条都对应本讲义的坑）</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-plum"><h3>实现</h3>
+      <ul class="tick no">
+        <li>递归 DFS 爆栈（链式图）</li>
+        <li>入队/入栈不标记 → 重复访问</li>
+        <li>迭代 DFS 忘记 <code>reversed()</code></li>
+        <li><code>list.pop(0)</code> 当队列用</li>
+        <li>起点没先标记就入队</li>
+        <li>外层循环漏掉 → 不连通图漏块</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>建模</h3>
+      <ul class="tick">
+        <li>用 DFS 求最短路（❌ 必错）</li>
+        <li>无向图只加了一条边</li>
+        <li>网格边界判断写错（&lt;= 或越界）</li>
+        <li>状态设计缺维度（钥匙/方向）</li>
+        <li>双向 BFS 只记单侧距离</li>
+        <li>0-1 BFS 用 visited 提前剪</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>图论进阶</h3>
+      <ul class="tick ok">
+        <li>割点判据写成 <code>&gt;</code>（应为 ≥）</li>
+        <li>桥判据写成 <code>≥</code>（应为 &gt;）</li>
+        <li>重边导致回边误判</li>
+        <li>拓扑忘判环，环上 DP 出错</li>
+        <li>SCC 忘记 <code>onstack</code> 判断</li>
+        <li>输出顺序与题面不一致</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>提交前 30 秒四连问：</b>① 标记在入队还是出队 ② 无向/有向边加对了吗 ③ 边界 <code>0 ≤ ni &lt; R</code> ④ 递归深度够吗。</div>
+</section>
+
+<!-- ═══ 47 调试与验证 ═══ -->
+<section class="slide" data-title="调试与验证">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>08 · VERIFY</div><h2>怎么验证答案<em>是对的</em></h2></div>
+    <div class="hint"><b>本页回答：</b>写完怎么自查？<br>暴力对拍、不变量、边界用例。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card tint-teal"><h3><span class="n t">1</span>暴力对拍</h3>
+        <p>小数据（n ≤ 8）用<b>枚举全排列 / 递归穷举</b>当参照实现；随机生成图与网格，对拍 1 万组。</p>
+      </div>
+      <div class="card tint-amber"><h3><span class="n">3</span>边界用例</h3>
+        <ul class="tick">
+          <li>n = 1、无边</li><li>完全图 / 链 / 环</li>
+          <li>不连通图（多个分量）</li><li>自环、重边</li>
+          <li>答案不可达（-1 / INF）</li><li>起点即终点</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3><span class="n">2</span>不变量检查</h3>
+        <ul class="tick ok">
+          <li>遍历后 <code>visited</code> 为真的点数 = 分量大小</li>
+          <li>BFS 的 <code>dist[v] == dist[u] + 1</code> 对每条树边成立</li>
+          <li>拓扑序中每条边 u→v 都满足 <code>pos[u] &lt; pos[v]</code></li>
+          <li>染色：同色点之间<b>无边</b></li>
+          <li>SCC：分量内部互达（可写暴力 Floyd 验证）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>可视化：</b>打印 dfs/bfs 的访问序列，肉眼比对是否符合预期次序 —— 排查"次序类"问题最快。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 48 题单 ═══ -->
+<section class="slide" data-title="练习题单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>08 · PRACTICE</div><h2>练习题单（洛谷 / LeetCode）</h2></div>
+    <div class="hint"><b>本页回答：</b>课后练什么？<br>每题都写了<b>题意</b>，可按图索骥。</div>
+  </div>
+  <div class="cols c3" style="gap:8px">
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1141" target="_blank"><span class="src lg">洛谷</span><span class="t">P1141 01 迷宫</span><span class="d">题意：'0'/'1' 相邻互达，问若干组查询两点是否同块、块多大。连通块 + 计数。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1443" target="_blank"><span class="src lg">洛谷</span><span class="t">P1443 马的遍历</span><span class="d">题意：马走日，求到每格的最少步数。经典 BFS 距离场。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1162" target="_blank"><span class="src lg">洛谷</span><span class="t">P1162 填涂颜色</span><span class="d">题意：被 '1' 包围的 '0' 染成 '2'。边界反向 flood fill。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3393" target="_blank"><span class="src lg">洛谷</span><span class="t">P3393 逃离僵尸岛</span><span class="d">题意：僵尸扩散区域求最短安全路径。多源 BFS 标记 + Dijkstra/BFS。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3388" target="_blank"><span class="src lg">洛谷</span><span class="t">P3388 【模板】割点</span><span class="d">题意：求无向图所有割点。dfn/low 判据。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1726" target="_blank"><span class="src lg">洛谷</span><span class="t">P1726 上白泽慧音</span><span class="d">题意：求最大的强连通分量。Tarjan SCC + 比较。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2746" target="_blank"><span class="src lg">洛谷</span><span class="t">P2746 校园网</span><span class="d">题意：加最少边使有向图强连通。SCC 缩点 + 统计出入度为 0 的分量。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/course-schedule/" target="_blank"><span class="src">LeetCode</span><span class="t">207. 课程表</span><span class="d">题意：判断能否修完所有课。拓扑判环（Kahn / DFS）。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/course-schedule-ii/" target="_blank"><span class="src">LeetCode</span><span class="t">210. 课程表 II</span><span class="d">题意：给出一种修课顺序。拓扑排序输出。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/rotting-oranges/" target="_blank"><span class="src">LeetCode</span><span class="t">994. 腐烂的橘子</span><span class="d">题意：烂橘子扩散求全部腐烂时间。多源 BFS 分层。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/01-matrix/" target="_blank"><span class="src">LeetCode</span><span class="t">542. 01 矩阵</span><span class="d">题意：每格到最近 0 的距离。多源 BFS 距离场。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/shortest-path-in-binary-matrix/" target="_blank"><span class="src">LeetCode</span><span class="t">1091. 二进制矩阵中的最短路径</span><span class="d">题意：八连通求左上到右下的最少步数。BFS + 边界判断。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/word-ladder/" target="_blank"><span class="src">LeetCode</span><span class="t">127. 单词接龙</span><span class="d">题意：每次改一个字母，求最短变换序列长度。状态 BFS / 双向 BFS。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/open-the-lock/" target="_blank"><span class="src">LeetCode</span><span class="t">752. 打开转盘锁</span><span class="d">题意：四位转盘，避开死亡数字，求最少转动。状态空间 BFS。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/sliding-puzzle/" target="_blank"><span class="src">LeetCode</span><span class="t">773. 滑动谜题</span><span class="d">题意：2×3 滑块求最少移动次数。状态 BFS（状态数 6! = 720）。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/pacific-atlantic-water-flow/" target="_blank"><span class="src">LeetCode</span><span class="t">417. 太平洋大西洋水流</span><span class="d">题意：能流到两个海洋的格子。反向 DFS/BFS 两次取交集。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/surrounded-regions/" target="_blank"><span class="src">LeetCode</span><span class="t">130. 被围绕的区域</span><span class="d">题意：边界 'O' 及其连通块保留，其余翻转。边界 flood fill。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/shortest-path-to-get-food/" target="_blank"><span class="src">LeetCode</span><span class="t">1293. 网格中的最短路径</span><span class="d">题意：最多可清除 k 个障碍，求最少步数。状态 (i, j, k) 的 BFS。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/keys-and-rooms/" target="_blank"><span class="src">LeetCode</span><span class="t">841. 钥匙和房间</span><span class="d">题意：能否进入所有房间。连通性遍历（DFS/BFS）。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P10376" target="_blank"><span class="src lg">洛谷</span><span class="t">P10376 图的遍历综合</span><span class="d">题意：综合练习（分块、最短路、拓扑）。建议限时 60 分钟。</span></a>
+  </div>
+  <div class="note"><b>节奏建议：</b>连通与网格 4 题 → BFS 最短路 4 题 → 拓扑 2 题 → 状态空间 3 题 → 时间戳 3 题。每题写 100 字题解：<b>问题 → 状态/边界 → 为什么选 BFS/DFS</b>。</div>
+</section>
+
+<!-- ═══ 49 总结 ═══ -->
+<section class="slide" data-title="总结">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>09 · SUMMARY</div><h2>带走这 <em>五句话</em></h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记住一页，<br>就记这一页。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><div class="step"><div class="idx">1</div><div><b>DFS 与 BFS 只差"取谁"：</b>栈给深度、队列给层数；骨架完全相同（S + F）。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">2</div><div><b>最短路用 BFS，其他用 DFS：</b>答案与层数有关 → BFS；只问可行性/存在 → DFS。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">3</div><div><b>标记时机是第一易错点：</b>入队即标记防重复；深图把递归改成迭代。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">4</div><div><b>升级链顺着边权走：</b>全 1 → BFS，0/1 → 双端队列，非负 → Dijkstra，负权 → Bellman-Ford。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">5</div><div><b>状态设计决定上限：</b>把"点"换成"(点, 附加状态)"，能解一大类看似无从下手的题。</div></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 350 260" preserveAspectRatio="xMidYMid meet">
+          <circle cx="175" cy="130" r="115" fill="#F2A63B" opacity=".12" class="pulse"/>
+          <circle cx="175" cy="130" r="52" fill="#2E2118"/>
+          <text x="175" y="126" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="12.5">遍历</text>
+          <text x="175" y="145" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="11">S + F</text>
+          <g font-family="monospace" font-size="11" fill="#7A4A22">
+            <rect x="112" y="10" width="126" height="30" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="175" y="30" text-anchor="middle">BFS 最短路</text>
+            <rect x="248" y="58" width="96" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="296" y="78" text-anchor="middle">0-1 BFS</text>
+            <rect x="252" y="170" width="92" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="298" y="190" text-anchor="middle">双向</text>
+            <rect x="108" y="216" width="134" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="236" text-anchor="middle">拓扑 / DAG DP</text>
+            <rect x="6" y="170" width="106" height="30" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="59" y="190" text-anchor="middle">记忆化</text>
+            <rect x="8" y="58" width="102" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="59" y="78" text-anchor="middle">flood fill</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" class="dash" fill="none">
+            <path d="M175 78 L175 42"/><path d="M224 110 L250 82"/><path d="M224 154 L254 184"/>
+            <path d="M175 182 L175 216"/><path d="M126 154 L110 184"/><path d="M126 110 L108 82"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>升华：</b>遍历的价值不在"会不会写"，而在于<b>把陌生问题翻译成"状态 + 转移"</b>的能力 —— 会翻译，才有算法。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 50 结语 ═══ -->
+<section class="slide cover" data-title="结语 Q&A">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">THANKS · Q&A</div>
+      <h1>谢谢！<br><em class="t">开始提问</em></h1>
+      <p class="sub">课后三步：<br>
+        ① 15 分钟默写三种模板（DFS 递归 / DFS 迭代 / BFS）<br>
+        ② 用 n = 2×10⁵ 的链式图测你的递归版，体会迭代的必要<br>
+        ③ 按题单刷 10 题，每题写 100 字题解（问题 → 状态 → 为什么选它）</p>
+      <div class="meta"><span>栈 · 队列 · 双端 · 堆</span><span>dfn · low · 拓扑</span><span>O(V + E)</span></div>
+    </div>
+    <div>
+      <svg viewBox="0 0 460 300" preserveAspectRatio="xMidYMid meet">
+        <circle cx="230" cy="150" r="145" fill="#F2A63B" opacity=".16" class="pulse"/>
+        <g class="gedge tree"><path d="M230 236 L158 158"/><path d="M230 236 L302 158"/><path d="M230 236 L230 118"/></g>
+        <path d="M302 158 L230 236" class="gedge cut"/>
+        <g class="float">
+          <g class="gnode root"><circle cx="230" cy="236" r="30"/><text x="230" y="244" font-size="15">start</text></g>
+          <g class="gnode done"><circle cx="158" cy="158" r="24"/><text x="158" y="165" font-size="14">DFS</text></g>
+          <g class="gnode done"><circle cx="302" cy="158" r="24"/><text x="302" y="165" font-size="14">BFS</text></g>
+          <g class="gnode"><circle cx="230" cy="118" r="24"/><text x="230" y="125" font-size="14">goal</text></g>
+        </g>
+      </svg>
+      <div class="note"><b>快捷键：</b><code>O</code> 目录 · <code>←/→</code> 翻页 · <code>⛶</code> 全屏</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="brand">DFS &amp; BFS · 80MIN</div>
+<div class="hud">
+  <button id="tocBtn" title="目录">☰</button>
+  <button id="prevBtn" title="上一页">←</button>
+  <div class="pgn"><span id="cur">1</span> / <span id="tot">50</span></div>
+  <button id="nextBtn" title="下一页">→</button>
+  <button id="fullBtn" title="全屏">⛶</button>
+</div>
+
+<div class="toc" id="toc"><h4>目录 · 50 页</h4><div class="grid" id="tocGrid"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+/* 代码以纯文本存放，用 textContent 注入，再交给 Prism 高亮 */
+const CODE = {
+
+storage: `
+# 1) 邻接表（默认，1-indexed）
+n, m = map(int, input().split())
+g = [[] for _ in range(n + 1)]
+for _ in range(m):
+    u, v = map(int, input().split())
+    g[u].append(v)
+    g[v].append(u)              # 无向图才加这行；有向图删掉
+
+# 2) 边集（排序类算法用）
+edges = [(u, v, w)]
+
+# 3) 网格：不建图，用方向数组
+DIRS = ((1, 0), (-1, 0), (0, 1), (0, -1))
+
+def neighbors(i, j, R, C):
+    for di, dj in DIRS:
+        ni, nj = i + di, j + dj
+        if 0 <= ni < R and 0 <= nj < C:
+            yield ni, nj
+`,
+
+dfs_rec: `
+def dfs_all(n, g, start=1):
+    """递归 DFS：返回前序访问顺序（覆盖整个连通块）"""
+    visited = [False] * (n + 1)
+    order = []
+
+    def dfs(u):
+        visited[u] = True          # 进入即标记
+        order.append(u)            # 前序
+        for v in g[u]:
+            if not visited[v]:
+                dfs(v)             # 树边
+            # else: 回边 / 横边
+        # order.append(u)          # 取消注释 => 后序（拓扑用）
+
+    dfs(start)
+    return order
+
+
+# 图可能不连通：外层再套一层
+def dfs_forest(n, g):
+    visited = [False] * (n + 1)
+    comps = []
+    for s in range(1, n + 1):
+        if visited[s]:
+            continue
+        comps.append(dfs_all(n, g, s))
+    return comps
+`,
+
+dfs_iter: `
+# 1) 普通迭代 DFS（与递归同序）
+def dfs_iter(n, g, start=1):
+    visited = [False] * (n + 1)
+    order = []
+    stack = [start]
+    while stack:
+        u = stack.pop()
+        if visited[u]:
+            continue
+        visited[u] = True          # 出栈才标记
+        order.append(u)
+        for v in reversed(g[u]):   # 逆序入栈 => 与递归次序一致
+            if not visited[v]:
+                stack.append(v)
+    return order
+
+
+# 2) 带进入/退出事件的迭代 DFS（可取后序、时间戳）
+def dfs_iter_post(n, g, start=1):
+    visited = [False] * (n + 1)
+    post = []
+    stack = [(start, False)]       # (节点, 是否已处理完子树)
+    while stack:
+        u, done = stack.pop()
+        if done:
+            post.append(u)         # 退出事件 = 后序
+            continue
+        if visited[u]:
+            continue
+        visited[u] = True
+        stack.append((u, True))    # 先压"退出"事件
+        for v in reversed(g[u]):
+            if not visited[v]:
+                stack.append((v, False))
+    return post
+`,
+
+bfs_basic: `
+from collections import deque
+
+def bfs(n, g, start=1):
+    """返回 (dist, parent)；不可达处 dist = -1"""
+    dist = [-1] * (n + 1)
+    parent = [-1] * (n + 1)
+    q = deque([start])
+    dist[start] = 0
+    while q:
+        u = q.popleft()
+        for v in g[u]:
+            if dist[v] == -1:      # 未访问
+                dist[v] = dist[u] + 1
+                parent[v] = u
+                q.append(v)
+    return dist, parent
+
+
+def shortest_path(parent, s, t):
+    """沿 parent 从 t 走回 s；不可达返回 []"""
+    path = []
+    while t != -1:
+        path.append(t)
+        t = parent[t]
+    path.reverse()
+    return path if path and path[0] == s else []
+`,
+
+bfs_levels: `
+from collections import deque
+
+def bfs_levels(n, g, start=1):
+    """按层返回节点；levels[k] = 到 start 距离为 k 的所有点"""
+    dist = [-1] * (n + 1)
+    dist[start] = 0
+    q = deque([start])
+    levels = [[start]]
+    while q:
+        sz = len(q)                # 本层节点数
+        level = []
+        for _ in range(sz):
+            u = q.popleft()
+            for v in g[u]:
+                if dist[v] == -1:
+                    dist[v] = dist[u] + 1
+                    q.append(v)
+                    level.append(v)
+        if level:
+            levels.append(level)
+    return levels
+
+
+# 应用：最短路径条数（cnt[v] 只在第一次到达或 dist 相等时更新）
+def count_shortest(n, g, start=1, MOD=10**9 + 7):
+    dist = [-1] * (n + 1)
+    cnt = [0] * (n + 1)
+    dist[start] = 0
+    cnt[start] = 1
+    q = deque([start])
+    while q:
+        u = q.popleft()
+        for v in g[u]:
+            if dist[v] == -1:
+                dist[v] = dist[u] + 1
+                cnt[v] = cnt[u]
+                q.append(v)
+            elif dist[v] == dist[u] + 1:
+                cnt[v] = (cnt[v] + cnt[u]) % MOD
+    return dist, cnt
+`,
+
+floodfill: `
+def num_islands(grid):
+    """grid: '1' 陆地 / '0' 水；返回岛屿数量（就地修改 grid）"""
+    R, C = len(grid), len(grid[0])
+    ans = 0
+    for i in range(R):
+        for j in range(C):
+            if grid[i][j] != '1':
+                continue
+            ans += 1                        # 发现新岛
+            stack = [(i, j)]
+            grid[i][j] = '0'                # 入栈即标记！
+            while stack:
+                x, y = stack.pop()
+                for nx, ny in ((x+1, y), (x-1, y), (x, y+1), (x, y-1)):
+                    if 0 <= nx < R and 0 <= ny < C and grid[nx][ny] == '1':
+                        grid[nx][ny] = '0'
+                        stack.append((nx, ny))
+    return ans
+
+
+# 变式：求最大岛屿面积 => 每次 fill 返回 size，取 max
+`,
+
+grid_trick: `
+from collections import deque
+
+DIRS = ((1, 0), (-1, 0), (0, 1), (0, -1))
+
+def bfs_grid(grid, start):
+    """0 可走、1 障碍；返回到每格的最少步数"""
+    R, C = len(grid), len(grid[0])
+    seen = [[False] * C for _ in range(R)]
+    si, sj = start
+    seen[si][sj] = True                    # 起点先标记
+    q = deque([(si, sj, 0)])
+    ans = {}
+    while q:
+        i, j, d = q.popleft()
+        ans[(i, j)] = d
+        for di, dj in DIRS:
+            ni, nj = i + di, j + dj
+            if (0 <= ni < R and 0 <= nj < C
+                    and not seen[ni][nj] and grid[ni][nj] == 0):
+                seen[ni][nj] = True        # 入队即标记，防重复
+                q.append((ni, nj, d + 1))
+    return ans
+`,
+
+bip_bfs: `
+from collections import deque
+
+def is_bipartite(n, g):
+    """染色 0/1；出现同色边 => 非二分图"""
+    color = [-1] * (n + 1)
+    for s in range(1, n + 1):              # 不连通也要逐个染
+        if color[s] != -1:
+            continue
+        color[s] = 0
+        q = deque([s])
+        while q:
+            u = q.popleft()
+            for v in g[u]:
+                if color[v] == -1:
+                    color[v] = 1 - color[u]
+                    q.append(v)
+                elif color[v] == color[u]:
+                    return False           # 奇环
+    return True
+`,
+
+bip_dfs: `
+def is_bipartite_dfs(n, g):
+    color = [-1] * (n + 1)
+
+    def dfs(u, c):
+        color[u] = c
+        for v in g[u]:
+            if color[v] == -1:
+                if not dfs(v, 1 - c):
+                    return False
+            elif color[v] == c:
+                return False               # 同色相邻 => 奇环
+        return True
+
+    for s in range(1, n + 1):
+        if color[s] == -1 and not dfs(s, 0):
+            return False
+    return True
+
+
+# 顺带产出：color[] 就是二分图的两侧划分
+`,
+
+multisrc: `
+from collections import deque
+
+def rotting(grid):
+    """'2' 烂橘子、'1' 新鲜、'0' 空；返回全部腐烂所需时间（-1 表示不可能）"""
+    R, C = len(grid), len(grid[0])
+    q = deque()
+    fresh = 0
+    for i in range(R):
+        for j in range(C):
+            if grid[i][j] == 2:
+                q.append((i, j, 0))        # 多源同时入队
+            elif grid[i][j] == 1:
+                fresh += 1
+
+    ans = 0
+    while q:
+        x, y, t = q.popleft()
+        ans = max(ans, t)
+        for nx, ny in ((x+1, y), (x-1, y), (x, y+1), (x, y-1)):
+            if 0 <= nx < R and 0 <= ny < C and grid[nx][ny] == 1:
+                grid[nx][ny] = 2           # 入队即标记
+                fresh -= 1
+                q.append((nx, ny, t + 1))
+    return -1 if fresh else ans
+`,
+
+zeroone: `
+from collections import deque
+
+def zero_one_bfs(n, g, start=1):
+    """g[u] = [(v, w)]，w ∈ {0, 1}；返回 dist"""
+    INF = 10 ** 9
+    dist = [INF] * (n + 1)
+    dist[start] = 0
+    dq = deque([start])
+    while dq:
+        u = dq.popleft()
+        for v, w in g[u]:
+            nd = dist[u] + w
+            if nd < dist[v]:
+                dist[v] = nd
+                if w == 0:
+                    dq.appendleft(v)       # 0 权放队首
+                else:
+                    dq.append(v)           # 1 权放队尾
+    return dist
+
+# 不能用 visited 提前剪枝：只能靠 dist 判断松弛
+`,
+
+topo_dfs: `
+def topo_dfs(n, g):
+    """DFS 逆后序 = 拓扑序；返回 None 表示有环"""
+    state = [0] * (n + 1)          # 0 未访问 · 1 在递归栈 · 2 完成
+    order = []
+    has_cycle = False
+
+    def dfs(u):
+        nonlocal has_cycle
+        state[u] = 1
+        for v in g[u]:
+            if state[v] == 1:
+                has_cycle = True   # 回边 => 有环
+            elif state[v] == 0:
+                dfs(v)
+        state[u] = 2
+        order.append(u)            # 后序
+
+    for s in range(1, n + 1):
+        if state[s] == 0:
+            dfs(s)
+
+    order.reverse()                # 逆后序才是拓扑序
+    return None if has_cycle else order
+`,
+
+kahn: `
+from collections import deque
+
+def kahn(n, g):
+    """BFS 拓扑；返回 None 表示有环"""
+    indeg = [0] * (n + 1)
+    for u in range(1, n + 1):
+        for v in g[u]:
+            indeg[v] += 1
+
+    q = deque(u for u in range(1, n + 1) if indeg[u] == 0)
+    order = []
+    while q:
+        u = q.popleft()
+        order.append(u)
+        for v in g[u]:
+            indeg[v] -= 1
+            if indeg[v] == 0:
+                q.append(v)
+
+    return order if len(order) == n else None
+
+
+# 字典序最小：把 deque 换成 heapq（每次取编号最小的 0 入度点）
+# 最少学期数：按层循环，层数即答案
+`,
+
+dagdp: `
+def dag_longest(n, g, order, cost):
+    """order = 拓扑序；cost[u] = 点权；返回最长路径的点权和"""
+    dp = [0] * (n + 1)
+    for u in range(1, n + 1):
+        dp[u] = cost[u]
+
+    best = 0
+    for u in order:
+        best = max(best, dp[u])
+        for v in g[u]:
+            if dp[v] < dp[u] + cost[v]:
+                dp[v] = dp[u] + cost[v]
+    return best
+
+
+# 方案数版本：
+#   ways = [0] * (n + 1); ways[start] = 1
+#   for u in order:  for v in g[u]: ways[v] = (ways[v] + ways[u]) % MOD
+`,
+
+cutbridge: `
+def cut_and_bridge(n, g):
+    """无向图求割点与桥；返回 (cuts, bridges)"""
+    dfn = [0] * (n + 1)
+    low = [0] * (n + 1)
+    timer = 0
+    cuts = set()
+    bridges = []
+
+    def dfs(u, parent):
+        nonlocal timer
+        timer += 1
+        dfn[u] = low[u] = timer
+        children = 0
+        for v in g[u]:
+            if dfn[v] == 0:                 # 树边
+                children += 1
+                dfs(v, u)
+                low[u] = min(low[u], low[v])
+                if parent == 0 and children > 1:
+                    cuts.add(u)             # 根：≥2 棵子树
+                if parent != 0 and low[v] >= dfn[u]:
+                    cuts.add(u)             # 非根：>=
+                if low[v] > dfn[u]:
+                    bridges.append((u, v))  # 桥：严格 >
+            elif v != parent:               # 回边（注意重边要按边编号判）
+                low[u] = min(low[u], dfn[v])
+
+    for s in range(1, n + 1):
+        if dfn[s] == 0:
+            dfs(s, 0)
+
+    return cuts, bridges
+`,
+
+scc: `
+def scc(n, g):
+    """Tarjan 求强连通分量；返回 (comp, cnt)"""
+    dfn = [0] * (n + 1)
+    low = [0] * (n + 1)
+    onstack = [False] * (n + 1)
+    stack = []
+    comp = [0] * (n + 1)
+    timer = 0
+    cnt = 0
+
+    def dfs(u):
+        nonlocal timer, cnt
+        timer += 1
+        dfn[u] = low[u] = timer
+        stack.append(u)
+        onstack[u] = True
+        for v in g[u]:
+            if dfn[v] == 0:
+                dfs(v)
+                low[u] = min(low[u], low[v])
+            elif onstack[v]:                # 只影响"还在栈里"的点
+                low[u] = min(low[u], dfn[v])
+        if low[u] == dfn[u]:                # u 是一个 SCC 的根
+            cnt += 1
+            while True:
+                w = stack.pop()
+                onstack[w] = False
+                comp[w] = cnt
+                if w == u:
+                    break
+
+    for s in range(1, n + 1):
+        if dfn[s] == 0:
+            dfs(s)
+    return comp, cnt
+`,
+
+bidir: `
+def word_ladder(begin, end, words):
+    """双向 BFS：每次扩展较小的一侧；返回最短序列长度（含首尾）"""
+    words = set(words)
+    if end not in words:
+        return 0
+
+    dist_a = {begin: 1}            # 从起点侧
+    dist_b = {end: 1}              # 从终点侧
+    front, back = {begin}, {end}
+
+    while front and back:
+        if len(front) > len(back):         # 始终扩展小的一侧
+            front, back = back, front
+            dist_a, dist_b = dist_b, dist_a
+
+        nxt = set()
+        for word in front:
+            chars = list(word)
+            for i in range(len(chars)):
+                old = chars[i]
+                for c in 'abcdefghijklmnopqrstuvwxyz':
+                    if c == old:
+                        continue
+                    chars[i] = c
+                    nw = ''.join(chars)
+                    if nw in dist_b:
+                        return dist_a[word] + dist_b[nw]
+                    if nw in words and nw not in dist_a:
+                        dist_a[nw] = dist_a[word] + 1
+                        nxt.add(nw)
+                chars[i] = old
+        front = nxt
+    return 0
+`,
+
+memo: `
+from functools import lru_cache
+
+def paths_with_memo(grid):
+    """只能向右/向下，从左上到右下的路径数（grid[i][j] == 0 可走）"""
+    R, C = len(grid), len(grid[0])
+
+    @lru_cache(maxsize=None)
+    def dfs(i, j):
+        if i == R - 1 and j == C - 1:
+            return 1
+        ans = 0
+        for ni, nj in ((i + 1, j), (i, j + 1)):
+            if 0 <= ni < R and 0 <= nj < C and grid[ni][nj] == 0:
+                ans += dfs(ni, nj)
+        return ans
+
+    return dfs(0, 0) if grid[0][0] == 0 else 0
+
+
+# 记忆化搜索 = 自顶向下的 DP；状态必须可哈希（tuple / int）
+`
+};
+
+function applyCode(){
+  document.querySelectorAll('code[data-src]').forEach(el => {
+    const raw = CODE[el.dataset.src];
+    if (typeof raw === 'string') {
+      el.textContent = raw.replace(/^\n+/, '').replace(/\s+$/, '');
+    }
+  });
+  if (window.Prism && Prism.highlightAll) { Prism.highlightAll(); }
+}
+
+const deck = document.getElementById('deck');
+function fit(){
+  const s = Math.min(window.innerWidth / 1320, window.innerHeight / 780);
+  deck.style.transform = 'scale(' + s + ')';
+}
+
+function fitCode(){
+  document.querySelectorAll('pre.code').forEach(pre => {
+    pre.style.fontSize = '';
+    let fs = 12.4, guard = 0;
+    while (pre.scrollHeight > pre.clientHeight + 2 && fs > 10.2 && guard < 40) {
+      fs -= 0.15;
+      pre.style.fontSize = fs.toFixed(2) + 'px';
+      guard++;
+    }
+  });
+}
+function relayout(){ fit(); requestAnimationFrame(fitCode); }
+window.addEventListener('resize', relayout);
+window.addEventListener('load', relayout);
+
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let idx = 0;
+document.getElementById('tot').textContent = total;
+
+function show(n){
+  idx = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('on', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('prog').style.width = ((idx + 1) / total * 100) + '%';
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  requestAnimationFrame(fitCode);
+}
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(total - 1);
+  else if (e.key.toLowerCase() === 'o') document.getElementById('toc').classList.toggle('on');
+  else if (e.key === 'Escape') document.getElementById('toc').classList.remove('on');
+});
+document.getElementById('fullBtn').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+const tocGrid = document.getElementById('tocGrid');
+slides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + (i + 1);
+  a.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b>' + (s.dataset.title || '');
+  a.onclick = e => { e.preventDefault(); show(i); document.getElementById('toc').classList.remove('on'); };
+  tocGrid.appendChild(a);
+});
+document.getElementById('tocBtn').onclick = () => document.getElementById('toc').classList.toggle('on');
+document.getElementById('toc').onclick = e => { if (e.target.id === 'toc') e.classList.remove('on'); };
+
+applyCode();
+const h = parseInt(location.hash.replace('#', ''), 10);
+show(isNaN(h) ? 0 : h - 1);
+relayout();
+</script>
+</body>
+</html>

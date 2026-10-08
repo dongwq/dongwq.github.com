@@ -1,0 +1,1873 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>图的连通性：分量 · 割点 · 双连通 · 强连通</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{
+  --paper:#FFF8F0; --card:#FFFFFF;
+  --ink:#2B1D12; --ink2:#6E5842; --line:#EEDCC2;
+  --accent:#E2612F; --amber:#F2A63B; --teal:#0F7B6C; --plum:#A33A64;
+  --code-bg:#2C2117;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EFE0C8;font-family:var(--sans);color:var(--ink);overflow:hidden}
+body{background:
+  radial-gradient(1200px 700px at 12% -10%, #FBE9CE 0%, rgba(251,233,206,0) 60%),
+  radial-gradient(900px 600px at 105% 110%, #F7DCC0 0%, rgba(247,220,192,0) 55%), #EFE0C8;}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center center;
+  border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(90,52,18,.28),0 4px 12px rgba(90,52,18,.14)}
+
+.slide{position:absolute;inset:0;padding:22px 38px 26px;opacity:0;visibility:hidden;
+  transform:translateX(22px) scale(.996);transition:opacity .38s ease,transform .38s ease,visibility .38s;
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(160deg,#FFFBF5 0%,#FFF4E6 55%,#FDEBD3 100%)}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.slide::after{content:"";position:absolute;right:-120px;top:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(242,166,59,.18),rgba(242,166,59,0) 70%);pointer-events:none}
+.slide::before{content:"";position:absolute;left:-90px;bottom:-140px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,rgba(226,97,47,.11),rgba(226,97,47,0) 70%);pointer-events:none}
+.slide>*{position:relative;z-index:2}
+
+.kicker{display:inline-flex;align-items:center;gap:7px;font-size:10.6px;font-weight:700;letter-spacing:.13em;
+  color:var(--accent);background:#FFEEDC;border:1px solid #F6D2B2;padding:3px 11px;border-radius:999px}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+.sl-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+  border-bottom:2px solid var(--line);padding-bottom:8px}
+.sl-head h2{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1.14;margin-top:5px}
+.sl-head h2 em{font-style:normal;color:var(--accent)}
+.sl-head .hint{font-size:11.6px;color:var(--ink2);text-align:right;max-width:340px;line-height:1.5}
+.sl-head .hint b{color:#8A5A2C}
+.lead{font-size:15px;line-height:1.66;color:#42301F}
+.muted{color:var(--ink2)}
+
+.cols{display:grid;gap:11px;min-height:0;flex:1 1 auto}
+.c2{grid-template-columns:1fr 1fr}
+.c2a{grid-template-columns:1.08fr .92fr}
+.c2b{grid-template-columns:.92fr 1.08fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+.cols > div{min-height:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.card h3 .n{width:21px;height:21px;border-radius:7px;background:var(--accent);color:#fff;font-size:11.5px;
+  display:grid;place-items:center;font-family:var(--sans);font-weight:700;flex:none}
+.card p,.card li{font-size:13px;line-height:1.6;color:#4A3722}
+.card ul{padding-left:16px}
+.card li{margin:2px 0}
+.card.tint-teal{background:#F2FBF7;border-color:#BEE6D8}
+.card.tint-amber{background:#FFF7E6;border-color:#F4DCAC}
+.card.tint-plum{background:#FDF1F5;border-color:#EFCBD8}
+
+.formula{font-family:var(--mono);font-size:14.5px;background:#2E2118;color:#FFEBD2;border-radius:11px;
+  padding:10px 14px;line-height:1.55;flex:none;overflow-x:auto}
+.formula .hl{color:#FFB169;font-weight:600}
+.formula .ok{color:#7FE0C2;font-weight:600}
+
+.codewrap{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;
+  border:1px solid #4B3823;border-radius:12px;overflow:hidden;background:var(--code-bg)}
+.code-head{flex:none;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#241A12;
+  border-bottom:1px solid #46341F}
+.code-head .dot{width:9px;height:9px;border-radius:50%;background:#6B5238}
+.code-head .dot.r{background:#B9471B}
+.code-head em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B29272;letter-spacing:.08em;margin-left:6px}
+.code-head .lang{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7A5F45;letter-spacing:.12em}
+pre.code{margin:0;flex:1 1 auto;min-height:0;overflow:auto;background:var(--code-bg)!important;
+  padding:11px 14px;font-family:var(--mono);font-size:12.4px;line-height:1.56;white-space:pre;tab-size:4}
+pre.code::-webkit-scrollbar{height:8px;width:8px}
+pre.code::-webkit-scrollbar-track{background:#241A12}
+pre.code::-webkit-scrollbar-thumb{background:#6B5238;border-radius:8px}
+pre.code::-webkit-scrollbar-thumb:hover{background:#8E6E4C}
+pre.code code,code[class*="language-"]{font-family:var(--mono)!important;font-size:inherit;
+  background:transparent!important;color:#F0E0CC!important;text-shadow:none!important}
+pre.code .token.comment,pre.code .token.prolog,pre.code .token.doctype,pre.code .token.cdata{color:#A8846A!important;font-style:italic}
+pre.code .token.punctuation{color:#C0A183!important}
+pre.code .token.keyword,pre.code .token.atrule,pre.code .token.rule,pre.code .token.important{color:#FFB169!important;font-weight:600}
+pre.code .token.string,pre.code .token.char,pre.code .token.attr-value{color:#9BE0BE!important}
+pre.code .token.function,pre.code .token.class-name,pre.code .token.builtin{color:#FFD9A8!important}
+pre.code .token.number,pre.code .token.boolean,pre.code .token.constant,pre.code .token.symbol{color:#F4A9C0!important}
+pre.code .token.operator{color:#FFC98B!important}
+pre.code .token.decorator,pre.code .token.annotation{color:#F4A9C0!important}
+pre.code .token.entity{color:#FFB169!important}
+
+.note{border-left:4px solid var(--amber);background:#FFF6E4;padding:8px 12px;border-radius:0 11px 11px 0;
+  font-size:12.6px;line-height:1.58;flex:none}
+.note.warn{border-color:var(--plum);background:#FDF0F4}
+.note.good{border-color:var(--teal);background:#EFF9F5}
+.note b{color:var(--accent)}.note.warn b{color:var(--plum)}.note.good b{color:var(--teal)}
+code:not([class*="language-"]){font-family:var(--mono);font-size:.93em;background:#F6EADA;padding:1px 5px;border-radius:5px}
+
+table{width:100%;border-collapse:collapse;font-size:12.1px;background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);flex:none}
+th,td{padding:5.5px 10px;text-align:left;border-bottom:1px solid var(--line);line-height:1.45}
+th{background:#F7E7CF;font-family:var(--serif);font-size:12.6px;color:#7A4A22}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:11px}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:7px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.2px;
+  font-weight:600;color:#5B4429}
+.pill.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+ul.tick{list-style:none;padding:0}
+ul.tick li{position:relative;padding-left:20px;margin:3px 0;font-size:12.8px;line-height:1.55}
+ul.tick li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:4px;
+  background:#FFE2C6;border:2px solid var(--accent)}
+ul.tick.ok li::before{background:#CDEEE2;border-color:var(--teal)}
+ul.tick.no li::before{background:#F7D6E1;border-color:var(--plum);border-radius:50%}
+
+.a-link{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:11px;padding:8px 11px;transition:.18s;box-shadow:0 4px 10px rgba(120,70,20,.06);overflow:hidden}
+.a-link:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 20px rgba(226,97,47,.16)}
+.a-link .t{font-size:12.4px;font-weight:700;color:#7A3A12;display:block;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link .d{font-size:11px;color:var(--ink2);line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.a-link .src{font-size:9.6px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--teal);
+  padding:1px 7px;border-radius:999px;display:inline-block;margin-bottom:4px}
+.a-link .src.lg{background:var(--accent)}
+
+.big-num{font-family:var(--serif);font-size:38px;font-weight:900;color:var(--accent);line-height:1}
+.step{display:flex;gap:9px;align-items:flex-start}
+.step .idx{flex:none;width:23px;height:23px;border-radius:7px;background:#2E2118;color:#FFD9A8;
+  display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.split-line{height:2px;background:linear-gradient(90deg,#E2612F,#F2A63B,rgba(242,166,59,0));border-radius:2px;margin:6px 0;flex:none}
+
+svg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;overflow:visible}
+.gnode circle{fill:#fff;stroke:#D9B98D;stroke-width:3;transition:.45s}
+.gnode text{font-family:var(--mono);font-size:16px;font-weight:600;fill:#4A3722;text-anchor:middle}
+.gnode.cut circle{fill:#FDF0F4;stroke:#A33A64;stroke-width:4}
+.gnode.done circle{fill:#E9F7F2;stroke:#0F7B6C}
+.gnode.root circle{fill:#E2612F;stroke:#B9471B}
+.gnode.root text{fill:#fff}
+.gedge{stroke:#D8BC9B;stroke-width:3;fill:none;transition:.45s}
+.gedge.back{stroke:#A33A64;stroke-width:3;stroke-dasharray:8 7;animation:dash 1.6s linear infinite}
+.gedge.bridge{stroke:#E2612F;stroke-width:5}
+.gewt{font-family:var(--mono);font-size:12.5px;font-weight:700;fill:#8A6A45;text-anchor:middle}
+.dfnlab{font-family:var(--mono);font-size:11.5px;font-weight:700;fill:#0F7B6C}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.62;transform:scale(1.07)}}
+.dash{stroke-dasharray:8 8;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.flow{stroke-dasharray:6 10;animation:flow 1.6s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-64}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.cover{background:linear-gradient(150deg,#FFF6E8 0%,#FFE9CD 48%,#FFDCB4 100%)}
+.cover .badge{display:inline-flex;gap:8px;align-items:center;background:#2E2118;color:#FFD9A8;
+  padding:6px 14px;border-radius:999px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.cover h1{font-family:var(--serif);font-size:52px;line-height:1.1;font-weight:900}
+.cover h1 em{font-style:normal;background:linear-gradient(92deg,#E2612F,#F2A63B);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.cover .sub{font-size:15.5px;color:#6B4A2C;line-height:1.66;max-width:600px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta span{background:rgba(255,255,255,.72);border:1px solid #F0D2AC;padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#7A4A22}
+.section-slide{background:linear-gradient(150deg,#FFF3E0,#FFE0BC)}
+.section-slide .big{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1.18}
+.num-huge{font-family:var(--serif);font-size:110px;font-weight:900;line-height:.9;
+  background:linear-gradient(160deg,#E2612F,#F2A63B);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+.hud{position:fixed;right:18px;bottom:14px;display:flex;gap:7px;align-items:center;z-index:50}
+.hud button{border:1px solid rgba(120,70,20,.2);background:rgba(255,250,242,.92);color:#7A4A22;
+  width:34px;height:34px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:700;backdrop-filter:blur(6px);transition:.16s}
+.hud button:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.pgn{background:rgba(255,250,242,.92);border:1px solid rgba(120,70,20,.2);border-radius:10px;height:34px;
+  display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:12.5px;color:#7A4A22;font-weight:600}
+.prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,#E2612F,#F2A63B);z-index:60;
+  transition:width .35s ease;box-shadow:0 1px 6px rgba(226,97,47,.5)}
+.brand{position:fixed;left:18px;bottom:14px;z-index:50;background:rgba(255,250,242,.9);border:1px solid rgba(120,70,20,.2);
+  border-radius:10px;padding:8px 13px;font-size:10.5px;color:#7A4A22;letter-spacing:.1em;font-weight:700}
+.toc{position:fixed;inset:0;background:rgba(46,33,24,.82);backdrop-filter:blur(8px);z-index:80;display:none;
+  padding:42px 56px;overflow:auto}
+.toc.on{display:block}
+.toc h4{color:#FFE2BF;font-family:var(--serif);font-size:24px;margin-bottom:16px}
+.toc .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.toc a{background:rgba(255,246,232,.94);border-radius:10px;padding:9px 12px;text-decoration:none;color:#4A3722;
+  font-size:12.2px;line-height:1.4;border:1px solid rgba(255,255,255,.18);transition:.16s}
+.toc a:hover{background:#FFB169;transform:translateY(-2px)}
+.toc a b{display:block;font-family:var(--mono);font-size:10px;color:#B9471B;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- ═══ 01 封面 ═══ -->
+<section class="slide cover on" data-title="封面">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">ALGORITHM · GRAPH · CONNECTIVITY · 60 MIN</div>
+      <h1>图的<em>连通性</em><br>分量 · 割点 · 双连通 · 强连通</h1>
+      <p class="sub">主线只有一句话：<b>连通有强弱，问法决定工具。</b><br>
+        从"能不能互相到达"一路走到"缩点后还剩什么"。</p>
+      <div class="meta">
+        <span>39 页 · 约 60 分钟</span><span>Python 模板可直接运行</span>
+        <span>洛谷 / LeetCode 题单</span><span>含验证与调试方法</span>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 520 360" preserveAspectRatio="xMidYMid meet">
+        <circle cx="270" cy="180" r="155" fill="#F2A63B" opacity=".15" class="pulse"/>
+        <g stroke="#E2612F" stroke-width="3" fill="none" opacity=".85">
+          <path d="M110 110 L200 70 L270 130" class="flow"/>
+          <path d="M110 110 L160 190 L270 130" class="flow"/>
+          <path d="M160 190 L250 260 L340 220 L270 130" class="dash" opacity=".55"/>
+        </g>
+        <path d="M400 250 L470 190 L410 120" stroke="#A33A64" stroke-width="3" fill="none" class="dash"/>
+        <g class="float">
+          <circle cx="110" cy="110" r="26" fill="#2E2118"/><text x="110" y="117" fill="#FFD9A8" font-family="monospace" font-size="15" text-anchor="middle">a</text>
+          <circle cx="200" cy="70" r="24" fill="#fff" stroke="#0F7B6C" stroke-width="3"/><text x="200" y="77" font-family="monospace" font-size="15" text-anchor="middle" fill="#0B6356">b</text>
+          <circle cx="160" cy="190" r="24" fill="#fff" stroke="#0F7B6C" stroke-width="3"/><text x="160" y="197" font-family="monospace" font-size="15" text-anchor="middle" fill="#0B6356">c</text>
+          <circle cx="270" cy="130" r="28" fill="#A33A64"/><text x="270" y="137" fill="#fff" font-family="monospace" font-size="15" text-anchor="middle">v</text>
+          <circle cx="340" cy="220" r="24" fill="#fff" stroke="#E2612F" stroke-width="3"/><text x="340" y="227" font-family="monospace" font-size="15" text-anchor="middle" fill="#B9471B">d</text>
+          <circle cx="250" cy="260" r="22" fill="#fff" stroke="#D9B98D" stroke-width="3"/><text x="250" y="267" font-family="monospace" font-size="14" text-anchor="middle" fill="#8A6A45">e</text>
+          <circle cx="440" cy="185" r="24" fill="#fff" stroke="#A33A64" stroke-width="3"/><text x="440" y="192" font-family="monospace" font-size="15" text-anchor="middle" fill="#8C2B4F">x</text>
+        </g>
+      </svg>
+      <div class="note warn"><b>核心问题：</b>删掉 <code>v</code> 之后，图会碎成几块？这一个问句，就长出了割点、桥、点双、边双四棵枝桠。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 路线图 ═══ -->
+<section class="slide" data-title="路线图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>ROADMAP</div><h2>六站，一条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>这场讲座怎么走？<br>每站先给"要解决的问题"，再给"为什么这样转变"。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>抽象</h3><p><b>问题：</b>连通到底在说什么？</p><div class="split-line"></div><p class="muted">等价关系 · 划分 · 强弱阶梯</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>无向基础</h3><p><b>问题：</b>怎么求、怎么维护分量？</p><div class="split-line"></div><p class="muted">DFS 染色 · 并查集</p></div>
+    <div class="card tint-plum"><h3><span class="n">3</span>割点与桥</h3><p><b>问题：</b>删掉谁会"断"？</p><div class="split-line"></div><p class="muted">DFS 树 · dfn / low</p></div>
+    <div class="card tint-teal"><h3><span class="n">4</span>双连通</h3><p><b>问题：</b>断了之后剩下多结实的块？</p><div class="split-line"></div><p class="muted">点双 · 边双 · 圆方树</p></div>
+    <div class="card"><h3><span class="n">5</span>强连通</h3><p><b>问题：</b>有向图里谁能回到谁？</p><div class="split-line"></div><p class="muted">Kosaraju · Tarjan · 缩点 · 2-SAT</p></div>
+    <div class="card tint-grey" style="background:#FFFDF9"><h3><span class="n">6</span>进阶与实战</h3><p><b>问题：</b>动态、离线、怎么选怎么验？</p><div class="split-line"></div><p class="muted">倒序加点 · 可撤销并查集 · 题单</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>时间分配</h3><p class="muted">抽象 8' · 无向 10' · 割点桥 12' · 双连通 10' · 强连通 12' · 进阶实战 8'</p></div>
+    <div class="card"><h3>验收标准</h3><p class="muted">能独立写出并查集、割点桥、点双、边双、SCC 五套模板，并说清点双与边双的差别。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 03 钩子 ═══ -->
+<section class="slide" data-title="同一个模型">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HOOK</div><h2>看似无关的四道题，<em>同一个模型</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么值得学"连通性"？<br>它们其实是同一个问题的四种问法。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3>题 A</h3><p><b>题意：</b>若干人有朋友关系，问最后分成几个"朋友圈"。</p><div class="split-line"></div><p class="muted">→ 无向连通分量计数。</p></div>
+    <div class="card"><h3>题 B</h3><p><b>题意：</b>网络中删掉某个节点后，通信会断成几块？哪些节点是"命门"？</p><div class="split-line"></div><p class="muted">→ 割点。</p></div>
+    <div class="card"><h3>题 C</h3><p><b>题意：</b>给任务依赖关系，问哪些任务互相等价、能否全部完成。</p><div class="split-line"></div><p class="muted">→ 强连通分量 + 缩点。</p></div>
+    <div class="card"><h3>题 D</h3><p><b>题意：</b>若干"选 A 或选 B"的限制，问能否给出一组选择。</p><div class="split-line"></div><p class="muted">→ 2-SAT（依然是 SCC）。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n">★</span>统一模型</h3>
+      <p class="lead">连通性研究的是一个<b>等价关系</b>："谁和谁算一类"。关系定了，图就被划分成若干类；<b>问法不同，只是"算一类"的强度不同</b>。</p>
+      <div class="note"><b>解题第一步永远是翻译：</b>题面 → 判定 / 计数 / 缩点三类任务之一。</div>
+    </div>
+    <div class="card">
+      <h3>转成问题后只需回答 3 个问题</h3>
+      <div class="pill-row">
+        <span class="pill hot">有向还是无向</span><span class="pill hot">关心"点断"还是"边断"</span>
+        <span class="pill">静态还是动态</span>
+      </div>
+      <div class="split-line"></div>
+      <p class="muted">这 3 个问题的答案，直接决定用哪套工具 —— 就是第 34 页那张速查表。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 抽象 ═══ -->
+<section class="slide" data-title="连通 = 等价关系">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · MODEL</div><h2>连通就是<em>把点分成若干类</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么"连通分量"是一个划分？<br>这决定了后续所有算法的形态。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3><span class="n">1</span>等价关系三性质</h3>
+        <ul class="tick"><li><b>自反：</b>自己和自己同类</li>
+        <li><b>对称：</b>u 与 v 同类 ⇔ v 与 u 同类</li>
+        <li><b>传递：</b>u~v 且 v~w ⇒ u~w</li></ul>
+      </div>
+      <div class="card"><h3><span class="n">2</span>于是得到"划分"</h3>
+        <p>每个点恰好属于一个类 ⇒ 分量互不相交、并起来是全集。这个结构叫<b>划分</b>，也是并查集天生要维护的东西。</p>
+      </div>
+      <div class="card"><h3><span class="n">3</span>三种任务</h3>
+        <div class="pill-row">
+          <span class="pill hot">判定：u 与 v 同类？</span>
+          <span class="pill hot">计数：一共有几类？</span>
+          <span class="pill hot">缩点：每类压成一点后是什么？</span>
+        </div>
+      </div>
+      <div class="note good"><b>检验标准：</b>如果题面里"关系"不传递（比如"能一步到达"），那它不是等价关系，不能直接用连通分量。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 380 250" preserveAspectRatio="xMidYMid meet">
+          <circle cx="112" cy="112" r="82" fill="#0F7B6C" opacity=".12"/>
+          <circle cx="268" cy="128" r="66" fill="#E2612F" opacity=".12"/>
+          <circle cx="196" cy="222" r="34" fill="#A33A64" opacity=".12"/>
+          <text x="112" y="42" text-anchor="middle" class="dfnlab" fill="#0B6356">分量 1</text>
+          <text x="268" y="52" text-anchor="middle" class="dfnlab" fill="#B9471B">分量 2</text>
+          <text x="196" y="200" text-anchor="middle" class="dfnlab" fill="#8C2B4F">3</text>
+          <g class="gnode done"><circle cx="86" cy="98" r="19"/><text x="86" y="104" font-size="13">a</text></g>
+          <g class="gnode done"><circle cx="146" cy="82" r="19"/><text x="146" y="88" font-size="13">b</text></g>
+          <g class="gnode done"><circle cx="118" cy="152" r="19"/><text x="118" y="158" font-size="13">c</text></g>
+          <g class="gnode"><circle cx="252" cy="112" r="19"/><text x="252" y="118" font-size="13">d</text></g>
+          <g class="gnode"><circle cx="300" cy="152" r="19"/><text x="300" y="158" font-size="13">e</text></g>
+          <g class="gnode cut"><circle cx="196" cy="222" r="17"/><text x="196" y="228" font-size="13">f</text></g>
+          <path d="M86 98 L146 82 L118 152 Z" stroke="#0F7B6C" stroke-width="2.5" fill="none"/>
+          <path d="M252 112 L300 152" stroke="#E2612F" stroke-width="2.5" fill="none"/>
+        </svg>
+      </div>
+      <div class="note"><b>一句话：</b>求连通分量 = 求等价类；并查集是"在线合并等价类"，DFS 染色是"一次性涂色"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 强弱阶梯 ═══ -->
+<section class="slide" data-title="连通性强弱阶梯">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · LADDER</div><h2>连通有<em>强弱</em>：一张阶梯图</h2></div>
+    <div class="hint"><b>本页回答：</b>四个名词到底谁更强？<br>整份讲义的核心认知图。</div>
+  </div>
+  <div class="cols c2a">
+    <div class="card" style="padding:6px 10px">
+      <svg viewBox="0 0 620 300" preserveAspectRatio="xMidYMid meet">
+        <!-- 无向连通分量 -->
+        <rect x="30" y="34" width="560" height="238" rx="20" fill="#F2A63B" opacity=".10" stroke="#F2A63B" stroke-width="2.5"/>
+        <text x="52" y="62" font-family="Noto Serif SC" font-size="17" font-weight="700" fill="#B9471B">① 无向连通分量（最弱）</text>
+        <text x="52" y="84" font-family="Noto Sans SC" font-size="11.5" fill="#8A6A45">u 与 v 之间存在路径</text>
+        <!-- 边双 -->
+        <rect x="52" y="100" width="516" height="156" rx="18" fill="#E2612F" opacity=".10" stroke="#E2612F" stroke-width="2.5"/>
+        <text x="72" y="128" font-family="Noto Serif SC" font-size="17" font-weight="700" fill="#B9471B">② 边双连通分量</text>
+        <text x="72" y="150" font-family="Noto Sans SC" font-size="11.5" fill="#8A6A45">任意两点之间存在两条<b>边</b>不相交的路径（即没有桥）</text>
+        <!-- 点双 -->
+        <rect x="74" y="164" width="472" height="78" rx="16" fill="#0F7B6C" opacity=".12" stroke="#0F7B6C" stroke-width="2.5"/>
+        <text x="92" y="192" font-family="Noto Serif SC" font-size="17" font-weight="700" fill="#0B6356">③ 点双连通分量（最强）</text>
+        <text x="92" y="214" font-family="Noto Sans SC" font-size="11.5" fill="#3E7C71">任意两点之间存在两条<b>点</b>不相交的路径（即没有割点）</text>
+        <text x="92" y="232" font-family="Noto Sans SC" font-size="10.5" fill="#3E7C71">⇒ 点双 ⊆ 边双；一个边双可由多个点双在割点处拼成</text>
+      </svg>
+    </div>
+    <div>
+      <div class="card tint-plum"><h3>有向图的第四级</h3>
+        <p><b>强连通分量 (SCC)：</b>u 能到 v 且 v 能到 u。它是"互相到达"，与无向连通不是一回事 —— <b>有向图的"连通"有单向可达与强连通两种</b>。</p>
+      </div>
+      <div class="card"><h3>强度对应的"断"</h3>
+        <table style="box-shadow:none;border-radius:0">
+          <tr><th>强度</th><th>被什么破坏</th></tr>
+          <tr><td>无向连通</td><td>路径断开</td></tr>
+          <tr><td>边双</td><td>删掉一条<b>桥</b></td></tr>
+          <tr><td>点双</td><td>删掉一个<b>割点</b></td></tr>
+          <tr><td>强连通</td><td>删掉一条关键<b>有向边</b></td></tr>
+        </table>
+      </div>
+      <div class="note warn"><b>两个约定（易错）：</b>① 一条桥本身就是一个点双（含两个端点）；② 孤立点自成一个连通分量（点双、边双同理按需定义）。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 主线 ═══ -->
+<section class="slide" data-title="三大任务与三大工具">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · MAINLINE</div><h2>三类任务，<em>三把工具</em></h2></div>
+    <div class="hint"><b>本页回答：</b>任务与工具怎么配对？<br>全篇的骨架。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-teal"><h3><span class="n">A</span>判定 / 计数</h3>
+      <p>"u 与 v 是否同类""一共几类"</p>
+      <div class="split-line"></div>
+      <p><b>工具：</b>DFS/BFS 染色、并查集</p>
+      <p class="muted">复杂度 O(n + m)，几乎是最简单的一档。</p>
+    </div>
+    <div class="card tint-plum"><h3><span class="n">B</span>找关键结构</h3>
+      <p>"删掉谁会断""哪条边是命门"</p>
+      <div class="split-line"></div>
+      <p><b>工具：</b>Tarjan（dfn / low）</p>
+      <p class="muted">一次 DFS，O(n + m)，求割点、桥、点双、边双、SCC 全靠它。</p>
+    </div>
+    <div class="card tint-amber"><h3><span class="n">C</span>缩点 / 建模</h3>
+      <p>"把强连通的看成一个整体之后呢"</p>
+      <div class="split-line"></div>
+      <p><b>工具：</b>SCC 缩点 + DAG 上 DP</p>
+      <p class="muted">DAG 上可以拓扑序 DP、判可行性、求最长路。</p>
+    </div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>为什么 Tarjan 一招吃天下</h3>
+      <p>割点、桥、点双、边双、SCC 用的都是同一个"时间戳 + 回溯最小值"的观察：<b>DFS 树上，一条回边能救回多少祖先</b>。</p></div>
+    <div class="card tint-amber"><h3>心智模型</h3>
+      <p>DFS 树 = 骨架；回边 = 逃生通道。<b>low 的含义就是"顺着子树和回边，最远能逃回哪个时间戳"</b>。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 07 章节：无向基础 ═══ -->
+<section class="slide section-slide" data-title="章节：无向图基础">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 02</div>
+      <div class="big">无向图基础：<br><em style="color:var(--accent)">染色</em>与<em style="color:var(--accent)">合并</em></div>
+      <p class="lead">DFS/BFS 染色 · 并查集 · Kruskal<br>先把"分量"这件事做到极致简单。</p>
+    </div>
+    <div><div class="num-huge">02</div>
+      <div class="note good"><b>目标：</b>写出即用的两个模板，并知道各自适合什么场景。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 DFS 染色 ═══ -->
+<section class="slide" data-title="DFS/BFS 染色求分量">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · COLOR</div><h2>一次遍历，<em>把图涂成几块</em></h2></div>
+    <div class="hint"><b>本页回答：</b>求所有连通分量怎么做？<br>为什么每个点只访问一次？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3><span class="n">?</span>问题</h3>
+        <p>给定 n 点 m 条<b>无向边</b>，求连通分量个数，并给出每个点属于哪个分量。</p>
+      </div>
+      <div class="card"><h3>思路</h3>
+        <ul class="tick">
+          <li>枚举每个未染色的点作为起点</li>
+          <li>从它出发遍历能到达的所有点，染同一个颜色</li>
+          <li>染色次数 = 分量个数</li>
+        </ul>
+      </div>
+      <div class="note good"><b>正确性：</b>"能到达"是等价关系（无向 + 对称 + 传递），所以一次 DFS 恰好涂满一个等价类。</div>
+      <div class="note"><b>换 BFS：</b>把栈换成队列即可；无向图最少步数问题常用 BFS。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>components.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="dfscomp"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 09 并查集 ═══ -->
+<section class="slide" data-title="并查集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · DSU</div><h2>并查集：<em>动态维护"谁和谁一类"</em></h2></div>
+    <div class="hint"><b>本页回答：</b>两个优化各解决什么？<br>复杂度为什么接近 O(1)？</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>dsu.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="dsu"></code></pre></pre>
+    <div>
+      <div class="card"><h3>两个优化</h3>
+        <ul class="tick">
+          <li><b>路径压缩：</b>find 时把沿途节点挂到根上，树极扁</li>
+          <li><b>按秩合并：</b>小树挂大树，避免退化成链</li>
+        </ul>
+      </div>
+      <div class="card tint-teal"><h3>复杂度</h3>
+        <p>m 次操作摊还 <b>O(m · α(n))</b>，α 是反阿克曼函数，n ≤ 10⁶ 时可视为常数（约 ≤ 4）。</p>
+      </div>
+      <div class="note warn"><b>与 DFS 的差别：</b>并查集支持<b>边不断加进来</b>的动态场景；DFS 是一次性静态扫描。<b>需要"撤销"时不能路径压缩</b>（见第 33 页）。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 选型 ═══ -->
+<section class="slide" data-title="DFS 染色 vs 并查集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · CHOOSE</div><h2>染色还是并查集？<em>看问法</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同样求分量，两套写法怎么选？</div>
+  </div>
+  <table>
+    <tr><th>维度</th><th>DFS / BFS 染色</th><th>并查集</th></tr>
+    <tr><td>核心操作</td><td>一次性遍历</td><td>在线合并 / 查询</td></tr>
+    <tr><td>时间</td><td class="mono">O(n + m)</td><td class="mono">O(m · α(n))</td></tr>
+    <tr><td>空间</td><td class="mono">O(n + m)</td><td class="mono">O(n)</td></tr>
+    <tr><td>能否按边序动态加入</td><td>不便</td><td>天然支持</td></tr>
+    <tr><td>能否保留具体结构</td><td>可以（得到点集）</td><td>只能得到归属</td></tr>
+    <tr><td>是否可撤销</td><td>—</td><td>可以（去压缩版）</td></tr>
+    <tr><td>典型用途</td><td>分量点集、最短路计数、二分图染色</td><td>Kruskal、离线加删点、等价类</td></tr>
+  </table>
+  <div class="cols c3">
+    <div class="card tint-teal"><h3>要分量点集</h3><p class="muted">用 DFS 染色，边遍历边收集。</p></div>
+    <div class="card tint-amber"><h3>边按序加入</h3><p class="muted">用并查集；Kruskal 就是标准场景。</p></div>
+    <div class="card tint-plum"><h3>既要集合又要结构</h3><p class="muted">并查集求块，块内再 DFS。</p></div>
+  </div>
+  <div class="note"><b>提示：</b>二分图判定（P1155 类）本质是"分量内能否二染色"，用 BFS/DFS 染色，不用并查集。</div>
+</section>
+
+<!-- ═══ 11 并查集应用 ═══ -->
+<section class="slide" data-title="并查集的三类应用">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · APPLY</div><h2>并查集的<em>三类应用</em></h2></div>
+    <div class="hint"><b>本页回答：</b>并查集除了求分量还能干嘛？</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">A</span>最小生成树（Kruskal）</h3>
+      <p>边按权排序，两端不同集合就连边。</p>
+      <pre class="codewrap" style="min-height:150px"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>kruskal.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="kruskal"></code></pre></pre>
+    </div>
+    <div class="card tint-teal"><h3><span class="n">B</span>集合合并 / 种类并查集</h3>
+      <p>"A 与 B 同类 / 异类"：用 <code>find(x)</code> 与 <code>find(x + n)</code> 表示两类（敌人的敌人）。</p>
+      <div class="split-line"></div>
+      <p class="muted">例：<a href="https://www.luogu.com.cn/problem/P1525" target="_blank" style="color:var(--teal);font-weight:700">P1525 关押罪犯</a>、<a href="https://www.luogu.com.cn/problem/P2024" target="_blank" style="color:var(--teal);font-weight:700">P2024 食物链</a></p>
+    </div>
+    <div class="card tint-amber"><h3><span class="n">C</span>离线 / 逆向</h3>
+      <p>"删点后问连通块数"——倒过来变成"加点合并"，从最后往前推。</p>
+      <div class="split-line"></div>
+      <p class="muted">详见第 32 页。</p>
+    </div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>不变量</h3><p>并查集维护的是"当前已知的等价类划分"；<b>union 返回值</b>常用来统计"成功合并次数"，从而得到连通块数 = n − 合并次数。</p></div>
+    <div class="card"><h3>连通块数的小技巧</h3>
+      <div class="formula" style="font-size:13px">块数 = <span class="hl">n</span> − 成功 union 次数</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 章节：割点与桥 ═══ -->
+<section class="slide section-slide" data-title="章节：割点与桥">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 03</div>
+      <div class="big">命门：<em style="color:var(--accent)">割点</em>与<em style="color:var(--accent)">桥</em></div>
+      <p class="lead">删掉谁/哪条边，图会"断"？<br>答案藏在 DFS 树的回边里。</p>
+    </div>
+    <div><div class="num-huge">03</div>
+      <div class="note warn"><b>这一站是全篇的技术核心：</b>理解 dfn / low 之后，双连通与 SCC 都是顺水推舟。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 13 DFS 树视角 ═══ -->
+<section class="slide" data-title="DFS 树视角">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · DFSTREE</div><h2>把图拆成<em>DFS 树 + 回边</em></h2></div>
+    <div class="hint"><b>本页回答：</b>DFS 之后图变成什么样子？<br>所有 Tarjan 算法的共同起点。</div>
+  </div>
+  <div class="cols c2a">
+    <div class="card" style="padding:6px 10px">
+      <svg viewBox="0 0 620 300" preserveAspectRatio="xMidYMid meet">
+        <!-- 树边 -->
+        <g class="gedge">
+          <path d="M300 62 L172 142"/><path d="M300 62 L432 142"/>
+          <path d="M172 142 L104 232"/><path d="M172 142 L242 232"/>
+          <path d="M432 142 L510 232"/>
+        </g>
+        <!-- 回边 -->
+        <path d="M104 232 Q 60 150 172 142" class="gedge back"/>
+        <path d="M510 232 Q 380 260 242 232" class="gedge back"/>
+        <path d="M242 232 Q 268 168 300 62" class="gedge back"/>
+        <!-- 节点 -->
+        <g class="gnode root"><circle cx="300" cy="62" r="27"/><text x="300" y="69">1</text></g>
+        <g class="gnode"><circle cx="172" cy="142" r="25"/><text x="172" y="149">2</text></g>
+        <g class="gnode"><circle cx="432" cy="142" r="25"/><text x="432" y="149">3</text></g>
+        <g class="gnode"><circle cx="104" cy="232" r="25"/><text x="104" y="239">4</text></g>
+        <g class="gnode"><circle cx="242" cy="232" r="25"/><text x="242" y="239">5</text></g>
+        <g class="gnode"><circle cx="510" cy="232" r="25"/><text x="510" y="239">6</text></g>
+        <text x="300" y="26" text-anchor="middle" class="dfnlab">dfn = 1（树根）</text>
+        <text x="128" y="300" text-anchor="middle" class="dfnlab" fill="#A33A64">回边（虚线）：指向已访问的祖先</text>
+      </svg>
+    </div>
+    <div>
+      <div class="card"><h3>三种边</h3>
+        <ul class="tick">
+          <li><b>树边：</b>DFS 过程中第一次到达新点的边</li>
+          <li><b>回边：</b>指向<b>祖先</b>的边（虚线）—— 唯一的"逃生通道"</li>
+          <li><b>横叉/前向边：</b>无向图不存在，有向图里被 <code>onstack</code> 区分</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>dfn 与 low</h3>
+        <div class="formula" style="font-size:12.8px">
+          dfn[u] = 第几个访问到 u<br>
+          <span class="hl">low[u] = min( dfn[u], 子孙的 low, 回边指向祖先的 dfn )</span>
+        </div>
+        <p class="muted">含义：<b>u 的子树通过回边，最早能"逃"到哪个时间戳。</b></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 14 low 的规则 ═══ -->
+<section class="slide" data-title="low 的更新规则">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · LOW</div><h2>low 怎么更新，<em>为什么</em></h2></div>
+    <div class="hint"><b>本页回答：</b>三行更新规则的含义？<br>为什么必须用 dfn 而不是 low？</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3><span class="n">1</span>三种更新</h3>
+        <ul class="tick">
+          <li><b>树边：</b>递归子节点后 <code>low[u] = min(low[u], low[v])</code> —— 子孙的逃生能力可以上传</li>
+          <li><b>回边：</b><code>low[u] = min(low[u], dfn[v])</code> —— 只能逃到 v 的时间戳</li>
+          <li><b>自身：</b><code>low[u] = min(low[u], dfn[u])</code>（初始化）</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>关键区别：</b>回边更新用 <code>dfn[v]</code> 而不是 <code>low[v]</code>。因为回边只是<u>一条</u>通道，逃到 v 就到头了；若用 low[v] 会夸大能力，导致漏判割点。</div>
+    </div>
+    <div>
+      <div class="card tint-teal"><h3><span class="n">2</span>判定口诀</h3>
+        <div class="formula" style="font-size:13px">
+          <span class="ok">low[v] ≥ dfn[u]</span> ⇒ u 是割点（v 逃不掉）<br>
+          <span class="ok">low[v] &gt; dfn[u]</span> ⇒ (u,v) 是桥
+        </div>
+        <p class="muted">差别在一个等号：能逃回 u 本身 ⇒ u 断了 v 就孤立，但边 (u,v) 还在别的环上，不是桥。</p>
+      </div>
+      <div class="card"><h3><span class="n">3</span>为什么是一次 DFS</h3>
+        <p>dfn、low 都是"子树信息上传"的树形 DP；一次后序遍历就能把整棵树的 low 算完，<b>O(n + m)</b>。</p>
+      </div>
+    </div>
+  </div>
+  <div class="note good"><b>记忆：</b>low[v] &gt; dfn[u] ⇒ 环里没有逃生通道 ⇒ 删掉 (u,v) 就断 ⇒ 桥；low[v] ≥ dfn[u] ⇒ v 的整个子树都靠 u ⇒ 删掉 u 就断 ⇒ 割点。</div>
+</section>
+
+<!-- ═══ 15 割点 ═══ -->
+<section class="slide" data-title="割点判定与代码">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · CUT-VERTEX</div><h2>割点：<em>删除后分量增加</em></h2></div>
+    <div class="hint"><b>本页回答：</b>割点怎么判？<br>根节点为什么要特判？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <p>无向图中，删掉点 u 及其关联边后，<b>连通分量数增加</b>，则 u 是割点（关节点）。</p>
+      </div>
+      <div class="card tint-amber"><h3>判定条件</h3>
+        <div class="formula" style="font-size:12.6px">
+          u 非根：存在子节点 v 使 <span class="hl">low[v] ≥ dfn[u]</span><br>
+          u 为根：DFS 树中 u 有 <span class="hl">≥ 2</span> 个子节点
+        </div>
+      </div>
+      <div class="note warn"><b>为什么根要特判：</b>根没有祖先，"low[v] ≥ dfn[root]" 恒成立（dfn[root] = 1）。所以根只看子树个数：只有一个子树时删掉它不会增加分量。</div>
+    </div>
+    <div>
+      <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>cut_bridge.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="tarjan_cb"></code></pre></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 16 桥 ═══ -->
+<section class="slide" data-title="桥判定">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · BRIDGE</div><h2>桥（割边）：<em>删掉它就断</em></h2></div>
+    <div class="hint"><b>本页回答：</b>桥与割点差在哪？<br>重边为什么会误判？</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><h3>定义与判定</h3>
+        <div class="formula" style="font-size:13px">
+          删掉边 (u,v) 后分量增加<br>
+          ⟺ <span class="hl">low[v] &gt; dfn[u]</span>（v 子树逃不出 u）
+        </div>
+      </div>
+      <div class="card"><h3>与割点的关系</h3>
+        <ul class="tick">
+          <li>桥的端点<b>不一定</b>是割点（端点度数为 1 时不是）</li>
+          <li>桥一定不属于任何环；边双 = 删掉所有桥后的连通块</li>
+          <li>点双判定要求 <code>≥</code>，桥判定要求 <code>&gt;</code></li>
+        </ul>
+      </div>
+      <div class="note warn"><b>重边陷阱：</b>u、v 之间若有两条边，则 (u,v) <b>不是</b>桥。若用 <code>if v == parent: continue</code> 跳父节点，会把平行边误当树边 → 漏判。正确做法是<b>按边的编号跳过"来时那条边"</b>（模板已内置）。</div>
+    </div>
+    <div class="card">
+      <svg viewBox="0 0 380 260" preserveAspectRatio="xMidYMid meet">
+        <g class="gedge">
+          <path d="M80 80 L180 60"/><path d="M80 80 L120 160"/><path d="M120 160 L180 60"/>
+        </g>
+        <path class="gedge bridge" d="M180 60 L290 120"/>
+        <g class="gedge"><path d="M290 120 L340 190"/><path d="M290 120 L250 210"/><path d="M250 210 L340 190"/></g>
+        <g class="gnode done"><circle cx="80" cy="80" r="20"/><text x="80" y="87" font-size="13">a</text></g>
+        <g class="gnode done"><circle cx="180" cy="60" r="20"/><text x="180" y="67" font-size="13">b</text></g>
+        <g class="gnode done"><circle cx="120" cy="160" r="20"/><text x="120" y="167" font-size="13">c</text></g>
+        <g class="gnode"><circle cx="290" cy="120" r="20"/><text x="290" y="127" font-size="13">d</text></g>
+        <g class="gnode"><circle cx="340" cy="190" r="20"/><text x="340" y="197" font-size="13">e</text></g>
+        <g class="gnode"><circle cx="250" cy="210" r="20"/><text x="250" y="217" font-size="13">f</text></g>
+        <text x="235" y="78" text-anchor="middle" class="dfnlab" fill="#B9471B">桥</text>
+        <text x="105" y="120" text-anchor="middle" class="dfnlab">边双 1</text>
+        <text x="298" y="172" text-anchor="middle" class="dfnlab">边双 2</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 17 特判与技巧 ═══ -->
+<section class="slide" data-title="特判与技巧">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · TRICKS</div><h2>特判清单 & 实用<em>推论</em></h2></div>
+    <div class="hint"><b>本页回答：</b>细节都补对了吗？<br>以及割点还能顺便求什么？</div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-plum"><h3>必须处理的细节</h3>
+      <ul class="tick no">
+        <li>根节点判割点：看子树个数（≥ 2）</li>
+        <li>重边：按<b>边编号</b>跳过父边</li>
+        <li>自环：不影响割点/桥，可直接忽略</li>
+        <li>图不连通：对每个未访问点做一次 DFS</li>
+        <li>孤立点：不是割点；与它相连的边为桥</li>
+        <li>Python 递归深度：n 大时改迭代或设 <code>setrecursionlimit</code></li>
+      </ul>
+    </div>
+    <div>
+      <div class="card tint-teal"><h3><span class="n">推论</span>删掉割点 u 后分量数增加多少</h3>
+        <div class="formula" style="font-size:12.8px">
+          u 非根：+ <span class="hl">#{子节点 v : low[v] ≥ dfn[u]}</span><br>
+          u 为根：+ (子树个数 − 1)
+        </div>
+        <p class="muted">每个"逃不出 u"的子树，删掉 u 后都独立成一块；其余部分合成一块。</p>
+      </div>
+      <div class="card"><h3>代码里顺手能拿到</h3>
+        <ul class="tick ok"><li>割点集合、桥集合</li><li>每个子树的 low（判断是否依赖 u）</li><li>连通分量数（DFS 调用次数）</li></ul>
+      </div>
+    </div>
+  </div>
+  <div class="note"><b>常见题型：</b>"求所有割点并按编号输出"（<a href="https://www.luogu.com.cn/problem/P3388" target="_blank" style="color:var(--accent);font-weight:700">P3388 割点模板</a>）、"求桥的条数"（<a href="https://www.luogu.com.cn/problem/P1656" target="_blank" style="color:var(--accent);font-weight:700">P1656 炸铁路</a>）。</div>
+</section>
+
+<!-- ═══ 18 章节：双连通 ═══ -->
+<section class="slide section-slide" data-title="章节：双连通分量">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 04</div>
+      <div class="big">更结实的块：<em style="color:var(--accent)">点双</em>与<em style="color:var(--accent)">边双</em></div>
+      <p class="lead">割点与桥是"问题"，双连通分量是"剩下的答案"。<br>求法仍然是那一套 dfn / low。</p>
+    </div>
+    <div><div class="num-huge">04</div>
+      <div class="note good"><b>目标：</b>分清点双与边双的定义、求法与差异，并知道何时用圆方树。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 19 点双 ═══ -->
+<section class="slide" data-title="点双定义与性质">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · V-BCC</div><h2>点双连通分量：<em>没有割点的块</em></h2></div>
+    <div class="hint"><b>本页回答：</b>点双是什么、有什么结构性质？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <p><b>点双连通分量：</b>极大的、内部<b>不含割点</b>的子图。等价说法：其中任意两点之间存在两条<b>点不相交</b>的路径。</p>
+      </div>
+      <div class="card tint-teal"><h3>结构性质</h3>
+        <ul class="tick ok">
+          <li>两个点双<b>至多共用一个点</b>，且该点必为割点</li>
+          <li>一个割点可同时属于<b>多个</b>点双</li>
+          <li>一条<b>桥</b>自己构成一个点双（含两个端点）</li>
+          <li>点双 + 割点 ⇒ <b>圆方树</b>（二分图森林）</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 380 250" preserveAspectRatio="xMidYMid meet">
+          <circle cx="120" cy="118" r="72" fill="#0F7B6C" opacity=".12"/>
+          <circle cx="268" cy="126" r="58" fill="#0F7B6C" opacity=".12"/>
+          <circle cx="196" cy="208" r="30" fill="#E2612F" opacity=".12"/>
+          <g class="gedge"><path d="M78 96 L150 78"/><path d="M78 96 L108 158"/><path d="M108 158 L150 78"/></g>
+          <g class="gedge"><path d="M242 108 L302 142"/><path d="M242 108 L286 92"/><path d="M286 92 L302 142"/></g>
+          <g class="gedge"><path d="M150 78 L242 108"/></g>
+          <g class="gedge"><path d="M108 158 L182 214"/><path d="M182 214 L226 222"/></g>
+          <g class="gnode"><circle cx="78" cy="96" r="18"/><text x="78" y="102" font-size="12.5">a</text></g>
+          <g class="gnode"><circle cx="150" cy="78" r="18"/><text x="150" y="84" font-size="12.5">b</text></g>
+          <g class="gnode"><circle cx="108" cy="158" r="18"/><text x="108" y="164" font-size="12.5">c</text></g>
+          <g class="gnode cut"><circle cx="242" cy="108" r="19"/><text x="242" y="114" font-size="12.5">d</text></g>
+          <g class="gnode"><circle cx="302" cy="142" r="18"/><text x="302" y="148" font-size="12.5">e</text></g>
+          <g class="gnode"><circle cx="286" cy="92" r="18"/><text x="286" y="98" font-size="12.5">f</text></g>
+          <g class="gnode"><circle cx="182" cy="214" r="18"/><text x="182" y="220" font-size="12.5">g</text></g>
+          <g class="gnode"><circle cx="226" cy="222" r="18"/><text x="226" y="228" font-size="12.5">h</text></g>
+          <text x="118" y="228" text-anchor="middle" class="dfnlab">点双 1</text>
+          <text x="272" y="188" text-anchor="middle" class="dfnlab">点双 2</text>
+          <text x="212" y="248" text-anchor="middle" class="dfnlab">点双 3（桥）</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 20 点双求法 ═══ -->
+<section class="slide" data-title="点双求法与代码">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · V-BCC CODE</div><h2>点双求法：<em>栈存边</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么栈里存边而不是点？<br>什么时候弹栈？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>思路</h3>
+        <ul class="tick">
+          <li>DFS 时把经过的<b>边</b>入栈</li>
+          <li>发现 <code>low[v] ≥ dfn[u]</code> ⇒ u 是块的边界</li>
+          <li>不断弹栈，直到弹出边 (u,v)，弹出的边上的点就是<b>一个点双</b></li>
+        </ul>
+      </div>
+      <div class="note warn"><b>为什么存边：</b>割点会同时属于多个点双。若栈存点，弹栈时无法区分"哪些点属于这一块"，会把不同块的点混在一起。</div>
+      <div class="note good"><b>回边只入栈一次：</b>用 <code>dfn[v] &lt; dfn[u]</code> 判断，避免无向边重复入栈。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>vbcc.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="vbcc"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 21 边双 ═══ -->
+<section class="slide" data-title="边双定义与求法">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · E-BCC</div><h2>边双：<em>删掉所有桥后剩下的块</em></h2></div>
+    <div class="hint"><b>本页回答：</b>边双怎么求最省事？<br>它有什么结构性质？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <p><b>边双连通分量：</b>极大的、不含桥的子图。等价说法：任意两点之间存在两条<b>边不相交</b>的路径。</p>
+      </div>
+      <div class="card tint-amber"><h3>最简求法</h3>
+        <ol style="padding-left:18px;font-size:13px;line-height:1.7">
+          <li>先用 Tarjan 求出<b>所有桥</b></li>
+          <li>删掉桥（跳过这些边）</li>
+          <li>剩下的图做<b>连通染色</b>，每块即一个边双</li>
+        </ol>
+        <p class="muted">实现简单、不易写错，推荐首选。</p>
+      </div>
+      <div class="note good"><b>性质：</b>把每个边双缩成一点，桥就是连接它们的边 ⇒ <b>缩点后是一棵森林（树）</b>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>ebcc.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="ebcc"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 22 点双 vs 边双 ═══ -->
+<section class="slide" data-title="点双 vs 边双">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · COMPARE</div><h2>点双 vs 边双：<em>一字之差</em></h2></div>
+    <div class="hint"><b>本页回答：</b>两者到底谁更强？<br>为什么点双划分更细？</div>
+  </div>
+  <table>
+    <tr><th style="width:120px">对比项</th><th>点双连通分量</th><th>边双连通分量</th></tr>
+    <tr><td>破坏者</td><td>割点</td><td>桥</td></tr>
+    <tr><td>路径保证</td><td>两条<b>点</b>不相交路径</td><td>两条<b>边</b>不相交路径</td></tr>
+    <tr><td>求法</td><td>Tarjan + 边栈（弹到 (u,v)）</td><td>找桥 → 删桥 → 染色</td></tr>
+    <tr><td>是否共享点</td><td>可以共享割点（多个点双共用）</td><td>互不相交</td></tr>
+    <tr><td>划分精细度</td><td>更细</td><td>更粗（可由多个点双拼成）</td></tr>
+    <tr><td>缩点结果</td><td>圆方树（二分图森林）</td><td>树（森林）</td></tr>
+    <tr><td>典型应用</td><td>路径计数、圆方树上问题</td><td>加边使图边双连通</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-plum"><h3>为什么会"更粗"</h3>
+      <p>点不相交 ⇒ 边不相交（反向不成立）。"两个环共用一个顶点"的图：没有桥（整个是一个边双），却有割点（两个点双）。</p>
+    </div>
+    <div class="card"><h3>经典题型</h3>
+      <p>"最少加几条边，使图没有桥"：<b>答案 = ⌈边双个数 / 2⌉</b>（缩成树后配对叶子）。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 23 圆方树 ═══ -->
+<section class="slide" data-title="圆方树">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · BLOCK-CUT</div><h2>圆方树：<em>点双 + 割点</em>的舞台</h2></div>
+    <div class="hint"><b>本页回答：</b>圆方树怎么建？<br>它解决了什么问题？</div>
+  </div>
+  <div class="cols c2a">
+    <div class="card" style="padding:6px 10px">
+      <svg viewBox="0 0 560 280" preserveAspectRatio="xMidYMid meet">
+        <text x="150" y="26" text-anchor="middle" class="dfnlab" fill="#B9471B">原图</text>
+        <text x="420" y="26" text-anchor="middle" class="dfnlab" fill="#0B6356">圆方树</text>
+        <!-- 原图 -->
+        <g class="gedge"><path d="M60 120 L150 70"/><path d="M60 120 L110 190"/><path d="M110 190 L150 70"/><path d="M150 70 L240 110"/><path d="M240 110 L300 80"/><path d="M240 110 L290 170"/><path d="M300 80 L290 170"/></g>
+        <g class="gnode"><circle cx="60" cy="120" r="17"/><text x="60" y="126" font-size="12">a</text></g>
+        <g class="gnode"><circle cx="150" cy="70" r="17"/><text x="150" y="76" font-size="12">b</text></g>
+        <g class="gnode"><circle cx="110" cy="190" r="17"/><text x="110" y="196" font-size="12">c</text></g>
+        <g class="gnode cut"><circle cx="240" cy="110" r="18"/><text x="240" y="116" font-size="12">d</text></g>
+        <g class="gnode"><circle cx="300" cy="80" r="17"/><text x="300" y="86" font-size="12">e</text></g>
+        <g class="gnode"><circle cx="290" cy="170" r="17"/><text x="290" y="176" font-size="12">f</text></g>
+        <!-- 圆方树 -->
+        <g class="gedge"><path d="M400 110 L470 80"/><path d="M470 80 L520 130"/><path d="M470 80 L470 176"/></g>
+        <g class="gnode done"><circle cx="400" cy="110" r="16"/><text x="400" y="116" font-size="12">a</text></g>
+        <g class="gnode done"><circle cx="520" cy="130" r="16"/><text x="520" y="136" font-size="12">c</text></g>
+        <rect x="446" y="58" width="48" height="42" rx="9" fill="#F2A63B" stroke="#B9471B" stroke-width="3"/>
+        <text x="470" y="84" text-anchor="middle" font-family="monospace" font-size="11" fill="#7A4A22">□</text>
+        <rect x="446" y="176" width="48" height="42" rx="9" fill="#F2A63B" stroke="#B9471B" stroke-width="3"/>
+        <text x="470" y="202" text-anchor="middle" font-family="monospace" font-size="11" fill="#7A4A22">□</text>
+        <g class="gnode cut"><circle cx="470" cy="152" r="17"/><text x="470" y="158" font-size="12">d</text></g>
+        <path d="M470 100 L470 135" stroke="#A33A64" stroke-width="2.5" class="dash"/>
+        <path d="M470 169 L470 176" stroke="#A33A64" stroke-width="2.5" class="dash"/>
+        <text x="470" y="252" text-anchor="middle" class="dfnlab" fill="#8C2B4F">圆点 = 原图的点（含割点）· 方点 = 一个点双</text>
+      </svg>
+    </div>
+    <div>
+      <div class="card"><h3>建法</h3>
+        <ul class="tick">
+          <li>每个<b>点双</b>建一个方点</li>
+          <li>原图的点作为圆点保留</li>
+          <li>方点向它包含的所有圆点连边</li>
+        </ul>
+        <div class="split-line"></div>
+        <p class="muted">结果一定是一棵<b>二分树</b>（森林），总点数 ≤ 2n。</p>
+      </div>
+      <div class="card tint-amber"><h3>解决什么</h3>
+        <p>原图上"两点间路径的性质"问题（必经点、路径计数、边权和），在<b>树上</b>就变成 LCA + 前缀和，难度骤降。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 24 章节：强连通 ═══ -->
+<section class="slide section-slide" data-title="章节：强连通分量">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 05</div>
+      <div class="big">有向图：<em style="color:var(--accent)">互相到达</em>的世界</div>
+      <p class="lead">SCC · Kosaraju · Tarjan · 缩点 · 2-SAT<br>把环压成点，剩下的 DAG 人人会做。</p>
+    </div>
+    <div><div class="num-huge">05</div>
+      <div class="note warn"><b>注意：</b>有向图里"连通"有两种含义 —— 单向可达（弱连通）与强连通。竞赛里的"连通分量"默认指<b>强连通</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 25 SCC 与 Kosaraju 思想 ═══ -->
+<section class="slide" data-title="SCC 与 Kosaraju 思想">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · SCC IDEA</div><h2>强连通分量：<em>两次 DFS 的智慧</em></h2></div>
+    <div class="hint"><b>本页回答：</b>Kosaraju 为什么要跑反图？<br>为什么第二次按特定顺序？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <p><b>SCC：</b>极大的点集，其中任意两点 u、v 满足 u 能到 v 且 v 能到 u。</p>
+      </div>
+      <div class="card"><h3>Kosaraju 的两步</h3>
+        <ul class="tick">
+          <li>① 在<b>原图</b>上 DFS，按<b>完成时间</b>入栈（越晚出栈越"深"）</li>
+          <li>② 在<b>反图</b>上，按完成时间<b>逆序</b> DFS，每棵搜索树就是一个 SCC</li>
+        </ul>
+      </div>
+      <div class="note good"><b>为什么对：</b>第一遍得到的是缩点 DAG 的<b>逆拓扑序</b>；反图上从"最下游"出发，一次只能收走同一个 SCC。</div>
+      <div class="note"><b>记忆：</b>正图 DFS 定顺序，反图 DFS 收分量。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 380 230" preserveAspectRatio="xMidYMid meet">
+          <rect x="34" y="60" width="130" height="66" rx="16" fill="#E2612F" opacity=".14" stroke="#E2612F" stroke-width="2.5"/>
+          <rect x="216" y="118" width="130" height="66" rx="16" fill="#0F7B6C" opacity=".14" stroke="#0F7B6C" stroke-width="2.5"/>
+          <text x="99" y="98" text-anchor="middle" class="dfnlab" fill="#B9471B">SCC 1</text>
+          <text x="281" y="156" text-anchor="middle" class="dfnlab" fill="#0B6356">SCC 2</text>
+          <g class="gedge back"><path d="M110 106 Q 200 40 270 62"/></g>
+          <g class="gedge"><path d="M270 138 Q 200 196 110 122"/></g>
+          <g class="gnode root"><circle cx="86" cy="86" r="17"/><text x="86" y="92" font-size="12">a</text></g>
+          <g class="gnode root"><circle cx="134" cy="104" r="17"/><text x="134" y="110" font-size="12">b</text></g>
+          <g class="gnode"><circle cx="252" cy="142" r="17"/><text x="252" y="148" font-size="12">c</text></g>
+          <g class="gnode"><circle cx="306" cy="158" r="17"/><text x="306" y="164" font-size="12">d</text></g>
+          <text x="200" y="222" text-anchor="middle" class="dfnlab">虚线 = 反向传播的搜索顺序</text>
+        </svg>
+      </div>
+      <div class="note warn"><b>实现提醒：</b>图可能很深，Python 默认递归 1000 层不够；用 <code>sys.setrecursionlimit</code> 或写迭代版。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 26 Kosaraju 代码 ═══ -->
+<section class="slide" data-title="Kosaraju 代码">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · KOSARAJU</div><h2>Kosaraju <em>模板</em></h2></div>
+    <div class="hint"><b>本页回答：</b>代码怎么写、返回什么？<br>comp 编号有什么用？</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>kosaraju.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="kosaraju"></code></pre></pre>
+    <div>
+      <div class="card"><h3>返回值的含义</h3>
+        <ul class="tick">
+          <li><code>comp[u]</code> = u 所属 SCC 编号</li>
+          <li><code>label</code> = SCC 个数</li>
+          <li><b>编号顺序 = 缩点 DAG 的拓扑序</b>（1 号在最上游）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <p>两次 DFS，各 <b>O(n + m)</b>，外加建反图 O(m)。</p>
+      </div>
+      <div class="note good"><b>为什么值得记这个顺序：</b>2-SAT 取值、DAG 上 DP 的起点，都依赖"谁在拓扑序靠后"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 27 Tarjan SCC ═══ -->
+<section class="slide" data-title="Tarjan 强连通分量">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · TARJAN SCC</div><h2>Tarjan SCC：<em>一次 DFS + 一个栈</em></h2></div>
+    <div class="hint"><b>本页回答：</b>栈在做什么？<br><code>low[u] == dfn[u]</code> 时为什么要弹栈？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个要点</h3>
+        <ul class="tick">
+          <li><b>栈：</b>存"当前还没确定属于哪个 SCC"的点</li>
+          <li><b>low：</b>u 能回到的最小时间戳（只通过栈内点）</li>
+          <li><b>弹栈：</b>当 <code>low[u] == dfn[u]</code>，u 是这个 SCC 的"根"，弹出到 u 为止</li>
+        </ul>
+      </div>
+      <div class="formula" style="font-size:13px">
+        v 未访问：<span class="ok">dfs(v)</span> 后 low[u] = min(low[u], low[v])<br>
+        v 在栈内：<span class="ok">low[u] = min(low[u], dfn[v])</span><br>
+        <span style="color:#B29272"># v 不在栈内 ⇒ v 属于已完成的 SCC，不可上传</span>
+      </div>
+      <div class="note warn"><b>与无向版的差别：</b>必须用 <code>onstack</code> 判断，否则会把已出栈的旧 SCC 的信息混进来，产生错分。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>tarjan_scc.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="tarjan_scc"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 28 缩点 ═══ -->
+<section class="slide" data-title="缩点与 DAG">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · CONDENSE</div><h2>缩点：<em>把环压成点，剩下的就是 DAG</em></h2></div>
+    <div class="hint"><b>本页回答：</b>缩点后能做什么？<br>经典题 P3387 的完整链路。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>缩点的三步</h3>
+        <ul class="tick">
+          <li>① 求 SCC，给每个点标 <code>cid</code></li>
+          <li>② 同一 SCC 的点权合并</li>
+          <li>③ 原图边跨 SCC 时，在 DAG 上连边</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>DAG 上能做什么</h3>
+        <p>拓扑序 DP（最长路 / 最大点权和）、可行性判定、判是否有解、计数路径条数。</p>
+      </div>
+      <div class="note"><b>例题：</b><a href="https://www.luogu.com.cn/problem/P3387" target="_blank" style="color:var(--accent);font-weight:700">P3387 缩点</a> —— 求"路径上点权和最大"，缩点后变 DAG 最长路。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>condense_dp.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="p3387"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 29 2-SAT ═══ -->
+<section class="slide" data-title="2-SAT">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · 2-SAT</div><h2>2-SAT：<em>用 SCC 解"选或不选"</em></h2></div>
+    <div class="hint"><b>本页回答：</b>子句怎么变成边？<br>解怎么从 SCC 编号里读出来？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>建模</h3>
+        <div class="formula" style="font-size:12.8px">
+          (a ∨ b) ⇒ <span class="hl">¬a → b</span> 且 <span class="hl">¬b → a</span><br>
+          x 为真 ⇒ 连边 x → ¬x 是错的；<br>
+          <span style="color:#B29272"># 单个文字 a：等价于 (a ∨ a) ⇒ ¬a → a</span>
+        </div>
+      </div>
+      <div class="card"><h3>判定与取值</h3>
+        <ul class="tick">
+          <li>若 <code>comp[x] == comp[¬x]</code> ⇒ <b>无解</b>（x 与 ¬x 互相蕴含）</li>
+          <li>否则取<b>拓扑序靠后</b>的那个文字为真</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>取值方向（易错）：</b>模板用 Kosaraju（编号即拓扑序）→ <code>x = comp[x] &gt; comp[¬x]</code>；若用 Tarjan（出栈序是逆拓扑序），比较符号要<b>反过来</b>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>two_sat.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="twosat"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 30 算法对比 ═══ -->
+<section class="slide" data-title="Kosaraju vs Tarjan">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · COMPARE</div><h2>Kosaraju / Tarjan <em>怎么选</em></h2></div>
+    <div class="hint"><b>本页回答：</b>两个 SCC 算法的取舍？<br>以及递归深度的现实问题。</div>
+  </div>
+  <table>
+    <tr><th>对比项</th><th>Kosaraju</th><th>Tarjan SCC</th></tr>
+    <tr><td>遍历次数</td><td>两次 DFS</td><td>一次 DFS</td></tr>
+    <tr><td>额外空间</td><td>需要建反图</td><td>需要一个栈 + onstack</td></tr>
+    <tr><td>时间</td><td class="mono">O(n + m)</td><td class="mono">O(n + m)</td></tr>
+    <tr><td>常数</td><td>略大（两遍 + 反图）</td><td>略小</td></tr>
+    <tr><td>输出顺序</td><td>编号 = 拓扑序</td><td>出栈序 = 逆拓扑序</td></tr>
+    <tr><td>与无向 Tarjan 统一性</td><td>不统一</td><td>与割点/桥/点双同一套语言</td></tr>
+    <tr><td>建议</td><td>写起来直白，2-SAT 友好</td><td>想统一所有 Tarjan 算法时用</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-plum"><h3>递归深度</h3>
+      <p>两算法都是 DFS，链状图会到 O(n) 层。Python 建议 <code>sys.setrecursionlimit(10 ** 6)</code>，或手写迭代栈版本。</p>
+    </div>
+    <div class="card"><h3>小建议</h3>
+      <p>如果一场考试里已经写了无向 Tarjan（割点/桥），SCC 就用 Tarjan，脑子不切换；否则 Kosaraju 更不容易写错。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 31 章节：进阶 ═══ -->
+<section class="slide section-slide" data-title="章节：进阶与实战">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 06</div>
+      <div class="big">变化中的连通性：<br><em style="color:var(--accent)">逆向</em>与<em style="color:var(--accent)">可撤销</em></div>
+      <p class="lead">删点删边怎么处理？动态加边怎么办？<br>两条高性价比的进阶路线。</p>
+    </div>
+    <div><div class="num-huge">06</div>
+      <div class="note good"><b>要领：</b>当"删除"难以正着做，<b>倒过来就变成"加入"</b> —— 连通性题里最高频的思维转换。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 32 离线删点 ═══ -->
+<section class="slide" data-title="离线删点删边">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · OFFLINE</div><h2>离线删点：<em>倒序变成加点</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么倒序？<br>计数怎么维护不出错？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3><span class="n">?</span>典型题</h3>
+        <p><b>题意：</b>星球间有双向通道；依次摧毁 k 个星球（连带其通道），问<b>每次摧毁后</b>剩余图的连通块数。</p>
+        <p class="muted"><a href="https://www.luogu.com.cn/problem/P1197" target="_blank" style="color:var(--accent);font-weight:700">P1197 [JSOI2008] 星球大战</a></p>
+      </div>
+      <div class="card tint-amber"><h3>思路</h3>
+        <ul class="tick">
+          <li>正着删需要"支持删除"，很难</li>
+          <li>倒过来：从"全部被毁"开始，<b>逐个复活</b></li>
+          <li>复活一个点 = 自身 +1 个分量，与已复活邻居 <b>union</b> 时 −1</li>
+          <li>输出时再逆序即可</li>
+        </ul>
+      </div>
+      <div class="note good"><b>计数不变量：</b><code>cnt = 当前存活点数 − 成功 union 次数</code>，每次复活只做常数级维护。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>offline_delete.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="offline"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 33 动态连通性 ═══ -->
+<section class="slide" data-title="动态连通性">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · DYNAMIC</div><h2>动态连通性：<em>线段树分治 + 可撤销并查集</em></h2></div>
+    <div class="hint"><b>本页回答：</b>有加边有删边怎么办？<br>为什么不能用路径压缩？</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>rollback_dsu.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="rollback"></code></pre></pre>
+    <div>
+      <div class="card"><h3>线段树分治的思路</h3>
+        <ul class="tick">
+          <li>把每条边的<b>存活时间区间</b>挂到线段树的 O(log q) 个节点</li>
+          <li>DFS 线段树：进入节点时 union 它管辖的边，退出时 <b>rollback</b></li>
+          <li>到叶子节点时，图的形态正好对应那一时刻</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>核心约束：</b>可撤销并查集<b>不能路径压缩</b>（无法回退），只能靠<b>按秩/按大小合并</b>保证树高 O(log n)；每次 union 记录被挂上去的儿子以便撤销。</div>
+      <div class="note"><b>复杂度：</b>每次操作摊还 <b>O(log² n)</b>，常见于"加边删边 + 询问连通"的离线题。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 34 速查表 ═══ -->
+<section class="slide" data-title="选型速查表">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · CHEATSHEET</div><h2>选型速查表</h2></div>
+    <div class="hint"><b>本页回答：</b>拿到题 10 秒定工具。<br>建议打印贴在机位旁。</div>
+  </div>
+  <table>
+    <tr><th style="width:230px">问题特征</th><th style="width:195px">推荐工具</th><th style="width:135px">复杂度</th><th>注意事项</th></tr>
+    <tr><td>无向图：求所有连通分量</td><td>DFS/BFS 染色</td><td class="mono">O(n+m)</td><td>要分量点集时首选</td></tr>
+    <tr><td>不断加边、问是否连通</td><td>并查集</td><td class="mono">O(m·α(n))</td><td>union 返回值可计数</td></tr>
+    <tr><td>最小生成树 / 是否成环</td><td>Kruskal + 并查集</td><td class="mono">O(m log m)</td><td>边按权排序</td></tr>
+    <tr><td>找割点 / 桥</td><td>Tarjan（dfn/low）</td><td class="mono">O(n+m)</td><td>根特判 + 按边编号跳父边</td></tr>
+    <tr><td>求点双连通分量</td><td>Tarjan + 边栈</td><td class="mono">O(n+m)</td><td>栈存边；回边只入栈一次</td></tr>
+    <tr><td>求边双连通分量</td><td>找桥 → 删桥 → 染色</td><td class="mono">O(n+m)</td><td>实现最稳</td></tr>
+    <tr><td>最少加几条边使无桥</td><td>边双缩树</td><td class="mono">O(n+m)</td><td>答案 = ⌈叶子数/2⌉</td></tr>
+    <tr><td>有向图：互相到达</td><td>Kosaraju / Tarjan SCC</td><td class="mono">O(n+m)</td><td>注意递归深度</td></tr>
+    <tr><td>SCC 后求最值</td><td>缩点 + DAG 上拓扑 DP</td><td class="mono">O(n+m)</td><td>先合并点权</td></tr>
+    <tr><td>选或不选、限制成对</td><td>2-SAT</td><td class="mono">O(n+m)</td><td>取值方向看拓扑序</td></tr>
+    <tr><td>路径必经点 / 点双结构题</td><td>圆方树 + LCA</td><td class="mono">O((n+q) log n)</td><td>点数 ≤ 2n</td></tr>
+    <tr><td>删点删边后问连通</td><td>倒序 + 并查集</td><td class="mono">O(m·α(n))</td><td>逆向思维</td></tr>
+    <tr><td>加边删边 + 询问</td><td>线段树分治 + 可撤销并查集</td><td class="mono">O(m log² n)</td><td>不能路径压缩</td></tr>
+  </table>
+  <div class="note"><b>决策顺序：</b>有向/无向 → 关心"点断"还是"边断" → 静态还是动态 → 要结构还是要归属。</div>
+</section>
+
+<!-- ═══ 35 易错清单 ═══ -->
+<section class="slide" data-title="易错清单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · PITFALLS</div><h2>易错清单 <em>Checklist</em></h2></div>
+    <div class="hint"><b>本页回答：</b>提交前自检什么？<br>（均对应本讲义模板中的坑）</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-plum"><h3>Tarjan 系</h3>
+      <ul class="tick no">
+        <li>根节点判割点没特判</li>
+        <li>用 <code>v == parent</code> 跳边，重边误判</li>
+        <li>回边更新用了 <code>low[v]</code></li>
+        <li>SCC 没有 <code>onstack</code> 判断</li>
+        <li>点双弹栈条件写成 <code>&gt;</code></li>
+        <li>忘记对每个连通块各做一次 DFS</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>实现</h3>
+      <ul class="tick">
+        <li>递归深度爆栈（Python 尤其）</li>
+        <li>并查集 find 写成递归，链上爆栈</li>
+        <li>可撤销并查集用了路径压缩</li>
+        <li>计数分量时把孤立点漏掉</li>
+        <li>无向图只建单向边</li>
+        <li>点编号 0/1 混用，数组开小</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>建模</h3>
+      <ul class="tick ok">
+        <li>把"单向可达"当成强连通</li>
+        <li>点双与边双定义混用</li>
+        <li>2-SAT 取值方向弄反</li>
+        <li>缩点后忘了合并点权/边权</li>
+        <li>"最少加边"没先缩成树</li>
+        <li>动态题硬上在线算法</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>提交前 30 秒四连问：</b>① 有向还是无向 ② 关心点断还是边断 ③ 图连通吗、根判了吗 ④ 重边自环存在吗。</div>
+</section>
+
+<!-- ═══ 36 调试与验证 ═══ -->
+<section class="slide" data-title="调试与验证">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · VERIFY</div><h2>怎么验证答案<em>是对的</em></h2></div>
+    <div class="hint"><b>本页回答：</b>写完怎么自查？<br>暴力对拍、不变量、边界用例。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card tint-teal"><h3><span class="n">1</span>暴力对拍</h3>
+        <p>用<b>定义</b>写暴力：判割点就真的删点重算分量；判 SCC 就 Floyd 传递闭包。在 n ≤ 8 的随机图上对拍 1 万组。</p>
+      </div>
+      <div class="card tint-amber"><h3><span class="n">3</span>边界用例</h3>
+        <ul class="tick"><li>单点、单边、无边</li><li>重边、自环</li><li>一条链（递归深度）</li>
+        <li>一个大环（无割点无桥）</li><li>两个环共一个点</li><li>完全图</li><li>森林（不连通）</li></ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3><span class="n">2</span>不变量检查</h3>
+        <ul class="tick ok">
+          <li>点双个数 ≥ 边双个数（同一图上）</li>
+          <li>所有点双的点集并 = 全集</li>
+          <li>每个点恰好属于一个边双</li>
+          <li>桥数量 = 边双缩点后的边数</li>
+          <li>SCC 划分：每个 SCC 内任意两点互达</li>
+          <li>缩点后 DAG 无环（拓扑排序长度 = SCC 数）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>好习惯：</b>写一个 <code>brute(n, edges)</code> 参照实现，保留对拍脚本；新模板第一件事就是跑对拍。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 37 题单 ═══ -->
+<section class="slide" data-title="练习题单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · PRACTICE</div><h2>练习题单（洛谷 / LeetCode）</h2></div>
+    <div class="hint"><b>本页回答：</b>课后练什么？<br>每题都写了<b>题意</b>，可按图索骥。</div>
+  </div>
+  <div class="cols c3" style="gap:8px">
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1551" target="_blank"><span class="src lg">洛谷</span><span class="t">P1551 亲戚</span><span class="d">题意：若干亲戚关系，问两人是否属于同一亲戚圈。并查集入门。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/number-of-provinces/" target="_blank"><span class="src">LeetCode</span><span class="t">547. 省份数量</span><span class="d">题意：给邻接矩阵，求连通块个数。DFS 或并查集皆可。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/number-of-islands/" target="_blank"><span class="src">LeetCode</span><span class="t">200. 岛屿数量</span><span class="d">题意：网格中 1 为陆地，求岛屿个数。DFS/BFS 染色。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3388" target="_blank"><span class="src lg">洛谷</span><span class="t">P3388 割点（模板）</span><span class="d">题意：求无向图所有割点。Tarjan dfn/low 入门。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1656" target="_blank"><span class="src lg">洛谷</span><span class="t">P1656 炸铁路</span><span class="d">题意：求所有桥并按字典序输出。桥判定。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P8436" target="_blank"><span class="src lg">洛谷</span><span class="t">P8436 【模板】边双连通分量</span><span class="d">题意：求无向图的边双连通分量并输出点集。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P8435" target="_blank"><span class="src lg">洛谷</span><span class="t">P8435 【模板】点双连通分量</span><span class="d">题意：求点双连通分量并输出点集。栈存边写法。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3388" target="_blank"><span class="src lg">洛谷</span><span class="t">P3388 + P1656 组合练</span><span class="d">题意：割点与桥各写一遍，比较"≥"与"＞"的差别。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3387" target="_blank"><span class="src lg">洛谷</span><span class="t">P3387 缩点</span><span class="d">题意：有向图带点权，求一条路径上点权和最大。SCC 缩点 + DAG DP。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2746" target="_blank"><span class="src lg">洛谷</span><span class="t">P2746 校园网</span><span class="d">题意：最少给多少人发布消息能使全网收到；缩点后看入度出度。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2863" target="_blank"><span class="src lg">洛谷</span><span class="t">P2863 牛的舞会</span><span class="d">题意：求最大的"互相认识"团体。SCC 且大小 &gt; 1。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1197" target="_blank"><span class="src lg">洛谷</span><span class="t">P1197 星球大战</span><span class="d">题意：删点后连通块数。倒序 + 并查集。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1525" target="_blank"><span class="src lg">洛谷</span><span class="t">P1525 关押罪犯</span><span class="d">题意：把人分两组，使同组怨气最大值最小。种类并查集。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2024" target="_blank"><span class="src lg">洛谷</span><span class="t">P2024 食物链</span><span class="d">题意：三类动物的吃与被吃关系，判断话语真假。种类并查集经典。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1407" target="_blank"><span class="src lg">洛谷</span><span class="t">P1407 家族</span><span class="d">题意：变量关系的传递闭包与矛盾判断。并查集或 SCC。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/satisfiability-of-equality-equations/" target="_blank"><span class="src">LeetCode</span><span class="t">990. 等式方程的可满足性</span><span class="d">题意：a==b 与 a!=b 混合，判断是否矛盾。并查集。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/redundant-connection/" target="_blank"><span class="src">LeetCode</span><span class="t">684. 冗余连接</span><span class="d">题意：加哪条边后出现环。并查集判环。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P4630" target="_blank"><span class="src lg">洛谷</span><span class="t">P4630 观光</span><span class="d">题意：求所有有序点对 (a,b) 间必经"观光点"的个数和。圆方树。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1262" target="_blank"><span class="src lg">洛谷</span><span class="t">P1262 间谍网络</span><span class="d">题意：最少花钱让所有人都能被收买信息。SCC 缩点 + 入度为 0 的分量。</span></a>
+  </div>
+  <div class="note"><b>节奏建议：</b>并查集 3 题 → 割点桥 3 题 → 双连通 3 题 → SCC 与缩点 4 题 → 2-SAT 与进阶 2 题。每题写 100 字题解：<b>问题 → 转变 → 为什么这样转变</b>。</div>
+</section>
+
+<!-- ═══ 38 总结 ═══ -->
+<section class="slide" data-title="总结">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>08 · SUMMARY</div><h2>带走这 <em>五句话</em></h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记住一页，<br>就记这一页。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><div class="step"><div class="idx">1</div><div><b>连通性 = 等价关系的划分。</b>求分量就是求等价类；判定、计数、缩点是三类问法。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">2</div><div><b>强度有阶梯：</b>无向连通 ⊃ 边双 ⊃ 点双；有向另有强连通。点双比边双更细。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">3</div><div><b>dfn / low 一招吃天下。</b>low[v] ≥ dfn[u] ⇒ 割点；low[v] &gt; dfn[u] ⇒ 桥。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">4</div><div><b>SCC + 缩点 = 把环变点。</b>剩下的 DAG 上拓扑 DP、2-SAT 都是套路。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">5</div><div><b>删不动就倒过来。</b>逆序加点 / 线段树分治 + 可撤销并查集，是动态连通性的两条主路。</div></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 350 270" preserveAspectRatio="xMidYMid meet">
+          <circle cx="175" cy="135" r="118" fill="#F2A63B" opacity=".12" class="pulse"/>
+          <circle cx="175" cy="135" r="50" fill="#2E2118"/>
+          <text x="175" y="131" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="12.5">dfn/low</text>
+          <text x="175" y="150" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="11">划分</text>
+          <g font-family="monospace" font-size="11.5" fill="#7A4A22">
+            <rect x="118" y="14" width="114" height="32" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="175" y="35" text-anchor="middle">连通分量</text>
+            <rect x="246" y="66" width="88" height="32" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="290" y="87" text-anchor="middle">割点</text>
+            <rect x="252" y="176" width="88" height="32" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="296" y="197" text-anchor="middle">桥</text>
+            <rect x="112" y="222" width="126" height="32" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="243" text-anchor="middle">点双 / 边双</text>
+            <rect x="8" y="176" width="100" height="32" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="58" y="197" text-anchor="middle">SCC</text>
+            <rect x="14" y="66" width="100" height="32" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="64" y="87" text-anchor="middle">缩点 DAG</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" class="dash" fill="none">
+            <path d="M175 85 L175 48"/><path d="M222 116 L248 90"/><path d="M222 158 L254 190"/>
+            <path d="M175 185 L175 222"/><path d="M126 158 L106 190"/><path d="M130 112 L112 88"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>升华：</b>连通性研究的是"结构的骨架" —— 哪些部分是硬的、哪些是命门。<b>会看骨架，才谈得上改造它。</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 39 结语 ═══ -->
+<section class="slide cover" data-title="结语 Q&A">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">THANKS · Q&A</div>
+      <h1>谢谢！<br><em>开始提问</em></h1>
+      <p class="sub">课后三步：<br>
+        ① 20 分钟默写并查集 + Tarjan（割点桥）+ Tarjan SCC 三个模板<br>
+        ② 按题单刷 6 题，每题写 100 字题解（问题 → 转变 → 为什么）<br>
+        ③ 找一道"删点删边"题，试着倒序做一次</p>
+      <div class="meta"><span>划分 · 判定 · 计数 · 缩点</span><span>dfn / low · 栈</span><span>逆向 · 可撤销</span></div>
+    </div>
+    <div>
+      <svg viewBox="0 0 460 310" preserveAspectRatio="xMidYMid meet">
+        <circle cx="230" cy="155" r="145" fill="#F2A63B" opacity=".16" class="pulse"/>
+        <path d="M60 250 L160 125 L280 185 L400 88" stroke="#E2612F" stroke-width="6" fill="none" class="flow"/>
+        <path d="M60 250 L150 290 L280 185" stroke="#0F7B6C" stroke-width="4" fill="none" class="dash" opacity=".6"/>
+        <g class="float">
+          <circle cx="60" cy="250" r="26" fill="#2E2118"/><text x="60" y="257" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="13">start</text>
+          <circle cx="160" cy="125" r="26" fill="#fff" stroke="#E2612F" stroke-width="3"/><text x="160" y="132" text-anchor="middle" fill="#B9471B" font-family="monospace" font-size="14">读</text>
+          <circle cx="280" cy="185" r="26" fill="#fff" stroke="#E2612F" stroke-width="3"/><text x="280" y="192" text-anchor="middle" fill="#B9471B" font-family="monospace" font-size="14">写</text>
+          <circle cx="400" cy="88" r="26" fill="#0F7B6C"/><text x="400" y="95" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">AC</text>
+        </g>
+      </svg>
+      <div class="note"><b>快捷键：</b><code>O</code> 目录 · <code>←/→</code> 翻页 · <code>⛶</code> 全屏</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="brand">图的连通性 · 60MIN</div>
+<div class="hud">
+  <button id="tocBtn" title="目录">☰</button>
+  <button id="prevBtn" title="上一页">←</button>
+  <div class="pgn"><span id="cur">1</span> / <span id="tot">39</span></div>
+  <button id="nextBtn" title="下一页">→</button>
+  <button id="fullBtn" title="全屏">⛶</button>
+</div>
+
+<div class="toc" id="toc"><h4>目录 · 39 页</h4><div class="grid" id="tocGrid"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+/* 代码以纯文本存放，用 textContent 注入，再交给 Prism 高亮 */
+const CODE = {
+
+dfscomp: `
+from collections import deque
+
+def components(n, graph):
+    """graph[u] = [v, ...]，无向图
+       返回 (comps, color)：分量点集与每个点的分量编号"""
+    color = [0] * (n + 1)
+    comps = []
+
+    for s in range(1, n + 1):
+        if color[s]:
+            continue
+        cid = len(comps) + 1
+        comp = []
+        stack = [s]
+        color[s] = cid
+        while stack:
+            u = stack.pop()
+            comp.append(u)
+            for v in graph[u]:
+                if not color[v]:
+                    color[v] = cid
+                    stack.append(v)
+        comps.append(comp)
+    return comps, color
+
+
+def count_components(n, graph):
+    return len(components(n, graph)[0])
+`,
+
+dsu: `
+class DSU:
+    def __init__(self, n):
+        self.p = list(range(n + 1))
+        self.r = [0] * (n + 1)
+
+    def find(self, x):
+        while self.p[x] != x:          # 迭代 + 路径减半
+            self.p[x] = self.p[self.p[x]]
+            x = self.p[x]
+        return x
+
+    def union(self, a, b):
+        ra, rb = self.find(a), self.find(b)
+        if ra == rb:
+            return False               # 已同类，未合并
+        if self.r[ra] < self.r[rb]:    # 按秩合并
+            ra, rb = rb, ra
+        self.p[rb] = ra
+        if self.r[ra] == self.r[rb]:
+            self.r[ra] += 1
+        return True                    # 成功合并一次
+
+    def same(self, a, b):
+        return self.find(a) == self.find(b)
+
+
+# 连通块数 = n - 成功合并次数
+`,
+
+kruskal: `
+def kruskal(n, edges):
+    """edges = [(w, u, v)]，返回最小生成树总权；不连通返回 None"""
+    dsu = DSU(n)
+    total = 0
+    used = 0
+    for w, u, v in sorted(edges):
+        if dsu.union(u, v):
+            total += w
+            used += 1
+    return total if used == n - 1 else None
+`,
+
+tarjan_cb: `
+import sys
+
+def cut_and_bridge(n, graph):
+    """graph[u] = [(v, eid), ...]，无向图（含重边也正确）
+       返回 (is_cut, bridges)，bridges 元素为 (u, v, eid)"""
+    sys.setrecursionlimit(10 ** 6)
+
+    dfn = [0] * (n + 1)
+    low = [0] * (n + 1)
+    is_cut = [False] * (n + 1)
+    bridges = []
+    timer = 0
+
+    def dfs(u, parent_edge):
+        nonlocal timer
+        timer += 1
+        dfn[u] = low[u] = timer
+        children = 0
+
+        for v, eid in graph[u]:
+            if eid == parent_edge:       # 只跳过"来时那条边"
+                continue
+            if dfn[v] == 0:
+                children += 1
+                dfs(v, eid)
+                low[u] = min(low[u], low[v])
+
+                if low[v] >= dfn[u] and parent_edge != -1:
+                    is_cut[u] = True
+                if low[v] > dfn[u]:
+                    bridges.append((u, v, eid))
+            else:
+                low[u] = min(low[u], dfn[v])
+
+        if parent_edge == -1 and children > 1:
+            is_cut[u] = True             # DFS 树根特判
+
+    for i in range(1, n + 1):
+        if dfn[i] == 0:
+            dfs(i, -1)
+    return is_cut, bridges
+`,
+
+vbcc: `
+import sys
+
+def vertex_bcc(n, graph):
+    """graph[u] = [(v, eid), ...]
+       返回点双的点集列表（一个割点会出现在多个集合里）"""
+    sys.setrecursionlimit(10 ** 6)
+
+    dfn = [0] * (n + 1)
+    low = [0] * (n + 1)
+    timer = 0
+    edge_stack = []                  # 栈存边 (u, v, eid)
+    comps = []
+
+    def dfs(u, parent_edge):
+        nonlocal timer
+        timer += 1
+        dfn[u] = low[u] = timer
+
+        for v, eid in graph[u]:
+            if eid == parent_edge:
+                continue
+            if dfn[v] == 0:
+                edge_stack.append((u, v, eid))
+                dfs(v, eid)
+                low[u] = min(low[u], low[v])
+
+                if low[v] >= dfn[u]:     # u 是这一块的边界
+                    comp = set()
+                    while True:
+                        e = edge_stack.pop()
+                        comp.add(e[0])
+                        comp.add(e[1])
+                        if e[2] == eid:  # 弹到树边 (u, v) 为止
+                            break
+                    comps.append(comp)
+            elif dfn[v] < dfn[u]:        # 回边只入栈一次
+                edge_stack.append((u, v, eid))
+                low[u] = min(low[u], dfn[v])
+
+    for i in range(1, n + 1):
+        if dfn[i] == 0:
+            dfs(i, -1)
+    # 孤立点可按题意单独视为一个点双
+    return comps
+`,
+
+ebcc: `
+def edge_bcc(n, graph, bridges):
+    """找桥 -> 删桥 -> 染色。bridges 元素为 (u, v, eid)"""
+    bridge_edge = set(eid for _, _, eid in bridges)
+
+    color = [0] * (n + 1)
+    comps = []
+
+    for s in range(1, n + 1):
+        if color[s]:
+            continue
+        cid = len(comps) + 1
+        comp = []
+        stack = [s]
+        color[s] = cid
+        while stack:
+            u = stack.pop()
+            comp.append(u)
+            for v, eid in graph[u]:
+                if eid in bridge_edge:   # 桥不走
+                    continue
+                if not color[v]:
+                    color[v] = cid
+                    stack.append(v)
+        comps.append(comp)
+    return comps, color
+`,
+
+kosaraju: `
+import sys
+
+def kosaraju(n, graph, rgraph):
+    """graph / rgraph 为原图与反图，点编号 1..n
+       返回 (comp, label)：comp[u] = SCC 编号（拓扑序），label = 个数"""
+    sys.setrecursionlimit(10 ** 6)
+
+    vis = [False] * (n + 1)
+    order = []
+
+    def dfs1(u):
+        vis[u] = True
+        for v in graph[u]:
+            if not vis[v]:
+                dfs1(v)
+        order.append(u)              # 完成时间入栈
+
+    for i in range(1, n + 1):
+        if not vis[i]:
+            dfs1(i)
+
+    comp = [0] * (n + 1)
+    label = 0
+
+    def dfs2(u, c):
+        comp[u] = c
+        for v in rgraph[u]:
+            if comp[v] == 0:
+                dfs2(v, c)
+
+    for u in reversed(order):        # 按完成时间逆序
+        if comp[u] == 0:
+            label += 1
+            dfs2(u, label)
+    return comp, label
+`,
+
+tarjan_scc: `
+import sys
+
+def tarjan_scc(n, graph):
+    """返回 SCC 列表；每个元素是一个点集"""
+    sys.setrecursionlimit(10 ** 6)
+
+    dfn = [0] * (n + 1)
+    low = [0] * (n + 1)
+    onstack = [False] * (n + 1)
+    stack = []
+    comps = []
+    timer = 0
+
+    def dfs(u):
+        nonlocal timer
+        timer += 1
+        dfn[u] = low[u] = timer
+        stack.append(u)
+        onstack[u] = True
+
+        for v in graph[u]:
+            if dfn[v] == 0:
+                dfs(v)
+                low[u] = min(low[u], low[v])
+            elif onstack[v]:          # 只有栈内的点才能上传
+                low[u] = min(low[u], dfn[v])
+
+        if low[u] == dfn[u]:          # u 是所在 SCC 的根
+            comp = []
+            while True:
+                w = stack.pop()
+                onstack[w] = False
+                comp.append(w)
+                if w == u:
+                    break
+            comps.append(comp)
+
+    for i in range(1, n + 1):
+        if dfn[i] == 0:
+            dfs(i)
+    return comps
+`,
+
+p3387: `
+from collections import deque
+
+def max_path_sum(n, w, edges):
+    """有向图点权 w[1..n]，求一条路径上点权和的最大值（P3387）"""
+    graph = [[] for _ in range(n + 1)]
+    for u, v in edges:
+        graph[u].append(v)
+
+    comps = tarjan_scc(n, graph)      # 1) 求 SCC
+
+    cid = [0] * (n + 1)               # 2) 缩点、合并点权
+    val = [0] * (len(comps) + 1)
+    for c, nodes in enumerate(comps, 1):
+        for u in nodes:
+            cid[u] = c
+        val[c] = sum(w[u] for u in nodes)
+
+    dag = [[] for _ in range(len(comps) + 1)]   # 3) 建 DAG
+    indeg = [0] * (len(comps) + 1)
+    for u in range(1, n + 1):
+        for v in graph[u]:
+            if cid[u] != cid[v]:
+                dag[cid[u]].append(cid[v])
+                indeg[cid[v]] += 1
+
+    dp = val[:]                       # 4) 拓扑序 DP
+    q = deque(i for i in range(1, len(comps) + 1) if indeg[i] == 0)
+    while q:
+        x = q.popleft()
+        for y in dag[x]:
+            if dp[x] + val[y] > dp[y]:
+                dp[y] = dp[x] + val[y]
+            indeg[y] -= 1
+            if indeg[y] == 0:
+                q.append(y)
+    return max(dp)
+`,
+
+twosat: `
+def two_sat(n, clauses):
+    """变量 x_i：正文字 i，负文字 n + i
+       clauses = [(a, b)]，文字 a 用 +i / -i 表示
+       有解返回一组取值，无解返回 None"""
+    def nid(x):
+        return x if x > 0 else n - x      # -i 映射到 n + i
+
+    N = 2 * n
+    g = [[] for _ in range(N + 1)]
+    rg = [[] for _ in range(N + 1)]
+
+    def add(a, b):                        # 蕴含 a -> b
+        g[a].append(b)
+        rg[b].append(a)
+
+    for a, b in clauses:                  # (a 或 b) => 非a->b 且 非b->a
+        add(nid(-a), nid(b))
+        add(nid(-b), nid(a))
+
+    comp, label = kosaraju(N, g, rg)
+
+    for i in range(1, n + 1):
+        if comp[i] == comp[n + i]:
+            return None                   # x 与 非x 同一 SCC
+
+    # Kosaraju 的编号即拓扑序：取"靠后"的文字为真
+    return [comp[i] > comp[n + i] for i in range(1, n + 1)]
+`,
+
+offline: `
+def planet_war(n, edges, removed):
+    """P1197：依次摧毁 removed 里的点，问每次摧毁后的连通块数"""
+    alive = [True] * (n + 1)
+    for x in removed:
+        alive[x] = False
+
+    g = [[] for _ in range(n + 1)]
+    for u, v in edges:
+        g[u].append(v)
+        g[v].append(u)
+
+    dsu = DSU(n)
+    for u in range(1, n + 1):
+        if not alive[u]:
+            continue
+        for v in g[u]:
+            if alive[v]:
+                dsu.union(u, v)
+
+    cnt = sum(1 for i in range(1, n + 1) if alive[i] and dsu.find(i) == i)
+    ans = [cnt]                           # 全部被毁时
+
+    for x in reversed(removed):           # 倒序"复活"
+        alive[x] = True
+        cnt += 1                          # 新点自身一个分量
+        for v in g[x]:
+            if alive[v] and dsu.union(x, v):
+                cnt -= 1                  # 合并掉一个分量
+        ans.append(cnt)
+
+    ans.reverse()                         # 与题面顺序一致
+    return ans
+`,
+
+rollback: `
+class RollbackDSU:
+    """可撤销并查集：不能路径压缩，只能按大小合并"""
+
+    def __init__(self, n):
+        self.p = list(range(n + 1))
+        self.sz = [1] * (n + 1)
+        self.history = []
+
+    def find(self, x):
+        while self.p[x] != x:
+            x = self.p[x]
+        return x
+
+    def union(self, a, b):
+        a, b = self.find(a), self.find(b)
+        if a == b:
+            self.history.append(None)    # 占位，保持栈对齐
+            return False
+        if self.sz[a] < self.sz[b]:
+            a, b = b, a
+        self.history.append(b)           # 记录被挂上去的儿子
+        self.p[b] = a
+        self.sz[a] += self.sz[b]
+        return True
+
+    def snapshot(self):
+        return len(self.history)
+
+    def rollback(self, snap):
+        while len(self.history) > snap:
+            b = self.history.pop()
+            if b is None:
+                continue
+            a = self.p[b]
+            self.p[b] = b
+            self.sz[a] -= self.sz[b]
+`
+};
+
+function applyCode(){
+  document.querySelectorAll('code[data-src]').forEach(el => {
+    const raw = CODE[el.dataset.src];
+    if (typeof raw === 'string') {
+      el.textContent = raw.replace(/^\n+/, '').replace(/\s+$/, '');
+    }
+  });
+  if (window.Prism && Prism.highlightAll) { Prism.highlightAll(); }
+}
+
+const deck = document.getElementById('deck');
+function fit(){
+  const s = Math.min(window.innerWidth / 1320, window.innerHeight / 780);
+  deck.style.transform = 'scale(' + s + ')';
+}
+
+function fitCode(){
+  document.querySelectorAll('pre.code').forEach(pre => {
+    pre.style.fontSize = '';
+    let fs = 12.4, guard = 0;
+    while (pre.scrollHeight > pre.clientHeight + 2 && fs > 10.2 && guard < 40) {
+      fs -= 0.15;
+      pre.style.fontSize = fs.toFixed(2) + 'px';
+      guard++;
+    }
+  });
+}
+function relayout(){ fit(); requestAnimationFrame(fitCode); }
+window.addEventListener('resize', relayout);
+window.addEventListener('load', relayout);
+
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let idx = 0;
+document.getElementById('tot').textContent = total;
+
+function show(n){
+  idx = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('on', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('prog').style.width = ((idx + 1) / total * 100) + '%';
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  requestAnimationFrame(fitCode);
+}
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(total - 1);
+  else if (e.key.toLowerCase() === 'o') document.getElementById('toc').classList.toggle('on');
+  else if (e.key === 'Escape') document.getElementById('toc').classList.remove('on');
+});
+document.getElementById('fullBtn').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+const tocGrid = document.getElementById('tocGrid');
+slides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + (i + 1);
+  a.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b>' + (s.dataset.title || '');
+  a.onclick = e => { e.preventDefault(); show(i); document.getElementById('toc').classList.remove('on'); };
+  tocGrid.appendChild(a);
+});
+document.getElementById('tocBtn').onclick = () => document.getElementById('toc').classList.toggle('on');
+document.getElementById('toc').onclick = e => { if (e.target.id === 'toc') e.target.classList.remove('on'); };
+
+applyCode();
+const h = parseInt(location.hash.replace('#', ''), 10);
+show(isNaN(h) ? 0 : h - 1);
+relayout();
+</script>
+</body>
+</html>

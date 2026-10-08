@@ -1,0 +1,1824 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>最短路的思想与实战 · 60 分钟讲座</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{
+  --paper:#FFF8F0; --card:#FFFFFF;
+  --ink:#2B1D12; --ink2:#6E5842; --line:#EEDCC2;
+  --accent:#E2612F; --amber:#F2A63B; --teal:#0F7B6C; --plum:#A33A64;
+  --code-bg:#2C2117;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EFE0C8;font-family:var(--sans);color:var(--ink);overflow:hidden}
+body{background:
+  radial-gradient(1200px 700px at 12% -10%, #FBE9CE 0%, rgba(251,233,206,0) 60%),
+  radial-gradient(900px 600px at 105% 110%, #F7DCC0 0%, rgba(247,220,192,0) 55%), #EFE0C8;}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center center;
+  border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(90,52,18,.28),0 4px 12px rgba(90,52,18,.14)}
+
+/* ============ 页面骨架：纵向 flex，内容吃满 ============ */
+.slide{position:absolute;inset:0;padding:22px 38px 26px;opacity:0;visibility:hidden;
+  transform:translateX(22px) scale(.996);transition:opacity .38s ease,transform .38s ease,visibility .38s;
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(160deg,#FFFBF5 0%,#FFF4E6 55%,#FDEBD3 100%)}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.slide::after{content:"";position:absolute;right:-120px;top:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(242,166,59,.18),rgba(242,166,59,0) 70%);pointer-events:none}
+.slide::before{content:"";position:absolute;left:-90px;bottom:-140px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,rgba(226,97,47,.11),rgba(226,97,47,0) 70%);pointer-events:none}
+.slide>*{position:relative;z-index:2}
+
+.kicker{display:inline-flex;align-items:center;gap:7px;font-size:10.6px;font-weight:700;letter-spacing:.13em;
+  color:var(--accent);background:#FFEEDC;border:1px solid #F6D2B2;padding:3px 11px;border-radius:999px}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+.sl-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+  border-bottom:2px solid var(--line);padding-bottom:8px}
+.sl-head h2{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1.14;margin-top:5px}
+.sl-head h2 em{font-style:normal;color:var(--accent)}
+.sl-head .hint{font-size:11.6px;color:var(--ink2);text-align:right;max-width:340px;line-height:1.5}
+.sl-head .hint b{color:#8A5A2C}
+.lead{font-size:15px;line-height:1.66;color:#42301F}
+.muted{color:var(--ink2)}
+
+.cols{display:grid;gap:11px;min-height:0;flex:1 1 auto}
+.c2{grid-template-columns:1fr 1fr}
+.c2a{grid-template-columns:1.08fr .92fr}
+.c2b{grid-template-columns:.92fr 1.08fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.cols > div{min-height:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.card h3 .n{width:21px;height:21px;border-radius:7px;background:var(--accent);color:#fff;font-size:11.5px;
+  display:grid;place-items:center;font-family:var(--sans);font-weight:700;flex:none}
+.card p,.card li{font-size:13px;line-height:1.6;color:#4A3722}
+.card ul{padding-left:16px}
+.card li{margin:2px 0}
+.card.tint-teal{background:#F2FBF7;border-color:#BEE6D8}
+.card.tint-amber{background:#FFF7E6;border-color:#F4DCAC}
+.card.tint-plum{background:#FDF1F5;border-color:#EFCBD8}
+
+.formula{font-family:var(--mono);font-size:14.5px;background:#2E2118;color:#FFEBD2;border-radius:11px;
+  padding:10px 14px;line-height:1.55;flex:none;overflow-x:auto}
+.formula .hl{color:#FFB169;font-weight:600}
+.formula .ok{color:#7FE0C2;font-weight:600}
+
+/* ============ 代码块（Prism） ============ */
+.codewrap{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;
+  border:1px solid #4B3823;border-radius:12px;overflow:hidden;background:var(--code-bg)}
+.code-head{flex:none;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#241A12;
+  border-bottom:1px solid #46341F}
+.code-head .dot{width:9px;height:9px;border-radius:50%;background:#6B5238}
+.code-head .dot.r{background:#B9471B}
+.code-head em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B29272;letter-spacing:.08em;margin-left:6px}
+.code-head .lang{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7A5F45;letter-spacing:.12em}
+pre.code{margin:0;flex:1 1 auto;min-height:0;overflow:auto;background:var(--code-bg)!important;
+  padding:11px 14px;font-family:var(--mono);font-size:12.4px;line-height:1.56;white-space:pre;tab-size:4}
+pre.code::-webkit-scrollbar{height:8px;width:8px}
+pre.code::-webkit-scrollbar-track{background:#241A12}
+pre.code::-webkit-scrollbar-thumb{background:#6B5238;border-radius:8px}
+pre.code::-webkit-scrollbar-thumb:hover{background:#8E6E4C}
+/* Prism 配色（暖色纸感） */
+pre.code code,code[class*="language-"]{font-family:var(--mono)!important;font-size:inherit;
+  background:transparent!important;color:#F0E0CC!important;text-shadow:none!important}
+pre.code .token.comment,pre.code .token.prolog,pre.code .token.doctype,pre.code .token.cdata{color:#A8846A!important;font-style:italic}
+pre.code .token.punctuation{color:#C0A183!important}
+pre.code .token.keyword,pre.code .token.atrule,pre.code .token.rule,pre.code .token.important{color:#FFB169!important;font-weight:600}
+pre.code .token.string,pre.code .token.char,pre.code .token.attr-value{color:#9BE0BE!important}
+pre.code .token.function,pre.code .token.class-name,pre.code .token.builtin{color:#FFD9A8!important}
+pre.code .token.number,pre.code .token.boolean,pre.code .token.constant,pre.code .token.symbol{color:#F4A9C0!important}
+pre.code .token.operator{color:#FFC98B!important}
+pre.code .token.decorator,pre.code .token.annotation{color:#F4A9C0!important}
+pre.code .token.entity{color:#FFB169!important}
+
+.note{border-left:4px solid var(--amber);background:#FFF6E4;padding:8px 12px;border-radius:0 11px 11px 0;
+  font-size:12.6px;line-height:1.58;flex:none}
+.note.warn{border-color:var(--plum);background:#FDF0F4}
+.note.good{border-color:var(--teal);background:#EFF9F5}
+.note b{color:var(--accent)}.note.warn b{color:var(--plum)}.note.good b{color:var(--teal)}
+code:not([class*="language-"]){font-family:var(--mono);font-size:.93em;background:#F6EADA;padding:1px 5px;border-radius:5px}
+
+table{width:100%;border-collapse:collapse;font-size:12.1px;background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);flex:none}
+th,td{padding:5.5px 10px;text-align:left;border-bottom:1px solid var(--line);line-height:1.45}
+th{background:#F7E7CF;font-family:var(--serif);font-size:12.6px;color:#7A4A22}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:11px}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:7px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.2px;
+  font-weight:600;color:#5B4429}
+.pill.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+ul.tick{list-style:none;padding:0}
+ul.tick li{position:relative;padding-left:20px;margin:3px 0;font-size:12.8px;line-height:1.55}
+ul.tick li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:4px;
+  background:#FFE2C6;border:2px solid var(--accent)}
+ul.tick.ok li::before{background:#CDEEE2;border-color:var(--teal)}
+ul.tick.no li::before{background:#F7D6E1;border-color:var(--plum);border-radius:50%}
+
+.a-link{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:11px;padding:8px 11px;transition:.18s;box-shadow:0 4px 10px rgba(120,70,20,.06);overflow:hidden}
+.a-link:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 20px rgba(226,97,47,.16)}
+.a-link .t{font-size:12.4px;font-weight:700;color:#7A3A12;display:block;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link .d{font-size:11px;color:var(--ink2);line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.a-link .src{font-size:9.6px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--teal);
+  padding:1px 7px;border-radius:999px;display:inline-block;margin-bottom:4px}
+.a-link .src.lg{background:var(--accent)}
+
+.big-num{font-family:var(--serif);font-size:38px;font-weight:900;color:var(--accent);line-height:1}
+.step{display:flex;gap:9px;align-items:flex-start}
+.step .idx{flex:none;width:23px;height:23px;border-radius:7px;background:#2E2118;color:#FFD9A8;
+  display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.split-line{height:2px;background:linear-gradient(90deg,#E2612F,#F2A63B,rgba(242,166,59,0));border-radius:2px;margin:6px 0;flex:none}
+
+svg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;overflow:visible}
+.gnode circle{fill:#fff;stroke:#D9B98D;stroke-width:3;transition:.45s}
+.gnode text{font-family:var(--mono);font-size:16px;font-weight:600;fill:#4A3722;text-anchor:middle;transition:.35s}
+.gnode .d{font-size:12.5px;fill:#B9471B;font-weight:700}
+.gnode.done circle{fill:#E9F7F2;stroke:#0F7B6C}
+.gnode.cur circle{fill:#E2612F;stroke:#B9471B}
+.gnode.cur text{fill:#fff}
+.gnode.act circle{fill:#FFF1DE;stroke:#F2A63B}
+.gedge{stroke:#D8BC9B;stroke-width:3;fill:none;transition:.45s}
+.gedge.act{stroke:#E2612F;stroke-width:5}
+.gedge.done{stroke:#0F7B6C;stroke-width:4}
+.gewt{font-family:var(--mono);font-size:13px;font-weight:700;fill:#8A6A45;text-anchor:middle}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.62;transform:scale(1.07)}}
+.dash{stroke-dasharray:8 8;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.flow{stroke-dasharray:6 10;animation:flow 1.6s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-64}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.wave{animation:wave 3s ease-out infinite}
+@keyframes wave{0%{r:14;opacity:.75}100%{r:96;opacity:0}}
+.layer{filter:drop-shadow(0 10px 18px rgba(120,70,20,.14))}
+
+.cover{background:linear-gradient(150deg,#FFF6E8 0%,#FFE9CD 48%,#FFDCB4 100%)}
+.cover .badge{display:inline-flex;gap:8px;align-items:center;background:#2E2118;color:#FFD9A8;
+  padding:6px 14px;border-radius:999px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.cover h1{font-family:var(--serif);font-size:54px;line-height:1.1;font-weight:900}
+.cover h1 em{font-style:normal;background:linear-gradient(92deg,#E2612F,#F2A63B);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.cover .sub{font-size:15.5px;color:#6B4A2C;line-height:1.66;max-width:600px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta span{background:rgba(255,255,255,.72);border:1px solid #F0D2AC;padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#7A4A22}
+.section-slide{background:linear-gradient(150deg,#FFF3E0,#FFE0BC)}
+.section-slide .big{font-family:var(--serif);font-size:42px;font-weight:900;line-height:1.18}
+.num-huge{font-family:var(--serif);font-size:120px;font-weight:900;line-height:.9;
+  background:linear-gradient(160deg,#E2612F,#F2A63B);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+.hud{position:fixed;right:18px;bottom:14px;display:flex;gap:7px;align-items:center;z-index:50}
+.hud button{border:1px solid rgba(120,70,20,.2);background:rgba(255,250,242,.92);color:#7A4A22;
+  width:34px;height:34px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:700;backdrop-filter:blur(6px);transition:.16s}
+.hud button:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.pgn{background:rgba(255,250,242,.92);border:1px solid rgba(120,70,20,.2);border-radius:10px;height:34px;
+  display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:12.5px;color:#7A4A22;font-weight:600}
+.prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,#E2612F,#F2A63B);z-index:60;
+  transition:width .35s ease;box-shadow:0 1px 6px rgba(226,97,47,.5)}
+.brand{position:fixed;left:18px;bottom:14px;z-index:50;background:rgba(255,250,242,.9);border:1px solid rgba(120,70,20,.2);
+  border-radius:10px;padding:8px 13px;font-size:10.5px;color:#7A4A22;letter-spacing:.1em;font-weight:700}
+.toc{position:fixed;inset:0;background:rgba(46,33,24,.82);backdrop-filter:blur(8px);z-index:80;display:none;
+  padding:42px 56px;overflow:auto}
+.toc.on{display:block}
+.toc h4{color:#FFE2BF;font-family:var(--serif);font-size:24px;margin-bottom:16px}
+.toc .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.toc a{background:rgba(255,246,232,.94);border-radius:10px;padding:9px 12px;text-decoration:none;color:#4A3722;
+  font-size:12.2px;line-height:1.4;border:1px solid rgba(255,255,255,.18);transition:.16s}
+.toc a:hover{background:#FFB169;transform:translateY(-2px)}
+.toc a b{display:block;font-family:var(--mono);font-size:10px;color:#B9471B;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- ═══ 01 封面 ═══ -->
+<section class="slide cover on" data-title="封面">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">ALGORITHM · GRAPH THEORY · 60 MIN</div>
+      <h1>最短路的<em>思想</em><br>与实战变形</h1>
+      <p class="sub">主线只有一句话：<b>松弛的顺序与次数，决定一切。</b><br>
+        从抽象建模出发，走完 BFS → Dijkstra → 负权 → Floyd → 建图变形。</p>
+      <div class="meta">
+        <span>33 页 · 约 60 分钟</span><span>Python 模板可直接运行</span>
+        <span>洛谷 / LeetCode 题单</span><span>含验证与调试方法</span>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 520 360" preserveAspectRatio="xMidYMid meet">
+        <circle cx="300" cy="175" r="150" fill="#F2A63B" opacity=".16" class="pulse"/>
+        <g stroke="#E2612F" stroke-width="3" fill="none" opacity=".85">
+          <path d="M70 245 L200 115" class="flow"/><path d="M200 115 L340 195" class="flow"/>
+          <path d="M340 195 L450 105" class="flow"/>
+          <path d="M70 245 L220 315" class="dash" opacity=".45"/><path d="M220 315 L340 195" class="dash" opacity=".45"/>
+        </g>
+        <g class="float">
+          <circle cx="70" cy="245" r="26" fill="#2E2118"/><text x="70" y="252" fill="#FFD9A8" font-family="monospace" font-size="17" text-anchor="middle">s</text>
+          <circle cx="200" cy="115" r="26" fill="#fff" stroke="#E2612F" stroke-width="3"/><text x="200" y="122" font-family="monospace" font-size="17" text-anchor="middle" fill="#B9471B">u</text>
+          <circle cx="340" cy="195" r="26" fill="#fff" stroke="#E2612F" stroke-width="3"/><text x="340" y="202" font-family="monospace" font-size="17" text-anchor="middle" fill="#B9471B">v</text>
+          <circle cx="450" cy="105" r="26" fill="#0F7B6C"/><text x="450" y="112" font-family="monospace" font-size="17" text-anchor="middle" fill="#fff">t</text>
+          <circle cx="220" cy="315" r="22" fill="#fff" stroke="#D9B98D" stroke-width="3"/><text x="220" y="321" font-family="monospace" font-size="15" text-anchor="middle" fill="#8A6A45">x</text>
+        </g>
+        <rect x="122" y="148" width="66" height="28" rx="9" fill="#fff" stroke="#F0D2AC"/>
+        <text x="155" y="167" font-family="monospace" font-size="12.5" text-anchor="middle" fill="#B9471B">w = 2</text>
+        <rect x="252" y="126" width="66" height="28" rx="9" fill="#fff" stroke="#F0D2AC"/>
+        <text x="285" y="145" font-family="monospace" font-size="12.5" text-anchor="middle" fill="#B9471B">w = 4</text>
+        <rect x="376" y="118" width="66" height="28" rx="9" fill="#fff" stroke="#F0D2AC"/>
+        <text x="409" y="137" font-family="monospace" font-size="12.5" text-anchor="middle" fill="#B9471B">w = 1</text>
+      </svg>
+      <div class="note"><b>核心一句话：</b>最短路 = 反复松弛，直到没有任何一次松弛能改进答案。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 路线图 ═══ -->
+<section class="slide" data-title="路线图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>ROADMAP</div><h2>六站，一条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>这场讲座怎么走？<br>每站先给"要解决的问题"，再给"为什么要这样转变"。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>抽象</h3><p><b>问题：</b>哪些题其实都是最短路？</p><div class="split-line"></div><p class="muted">状态即点 · 松弛 · 三角不等式</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>顺序与次数</h3><p><b>问题：</b>松弛按什么顺序做几次？</p><div class="split-line"></div><p class="muted">全篇唯一的主线问题</p></div>
+    <div class="card tint-teal"><h3><span class="n">3</span>无负权</h3><p><b>问题：</b>贪心为何不会出错？</p><div class="split-line"></div><p class="muted">BFS · Dijkstra · 0-1 BFS</p></div>
+    <div class="card tint-plum"><h3><span class="n">4</span>负权与全源</h3><p><b>问题：</b>贪心失效后靠什么？</p><div class="split-line"></div><p class="muted">BF · SPFA · 差分约束 · Floyd</p></div>
+    <div class="card"><h3><span class="n">5</span>建图变形</h3><p><b>问题：</b>难点从来不在于跑模板。</p><div class="split-line"></div><p class="muted">隐式图 · 分层 · 反向 · 二分</p></div>
+    <div class="card tint-grey" style="background:#FFFDF9"><h3><span class="n">6</span>实战</h3><p><b>问题：</b>怎么选、怎么验、怎么练？</p><div class="split-line"></div><p class="muted">速查表 · 易错清单 · 对拍 · 题单</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>时间分配</h3><p class="muted">抽象 8' · 主线 6' · 无负权 13' · 负权 10' · 全源 6' · 建图 12' · 实战 5'</p></div>
+    <div class="card"><h3>验收标准</h3><p class="muted">听完你能独立写出 4 个模板，并对一道新题说出"该用哪个变形、为什么"。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 03 钩子 ═══ -->
+<section class="slide" data-title="同一个模型">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HOOK</div><h2>看似无关的三道题，<em>同一个模型</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么值得学"抽象"？<br>看穿外壳，比背模板更重要。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3>题 A</h3><p><b>题意：</b>n 点 m 条带权边，求 1 号点到各点最短距离。</p><div class="split-line"></div><p class="muted">→ 显式图，一眼看穿。</p></div>
+    <div class="card"><h3>题 B</h3><p><b>题意：</b>单词表里每次改一个字符，问 start 到 end 最少改几次。</p><div class="split-line"></div><p class="muted">→ 隐式图：单词是点。</p></div>
+    <div class="card"><h3>题 C</h3><p><b>题意：</b>网格行走，路径代价定义为"最大相邻高度差"，求最小代价。</p><div class="split-line"></div><p class="muted">→ 权值语义变了，仍是图上最优路径。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n">★</span>统一模型</h3>
+      <div class="cols c3" style="flex:1;gap:9px">
+        <ul class="tick"><li><b>点</b> = 一个状态（位置、余额、次数、时间…）</li></ul>
+        <ul class="tick"><li><b>边</b> = 一次合法转移（付出某代价）</li></ul>
+        <ul class="tick"><li><b>目标</b> = 起点到终点的<b>代价和最小</b></li></ul>
+      </div>
+      <div class="note"><b>解题第一步永远是翻译：</b>题面 → 状态 / 转移 / 代价，而不是直接套算法。</div>
+    </div>
+    <div class="card">
+      <h3>转成图后只需回答 5 个问题</h3>
+      <div class="pill-row">
+        <span class="pill hot">有负权吗</span><span class="pill hot">单源还是全源</span>
+        <span class="pill">权值有无特殊</span><span class="pill">有无额外限制</span><span class="pill">规模多大</span>
+      </div>
+      <div class="split-line"></div>
+      <p class="muted">这 5 个问题的答案，直接决定用哪个算法 —— 这就是第 6 站那张速查表的由来。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 抽象 ═══ -->
+<section class="slide" data-title="状态—转移—代价">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · MODEL</div><h2>怎么把一道题<em>翻译</em>成图</h2></div>
+    <div class="hint"><b>本页回答：</b>建模的动作是什么？<br>三个可操作步骤，永远照做。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3><span class="n">1</span>定义状态</h3>
+        <p>问自己：判断"接下来怎么走"需要知道哪些信息？这些信息的组合就是一个点。</p>
+        <div class="split-line"></div>
+        <p class="muted">例：位置 + 已用免费次数 = (u, k)。</p>
+      </div>
+      <div class="card"><h3><span class="n">2</span>写转移</h3>
+        <p>一个状态如何变成另一个状态？每条合法转移就是一条边，边权 = 这一步的代价。</p>
+        <div class="split-line"></div>
+        <p class="muted">例：(u,k) → (v,k) 花费 w；(u,k) → (v,k+1) 花费 0。</p>
+      </div>
+      <div class="card"><h3><span class="n">3</span>估规模</h3>
+        <p>点数 × 每点出边数 = 图规模。若拆点后超过 10⁷ 量级，<b>立刻换思路</b>。</p>
+      </div>
+      <div class="note good"><b>检验标准：</b>写完状态定义，能回答"起点状态是什么、终点状态是什么吗？"能 → 建模成功。</div>
+    </div>
+    <div>
+      <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>model_check.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="model"></code></pre></pre>
+      <div class="note"><b>为什么这样：</b>状态一旦定义清楚，题目就从"烧脑"变成"跑模板 + 算复杂度"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 松弛 ═══ -->
+<section class="slide" data-title="松弛：唯一的原子操作">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · CORE</div><h2>松弛：<em>唯一的原子操作</em></h2></div>
+    <div class="hint"><b>本页回答：</b>最短路到底在反复做什么？<br>全篇所有算法都只是这一行的重复。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="formula">
+        <span class="k">if</span> <span class="hl">dist[u] + w(u,v) &lt; dist[v]</span>:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span class="ok">dist[v] = dist[u] + w(u,v)</span>&nbsp;&nbsp;<span style="color:#B29272"># 松弛成功</span>
+      </div>
+      <p class="lead">直觉：原本以为到 v 至少要花 dist[v]；现在发现"先到 u 再走一条边"更便宜，于是把估计值<b>拉低</b>。像拧松一根绷紧的橡皮筋。</p>
+      <div class="note good"><b>不变量：</b>dist[v] 是"当前已知的最好上界"，只会变小，不会变大。</div>
+      <div class="note warn"><b>关键：</b>松弛只在"dist[u] 已是最终答案"时才干净。<b>各算法的区别，就在于用什么办法保证这一点。</b></div>
+    </div>
+    <div class="card">
+      <svg viewBox="0 0 380 290" preserveAspectRatio="xMidYMid meet">
+        <circle cx="200" cy="150" r="120" fill="#F2A63B" opacity=".12" class="pulse"/>
+        <path d="M80 220 L170 90 L310 220" stroke="#D8BC9B" stroke-width="4" fill="none" class="dash"/>
+        <path d="M80 220 L310 220" stroke="#0F7B6C" stroke-width="5" fill="none" class="flow"/>
+        <g class="gnode done"><circle cx="80" cy="220" r="26"/><text x="80" y="227">u</text></g>
+        <g class="gnode act"><circle cx="170" cy="90" r="26"/><text x="170" y="97">x</text></g>
+        <g class="gnode cur"><circle cx="310" cy="220" r="26"/><text x="310" y="227">v</text></g>
+        <rect x="152" y="252" width="176" height="28" rx="9" fill="#EFF9F5" stroke="#BEE6D8"/>
+        <text x="240" y="271" font-family="monospace" font-size="12.5" text-anchor="middle" fill="#0F7B6C">三角不等式</text>
+        <text x="205" y="212" font-family="monospace" font-size="11.5" text-anchor="middle" fill="#B9471B">dist[u]+w(u,v) ≤ dist[u]+w(u,x)+w(x,v)</text>
+      </svg>
+      <p class="muted" style="font-size:12px">松弛 = 检验三角不等式是否被破坏，破坏了就修好它。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 章节：顺序与次数 ═══ -->
+<section class="slide section-slide" data-title="主线：顺序与次数">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 02 · 主线</div>
+      <div class="big">全篇只问两个问题：<br><em style="color:var(--accent)">按什么顺序</em>，<em style="color:var(--accent)">松弛几次</em>？</div>
+      <p class="lead">这两个答案，把 BFS、Dijkstra、Bellman-Ford、SPFA、Floyd 全部串成一条线。<br>接下来的每一页，都是在回答这两个问题之一。</p>
+    </div>
+    <div>
+      <div class="num-huge">02</div>
+      <div class="note good"><b>心智模型：</b>算法不是五种技巧，而是同一个"松弛"的五种调度方案。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 顺序与次数地图 ═══ -->
+<section class="slide" data-title="顺序与次数地图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · MAP</div><h2>五种算法 = 五种<em>调度方案</em></h2></div>
+    <div class="hint"><b>本页回答：</b>各算法在"顺序/次数"上分别做了什么选择？</div>
+  </div>
+  <table>
+    <tr><th style="width:170px">算法</th><th style="width:190px">松弛顺序</th><th style="width:180px">松弛次数</th><th>正确性靠什么保证</th></tr>
+    <tr><td>BFS</td><td>按层（队列）</td><td>每点 1 次</td><td>层号 = 距离，第一次到达即最优</td></tr>
+    <tr><td>0-1 BFS</td><td>双端队列（0 边优先）</td><td>每点 ≤ 2 次</td><td>队列始终保持 dist 非降</td></tr>
+    <tr><td>Dijkstra</td><td>每次取 dist 最小者</td><td>每点 1 次（确定）</td><td>非负权 ⇒ 最小值不可能再被改进</td></tr>
+    <tr><td>Bellman-Ford</td><td>轮次：每轮扫全部边</td><td>共 n−1 轮</td><td>最短路径 ≤ n−1 条边</td></tr>
+    <tr><td>SPFA</td><td>队列：谁变优谁入队</td><td>不限次，判负环</td><td>同 BF，均摊常数更小</td></tr>
+    <tr><td>Floyd</td><td>按"允许的中转点集合"分阶段</td><td>每阶段 n² 次</td><td>k 阶段递推定义</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>为什么"顺序"重要</h3>
+      <p>如果轮到 u 时 dist[u] 还不是最终答案，用它去松弛就会给出错误结果 —— 这正是负权破坏 Dijkstra 的原因。</p></div>
+    <div class="card tint-teal"><h3>为什么"次数"重要</h3>
+      <p>次数决定复杂度。每点只确定一次 ⇒ O(m log n)；不限次数 ⇒ 最坏 O(nm)。<b>复杂度是结论，不是玄学。</b></p></div>
+  </div>
+</section>
+
+<!-- ═══ 08 贪心依据 ═══ -->
+<section class="slide" data-title="贪心为何安全">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · PROOF</div><h2>贪心为何安全？<em>一次反证</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么"取最小"一定对、<br>为什么负权会让它崩掉？</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><h3><span class="n">证</span>关键引理</h3>
+        <p>设 u 是<b>未确定</b>点中 dist 最小者。断言：<b>dist[u] 就是 u 的最终答案</b>。</p>
+        <div class="split-line"></div>
+        <p>反证：若不然，真正的最短路 s⇝…→x→u 必经过某个<b>未确定</b>点 x（否则早已松弛到 u），于是</p>
+        <div class="formula" style="font-size:13px">dist[x] ≤ dist_true(x) &lt; dist_true(u) &lt; dist[u]</div>
+        <p>与"u 是最小者"矛盾。∎</p>
+      </div>
+      <div class="note good"><b>推论 1（最优子结构）：</b>最短路的任意子段仍是最短路，所以可以"从前往后"递推。</div>
+      <div class="note warn"><b>推论 2（负权为何失效）：</b>负边可能让"绕路再回头"更便宜，"dist[x] ≥ dist[u]"这一步不再成立，贪心顺序失去依据。</div>
+    </div>
+    <div>
+      <div class="card"><h3>三段式理解 Dijkstra</h3>
+        <ul class="tick">
+          <li><b>不变式：</b>已确定集合 S 内 dist 全是最终答案</li>
+          <li><b>扩展：</b>从 S 外取 dist 最小的 u 加入 S</li>
+          <li><b>松弛：</b>用 u 更新它的所有邻居</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>由此得到的三个结论</h3>
+        <p>① 每点只需确定一次；<br>② 瓶颈只在"快速取最小" ⇒ 用堆；<br>③ 前提<b>必须</b>非负权。</p>
+      </div>
+      <div class="note"><b>答主观题的模板：</b>先说不变式，再说"最小 dist 不可能被改进"，最后点明非负权前提。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 09 BFS ═══ -->
+<section class="slide" data-title="BFS：按层推进">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · BFS</div><h2>BFS：波前推进，<em>每点只访问一次</em></h2></div>
+    <div class="hint"><b>本页回答：</b>无权图怎么求最少步数？<br>为什么第一次到达就是最优？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card" style="padding:6px 8px">
+        <svg viewBox="0 0 400 240" preserveAspectRatio="xMidYMid meet">
+          <circle cx="200" cy="122" r="30" fill="#E2612F"/>
+          <text x="200" y="128" text-anchor="middle" fill="#fff" font-family="monospace" font-size="15">s</text>
+          <circle cx="200" cy="122" r="45" fill="none" stroke="#E2612F" stroke-width="2" class="wave"/>
+          <circle cx="200" cy="122" r="45" fill="none" stroke="#E2612F" stroke-width="2" class="wave" style="animation-delay:.9s"/>
+          <circle cx="200" cy="122" r="45" fill="none" stroke="#E2612F" stroke-width="2" class="wave" style="animation-delay:1.8s"/>
+          <g class="gnode done"><circle cx="110" cy="68" r="21"/><text x="110" y="74" font-size="13">1</text></g>
+          <g class="gnode done"><circle cx="290" cy="68" r="21"/><text x="290" y="74" font-size="13">1</text></g>
+          <g class="gnode done"><circle cx="110" cy="180" r="21"/><text x="110" y="186" font-size="13">1</text></g>
+          <g class="gnode act"><circle cx="42" cy="124" r="21"/><text x="42" y="130" font-size="13">2</text></g>
+          <g class="gnode act"><circle cx="358" cy="124" r="21"/><text x="358" y="130" font-size="13">2</text></g>
+          <g class="gnode act"><circle cx="205" cy="218" r="21"/><text x="205" y="224" font-size="13">2</text></g>
+        </svg>
+      </div>
+      <div class="note good"><b>为什么成立：</b>所有边权为 1，队列出队顺序 = 距离非降，所以第一次到达就是最短。</div>
+    </div>
+    <div>
+      <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>bfs.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bfs"></code></pre></pre>
+      <div class="note"><b>与最短路的关系：</b>BFS 是"边权全为 1"时最省的调度方案，不需要堆。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 Dijkstra 演示 ═══ -->
+<section class="slide" data-title="Dijkstra 演示">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · DEMO</div><h2>Dijkstra 逐步演示：<em>看它怎么松弛</em></h2></div>
+    <div class="hint"><b>本页回答：</b>一次完整的运行长什么样？<br>注意第 3 步 b 从 5 被改进为 3。</div>
+  </div>
+  <div class="cols c2b">
+    <div class="card" style="padding:6px 8px">
+      <svg id="dijSvg" viewBox="0 0 660 330" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div>
+      <div class="card">
+        <h3><span class="n">▶</span>当前步骤 <span id="dijStep" style="color:var(--accent);font-family:var(--mono)">1 / 6</span></h3>
+        <p id="dijDesc">初始化：dist[s] = 0，其余 = ∞。堆中只有 s。</p>
+        <div class="split-line"></div>
+        <div class="pill-row">
+          <span class="pill"><b style="color:var(--accent)">橙</b> 当前取出</span>
+          <span class="pill"><b style="color:var(--amber)">黄</b> 本轮被更新</span>
+          <span class="pill"><b style="color:var(--teal)">绿</b> 已确定</span>
+        </div>
+      </div>
+      <div class="cols c2" style="flex:none;gap:9px">
+        <button class="pill hot" id="dijPlay" style="cursor:pointer;border:none;font-size:12.6px;padding:9px">▶ 自动演示</button>
+        <button class="pill" id="dijReset" style="cursor:pointer;font-size:12.6px;padding:9px">↺ 重置</button>
+      </div>
+      <div class="note good"><b>观察：</b>同一节点可能被多次改进，所以堆里会留下过期状态 —— 这正是模板里 <code>d != dist[u]</code> 的用途。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 Dijkstra 模板 ═══ -->
+<section class="slide" data-title="Dijkstra 模板">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · TEMPLATE</div><h2>Python 模板：<em>堆 + 懒惰删除</em></h2></div>
+    <div class="hint"><b>本页回答：</b>模板怎么写、每行为什么？<br>（可直接在 OJ 提交）</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>dijkstra.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="dij"></code></pre></pre>
+    <div>
+      <div class="card"><h3>逐行解释</h3>
+        <ul class="tick">
+          <li>堆里放 <code>(距离, 点)</code>，元组比较先比距离</li>
+          <li><b><code>d != dist[u]</code> 是精髓</b>：同一 u 可能多次入堆，只认最新的那个</li>
+          <li>因此<b>不需要 vis 数组</b>，过期跳过已隐含"已确定"</li>
+          <li>INF 取 10¹⁸，避免 <code>INF + w</code> 溢出为负</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>易错：</b>把 <code>d != dist[u]</code> 换成 visited 标记是错的 —— 节点可能先被标记、后被改进。</div>
+      <div class="note good"><b>要输出路径：</b>松弛成功时记 <code>pre[v] = u</code>，最后从终点回溯（见第 24 页）。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 复杂度 ═══ -->
+<section class="slide" data-title="复杂度与写法选择">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · COMPLEXITY</div><h2>两种写法，<em>怎么选</em></h2></div>
+    <div class="hint"><b>本页回答：</b>规模 n、m 该配哪种实现？<br>不是越快越好，而是匹配。</div>
+  </div>
+  <table>
+    <tr><th>写法</th><th>时间</th><th>空间</th><th>常数</th><th>适用</th></tr>
+    <tr><td>朴素：线性找最小</td><td class="mono">O(n² + m)</td><td class="mono">O(n + m)</td><td>极小</td><td>m 很大、n ≤ 5000（稠密图）</td></tr>
+    <tr><td>二叉堆 + 懒惰删除</td><td class="mono">O((n + m) log n)</td><td class="mono">O(n + m)</td><td>小</td><td>最常用（稀疏图）</td></tr>
+    <tr><td>0-1 BFS</td><td class="mono">O(n + m)</td><td class="mono">O(n + m)</td><td>极小</td><td>边权只有 0/1</td></tr>
+    <tr><td>桶 / 多路归并</td><td class="mono">O(m + C)</td><td class="mono">O(n + C)</td><td>极小</td><td>整数且边权值域 C 小</td></tr>
+    <tr><td>多源</td><td class="mono">同上</td><td class="mono">—</td><td>—</td><td>各源 dist 置 0 一起入堆</td></tr>
+    <tr><td>全源</td><td class="mono">O(nm log n)</td><td class="mono">—</td><td>—</td><td>不如 Floyd / Johnson</td></tr>
+  </table>
+  <div class="cols c3">
+    <div class="card"><h3>n ≤ 5000</h3><p class="muted">m 近 n² 时朴素更快（无堆常数）。</p><div class="big-num">O(n²)</div></div>
+    <div class="card tint-teal"><h3>10⁵ ~ 10⁶</h3><p class="muted">堆优化 + 快速读入。</p><div class="big-num" style="color:var(--teal)">O(m log n)</div></div>
+    <div class="card tint-amber"><h3>Python 提醒</h3><p class="muted">10⁵ 级别没问题；10⁶ 建议 PyPy，或改用 0-1 BFS / BFS。</p></div>
+  </div>
+  <div class="note"><b>读入提醒：</b>Python 大输入务必 <code>sys.stdin.buffer</code> / <code>input = sys.stdin.readline</code>，否则超时的是读入而不是算法。</div>
+</section>
+
+<!-- ═══ 13 0-1 BFS ═══ -->
+<section class="slide" data-title="0-1 BFS">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · 01-BFS</div><h2>边权只有 0 和 1？<em>双端队列！</em></h2></div>
+    <div class="hint"><b>本页回答：</b>0-1 权值为什么不用堆？<br>队列怎么维持顺序？</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><h3><span class="n">?</span>要解决什么</h3>
+        <p>权值只有 0/1 时：Dijkstra 多一个 log，普通 BFS 又不对（0 边会破坏层序）。</p>
+        <div class="split-line"></div>
+        <p><b>关键观察：</b>0 边不增加距离，应<b>优先</b>处理。于是：<b>0 边放队头，1 边放队尾</b>，队列始终保持 dist 非降。</p>
+      </div>
+      <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>bfs01.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bfs01"></code></pre></pre>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 360 210" preserveAspectRatio="xMidYMid meet">
+          <rect x="20" y="80" width="320" height="52" rx="14" fill="#FFF3E2" stroke="#F4DCAC"/>
+          <rect x="20" y="80" width="132" height="52" rx="14" fill="#E2612F"/>
+          <text x="86" y="112" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13.5">队头 ← 0 边</text>
+          <text x="248" y="112" text-anchor="middle" fill="#B9471B" font-family="monospace" font-size="13.5">1 边 → 队尾</text>
+          <text x="180" y="44" text-anchor="middle" font-family="monospace" font-size="13" fill="#6E5842">deque 保持 dist 非降</text>
+          <path d="M86 58 L86 76" stroke="#E2612F" stroke-width="3" class="dash"/>
+          <path d="M300 58 L300 76" stroke="#D8BC9B" stroke-width="3" class="dash"/>
+        </svg>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <p>每个点最多入队两次（dist 只有相邻两个取值），总 <b>O(n + m)</b>，比堆优化 Dijkstra 还快。</p>
+      </div>
+      <div class="card"><h3>典型信号</h3>
+        <ul class="tick"><li>"免费 / 付费"二选一</li><li>"最多穿墙一次"</li><li>二分答案的判定图（见第 22 页）</li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 14 章节：负权 ═══ -->
+<section class="slide section-slide" data-title="章节：负权与全源">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 04</div>
+      <div class="big">贪心失效之后：<br><em style="color:var(--accent)">多轮松弛</em>与<em style="color:var(--accent)">全源</em></div>
+      <p class="lead">Bellman-Ford · SPFA · 差分约束 · Floyd<br>它们的共同点：放弃"一次确定"，换取"绝对正确"。</p>
+    </div>
+    <div><div class="num-huge">04</div>
+      <div class="note warn"><b>代价：</b>复杂度从 O(m log n) 升到 O(nm) 或 O(n³)。<b>能不用就不用。</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 15 Bellman-Ford ═══ -->
+<section class="slide" data-title="Bellman-Ford">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · BF</div><h2>Bellman-Ford：<em>n−1 轮到底在数什么</em></h2></div>
+    <div class="hint"><b>本页回答：</b>负权下靠什么保证正确？<br>为什么恰好 n−1 轮？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>轮次的含义</h3>
+        <p>第 i 轮结束后，"由 ≤ i 条边构成的最短路"一定正确。简单路径最多 n−1 条边 ⇒ <b>n−1 轮后全部正确</b>。</p>
+        <div class="split-line"></div>
+        <div style="display:flex;gap:5px">
+          <div style="flex:1;height:28px;border-radius:7px;background:#E2612F;color:#fff;display:grid;place-items:center;font-size:10.5px">轮 1</div>
+          <div style="flex:1;height:28px;border-radius:7px;background:#EE8347;color:#fff;display:grid;place-items:center;font-size:10.5px">轮 2</div>
+          <div style="flex:1;height:28px;border-radius:7px;background:#F5A76B;color:#fff;display:grid;place-items:center;font-size:10.5px">轮 3</div>
+          <div style="flex:1;height:28px;border-radius:7px;background:#F8C49B;color:#7A4A22;display:grid;place-items:center;font-size:10.5px">…</div>
+          <div style="flex:1;height:28px;border-radius:7px;background:#0F7B6C;color:#fff;display:grid;place-items:center;font-size:10.5px">n−1</div>
+        </div>
+      </div>
+      <div class="note warn"><b>负环判定：</b>第 n 轮还能松弛成功 ⇒ 存在负环（简单路径不可能更长）。</div>
+      <div class="note"><b>细节（易漏）：</b><code>dist[u] == INF</code> 的点必须跳过，否则不可达点会带着负权"污染"其他点。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>bellman_ford.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bf"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 16 SPFA ═══ -->
+<section class="slide" data-title="SPFA 与判负环">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · SPFA</div><h2>SPFA：<em>谁变优就重新排队</em></h2></div>
+    <div class="hint"><b>本页回答：</b>SPFA 是什么、何时用、<br>以及它的风险在哪里？</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>spfa.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="spfa"></code></pre></pre>
+    <div>
+      <div class="card"><h3>SPFA 的两面</h3>
+        <ul class="tick"><li><b>好：</b>实际远快于 O(nm)，适合 10⁴~10⁵ 级</li>
+        <li><b>坏：</b>最坏 O(nm)，出题人可刻意卡掉</li>
+        <li><b>用：</b>差分约束几乎必用（需要判负环）</li></ul>
+      </div>
+      <div class="card tint-plum"><h3>判负环的三种口径</h3>
+        <p>① 入队次数 &gt; n（最常用）<br>② 某点被松弛 n 次<br>③ BF 第 n 轮仍松弛成功</p>
+      </div>
+      <div class="note warn"><b>注意：</b>上面判的是"从 s 可达的负环"。若要判<b>图中任意负环</b>，需把所有点作为源点（或给所有点初始 dist=0）。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 17 负环专题 ═══ -->
+<section class="slide" data-title="负环专题">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · NEGCYCLE</div><h2>负环：什么时候有、<em>意味着什么</em></h2></div>
+    <div class="hint"><b>本页回答：</b>负环如何影响答案？<br>三种典型题型如何应对？</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-plum"><h3><span class="n">1</span>题面要求判负环</h3>
+      <p><b>做法：</b>SPFA + 入队计数；或 BF 第 n 轮检查。</p>
+      <div class="split-line"></div>
+      <p class="muted">典型：<a href="https://www.luogu.com.cn/problem/P3385" target="_blank" style="color:var(--plum);font-weight:700">P3385 负环</a></p>
+    </div>
+    <div class="card tint-amber"><h3><span class="n">2</span>求最短路但含负环</h3>
+      <p>若负环在 s→t 的路径上，最短路为 <b>−∞</b>（可无限绕圈），常要求输出 <code>-1</code> 或特殊标记。</p>
+      <div class="split-line"></div>
+      <p class="muted">做法：先判负环，再判断负环是否在关键路径上。</p>
+    </div>
+    <div class="card tint-teal"><h3><span class="n">3</span>题面隐式含负边</h3>
+      <p>如"退款""补偿""差价"等语义，往往转化为负权边；此时必须放弃 Dijkstra。</p>
+      <div class="split-line"></div>
+      <p class="muted">先问：负边会形成环吗？环的总权是负的吗？</p>
+    </div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>判断口诀</h3>
+      <p>① 有负边不等于有负环；② 有负环才导致无解；③ 负环若不可达目标，可忽略。</p></div>
+    <div class="card"><h3>实现提醒</h3>
+      <p>SPFA 判负环时，<b>cnt 记录入队次数</b>并在入队时递增（如模板所示），不要在出队时累加。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 18 差分约束 ═══ -->
+<section class="slide" data-title="差分约束">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · DIFF</div><h2>差分约束：<em>不等式就是一条边</em></h2></div>
+    <div class="hint"><b>本页回答：</b>不等式组如何转图？<br>求最值时方向怎么定？</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="formula">
+        x_j − x_i ≤ w&nbsp;&nbsp;⟺&nbsp;&nbsp;<span class="hl">x_j ≤ x_i + w</span>&nbsp;&nbsp;⟺&nbsp;&nbsp;边 <span class="ok">i → j</span>，权 <span class="ok">w</span>
+      </div>
+      <div class="card"><h3>三种基本形式</h3>
+        <table style="box-shadow:none;border-radius:0">
+          <tr><th>约束</th><th>建边</th></tr>
+          <tr><td class="mono">x_j − x_i ≤ w</td><td class="mono">i → j，权 w</td></tr>
+          <tr><td class="mono">x_j − x_i ≥ w</td><td class="mono">j → i，权 −w</td></tr>
+          <tr><td class="mono">x_j == x_i</td><td class="mono">双向，权 0</td></tr>
+        </table>
+      </div>
+      <div class="note good"><b>为什么能转：</b>松弛式 <code>dist[v] ≤ dist[u] + w</code> 与约束形式<b>完全一致</b>，求一组解 = 求满足所有不等式的 dist。</div>
+    </div>
+    <div>
+      <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>diff_constraint.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="diff"></code></pre></pre>
+      <div class="note warn"><b>最值方向（务必记清）：</b>统一成 <code>x_j ≤ x_i + w</code> 后，<b>x_n − x_1 的最大值 = 最短路距离</b>；若题面是"≥"型（如 <a href="https://www.luogu.com.cn/problem/P3275" target="_blank" style="color:var(--plum);font-weight:700">P3275 糖果</a>），则转成<b>最长路</b>（等价于边权取负后跑最短路）。</div>
+      <div class="note"><b>练习：</b><a href="https://www.luogu.com.cn/problem/P5960" target="_blank" style="color:var(--accent);font-weight:700">P5960 差分约束模板</a> · <a href="https://www.luogu.com.cn/problem/P1993" target="_blank" style="color:var(--accent);font-weight:700">P1993 小 K 的农场</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 19 Floyd ═══ -->
+<section class="slide" data-title="Floyd 的 DP 视角">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · FLOYD</div><h2>Floyd：<em>f[k][i][j]</em> 的三层含义</h2></div>
+    <div class="hint"><b>本页回答：</b>k 为什么必须在最外层？<br>可以省掉一维吗？</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="formula">
+        f[k][i][j] = <span class="hl">min( f[k−1][i][j], f[k−1][i][k] + f[k−1][k][j] )</span><br>
+        <span style="color:#B29272"># 含义：从 i 到 j、只允许用 1..k 号点做中转的最短路</span>
+      </div>
+      <div class="card"><h3>k 为什么最外层</h3>
+        <p>k 是<b>阶段</b>：第 k 阶段才允许用 k 做中转。若把 k 放内层，会在阶段未完成时就用 k 更新，破坏递推前提。</p>
+      </div>
+      <div class="note good"><b>空间优化：</b>k 维可去掉，直接原地 <code>d[i][j] = min(d[i][j], d[i][k] + d[k][j])</code>（只会变小）。</div>
+      <div class="note"><b>阈值：</b>n ≤ 400 可跑；n ~ 1000 用 bitset 传递闭包或 n 次 Dijkstra。</div>
+    </div>
+    <div>
+      <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>floyd.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="floyd"></code></pre></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 20 Floyd 延伸 ═══ -->
+<section class="slide" data-title="Floyd 的延伸">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · EXTEND</div><h2>Floyd 的三个<em>延伸用法</em></h2></div>
+    <div class="hint"><b>本页回答：</b>n 小的时候，<br>Floyd 还能干什么？</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3><span class="n">1</span>传递闭包（bitset 加速）</h3>
+        <p>把 min / + 换成 or / and，问可达性。用整数当 bitset 可把常数降 64 倍。</p>
+        <pre class="codewrap" style="min-height:110px"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>closure.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="closure"></code></pre></pre>
+      </div>
+    </div>
+    <div>
+      <div class="card tint-amber"><h3><span class="n">2</span>无向图最小环</h3>
+        <p>枚举中转点 k 时，用<b>更新前</b>的 d[i][j] 加两条边取最小。</p>
+        <pre class="codewrap" style="min-height:110px"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>min_cycle.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="mincycle"></code></pre></pre>
+        <p class="muted">例：<a href="https://www.luogu.com.cn/problem/P6175" target="_blank" style="color:var(--accent);font-weight:700">P6175 无向图的最小环</a></p>
+      </div>
+    </div>
+  </div>
+  <div class="note"><b>第三个用法：离线"按时间开放"。</b>边随时间加入，每加入一个新中转点就更新全矩阵 —— <a href="https://www.luogu.com.cn/problem/P1119" target="_blank" style="color:var(--accent);font-weight:700">P1119 灾后重建</a>。</div>
+</section>
+
+<!-- ═══ 21 章节：建图 ═══ -->
+<section class="slide section-slide" data-title="章节：建图的艺术">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 06</div>
+      <div class="big">真正的难点：<br><em style="color:var(--accent)">建图</em>，而不是跑模板</div>
+      <p class="lead">隐式图 · 分层拆点 · 反向与超级源点 · 二分答案 · 运算变形<br>五种"把题变成图"的常用手术。</p>
+    </div>
+    <div><div class="num-huge">06</div>
+      <div class="note good"><b>记住：</b>竞赛里 70% 的最短路题，考点在建图；模板本身 5 分钟就能背会。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 22 隐式图 ═══ -->
+<section class="slide" data-title="隐式图：状态即节点">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · IMPLICIT</div><h2>隐式图：<em>把状态当成点</em></h2></div>
+    <div class="hint"><b>本页回答：</b>题面没图怎么办？<br>如何避免 O(n²) 枚举边？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3><span class="n">?</span>例题</h3>
+        <p><b>题意：</b>给 beginWord、endWord 和字典，每次只能改一个字符且新词必须在字典中，求最少转换次数。</p>
+        <p class="muted"><a href="https://leetcode.cn/problems/word-ladder/" target="_blank" style="color:var(--accent);font-weight:700">LeetCode 127. 单词接龙</a></p>
+      </div>
+      <div class="card"><h3>建图三步</h3>
+        <ul class="tick">
+          <li><b>点：</b>每个合法单词</li>
+          <li><b>边：</b>两个单词"只差一个字符"（权 1）</li>
+          <li><b>求解：</b>最少边数 ⇒ BFS</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>难点：</b>不能枚举 O(n²) 条边。用<b>通配模式</b>（hot → *ot / h*t / ho*）建桶，把判断降到 O(26·L)。</div>
+    </div>
+    <div>
+      <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>word_ladder.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="word"></code></pre></pre>
+      <div class="note"><b>同类练习：</b><a href="https://leetcode.cn/problems/minimum-genetic-mutation/" target="_blank" style="color:var(--accent)">LC 433 最小基因变化</a> ·
+        <a href="https://leetcode.cn/problems/open-the-lock/" target="_blank" style="color:var(--accent)">LC 752 打开转盘锁</a> ·
+        <a href="https://www.luogu.com.cn/problem/P1379" target="_blank" style="color:var(--accent)">P1379 八数码</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 23 分层图 ═══ -->
+<section class="slide" data-title="分层图与拆点">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · LAYER</div><h2>分层图：<em>把次数做成一层</em></h2></div>
+    <div class="hint"><b>本页回答：</b>"最多 k 次"怎么表达？<br>规模会怎么变？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3><span class="n">?</span>典型题意</h3>
+        <p>最多让 <b>k</b> 条边免费，求 s→t 的最小总费用。</p>
+        <p class="muted"><a href="https://www.luogu.com.cn/problem/P4568" target="_blank" style="color:var(--accent);font-weight:700">P4568 飞行路线</a> ·
+        <a href="https://leetcode.cn/problems/cheapest-flights-within-k-stops/" target="_blank" style="color:var(--accent);font-weight:700">LC 787 K 站内最便宜航班</a></p>
+      </div>
+      <div class="card"><h3>为什么分层</h3>
+        <p>普通最短路只有"位置"一个维度，记不住"还剩几次机会"。<b>把 (位置, 已用次数) 合成新点</b>，限制就消失了。</p>
+        <div class="split-line"></div>
+        <div class="formula" style="font-size:12.5px">编号 = u × (K+1) + k&nbsp;&nbsp;<span style="color:#B29272"># k = 已用次数</span></div>
+      </div>
+      <div class="card">
+        <svg viewBox="0 0 350 170" preserveAspectRatio="xMidYMid meet">
+          <g class="layer"><rect x="26" y="10" width="298" height="40" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/>
+            <text x="44" y="35" font-family="monospace" font-size="12.5" fill="#0B6356">k = 0</text>
+            <circle cx="150" cy="30" r="11" fill="#0F7B6C"/><circle cx="250" cy="30" r="11" fill="#0F7B6C"/></g>
+          <g class="layer"><rect x="26" y="63" width="298" height="40" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/>
+            <text x="44" y="88" font-family="monospace" font-size="12.5" fill="#B9471B">k = 1</text>
+            <circle cx="150" cy="83" r="11" fill="#E2612F"/><circle cx="250" cy="83" r="11" fill="#E2612F"/></g>
+          <g class="layer"><rect x="26" y="116" width="298" height="40" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/>
+            <text x="44" y="141" font-family="monospace" font-size="12.5" fill="#8C2B4F">k = 2</text>
+            <circle cx="150" cy="136" r="11" fill="#A33A64"/><circle cx="250" cy="136" r="11" fill="#A33A64"/></g>
+          <path d="M150 45 L150 70" stroke="#F2A63B" stroke-width="3" class="dash"/>
+          <text x="166" y="62" font-family="monospace" font-size="10.5" fill="#B9471B">用一次 (w=0)</text>
+          <path d="M250 45 L250 70" stroke="#D8BC9B" stroke-width="3"/>
+          <text x="266" y="26" font-family="monospace" font-size="10.5" fill="#8A6A45">不用 (w)</text>
+        </svg>
+      </div>
+    </div>
+    <div>
+      <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>layered.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="layer"></code></pre></pre>
+      <div class="note warn"><b>规模提醒：</b>点数变为 n×(K+1)。K 大时（如 10⁵）必须换思路：DP 或二分答案。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 24 反向 & 计数 & 方案 ═══ -->
+<section class="slide" data-title="反向建图 · 计数 · 方案">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · TOOLS</div><h2>三件高频小工具</h2></div>
+    <div class="hint"><b>本页回答：</b>怎么求"到某点的距离"、<br>怎么求方案数、怎么输出路径？</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">A</span>反向建图 / 超级源点</h3>
+      <p><b>问题：</b>要求"所有点到 t 的距离"。把边反向 ⇒ 变成 t 出发的单源最短路。</p>
+      <pre class="codewrap" style="min-height:130px"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>reverse.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="reverse"></code></pre></pre>
+      <p class="muted">例：<a href="https://www.luogu.com.cn/problem/P1629" target="_blank" style="color:var(--accent)">P1629 邮递员送信</a> ·
+        <a href="https://www.luogu.com.cn/problem/P2296" target="_blank" style="color:var(--accent)">P2296 寻找道路</a></p>
+    </div>
+    <div class="card tint-teal"><h3><span class="n">B</span>最短路计数</h3>
+      <p>无权图用 BFS：第一次到达 ⇒ 计数<b>继承</b>；同层再次到达 ⇒ 计数<b>累加</b>。</p>
+      <pre class="codewrap" style="min-height:130px"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>count.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="count"></code></pre></pre>
+      <p class="muted">例：<a href="https://www.luogu.com.cn/problem/P1144" target="_blank" style="color:var(--teal);font-weight:700">P1144 最短路计数</a>（权值 &gt; 0 时改用 Dijkstra，同样"更优清零 / 相等累加"）</p>
+    </div>
+    <div class="card tint-amber"><h3><span class="n">C</span>输出具体路径</h3>
+      <p>松弛成功时记录前驱 <code>pre[v] = u</code>，从终点回溯即可。</p>
+      <pre class="codewrap" style="min-height:130px"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>path.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="path"></code></pre></pre>
+      <p class="muted">若要"边数最少的最短路"，用 (距离, 边数) 双关键字松弛。</p>
+    </div>
+  </div>
+  <div class="note"><b>共同点：</b>三者都没有改算法，只是改了"记什么、从哪开始"。<b>这就是建图思维的价值。</b></div>
+</section>
+
+<!-- ═══ 25 二分答案 ═══ -->
+<section class="slide" data-title="二分答案 + 最短路">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · BINSEARCH</div><h2>二分答案：<em>把最值问题变判定问题</em></h2></div>
+    <div class="hint"><b>本页回答：</b>"最小化最大值"为什么能二分？<br>判定怎么做？</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3><span class="n">?</span>例题</h3>
+        <p><b>题意：</b>最多 k 条边由政府付费，问"剩下未付费的边中最贵的那条"费用最小是多少（不可行输出 −1）。</p>
+        <p class="muted"><a href="https://www.luogu.com.cn/problem/P1948" target="_blank" style="color:var(--accent);font-weight:700">P1948 电话线</a> ·
+        <a href="https://www.luogu.com.cn/problem/P1462" target="_blank" style="color:var(--accent);font-weight:700">P1462 通往奥格瑞玛</a></p>
+      </div>
+      <div class="card tint-amber"><h3>为什么能二分</h3>
+        <p>设答案为 X。若存在路径使最大值 ≤ X，那 X+1 也可行 —— <b>单调</b>。于是二分 X，把最优化变成判定。</p>
+      </div>
+      <div class="note good"><b>判定：</b>权 ≤ X 的边视为 0、&gt; X 视为 1，跑 <b>0-1 BFS</b>，看 1 的最少条数是否 ≤ k。</div>
+      <div class="card">
+        <svg viewBox="0 0 350 150" preserveAspectRatio="xMidYMid meet">
+          <line x1="26" y1="100" x2="330" y2="100" stroke="#EEDCC2" stroke-width="3"/>
+          <circle cx="56" cy="100" r="7" fill="#0F7B6C"/><circle cx="106" cy="100" r="7" fill="#0F7B6C"/>
+          <circle cx="156" cy="100" r="7" fill="#0F7B6C"/><circle cx="206" cy="100" r="7" fill="#E2612F"/>
+          <circle cx="256" cy="100" r="7" fill="#D8BC9B"/><circle cx="306" cy="100" r="7" fill="#D8BC9B"/>
+          <text x="106" y="126" text-anchor="middle" font-family="monospace" font-size="10.5" fill="#0B6356">可行</text>
+          <text x="206" y="126" text-anchor="middle" font-family="monospace" font-size="10.5" fill="#B9471B">mid</text>
+          <text x="306" y="126" text-anchor="middle" font-family="monospace" font-size="10.5" fill="#6E5842">不可行</text>
+          <path d="M26 62 L330 62" stroke="#F2A63B" stroke-width="3" class="dash"/>
+          <text x="178" y="48" text-anchor="middle" font-family="monospace" font-size="12" fill="#B9471B">可行区间形如 [lo, +∞)</text>
+        </svg>
+      </div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>binary_search.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bin"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 26 运算变形 ═══ -->
+<section class="slide" data-title="概率 / 瓶颈 / 期望">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · SEMIRING</div><h2>换运算不换套路：<em>概率、瓶颈、期望</em></h2></div>
+    <div class="hint"><b>本页回答：</b>目标不是"和"怎么办？<br>怎么判断贪心仍成立？</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3>最大概率</h3>
+      <p><b>题意：</b>每条边有通过概率，求成功概率最大的路径。</p>
+      <div class="split-line"></div>
+      <div class="formula" style="font-size:12px">dist[v] = max( dist[v], dist[u]×p )</div>
+      <p class="muted">"+"换"×"、min 换 max。概率 ≤ 1 ⇒ 乘积单调不增 ⇒ 贪心成立。</p>
+      <p class="muted"><a href="https://leetcode.cn/problems/path-with-maximum-probability/" target="_blank" style="color:var(--accent)">LC 1514</a></p>
+    </div>
+    <div class="card tint-teal"><h3>最小化最大边</h3>
+      <p><b>题意：</b>路径代价 = 路径上最大单边权，求最小化。</p>
+      <div class="split-line"></div>
+      <div class="formula" style="font-size:12px">dist[v] = min( dist[v], max(dist[u], w) )</div>
+      <p class="muted">变形 Dijkstra：把 "+"换成 max，单调性依旧。</p>
+      <p class="muted"><a href="https://leetcode.cn/problems/path-with-minimum-effort/" target="_blank" style="color:var(--teal)">LC 1631</a></p>
+    </div>
+    <div class="card tint-amber"><h3>期望 / 乘积</h3>
+      <p>乘积可取对数转加法；期望常转 DP + 高斯消元。</p>
+      <div class="split-line"></div>
+      <p class="muted">判断标准：<b>合并运算与比较关系能否构成满足三角不等式的结构</b>。</p>
+    </div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-plum"><h3>反例：什么时候不行</h3>
+      <p>"最大化最小边"（瓶颈最大化）单调方向相反，贪心不再成立，应改用<b>最大生成树</b>（Kruskal）。</p>
+    </div>
+    <div class="card"><h3>要领</h3>
+      <p>先写松弛式，再问：会不会存在"当前确定的值以后变差"？会 ⇒ 贪心不成立，改用多轮或二分。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 27 K 短路 / A* ═══ -->
+<section class="slide" data-title="第 K 短路与 A*">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · KTH</div><h2>第 K 短路 & A*：<em>贪心上加启发</em></h2></div>
+    <div class="hint"><b>本页回答：</b>第 K 短路怎么求？<br>它与"限 K 次"有何区别？</div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3><span class="n">A</span>K 短路（A* + 反图）</h3>
+      <ul class="tick">
+        <li>先在<b>反图</b>上求 <code>distT[v]</code> 作估价</li>
+        <li>堆中放 (当前花费 + distT, 当前花费, 点)</li>
+        <li>t 第 K 次出堆即答案</li>
+      </ul>
+      <div class="split-line"></div>
+      <p class="muted">第 2 短路：<a href="https://www.luogu.com.cn/problem/P2865" target="_blank" style="color:var(--accent);font-weight:700">P2865 Roadblocks</a>（可用"次短路"DP 做）</p>
+    </div>
+    <div class="card tint-teal"><h3><span class="n">B</span>A* 的思想</h3>
+      <p>用 <b>f = g + h</b> 排序：g 已花费，h 是乐观估计。只要 h 不高估，结果正确且更快。</p>
+      <div class="formula" style="font-size:13px">h(v) ≤ dist_true(v, t)&nbsp;&nbsp;<span style="color:#B29272"># 可采纳性</span></div>
+      <p class="muted">网格常用曼哈顿距离；图上常用反向最短路。</p>
+    </div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>两个概念别混</h3>
+      <p>"最多走 k 条边 / 最多用 k 次机会"是<b>分层图</b>问题（LC 787）；"第 k 短的路径"才是<b>第 K 短路</b>问题。</p>
+    </div>
+    <div class="card"><h3>延伸</h3>
+      <p class="muted"><a href="https://www.luogu.com.cn/problem/P3953" target="_blank" style="color:var(--accent);font-weight:700">P3953 逛公园</a>（第 K 短 + 计数，较难）</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 28 速查表 ═══ -->
+<section class="slide" data-title="选型速查表">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · CHEATSHEET</div><h2>选型速查表</h2></div>
+    <div class="hint"><b>本页回答：</b>拿到题 10 秒定算法。<br>建议打印贴在机位旁。</div>
+  </div>
+  <table>
+    <tr><th style="width:210px">问题特征</th><th style="width:185px">推荐</th><th style="width:140px">复杂度</th><th>注意事项</th></tr>
+    <tr><td>无权 / 最少步数</td><td>BFS（可双向）</td><td class="mono">O(n+m)</td><td>双向 BFS 常降一个数量级</td></tr>
+    <tr><td>边权 0/1</td><td>0-1 BFS</td><td class="mono">O(n+m)</td><td>不要用 Dijkstra</td></tr>
+    <tr><td>非负权单源（稀疏）</td><td>Dijkstra + heapq</td><td class="mono">O(m log n)</td><td>懒惰删除，无需 vis</td></tr>
+    <tr><td>非负权单源（稠密）</td><td>朴素 Dijkstra</td><td class="mono">O(n²)</td><td>n ≤ 5000 反而更快</td></tr>
+    <tr><td>含负权 / 判负环</td><td>SPFA / Bellman-Ford</td><td class="mono">O(nm) 最坏</td><td>可被卡，必要时限流</td></tr>
+    <tr><td>不等式组求可行解</td><td>差分约束 + SPFA</td><td class="mono">O(nm)</td><td>务必加超级源点</td></tr>
+    <tr><td>所有点对（n ≤ 400）</td><td>Floyd</td><td class="mono">O(n³)</td><td>k 在最外层</td></tr>
+    <tr><td>所有点对（n 较大）</td><td>n 次 Dijkstra</td><td class="mono">O(nm log n)</td><td>或 Johnson + 势能</td></tr>
+    <tr><td>最多 K 次机会 / K 条边</td><td>分层图 / 拆点</td><td class="mono">×(K+1)</td><td>K 大则改 DP 或二分</td></tr>
+    <tr><td>最小化最大值 / 最大化最小值</td><td>二分 + BFS，或变形 Dijkstra</td><td class="mono">O(log·图)</td><td>先证明单调性</td></tr>
+    <tr><td>最短路计数 / 方案数</td><td>BFS 或 Dijkstra + 计数</td><td class="mono">O(m log n)</td><td>更优清零、相等累加</td></tr>
+    <tr><td>第 K 短路</td><td>A* + 反图估价</td><td class="mono">较大</td><td>与"限 K 次"区分开</td></tr>
+    <tr><td>概率 / 乘积 / 瓶颈</td><td>变形 Dijkstra</td><td class="mono">O(m log n)</td><td>检查单调方向</td></tr>
+    <tr><td>区间连边 / 批量转移</td><td>线段树优化建图</td><td class="mono">O(m log n)</td><td>点数约翻 4 倍</td></tr>
+  </table>
+  <div class="note"><b>决策顺序：</b>权值域 → 问法（单源/全源/计数/最值）→ 有无隐藏维度（次数、时间）→ 规模与复杂度。</div>
+</section>
+
+<!-- ═══ 29 易错清单 ═══ -->
+<section class="slide" data-title="易错清单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · PITFALLS</div><h2>易错清单 <em>Checklist</em></h2></div>
+    <div class="hint"><b>本页回答：</b>提交前自检什么？<br>（本页内容均来自模板代码的易错点）</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-plum"><h3>正确性</h3>
+      <ul class="tick no">
+        <li>有负权却用了 Dijkstra</li>
+        <li>0 边用普通 BFS（层序错乱）</li>
+        <li>Floyd 把 k 放到了内层</li>
+        <li>无向图只建了一条边</li>
+        <li>重边 / 自环未处理</li>
+        <li>起点到自身答案未置 0</li>
+        <li>BF 中未跳过 dist[u] = INF 的点</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>实现</h3>
+      <ul class="tick">
+        <li>INF 太小，加法溢出</li>
+        <li>堆里放 (点, 距离) 导致排序错</li>
+        <li>懒惰删除写成 <code>≤</code></li>
+        <li>计数取模位置不对，重复累加</li>
+        <li>Python 读入太慢</li>
+        <li>路径回溯时 pre 被覆盖</li>
+        <li>数组开小 / 下标 0、1 混用</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>建图</h3>
+      <ul class="tick ok">
+        <li>拆点后规模估算错误</li>
+        <li>漏加超级源点，判负环失效</li>
+        <li>二分答案没证明单调性</li>
+        <li>"限 K 次"误写成"第 K 短"</li>
+        <li>该反向建图却硬跑多源</li>
+        <li>把"最大边最小化"当"和最小"</li>
+        <li>漏掉"不可达"的输出约定</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>提交前 30 秒五连问：</b>① 有负权吗 ② 权值有特殊吗 ③ 单源还是全源 ④ 有隐藏维度吗 ⑤ 复杂度与规模匹配吗。</div>
+</section>
+
+<!-- ═══ 30 调试与验证 ═══ -->
+<section class="slide" data-title="调试与验证">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · VERIFY</div><h2>怎么验证你的答案<em>是对的</em></h2></div>
+    <div class="hint"><b>本页回答：</b>写完怎么自查？<br>暴力对拍、不变量、边界用例。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card tint-teal"><h3><span class="n">1</span>暴力对拍</h3>
+        <p>写一个"笨版本"（Bellman-Ford / 朴素），在 n ≤ 8 的随机数据上与优化版对拍 1 万组。</p>
+        <pre class="codewrap" style="min-height:135px"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>random_gen.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="rand"></code></pre></pre>
+      </div>
+      <div class="card tint-amber"><h3><span class="n">3</span>边界用例</h3>
+        <ul class="tick"><li>不连通（应输出 INF / −1）</li><li>重边、自环</li><li>s == t</li>
+        <li>全 0 边 / 全 1 边</li><li>含负环</li><li>k = 0 与 k 取最大</li><li>n = 1</li></ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3><span class="n">2</span>不变量检查（断言）</h3>
+        <ul class="tick ok">
+          <li>dist[s] == 0</li>
+          <li>无负环时：所有边满足 <code>dist[v] ≤ dist[u] + w</code></li>
+          <li>结果不超过任何一条可行路径的长度</li>
+          <li>松弛次数 / 入队次数在合理范围</li>
+          <li>计数与暴力枚举一致（小数据）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>好习惯：</b>代码顶部注释写清"输入规模 + 复杂度估算"。写完立刻算一次：10⁵ 规模下 O(m log n) 可行，O(nm) 必炸。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 31 题单 ═══ -->
+<section class="slide" data-title="练习题单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · PRACTICE</div><h2>练习题单（洛谷 / LeetCode）</h2></div>
+    <div class="hint"><b>本页回答：</b>课后练什么？<br>每题都写了<b>题意</b>，可按图索骥。</div>
+  </div>
+  <div class="cols c3" style="gap:8px">
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P4779" target="_blank"><span class="src lg">洛谷</span><span class="t">P4779 单源最短路（标准版）</span><span class="d">题意：n 点 m 条有向非负权边，求 1 到各点最短距离。Dijkstra 模板。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3371" target="_blank"><span class="src lg">洛谷</span><span class="t">P3371 单源最短路（弱化版）</span><span class="d">题意：同上，数据较小，练习朴素 O(n²) 写法。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/network-delay-time/" target="_blank"><span class="src">LeetCode</span><span class="t">743. 网络延迟时间</span><span class="d">题意：信号从 u 传播，求所有节点收到信号时刻的最大值最小化。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1144" target="_blank"><span class="src lg">洛谷</span><span class="t">P1144 最短路计数</span><span class="d">题意：求 1 到各点的最短路径条数（取模）。BFS + 计数。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/cheapest-flights-within-k-stops/" target="_blank"><span class="src">LeetCode</span><span class="t">787. K 站中转内最便宜的航班</span><span class="d">题意：最多 k 次中转，求最低票价。分层图 / DP。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P4568" target="_blank"><span class="src lg">洛谷</span><span class="t">P4568 飞行路线</span><span class="d">题意：最多 k 条边免费，求 s→t 的最小花费。分层图经典。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1948" target="_blank"><span class="src lg">洛谷</span><span class="t">P1948 电话线</span><span class="d">题意：最多 k 条边政府付费，最小化剩余边的最大费用。二分 + 01 BFS。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P5960" target="_blank"><span class="src lg">洛谷</span><span class="t">P5960 差分约束（模板）</span><span class="d">题意：给若干 x_j−x_i≤w 约束，求一组可行解。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3275" target="_blank"><span class="src lg">洛谷</span><span class="t">P3275 [SCOI2011] 糖果</span><span class="d">题意：若干"不少于/等于"关系，求分糖果最小总数。最长路。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1629" target="_blank"><span class="src lg">洛谷</span><span class="t">P1629 邮递员送信</span><span class="d">题意：送完所有信并返回，求最短总路程。反向建图。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P6175" target="_blank"><span class="src lg">洛谷</span><span class="t">P6175 无向图的最小环</span><span class="d">题意：求无向图中长度最小的环。Floyd 变形。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/find-edges-in-shortest-paths/" target="_blank"><span class="src">LeetCode</span><span class="t">3123. 最短路径中的边</span><span class="d">题意：判断哪些边出现在 s→t 的最短路径上。正反两次最短路。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/number-of-ways-to-arrive-at-destination/" target="_blank"><span class="src">LeetCode</span><span class="t">1976. 到达目的地的方案数</span><span class="d">题意：求最短路径的方案数（取模）。计数题。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/path-with-minimum-effort/" target="_blank"><span class="src">LeetCode</span><span class="t">1631. 最小体力消耗路径</span><span class="d">题意：路径代价为相邻格高度差最大值，最小化它。变形 Dijkstra。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/word-ladder/" target="_blank"><span class="src">LeetCode</span><span class="t">127. 单词接龙</span><span class="d">题意：每次改一个字符，求最少转换次数。隐式图 BFS。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2865" target="_blank"><span class="src lg">洛谷</span><span class="t">P2865 Roadblocks</span><span class="d">题意：求 1→n 的严格第 2 短路径长度。次短路。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3385" target="_blank"><span class="src lg">洛谷</span><span class="t">P3385 负环</span><span class="d">题意：判断图中是否存在从 1 可达的负环。SPFA 判负环。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1119" target="_blank"><span class="src lg">洛谷</span><span class="t">P1119 灾后重建</span><span class="d">题意：村庄随时间修复，回答某时刻两点最短路。离线 Floyd。</span></a>
+  </div>
+  <div class="note"><b>节奏建议：</b>模板 3 题 → 变形 5 题 → 综合 3 题 → 模拟赛 2 场。每题写 100 字题解：<b>问题 → 转变 → 为什么这样转变</b>。</div>
+</section>
+
+<!-- ═══ 32 总结 ═══ -->
+<section class="slide" data-title="总结">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>08 · SUMMARY</div><h2>带走这 <em>五句话</em></h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记住一页，<br>就记这一页。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><div class="step"><div class="idx">1</div><div><b>最短路 = 松弛的重复。</b>堆、队列、轮次都只是"松弛顺序"的选择。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">2</div><div><b>非负权 ⇒ 贪心安全；负权 ⇒ 必须多轮，且要会判负环。</b></div></div></div>
+      <div class="card"><div class="step"><div class="idx">3</div><div><b>难点是建图。</b>状态即点、拆点分层、反向、超级源点，是四把手术刀。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">4</div><div><b>换运算不换套路。</b>概率、瓶颈、期望…… 满足单调性即可。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">5</div><div><b>最小化最大值 ⇒ 二分。</b>把最优化变判定，是最高频的思维转换。</div></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 350 260" preserveAspectRatio="xMidYMid meet">
+          <circle cx="175" cy="130" r="118" fill="#F2A63B" opacity=".12" class="pulse"/>
+          <circle cx="175" cy="130" r="46" fill="#2E2118"/>
+          <text x="175" y="126" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="13">松弛</text>
+          <text x="175" y="145" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="11">Relax</text>
+          <g font-family="monospace" font-size="11.5" fill="#7A4A22">
+            <rect x="124" y="16" width="102" height="32" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="175" y="37" text-anchor="middle">BFS</text>
+            <rect x="252" y="68" width="84" height="32" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="294" y="89" text-anchor="middle">Dijkstra</text>
+            <rect x="246" y="170" width="96" height="32" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="294" y="191" text-anchor="middle">SPFA</text>
+            <rect x="114" y="208" width="122" height="32" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="229" text-anchor="middle">Floyd</text>
+            <rect x="8" y="170" width="96" height="32" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="56" y="191" text-anchor="middle">分层图</text>
+            <rect x="12" y="68" width="96" height="32" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="60" y="89" text-anchor="middle">差分约束</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" class="dash" fill="none">
+            <path d="M175 82 L175 50"/><path d="M221 114 L252 88"/><path d="M217 163 L250 186"/>
+            <path d="M175 177 L175 208"/><path d="M128 163 L104 185"/><path d="M130 108 L106 88"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>升华：</b>最短路教给我们的，是"<b>用更优解不断覆盖旧解</b>"的思维方式 —— 这也是动态规划、优化算法、工程迭代的共同底色。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 33 结语 ═══ -->
+<section class="slide cover" data-title="结语 Q&A">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">THANKS · Q&A</div>
+      <h1>谢谢！<br><em>开始提问</em></h1>
+      <p class="sub">课后三步：<br>
+        ① 15 分钟默写 Dijkstra + 0-1 BFS 两个模板<br>
+        ② 按题单刷 5 题，每题写 100 字题解（问题 → 转变 → 为什么）<br>
+        ③ 找一道"看着不像最短路"的题，尝试建图</p>
+      <div class="meta"><span>松弛 · 顺序 · 次数</span><span>建图 · 拆点 · 二分</span><span>不变量 · 对拍 · 复杂度</span></div>
+    </div>
+    <div>
+      <svg viewBox="0 0 460 310" preserveAspectRatio="xMidYMid meet">
+        <circle cx="230" cy="155" r="145" fill="#F2A63B" opacity=".16" class="pulse"/>
+        <path d="M60 250 L160 125 L280 185 L400 88" stroke="#E2612F" stroke-width="6" fill="none" class="flow"/>
+        <path d="M60 250 L150 290 L280 185" stroke="#0F7B6C" stroke-width="4" fill="none" class="dash" opacity=".6"/>
+        <g class="float">
+          <circle cx="60" cy="250" r="26" fill="#2E2118"/><text x="60" y="257" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="13">start</text>
+          <circle cx="160" cy="125" r="26" fill="#fff" stroke="#E2612F" stroke-width="3"/><text x="160" y="132" text-anchor="middle" fill="#B9471B" font-family="monospace" font-size="14">学</text>
+          <circle cx="280" cy="185" r="26" fill="#fff" stroke="#E2612F" stroke-width="3"/><text x="280" y="192" text-anchor="middle" fill="#B9471B" font-family="monospace" font-size="14">练</text>
+          <circle cx="400" cy="88" r="26" fill="#0F7B6C"/><text x="400" y="95" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">AC</text>
+        </g>
+      </svg>
+      <div class="note"><b>快捷键：</b><code>O</code> 目录 · <code>←/→</code> 翻页 · <code>⛶</code> 全屏</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="brand">最短路的思想与实战 · 60MIN</div>
+<div class="hud">
+  <button id="tocBtn" title="目录">☰</button>
+  <button id="prevBtn" title="上一页">←</button>
+  <div class="pgn"><span id="cur">1</span> / <span id="tot">33</span></div>
+  <button id="nextBtn" title="下一页">→</button>
+  <button id="fullBtn" title="全屏">⛶</button>
+</div>
+
+<div class="toc" id="toc"><h4>目录 · 33 页</h4><div class="grid" id="tocGrid"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+/* ============================================================
+   代码全部以"纯文本"存放，用 textContent 注入，再交给 Prism 高亮。
+   好处：完全避免 HTML 转义、缩进丢失、符号被吞的问题。
+   ============================================================ */
+const CODE = {
+
+model: `
+# 建模三步：状态 -> 转移 -> 代价（示例：有 k 次免费机会）
+#
+# 1) 状态：(当前城市 u, 已用免费次数 k)
+# 2) 转移：
+#       (u, k)     -> (v, k)     花费 w      # 不用票
+#       (u, k)     -> (v, k + 1) 花费 0      # 用掉一张票（k < K）
+# 3) 代价：所有边花费之和，目标是使其最小
+#
+# 起点状态：(s, 0)
+# 终点状态：(t, k) 中 k 取 0..K 的最小值
+#
+# 点数 = n * (K + 1)，边数 = m * (K + 1) 量级
+# 若 n * (K + 1) > 1e7，立刻换思路（DP / 二分答案）
+`,
+
+bfs: `
+from collections import deque
+
+def bfs(graph, s):
+    """graph[u] = [v, ...]，无权图，返回 dist"""
+    dist = {s: 0}
+    q = deque([s])
+    while q:
+        u = q.popleft()
+        for v in graph[u]:
+            if v not in dist:        # 第一次到达即最优
+                dist[v] = dist[u] + 1
+                q.append(v)
+    return dist
+
+# ---------- 用法 ----------
+n, m = map(int, input().split())
+graph = [[] for _ in range(n + 1)]
+for _ in range(m):
+    u, v = map(int, input().split())
+    graph[u].append(v)
+    graph[v].append(u)
+
+print(*[bfs(graph, 1).get(i, -1) for i in range(1, n + 1)])
+`,
+
+dij: `
+import heapq
+
+def dijkstra(n, graph, s):
+    """graph[u] = [(v, w), ...]，点编号 1..n，要求 w >= 0"""
+    INF = 10 ** 18
+    dist = [INF] * (n + 1)
+    dist[s] = 0
+    pq = [(0, s)]                    # (距离, 点)
+
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d != dist[u]:             # 过期状态，跳过（懒惰删除）
+            continue
+        for v, w in graph[u]:
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist
+
+# ---------- 用法 ----------
+n, m = map(int, input().split())
+graph = [[] for _ in range(n + 1)]
+for _ in range(m):
+    u, v, w = map(int, input().split())
+    graph[u].append((v, w))          # 无向图再加 graph[v].append((u, w))
+
+print(*dijkstra(n, graph, 1)[1:])
+`,
+
+bfs01: `
+from collections import deque
+
+def bfs01(n, graph, s):
+    """graph[u] = [(v, w), ...]，w 只能是 0 或 1"""
+    INF = 10 ** 18
+    dist = [INF] * (n + 1)
+    dist[s] = 0
+    q = deque([s])
+
+    while q:
+        u = q.popleft()
+        for v, w in graph[u]:
+            nd = dist[u] + w
+            if nd < dist[v]:
+                dist[v] = nd
+                if w == 0:
+                    q.appendleft(v)   # 0 边优先
+                else:
+                    q.append(v)       # 1 边排队尾
+    return dist
+`,
+
+bf: `
+def bellman_ford(n, edges, s):
+    """edges = [(u, v, w), ...]，允许负权。
+       返回 dist；若存在负环则返回 None"""
+    INF = 10 ** 18
+    dist = [INF] * (n + 1)
+    dist[s] = 0
+
+    for _ in range(n - 1):            # 最长简单路径 n-1 条边
+        updated = False
+        for u, v, w in edges:
+            if dist[u] == INF:        # 关键：跳过不可达点
+                continue
+            if dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                updated = True
+        if not updated:               # 已收敛，提前结束
+            break
+
+    for u, v, w in edges:             # 第 n 轮仍能松弛 => 负环
+        if dist[u] == INF:
+            continue
+        if dist[u] + w < dist[v]:
+            return None
+    return dist
+
+# ---------- 用法 ----------
+n, m = map(int, input().split())
+edges = [tuple(map(int, input().split())) for _ in range(m)]
+res = bellman_ford(n, edges, 1)
+print(-1 if res is None else res[n])
+`,
+
+spfa: `
+from collections import deque
+
+def spfa(n, graph, s):
+    """返回 dist；若从 s 可达负环则返回 None"""
+    INF = 10 ** 18
+    dist = [INF] * (n + 1)
+    inq = [False] * (n + 1)
+    cnt = [0] * (n + 1)               # 入队次数，用于判负环
+
+    dist[s] = 0
+    q = deque([s])
+    inq[s] = True
+
+    while q:
+        u = q.popleft()
+        inq[u] = False
+        for v, w in graph[u]:
+            if dist[u] + w < dist[v]:
+                dist[v] = dist[u] + w
+                if not inq[v]:
+                    q.append(v)
+                    inq[v] = True
+                    cnt[v] = cnt[u] + 1
+                    if cnt[v] > n:    # 入队超过 n 次 => 负环
+                        return None
+    return dist
+`,
+
+diff: `
+# 基本形式（务必统一成 x[j] <= x[i] + w 的样子）
+#   x[j] - x[i] <= w   ->  边 i -> j，权 w
+#   x[j] - x[i] >= w   ->  边 j -> i，权 -w
+#   x[j] == x[i]       ->  双向，权 0
+
+n, m = map(int, input().split())      # n 个变量，m 条约束
+graph = [[] for _ in range(n + 2)]
+S = n + 1                             # 超级源点，保证所有点可达
+
+for i in range(1, n + 1):
+    graph[S].append((i, 0))
+
+for _ in range(m):
+    i, j, w = map(int, input().split())
+    graph[i].append((j, w))
+
+dist = spfa(n + 1, graph, S)
+if dist is None:
+    print("NO SOLUTION")              # 负环 => 无解
+else:
+    # 注意：最值方向取决于不等式方向
+    #   x[n] - x[1] 的最大值 = 最短路 dist[n]
+    #   ">= 型"求最小值 => 最长路（边权取负后跑最短路）
+    print(dist[n] - dist[1])
+`,
+
+floyd: `
+def floyd(n, edges):
+    """返回 d；点编号 1..n"""
+    INF = 10 ** 18
+    d = [[0 if i == j else INF for j in range(n + 1)]
+         for i in range(n + 1)]
+    for u, v, w in edges:
+        d[u][v] = min(d[u][v], w)      # 多条边取最小
+
+    for k in range(1, n + 1):          # 阶段必须在最外层
+        dk = d[k]
+        for i in range(1, n + 1):
+            dik = d[i][k]
+            if dik == INF:
+                continue
+            di = d[i]
+            for j in range(1, n + 1):
+                if dk[j] == INF:
+                    continue
+                nd = dik + dk[j]
+                if nd < di[j]:
+                    di[j] = nd         # 原地更新，可省一维
+    return d
+`,
+
+closure: `
+def transitive_closure(n, edges):
+    """每个点的可达集合用一个整数当 bitset"""
+    reach = [0] * n
+    for u, v in edges:
+        reach[u] |= 1 << v
+
+    for k in range(n):
+        for i in range(n):
+            if (reach[i] >> k) & 1:
+                reach[i] |= reach[k]
+    return reach                      # (i >> j) & 1 表示 i 可达 j
+`,
+
+mincycle: `
+def min_cycle(n, edges):
+    """无向图最小环长度，无环返回 -1"""
+    INF = 10 ** 18
+    d = [[0 if i == j else INF for j in range(n + 1)]
+         for i in range(n + 1)]
+    w = [[INF] * (n + 1) for _ in range(n + 1)]
+
+    for u, v, x in edges:
+        d[u][v] = d[v][u] = min(d[u][v], x)
+        w[u][v] = w[v][u] = min(w[u][v], x)
+
+    ans = INF
+    for k in range(1, n + 1):
+        for i in range(1, k):
+            if w[i][k] == INF:
+                continue
+            for j in range(1, k):
+                if i != j and d[i][j] < INF and w[k][j] < INF:
+                    ans = min(ans, d[i][j] + w[i][k] + w[k][j])
+        for i in range(1, n + 1):     # 之后才把 k 当中转点
+            if d[i][k] == INF:
+                continue
+            for j in range(1, n + 1):
+                nd = d[i][k] + d[k][j]
+                if nd < d[i][j]:
+                    d[i][j] = nd
+    return ans if ans < INF else -1
+`,
+
+word: `
+from collections import defaultdict, deque
+
+def ladder(begin, end, words):
+    """返回序列长度（与 LC127 口径一致），不可达返回 0"""
+    words = list(set(words) | {begin})
+    if end not in words:
+        return 0
+
+    buckets = defaultdict(list)       # 通配模式 -> 单词列表
+    for w in words:
+        for i in range(len(w)):
+            buckets[w[:i] + "*" + w[i + 1:]].append(w)
+
+    dist = {begin: 1}
+    q = deque([begin])
+    while q:
+        w = q.popleft()
+        if w == end:
+            return dist[w]
+        for i in range(len(w)):
+            for nxt in buckets[w[:i] + "*" + w[i + 1:]]:
+                if nxt not in dist:   # 第一次到达即最优
+                    dist[nxt] = dist[w] + 1
+                    q.append(nxt)
+    return 0
+`,
+
+layer: `
+import heapq
+
+def dijkstra(N, graph, s):
+    INF = 10 ** 18
+    dist = [INF] * (N + 1)
+    dist[s] = 0
+    pq = [(0, s)]
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d != dist[u]:
+            continue
+        for v, w in graph[u]:
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                heapq.heappush(pq, (nd, v))
+    return dist
+
+
+def flight(n, edges, s, t, K):
+    """edges = [(u, v, w)]，无向图，最多 K 条边免费"""
+    L = K + 1                               # 层数
+    g = [[] for _ in range(n * L + 1)]      # 编号 u * L + k
+
+    for u, v, w in edges:
+        for k in range(K):
+            g[u * L + k].append((v * L + k, w))         # 不用票
+            g[v * L + k].append((u * L + k, w))
+            g[u * L + k].append((v * L + k + 1, 0))     # 用一张票
+            g[v * L + k].append((u * L + k + 1, 0))
+        g[u * L + K].append((v * L + K, w))             # 用满了
+        g[v * L + K].append((u * L + K, w))
+
+    dist = dijkstra(n * L, g, s * L)
+    return min(dist[t * L + k] for k in range(L))
+`,
+
+reverse: `
+# 所有点 -> t 的距离  ==  反图上 t -> 所有点的距离
+rg = [[] for _ in range(n + 1)]
+for u in range(1, n + 1):
+    for v, w in g[u]:
+        rg[v].append((u, w))
+
+dist_to_t = dijkstra(n, rg, t)
+
+# 多源：把所有源点 dist 置 0 一起入堆；或加超级源点连 0 边
+`,
+
+count: `
+from collections import deque
+
+MOD = 10 ** 5 + 3
+
+def count_shortest(n, graph, s):
+    """无权图，返回 (dist, cnt)"""
+    INF = 10 ** 18
+    dist = [INF] * (n + 1)
+    cnt = [0] * (n + 1)
+    dist[s] = 0
+    cnt[s] = 1
+
+    q = deque([s])
+    while q:
+        u = q.popleft()               # 出队时 cnt[u] 已最终确定
+        for v in graph[u]:
+            if dist[v] == INF:        # 第一次到达：继承计数
+                dist[v] = dist[u] + 1
+                cnt[v] = cnt[u]
+                q.append(v)
+            elif dist[v] == dist[u] + 1:   # 同层：累加计数
+                cnt[v] = (cnt[v] + cnt[u]) % MOD
+    return dist, cnt
+`,
+
+path: `
+import heapq
+
+def dijkstra_with_path(n, graph, s, t):
+    INF = 10 ** 18
+    dist = [INF] * (n + 1)
+    pre = [-1] * (n + 1)
+    dist[s] = 0
+    pq = [(0, s)]
+
+    while pq:
+        d, u = heapq.heappop(pq)
+        if d != dist[u]:
+            continue
+        for v, w in graph[u]:
+            nd = d + w
+            if nd < dist[v]:
+                dist[v] = nd
+                pre[v] = u
+                heapq.heappush(pq, (nd, v))
+
+    path = []
+    cur = t
+    while cur != -1:
+        path.append(cur)
+        cur = pre[cur]
+    return dist[t], path[::-1]
+`,
+
+bin: `
+from collections import deque
+
+def solve(n, edges, s, t, k):
+    g = [[] for _ in range(n + 1)]
+    for u, v, w in edges:
+        g[u].append((v, w))
+        g[v].append((u, w))
+
+    def check(X):
+        """能否让"未被付费的边"的最大值 <= X"""
+        INF = 10 ** 18
+        dist = [INF] * (n + 1)
+        dist[s] = 0
+        q = deque([s])
+        while q:
+            u = q.popleft()
+            for v, w in g[u]:
+                cost = 0 if w <= X else 1    # 二值化
+                nd = dist[u] + cost
+                if nd < dist[v]:
+                    dist[v] = nd
+                    if cost == 0:
+                        q.appendleft(v)      # 0 边优先
+                    else:
+                        q.append(v)
+        return dist[t] <= k                  # 1 的条数不超过 k
+
+    lo, hi = 0, 10 ** 9 + 1
+    while lo < hi:
+        mid = (lo + hi) // 2
+        if check(mid):
+            hi = mid
+        else:
+            lo = mid + 1
+    return -1 if lo > 10 ** 9 else lo
+`,
+
+rand: `
+import random
+
+def gen_small():
+    n = random.randint(2, 7)
+    m = random.randint(1, 15)
+    edges = []
+    for _ in range(m):
+        u = random.randint(1, n)
+        v = random.randint(1, n)
+        w = random.randint(-3, 6)        # 含负边，能覆盖更多情况
+        edges.append((u, v, w))
+    return n, edges
+
+
+# 对拍循环
+for _ in range(10000):
+    n, edges = gen_small()
+    s = 1
+    fast = dijkstra_or_spfa(n, edges, s)   # 待测实现
+    slow = bellman_ford(n, edges, s)       # 暴力参照
+    assert fast == slow, (n, edges, fast, slow)
+`
+};
+
+/* ================= 代码注入 + 高亮 ================= */
+function applyCode(){
+  document.querySelectorAll('code[data-src]').forEach(el => {
+    const raw = CODE[el.dataset.src];
+    if (typeof raw === 'string') {
+      el.textContent = raw.replace(/^\n+/, '').replace(/\s+$/, '');
+    }
+  });
+  if (window.Prism && Prism.highlightAll) { Prism.highlightAll(); }
+}
+
+/* ================= 画布缩放 ================= */
+const deck = document.getElementById('deck');
+function fit(){
+  const s = Math.min(window.innerWidth / 1320, window.innerHeight / 780);
+  deck.style.transform = 'scale(' + s + ')';
+}
+
+/* ================= 代码块自适应（缩字 + 滚动兜底） ================= */
+function fitCode(){
+  document.querySelectorAll('pre.code').forEach(pre => {
+    pre.style.fontSize = '';
+    let fs = 12.4, guard = 0;
+    // 优先纵向放下；下限 10.2px，再放不下就内部滚动，绝不裁切
+    while (pre.scrollHeight > pre.clientHeight + 2 && fs > 10.2 && guard < 40) {
+      fs -= 0.15;
+      pre.style.fontSize = fs.toFixed(2) + 'px';
+      guard++;
+    }
+  });
+}
+function relayout(){ fit(); requestAnimationFrame(fitCode); }
+window.addEventListener('resize', relayout);
+window.addEventListener('load', relayout);
+
+/* ================= 翻页 ================= */
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let idx = 0;
+document.getElementById('tot').textContent = total;
+
+function show(n){
+  idx = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('on', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('prog').style.width = ((idx + 1) / total * 100) + '%';
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  requestAnimationFrame(fitCode);
+}
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(total - 1);
+  else if (e.key.toLowerCase() === 'o') document.getElementById('toc').classList.toggle('on');
+  else if (e.key === 'Escape') document.getElementById('toc').classList.remove('on');
+});
+document.getElementById('fullBtn').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+/* ================= 目录 ================= */
+const tocGrid = document.getElementById('tocGrid');
+slides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + (i + 1);
+  a.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b>' + (s.dataset.title || '');
+  a.onclick = e => { e.preventDefault(); show(i); document.getElementById('toc').classList.remove('on'); };
+  tocGrid.appendChild(a);
+});
+document.getElementById('tocBtn').onclick = () => document.getElementById('toc').classList.toggle('on');
+document.getElementById('toc').onclick = e => { if (e.target.id === 'toc') e.target.classList.remove('on'); };
+
+/* ================= Dijkstra 演示 ================= */
+const NODES = [
+  {id:'s', x:80,  y:175}, {id:'a', x:230, y:75}, {id:'b', x:230, y:272},
+  {id:'c', x:410, y:175}, {id:'d', x:575, y:75}, {id:'t', x:575, y:272}
+];
+const EDGES = [
+  ['s','a',2], ['s','b',5], ['a','b',1], ['a','c',4],
+  ['b','c',1], ['b','t',7], ['c','t',3], ['a','d',10], ['d','t',1], ['c','d',2]
+];
+const FRAMES = [
+  { dist:{s:'0',a:'∞',b:'∞',c:'∞',d:'∞',t:'∞'}, cur:null, done:[], act:[],
+    desc:'初始化：dist[s] = 0，其余 = ∞。堆中只有 s。' },
+  { dist:{s:'0',a:'2',b:'5',c:'∞',d:'∞',t:'∞'}, cur:'s', done:['s'], act:['a','b'],
+    desc:'取出 s（最小）。松弛邻居：a ← 2，b ← 5。s 确定。' },
+  { dist:{s:'0',a:'2',b:'3',c:'6',d:'12',t:'∞'}, cur:'a', done:['s','a'], act:['b','c','d'],
+    desc:'取出 a（2）。松弛：b ← min(5, 2+1)=3，c ← 6，d ← 12。a 确定。' },
+  { dist:{s:'0',a:'2',b:'3',c:'4',d:'12',t:'10'}, cur:'b', done:['s','a','b'], act:['c','t'],
+    desc:'取出 b（3）。松弛：c ← min(6, 3+1)=4，t ← 10。注意 b 曾被从 5 改进为 3。' },
+  { dist:{s:'0',a:'2',b:'3',c:'4',d:'6',t:'7'}, cur:'c', done:['s','a','b','c'], act:['d','t'],
+    desc:'取出 c（4）。松弛：d ← min(12, 4+2)=6，t ← min(10, 4+3)=7。c 确定。' },
+  { dist:{s:'0',a:'2',b:'3',c:'4',d:'6',t:'7'}, cur:'t', done:['s','a','b','c','t','d'], act:[],
+    desc:'最终 dist[t] = 7，路径 s → a → b → c → t。全程非负权，贪心安全。' }
+];
+const svgNS = 'http://www.w3.org/2000/svg';
+const dijSvg = document.getElementById('dijSvg');
+const dijDesc = document.getElementById('dijDesc');
+const dijStep = document.getElementById('dijStep');
+let fIdx = 0, timer = null;
+
+function buildDij(){
+  dijSvg.innerHTML = '';
+  const gEdge = document.createElementNS(svgNS, 'g');
+  EDGES.forEach(([u, v, w]) => {
+    const a = NODES.find(n => n.id === u), b = NODES.find(n => n.id === v);
+    const ln = document.createElementNS(svgNS, 'line');
+    ln.setAttribute('x1', a.x); ln.setAttribute('y1', a.y);
+    ln.setAttribute('x2', b.x); ln.setAttribute('y2', b.y);
+    ln.setAttribute('class', 'gedge');
+    ln.dataset.u = u; ln.dataset.v = v;
+    gEdge.appendChild(ln);
+    const tx = document.createElementNS(svgNS, 'text');
+    tx.setAttribute('x', (a.x + b.x) / 2 + (Math.abs(b.y - a.y) > 20 ? 13 : 0));
+    tx.setAttribute('y', (a.y + b.y) / 2 - 7);
+    tx.setAttribute('class', 'gewt');
+    tx.textContent = w;
+    gEdge.appendChild(tx);
+  });
+  dijSvg.appendChild(gEdge);
+  NODES.forEach(n => {
+    const g = document.createElementNS(svgNS, 'g');
+    g.setAttribute('class', 'gnode'); g.dataset.id = n.id;
+    const c = document.createElementNS(svgNS, 'circle');
+    c.setAttribute('cx', n.x); c.setAttribute('cy', n.y); c.setAttribute('r', 25);
+    const t1 = document.createElementNS(svgNS, 'text');
+    t1.setAttribute('x', n.x); t1.setAttribute('y', n.y + 6); t1.textContent = n.id;
+    const t2 = document.createElementNS(svgNS, 'text');
+    t2.setAttribute('x', n.x); t2.setAttribute('y', n.y - 33);
+    t2.setAttribute('class', 'd'); t2.textContent = '∞';
+    g.appendChild(c); g.appendChild(t1); g.appendChild(t2);
+    dijSvg.appendChild(g);
+  });
+}
+function renderDij(){
+  const f = FRAMES[fIdx];
+  dijSvg.querySelectorAll('.gnode').forEach(g => {
+    const id = g.dataset.id;
+    g.classList.remove('cur', 'done', 'act');
+    if (f.cur === id) g.classList.add('cur');
+    else if (f.done.includes(id)) g.classList.add('done');
+    else if (f.act.includes(id)) g.classList.add('act');
+    g.querySelector('.d').textContent = f.dist[id];
+    g.querySelector('.d').setAttribute('fill',
+      f.cur === id ? '#E2612F' : (f.done.includes(id) ? '#0F7B6C' : '#B9471B'));
+  });
+  dijSvg.querySelectorAll('.gedge').forEach(l => {
+    l.classList.remove('act', 'done');
+    const u = l.dataset.u, v = l.dataset.v;
+    if (f.cur === u && f.act.includes(v)) l.classList.add('act');
+    else if (f.done.includes(u) && f.done.includes(v)) l.classList.add('done');
+  });
+  dijDesc.textContent = f.desc;
+  dijStep.textContent = (fIdx + 1) + ' / ' + FRAMES.length;
+}
+buildDij(); renderDij();
+document.getElementById('dijReset').onclick = () => {
+  clearInterval(timer); timer = null;
+  document.getElementById('dijPlay').textContent = '▶ 自动演示';
+  fIdx = 0; renderDij();
+};
+document.getElementById('dijPlay').onclick = function(){
+  if (timer) { clearInterval(timer); timer = null; this.textContent = '▶ 自动演示'; return; }
+  this.textContent = '❚❚ 暂停';
+  timer = setInterval(() => { fIdx = (fIdx + 1) % FRAMES.length; renderDij(); }, 1700);
+};
+
+/* ================= 初始化 ================= */
+applyCode();
+const h = parseInt(location.hash.replace('#', ''), 10);
+show(isNaN(h) ? 0 : h - 1);
+relayout();
+</script>
+</body>
+</html>

@@ -1,0 +1,2684 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>二分图算法：增广路上的博弈</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{
+  --paper:#FFF8F0; --card:#FFFFFF;
+  --ink:#2B1D12; --ink2:#6E5842; --line:#EEDCC2;
+  --accent:#E2612F; --amber:#F2A63B; --teal:#0F7B6C; --plum:#A33A64;
+  --code-bg:#2C2117;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EFE0C8;font-family:var(--sans);color:var(--ink);overflow:hidden}
+body{background:
+  radial-gradient(1200px 700px at 12% -10%, #FBE9CE 0%, rgba(251,233,206,0) 60%),
+  radial-gradient(900px 600px at 105% 110%, #F7DCC0 0%, rgba(247,220,192,0) 55%), #EFE0C8;}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center center;
+  border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(90,52,18,.28),0 4px 12px rgba(90,52,18,.14)}
+
+.slide{position:absolute;inset:0;padding:22px 38px 26px;opacity:0;visibility:hidden;
+  transform:translateX(22px) scale(.996);transition:opacity .38s ease,transform .38s ease,visibility .38s;
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(160deg,#FFFBF5 0%,#FFF4E6 55%,#FDEBD3 100%)}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.slide::after{content:"";position:absolute;right:-120px;top:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(242,166,59,.18),rgba(242,166,59,0) 70%);pointer-events:none}
+.slide::before{content:"";position:absolute;left:-90px;bottom:-140px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,rgba(226,97,47,.11),rgba(226,97,47,0) 70%);pointer-events:none}
+.slide>*{position:relative;z-index:2}
+
+.kicker{display:inline-flex;align-items:center;gap:7px;font-size:10.6px;font-weight:700;letter-spacing:.13em;
+  color:var(--accent);background:#FFEEDC;border:1px solid #F6D2B2;padding:3px 11px;border-radius:999px}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+.kicker.teal{color:var(--teal);background:#E9F7F2;border-color:#BEE6D8}
+.kicker.teal i{background:var(--teal)}
+.kicker.plum{color:var(--plum);background:#FDF1F5;border-color:#EFCBD8}
+.kicker.plum i{background:var(--plum)}
+.sl-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+  border-bottom:2px solid var(--line);padding-bottom:8px}
+.sl-head h2{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1.14;margin-top:5px}
+.sl-head h2 em{font-style:normal;color:var(--accent)}
+.sl-head h2 em.t{color:var(--teal)}
+.sl-head h2 em.p{color:var(--plum)}
+.sl-head .hint{font-size:11.6px;color:var(--ink2);text-align:right;max-width:340px;line-height:1.5}
+.sl-head .hint b{color:#8A5A2C}
+.lead{font-size:15px;line-height:1.66;color:#42301F}
+.muted{color:var(--ink2)}
+
+.cols{display:grid;gap:11px;min-height:0;flex:1 1 auto}
+.c2{grid-template-columns:1fr 1fr}
+.c2a{grid-template-columns:1.08fr .92fr}
+.c2b{grid-template-columns:.92fr 1.08fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+.cols > div{min-height:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.card h3 .n{width:21px;height:21px;border-radius:7px;background:var(--accent);color:#fff;font-size:11.5px;
+  display:grid;place-items:center;font-family:var(--sans);font-weight:700;flex:none}
+.card h3 .n.t{background:var(--teal)}
+.card h3 .n.p{background:var(--plum)}
+.card p,.card li{font-size:13px;line-height:1.6;color:#4A3722}
+.card ul,ol{padding-left:16px}
+.card li{margin:2px 0}
+.card.tint-teal{background:#F2FBF7;border-color:#BEE6D8}
+.card.tint-amber{background:#FFF7E6;border-color:#F4DCAC}
+.card.tint-plum{background:#FDF1F5;border-color:#EFCBD8}
+
+.formula{font-family:var(--mono);font-size:14.5px;background:#2E2118;color:#FFEBD2;border-radius:11px;
+  padding:10px 14px;line-height:1.55;flex:none;overflow-x:auto}
+.formula .hl{color:#FFB169;font-weight:600}
+.formula .ok{color:#7FE0C2;font-weight:600}
+.formula .dim{color:#A8846A}
+
+.codewrap{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;
+  border:1px solid #4B3823;border-radius:12px;overflow:hidden;background:var(--code-bg)}
+.code-head{flex:none;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#241A12;
+  border-bottom:1px solid #46341F}
+.code-head .dot{width:9px;height:9px;border-radius:50%;background:#6B5238}
+.code-head .dot.r{background:#B9471B}
+.code-head .dot.g{background:#0F7B6C}
+.code-head em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B29272;letter-spacing:.08em;margin-left:6px}
+.code-head .lang{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7A5F45;letter-spacing:.12em}
+pre.code{margin:0;flex:1 1 auto;min-height:0;overflow:auto;background:var(--code-bg)!important;
+  padding:11px 14px;font-family:var(--mono);font-size:12.4px;line-height:1.56;white-space:pre;tab-size:4}
+pre.code::-webkit-scrollbar{height:8px;width:8px}
+pre.code::-webkit-scrollbar-track{background:#241A12}
+pre.code::-webkit-scrollbar-thumb{background:#6B5238;border-radius:8px}
+pre.code::-webkit-scrollbar-thumb:hover{background:#8E6E4C}
+pre.code code,code[class*="language-"]{font-family:var(--mono)!important;font-size:inherit;
+  background:transparent!important;color:#F0E0CC!important;text-shadow:none!important}
+pre.code .token.comment,pre.code .token.prolog,pre.code .token.doctype,pre.code .token.cdata{color:#A8846A!important;font-style:italic}
+pre.code .token.punctuation{color:#C0A183!important}
+pre.code .token.keyword,pre.code .token.atrule,pre.code .token.rule,pre.code .token.important{color:#FFB169!important;font-weight:600}
+pre.code .token.string,pre.code .token.char,pre.code .token.attr-value{color:#9BE0BE!important}
+pre.code .token.function,pre.code .token.class-name,pre.code .token.builtin{color:#FFD9A8!important}
+pre.code .token.number,pre.code .token.boolean,pre.code .token.constant,pre.code .token.symbol{color:#F4A9C0!important}
+pre.code .token.operator{color:#FFC98B!important}
+pre.code .token.decorator,pre.code .token.annotation{color:#F4A9C0!important}
+
+.note{border-left:4px solid var(--amber);background:#FFF6E4;padding:8px 12px;border-radius:0 11px 11px 0;
+  font-size:12.6px;line-height:1.58;flex:none}
+.note.warn{border-color:var(--plum);background:#FDF0F4}
+.note.good{border-color:var(--teal);background:#EFF9F5}
+.note b{color:var(--accent)}.note.warn b{color:var(--plum)}.note.good b{color:var(--teal)}
+code:not([class*="language-"]){font-family:var(--mono);font-size:.93em;background:#F6EADA;padding:1px 5px;border-radius:5px}
+
+table{width:100%;border-collapse:collapse;font-size:12.1px;background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);flex:none}
+th,td{padding:5.5px 10px;text-align:left;border-bottom:1px solid var(--line);line-height:1.45}
+th{background:#F7E7CF;font-family:var(--serif);font-size:12.6px;color:#7A4A22}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:11px}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:7px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.2px;
+  font-weight:600;color:#5B4429}
+.pill.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill.tq{background:var(--teal);color:#fff;border-color:var(--teal)}
+.pill.pl{background:var(--plum);color:#fff;border-color:var(--plum)}
+ul.tick{list-style:none;padding:0}
+ul.tick li{position:relative;padding-left:20px;margin:3px 0;font-size:12.8px;line-height:1.55}
+ul.tick li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:4px;
+  background:#FFE2C6;border:2px solid var(--accent)}
+ul.tick.ok li::before{background:#CDEEE2;border-color:var(--teal)}
+ul.tick.no li::before{background:#F7D6E1;border-color:var(--plum);border-radius:50%}
+ul.tick.arr li::before{background:#FBD9A2;border-color:var(--amber);border-radius:2px;transform:rotate(45deg);width:9px;height:9px}
+
+.a-link{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:11px;padding:8px 11px;transition:.18s;box-shadow:0 4px 10px rgba(120,70,20,.06);overflow:hidden}
+.a-link:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 20px rgba(226,97,47,.16)}
+.a-link .t{font-size:12.4px;font-weight:700;color:#7A3A12;display:block;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link .d{font-size:11px;color:var(--ink2);line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.a-link .src{font-size:9.6px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--teal);
+  padding:1px 7px;border-radius:999px;display:inline-block;margin-bottom:4px}
+.a-link .src.lg{background:var(--accent)}
+.a-link .src.loc{background:var(--amber)}
+
+.step{display:flex;gap:9px;align-items:flex-start}
+.step .idx{flex:none;width:23px;height:23px;border-radius:7px;background:#2E2118;color:#FFD9A8;
+  display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.split-line{height:2px;background:linear-gradient(90deg,#E2612F,#F2A63B,rgba(242,166,59,0));border-radius:2px;margin:6px 0;flex:none}
+.split-line.t{background:linear-gradient(90deg,#0F7B6C,#7FE0C2,rgba(127,224,194,0))}
+.split-line.p{background:linear-gradient(90deg,#A33A64,#F4A9C0,rgba(244,169,192,0))}
+.num-huge{font-family:var(--serif);font-size:110px;font-weight:900;line-height:.9;
+  background:linear-gradient(160deg,#E2612F,#F2A63B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.t{background:linear-gradient(160deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+svg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;overflow:visible}
+.dfnlab{font-family:var(--mono);font-size:11.5px;font-weight:700;fill:#0F7B6C}
+.dfnlab.r{fill:#B9471B}
+.dfnlab.p{fill:#A33A64}
+.dfnlab.g{fill:#8A6A45}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.62;transform:scale(1.07)}}
+.dash{stroke-dasharray:8 8;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.cover{background:linear-gradient(150deg,#FFF6E8 0%,#FFE9CD 48%,#FFDCB4 100%)}
+.cover .badge{display:inline-flex;gap:8px;align-items:center;background:#2E2118;color:#FFD9A8;
+  padding:6px 14px;border-radius:999px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.cover h1{font-family:var(--serif);font-size:52px;line-height:1.1;font-weight:900}
+.cover h1 em{font-style:normal;background:linear-gradient(92deg,#E2612F,#F2A63B);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.cover h1 em.t{background:linear-gradient(92deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cover .sub{font-size:15.5px;color:#6B4A2C;line-height:1.66;max-width:600px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta span{background:rgba(255,255,255,.72);border:1px solid #F0D2AC;padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#7A4A22}
+.section-slide{background:linear-gradient(150deg,#FFF3E0,#FFE0BC)}
+.section-slide.teal{background:linear-gradient(150deg,#EFF9F4,#CFE9DE)}
+.section-slide.plum{background:linear-gradient(150deg,#FDF0F4,#F5CBD8)}
+.section-slide .big{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1.18}
+
+.hud{position:fixed;right:18px;bottom:14px;display:flex;gap:7px;align-items:center;z-index:50}
+.hud button{border:1px solid rgba(120,70,20,.2);background:rgba(255,250,242,.92);color:#7A4A22;
+  width:34px;height:34px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:700;backdrop-filter:blur(6px);transition:.16s}
+.hud button:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.pgn{background:rgba(255,250,242,.92);border:1px solid rgba(120,70,20,.2);border-radius:10px;height:34px;
+  display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:12.5px;color:#7A4A22;font-weight:600}
+.prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,#E2612F,#F2A63B);z-index:60;
+  transition:width .35s ease;box-shadow:0 1px 6px rgba(226,97,47,.5)}
+.brand{position:fixed;left:18px;bottom:14px;z-index:50;background:rgba(255,250,242,.9);border:1px solid rgba(120,70,20,.2);
+  border-radius:10px;padding:8px 13px;font-size:10.5px;color:#7A4A22;letter-spacing:.1em;font-weight:700}
+.toc{position:fixed;inset:0;background:rgba(46,33,24,.82);backdrop-filter:blur(8px);z-index:80;display:none;
+  padding:42px 56px;overflow:auto}
+.toc.on{display:block}
+.toc h4{color:#FFE2BF;font-family:var(--serif);font-size:24px;margin-bottom:16px}
+.toc .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.toc a{background:rgba(255,246,232,.94);border-radius:10px;padding:9px 12px;text-decoration:none;color:#4A3722;
+  font-size:12.2px;line-height:1.4;border:1px solid rgba(255,255,255,.18);transition:.16s}
+.toc a:hover{background:#FFB169;transform:translateY(-2px)}
+.toc a b{display:block;font-family:var(--mono);font-size:10px;color:#B9471B;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- ═══ 01 封面 ═══ -->
+<section class="slide cover on" data-title="封面">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">GRAPH · BIPARTITE MATCHING · 80 MIN</div>
+      <h1>二分图算法<br><em>增广路上的博弈</em></h1>
+      <p class="sub">从<b>「找到一条增广路，翻转它，匹配 +1」</b>出发，<br>
+        串起<b>判定 · 最大匹配 · König 对偶 · 带权匹配 · 建模</b>五条主线。</p>
+      <div class="meta">
+        <span>45 页 · 约 80 分钟</span><span>12 个可运行 Python 模板</span>
+        <span>含手算与对拍脚本</span><span>洛谷 / LeetCode 题单</span>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 520 300" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#8A6A45"/>
+          </marker>
+          <marker id="ar2" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#0F7B6C"/>
+          </marker>
+        </defs>
+        <text x="260" y="18" text-anchor="middle" class="dfnlab r">左部 X 与右部 Y · 匹配边（粗）· 增广路（虚线）</text>
+        <text x="120" y="44" text-anchor="middle" class="dfnlab r" font-size="12.5">左部 X</text>
+        <text x="380" y="44" text-anchor="middle" class="dfnlab" font-size="12.5">右部 Y</text>
+
+        <!-- 非匹配边 -->
+        <g stroke="#D6B78C" stroke-width="2.2" fill="none">
+          <path d="M85 138 L330 210"/><path d="M85 210 L330 138"/><path d="M85 138 L330 92"/>
+        </g>
+        <!-- 匹配边 -->
+        <g stroke="#B9471B" stroke-width="5" stroke-linecap="round" fill="none">
+          <path d="M85 66 L330 66"/><path d="M85 138 L330 138"/><path d="M85 182 L330 182"/>
+        </g>
+        <!-- 增广路 -->
+        <g stroke="#0F7B6C" stroke-width="4" stroke-dasharray="9 8" fill="none">
+          <path d="M85 254 L330 138"/><path d="M330 138 L85 138"/><path d="M85 138 L330 210"/>
+        </g>
+        <!-- 节点 -->
+        <g>
+          <circle cx="85" cy="66" r="15" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="85" cy="138" r="15" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="85" cy="182" r="15" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="85" cy="254" r="15" fill="#E2612F" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="330" cy="66" r="15" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="330" cy="138" r="15" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="330" cy="182" r="15" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="330" cy="210" r="15" fill="#0F7B6C" stroke="#0B6356" stroke-width="3"/>
+        </g>
+        <g font-family="monospace" font-size="11" text-anchor="middle">
+          <text x="85" y="70" fill="#B9471B">x₁</text><text x="85" y="142" fill="#B9471B">x₂</text>
+          <text x="85" y="186" fill="#B9471B">x₃</text><text x="85" y="258" fill="#fff">x₄</text>
+          <text x="330" y="70" fill="#0B6356">y₁</text><text x="330" y="142" fill="#0B6356">y₂</text>
+          <text x="330" y="186" fill="#0B6356">y₃</text><text x="330" y="214" fill="#fff">y₄</text>
+        </g>
+        <!-- 标签 -->
+        <g font-family="monospace" font-size="10.5" text-anchor="middle">
+          <rect x="60" y="278" width="130" height="24" rx="8" fill="#B9471B"/>
+          <text x="125" y="295" fill="#fff">匹配边 M</text>
+          <rect x="205" y="278" width="130" height="24" rx="8" fill="#0F7B6C"/>
+          <text x="270" y="295" fill="#fff">增广路 P</text>
+          <rect x="350" y="278" width="130" height="24" rx="8" fill="#8A6A45"/>
+          <text x="415" y="295" fill="#fff">|M| ← |M|+1</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 路线图 ═══ -->
+<section class="slide" data-title="路线图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>ROADMAP</div><h2>六站，一条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>这份讲义怎么走？<br>每站先给"要解决的问题"，再给"为什么这样写"。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>基础</h3><p>二分图判定 · 染色法 · 匹配与增广路 · Berge 定理 · 手算</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>最大匹配</h3><p>匈牙利 DFS · Hopcroft-Karp 分层 · KM 带权 · 网络流建模</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>对偶问题</h3><p>König 定理 · 最小点覆盖 · 最大独立集 · 最小路径覆盖 · Hall 定理</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>建模</h3><p>棋盘/骨牌 · 任务分配 · 行列拆点 · 二分答案 + 匹配</p></div>
+    <div class="card"><h3><span class="n">5</span>变体与对比</h3><p>KM 进阶 · 带花树 · vs 网络流 / 费用流 · 选型决策树</p></div>
+    <div class="card tint-amber"><h3><span class="n">6</span>工程</h3><p>易错清单 · 模板合集 · 对拍脚本 · 题单</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>时间分配</h3><p class="muted">基础 16' · 最大匹配 22' · 对偶 14' · 建模 12' · 变体 8' · 工程 8'</p></div>
+    <div class="card"><h3>验收标准</h3><p class="muted">能闭卷写出匈牙利 + Hopcroft-Karp；能说清 König 构造的"定向"为什么那样定。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 03 钩子 ═══ -->
+<section class="slide" data-title="四道题一个套路">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HOOK</div><h2>四道"互相配对"的题，<em>一个套路</em></h2></div>
+    <div class="hint"><b>本页回答：</b>最大匹配能干什么？<br>它把哪类问题统一了。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3>题 A</h3><p><b>题意：</b>n 个工人 m 个任务，每人只能做其中几个，<b>最多完成几个</b>？</p><div class="split-line"></div><p class="muted">→ 最大匹配。</p></div>
+    <div class="card"><h3>题 B</h3><p><b>题意：</b>棋盘挖掉若干格，最多能放多少块 <b>1×2 骨牌</b>？</p><div class="split-line"></div><p class="muted">→ 相邻格建边，最大匹配。</p></div>
+    <div class="card"><h3>题 C</h3><p><b>题意：</b>选<b>最少的点</b>，删掉后<b>所有边</b>都消失。</p><div class="split-line t"></div><p class="muted">→ König：最小点覆盖 = 最大匹配。</p></div>
+    <div class="card"><h3>题 D</h3><p><b>题意：</b>工人 i 做任务 j 收益 w[i][j]，<b>最大化总收益</b>。</p><div class="split-line p"></div><p class="muted">→ KM 带权最大匹配。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n">★</span>共同点</h3>
+      <p class="lead">都要"<b>两两配对，每边至多用一次</b>"。一旦识别出这是二分图匹配，
+        就能套现成算法，<b>不用重新推导</b>。</p>
+      <div class="note"><b>一句话：</b>最大匹配把"配对类问题"从<b>指数枚举</b>降到 <b>O(m√n)</b>。</div>
+    </div>
+    <div class="card">
+      <h3>三个判断题</h3>
+      <div class="pill-row">
+        <span class="pill hot">能拆成左右两部吗</span>
+        <span class="pill tq">边只在两部之间吗</span>
+        <span class="pill pl">要带权吗</span>
+      </div>
+      <div class="split-line"></div>
+      <p class="muted">答对这三题，就知道该用哪个算法。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 问题定义 ═══ -->
+<section class="slide" data-title="问题定义">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · PROBLEM</div><h2>先把概念<em>说清楚</em></h2></div>
+    <div class="hint"><b>本页回答：</b>二分图、匹配、增广路各是什么？<br>求的是什么量。</div>
+  </div>
+  <table>
+    <tr><th style="width:180px">概念</th><th style="width:230px">定义</th><th style="width:150px">复杂度</th><th>说明</th></tr>
+    <tr><td><b>二分图</b></td><td>顶点可分两部 X, Y，边只在 X–Y 之间</td><td class="mono">判定 O(n+m)</td><td>等价于<b>无奇环</b></td></tr>
+    <tr><td><b>匹配 M</b></td><td>边集，任意两边不共顶点</td><td>—</td><td>覆盖点数 = 2|M|</td></tr>
+    <tr><td><b>最大匹配</b></td><td>|M| 最大的匹配</td><td class="mono">O(m√n)</td><td>核心问题</td></tr>
+    <tr><td><b>完美匹配</b></td><td>|M| = min(|X|,|Y|)</td><td class="mono">判定同上</td><td>所有点都被覆盖</td></tr>
+    <tr><td><b>交错路</b></td><td>边交替属于 M / 不属于 M</td><td>—</td><td>路径定义</td></tr>
+    <tr><td><b>增广路</b></td><td>起止都不在 M 中的交错路</td><td class="mono">O(m√n)</td><td>翻转后 |M| + 1</td></tr>
+    <tr><td><b>最小点覆盖</b></td><td>最少的点覆盖所有边</td><td class="mono">= 最大匹配</td><td>König 定理</td></tr>
+    <tr><td><b>最大独立集</b></td><td>最多的点两两无边</td><td class="mono">= n − 最大匹配</td><td>二分图专用</td></tr>
+    <tr><td><b>带权最大匹配</b></td><td>权和最大的匹配</td><td class="mono">O(n³)</td><td>KM 算法</td></tr>
+    <tr><td><b>最小路径覆盖</b></td><td>DAG 点不相交路径最少条数</td><td class="mono">= n − 最大匹配</td><td>拆点建图</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>核心观察</h3><p>所有"对偶量"（点覆盖 / 独立集 / 路径覆盖）都<b>归约到同一个最大匹配</b>。</p></div>
+    <div class="card tint-plum"><h3>不适用</h3><p>图有<b>奇环</b>、边权重<b>负数且要最小</b>、要求<b>所有</b>匹配 → 换一般图匹配 / 费用流。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 05 取舍链 ═══ -->
+<section class="slide" data-title="取舍链">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · ROADMAP</div><h2>取舍链：<em>暴力 → 匈牙利 → HK → 网络流 → KM</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么有这么多算法？<br>各自的甜点在哪。</div>
+  </div>
+  <table>
+    <tr><th style="width:150px">方案</th><th>最大匹配</th><th>带权</th><th>建模难度</th><th>代码量</th><th>适用</th></tr>
+    <tr><td>暴力枚举</td><td class="mono">O(2^E)</td><td>可</td><td>无</td><td>极小</td><td>对拍</td></tr>
+    <tr><td><b>匈牙利 DFS</b></td><td class="mono">O(n·m)</td><td>❌</td><td>低</td><td><b>极小</b></td><td>n ≤ 1000</td></tr>
+    <tr><td><b>Hopcroft-Karp</b></td><td class="mono">O(m√n)</td><td>❌</td><td>低</td><td>小</td><td><b>默认</b></td></tr>
+    <tr><td>网络流（Dinic）</td><td class="mono">O(m√n)</td><td>可扩</td><td>中</td><td>中</td><td>需要容量/扩展</td></tr>
+    <tr><td><b>KM 算法</b></td><td class="mono">O(n³)</td><td><b>是</b></td><td>中</td><td>中</td><td>带权</td></tr>
+    <tr><td>费用流</td><td class="mono">O(nm·flow)</td><td>是</td><td>高</td><td>大</td><td>带约束的带权</td></tr>
+    <tr><td>带花树</td><td class="mono">O(n³)</td><td>❌</td><td>高</td><td>大</td><td>一般图</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>不可替代的三件事</h3>
+      <ul class="tick">
+        <li><b>König 对偶</b>：点覆盖/独立集靠它（网络流要额外做）</li>
+        <li><b>KM 的顶标</b>：带权直接出最优，无需费用流</li>
+        <li><b>建模</b>：识别"两两配对"是关键能力</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>心智模型</h3>
+      <p>二分图匹配 = <b>"在交错图上找增广路"</b>。所有算法都只是<b>更聪明地找增广路</b>。</p>
+      <div class="note good"><b>建议：</b>先<b>闭卷默写匈牙利</b>，再上 Hopcroft-Karp；带权才学 KM。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：基础">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 01</div>
+      <div class="big">基础：<em style="color:var(--accent)">判定 · 匹配 · 增广路</em></div>
+      <p class="lead">二分图定义与染色判定 · 匹配与交错路 · Berge 定理 · 手算增广<br>先把"增广"这个动作钉死。</p>
+    </div>
+    <div><div class="num-huge">01</div>
+      <div class="note good"><b>目标：</b>能独立画出一次完整的增广过程，并说明为什么匹配数 +1。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 二分图定义 ═══ -->
+<section class="slide" data-title="二分图定义与判定">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · DEFINITION</div><h2>二分图：<em>两部划分 · 无奇环</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么判断一个图是二分图？<br>两个等价条件。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <div class="formula" style="font-size:12.2px">
+          V = X ∪ Y，X ∩ Y = ∅<br>
+          <span class="hl">所有边 (u,v) 满足 u ∈ X, v ∈ Y</span><br>
+          <span class="dim">同一部内部无边</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>等价条件</h3>
+        <ul class="tick">
+          <li>顶点可 <b>2-染色</b>，相邻点不同色</li>
+          <li>图中<b>不含奇环</b></li>
+          <li>每个连通分量都是<b>二部</b>的</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>常见误判：</b>"无环" ≠ 二分图。二分图<b>可以有偶环</b>（如 4 元环）。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">2-染色：相邻点不同色 ⇔ 无奇环</text>
+          <!-- 二分图 -->
+          <g>
+            <text x="105" y="46" text-anchor="middle" class="dfnlab">✓ 二分图</text>
+            <circle cx="75" cy="90" r="14" fill="#E2612F" stroke="#B9471B" stroke-width="3"/>
+            <circle cx="75" cy="140" r="14" fill="#E2612F" stroke="#B9471B" stroke-width="3"/>
+            <circle cx="75" cy="190" r="14" fill="#E2612F" stroke="#B9471B" stroke-width="3"/>
+            <circle cx="145" cy="105" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+            <circle cx="145" cy="175" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+            <g stroke="#D6B78C" stroke-width="2.2" fill="none">
+              <path d="M75 90 L145 105"/><path d="M75 90 L145 175"/><path d="M75 140 L145 105"/>
+              <path d="M75 190 L145 175"/><path d="M75 140 L145 175"/>
+            </g>
+          </g>
+          <!-- 奇环 -->
+          <g>
+            <text x="315" y="46" text-anchor="middle" class="dfnlab p">✗ 奇环</text>
+            <g stroke="#A33A64" stroke-width="2.6" fill="none">
+              <path d="M270 150 L315 82 L360 150 Z"/>
+              <path d="M270 150 L340 180"/><path d="M360 150 L340 180"/>
+            </g>
+            <circle cx="270" cy="150" r="14" fill="#F4A9C0" stroke="#A33A64" stroke-width="3"/>
+            <circle cx="315" cy="82" r="14" fill="#F4A9C0" stroke="#A33A64" stroke-width="3"/>
+            <circle cx="360" cy="150" r="14" fill="#F4A9C0" stroke="#A33A64" stroke-width="3"/>
+            <circle cx="340" cy="180" r="14" fill="#F4A9C0" stroke="#A33A64" stroke-width="3"/>
+            <text x="315" y="215" text-anchor="middle" class="dfnlab p">3 元环 = 奇环</text>
+          </g>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>怎么建两部</h3>
+        <ul class="tick ok">
+          <li>先染色，颜色 0 → X，颜色 1 → Y</li>
+          <li>或由题意天然给出（工人/任务、行/列）</li>
+          <li>染色失败 ⇒ 不是二分图 ⇒ 不能用本讲义的算法</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 染色法 ═══ -->
+<section class="slide" data-title="染色法判定">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · COLORING</div><h2>染色法判定：<em>O(n+m)</em></h2></div>
+    <div class="hint"><b>本页回答：</b>判定代码怎么写？<br>要注意哪些边界。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>算法</h3>
+        <ul class="tick">
+          <li>对每个未染色的起点 <code>s</code>，染 0</li>
+          <li>BFS/DFS 扩展：<code>color[v] = color[u] ^ 1</code></li>
+          <li>若 <code>v</code> 已染色且与 <code>u</code> 同色 ⇒ <b>奇环</b></li>
+          <li>必须<b>遍历所有连通分量</b>（图可能不连通）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <div class="formula" style="font-size:12.4px">
+          时间 <span class="ok">O(n + m)</span>，空间 <span class="ok">O(n)</span><br>
+          <span class="dim">每条边最多被访问两次</span>
+        </div>
+      </div>
+      <div class="note warn"><b>易错：</b>只从 0 号点出发是不够的——图可能有多个连通分量。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>is_bipartite.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="core"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 09 匹配与增广路 ═══ -->
+<section class="slide" data-title="匹配与增广路">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · AUGMENT</div><h2>交错路 · 增广路 · <em>翻转</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么翻转增广路能让匹配 +1？<br>三个定义。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个定义</h3>
+        <ul class="tick">
+          <li><b>交错路</b>：边交替 ∈ M / ∉ M</li>
+          <li><b>增广路</b>：起止都是<b>非匹配点</b>的交错路</li>
+          <li><b>翻转</b>：把路径上匹配边与非匹配边互换</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>为什么 +1</h3>
+        <div class="formula" style="font-size:11.8px">
+          路径 P = v₀–e₁–v₁–e₂–v₂ … v_k<br>
+          k+1 个顶点、k 条边，其中 <span class="hl">⌈k/2⌉</span> 条非匹配边<br>
+          翻转后 <span class="ok">|M| ← |M| + 1</span>
+        </div>
+      </div>
+      <div class="note good"><b>关键：</b>翻转<b>不破坏</b>匹配性质——因为两端本来就未匹配。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">翻转增广路：匹配数 2 → 3</text>
+          <!-- 翻转前 -->
+          <g font-family="monospace" font-size="10.5" text-anchor="middle">
+            <rect x="30" y="34" width="160" height="26" rx="8" fill="#FDF0F4" stroke="#EFCBD8"/>
+            <text x="110" y="52" class="dfnlab p">翻转前：|M| = 2</text>
+          </g>
+          <g stroke="#B9471B" stroke-width="4.5" fill="none"><path d="M62 118 L62 90"/><path d="M158 118 L158 90"/></g>
+          <g stroke="#D6B78C" stroke-width="2.2" fill="none"><path d="M62 118 L158 118"/></g>
+          <g><circle cx="62" cy="90" r="13" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+             <circle cx="62" cy="118" r="13" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+             <circle cx="158" cy="90" r="13" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+             <circle cx="158" cy="118" r="13" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+             <circle cx="110" cy="152" r="13" fill="#E2612F" stroke="#B9471B" stroke-width="3"/></g>
+          <path d="M62 118 L110 152" stroke="#0F7B6C" stroke-width="3.5" stroke-dasharray="7 6" fill="none"/>
+          <g font-family="monospace" font-size="9.5" text-anchor="middle">
+            <text x="42" y="88" class="dfnlab r">x₁</text><text x="42" y="118" class="dfnlab r">x₂</text>
+            <text x="182" y="88" class="dfnlab">y₁</text><text x="182" y="118" class="dfnlab">y₂</text>
+            <text x="110" y="176" class="dfnlab r">x₃</text>
+          </g>
+          <!-- 箭头 -->
+          <path d="M212 110 L248 110" stroke="#8A6A45" stroke-width="3" marker-end="url(#ar)"/>
+          <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#8A6A45"/></marker></defs>
+          <!-- 翻转后 -->
+          <g font-family="monospace" font-size="10.5" text-anchor="middle">
+            <rect x="260" y="34" width="160" height="26" rx="8" fill="#EFF9F5" stroke="#BEE6D8"/>
+            <text x="340" y="52" class="dfnlab">翻转后：|M| = 3</text>
+          </g>
+          <g stroke="#B9471B" stroke-width="4.5" fill="none">
+            <path d="M292 90 L292 118"/><path d="M388 90 L388 118"/><path d="M292 118 L340 152"/></g>
+          <g><circle cx="292" cy="90" r="13" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+             <circle cx="292" cy="118" r="13" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+             <circle cx="388" cy="90" r="13" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+             <circle cx="388" cy="118" r="13" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+             <circle cx="340" cy="152" r="13" fill="#E2612F" stroke="#B9471B" stroke-width="3"/></g>
+          <g font-family="monospace" font-size="9.5" text-anchor="middle">
+            <text x="272" y="88" class="dfnlab r">x₁</text><text x="272" y="118" class="dfnlab r">x₂</text>
+            <text x="412" y="88" class="dfnlab">y₁</text><text x="412" y="118" class="dfnlab">y₂</text>
+            <text x="340" y="176" class="dfnlab r">x₃</text>
+          </g>
+          <text x="210" y="212" text-anchor="middle" class="dfnlab g">增广路 x₃–y₂–x₂：翻转后 x₃ 与 x₂ 各得一个新匹配</text>
+        </svg>
+      </div>
+      <div class="note good"><b>记忆：</b>增广路的两个端点<b>都是自由点</b>——这就是"能再塞一条边进去"的含义。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 10 Berge 定理 ═══ -->
+<section class="slide" data-title="Berge 定理">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · BERGE</div><h2>Berge 定理：<em>最大 ⇔ 无增广路</em></h2></div>
+    <div class="hint"><b>本页回答：</b>算法凭什么停止？<br>终止条件的正确性。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>定理</h3>
+        <div class="formula" style="font-size:12.6px">
+          <span class="ok">M 是最大匹配</span><br>
+          <span class="hl">⇔ 不存在关于 M 的增广路</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>两个方向</h3>
+        <ul class="tick">
+          <li><b>(⇒)</b> 有增广路 ⇒ 翻转 ⇒ |M|+1 ⇒ M 不是最大</li>
+          <li><b>(⇐)</b> 若 M 非最大，存在更大的 M'，则 <code>M ⊕ M'</code> 由交错路/圈组成，必含一条增广路</li>
+        </ul>
+      </div>
+      <div class="note good"><b>推论：</b>所有最大匹配算法都等价于"<b>反复找增广路直到找不到</b>"。</div>
+    </div>
+    <div>
+      <div class="card"><h3>算法骨架（通用）</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="hl">while 存在增广路 P:</span><br>
+          &nbsp;&nbsp;翻转 P　　<span class="dim"># |M| ← |M| + 1</span><br>
+          <span class="ok">return |M|</span>
+        </div>
+      </div>
+      <div class="card tint-plum"><h3>不同算法的差异</h3>
+        <ul class="tick no">
+          <li><b>匈牙利</b>：一次找一条，DFS 回溯</li>
+          <li><b>Hopcroft-Karp</b>：一次找<b>一组</b>最短增广路</li>
+          <li><b>网络流</b>：把增广路问题转成<b>残量网络最短路</b></li>
+          <li><b>带花树</b>：允许奇环收缩</li>
+        </ul>
+      </div>
+      <div class="note"><b>心法：</b>学算法时永远问一句：<b>"它在找哪一种增广路？"</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 模板：染色 ═══ -->
+<section class="slide" data-title="模板：染色判定">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · TEMPLATE</div><h2>模板一：<em class="t">二分图判定</em></h2></div>
+    <div class="hint"><b>本页回答：</b>判定函数长什么样？<br>四个关键点。</div>
+  </div>
+  <div class="cols c2a">
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>is_bipartite.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="core"></code></pre></pre>
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li><b>遍历所有连通分量</b>，不是只从 0 出发</li>
+          <li>染色用 <b>XOR 1</b>，简洁且不会写错</li>
+          <li>撞到<b>同色邻居</b>立刻返回 False</li>
+          <li>返回<b>染色方案</b>，供后续建两部用</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>输入约定</h3>
+        <div class="formula" style="font-size:11.8px">
+          <code>g[u] = [v1, v2, ...]</code> 邻接表<br>
+          <span class="dim">无向图，双向都存；n 个点编号 0..n-1</span>
+        </div>
+      </div>
+      <div class="note good"><b>验证：</b>4 元环应返回 True；三角形应返回 False。对拍脚本见第 42 页。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 手算 ═══ -->
+<section class="slide" data-title="手算增广过程">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · TRACE</div><h2>手算：<em class="t">一次完整的增广</em></h2></div>
+    <div class="hint"><b>本页回答：</b>增广路怎么找？<br>逐轮对照。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>图</h3>
+        <p>X = {x₁,x₂,x₃}，Y = {y₁,y₂,y₃}<br>
+          边：<code>x₁-y₁, x₁-y₃, x₂-y₁, x₂-y₂, x₃-y₂</code></p>
+        <div class="split-line"></div>
+        <table style="box-shadow:none">
+          <tr><th>轮次</th><th>尝试</th><th>增广路</th><th>结果 M</th></tr>
+          <tr><td>1</td><td>x₁ → y₁ 空闲</td><td class="mono">x₁–y₁</td><td>{(x₁,y₁)}</td></tr>
+          <tr><td>2</td><td>x₂ → y₁ 被占</td><td class="mono">x₂–y₁–x₁–y₃</td><td>{(x₂,y₁),(x₁,y₃)}</td></tr>
+          <tr><td>3</td><td>x₃ → y₂ 空闲</td><td class="mono">x₃–y₂</td><td>三对全部匹配</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>第 2 轮细节</h3>
+        <div class="formula" style="font-size:11.6px">
+          x₂ 试 y₁ → 被 x₁ 占<br>
+          <span class="hl">回溯 x₁</span>，x₁ 的另一个邻居 y₃ 空闲<br>
+          <span class="ok">x₁ 改投 y₃，x₂ 拿下 y₁</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 250" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">三轮匹配的演化</text>
+          <!-- 三个小图 -->
+          <g font-family="monospace" font-size="10" text-anchor="middle">
+            <!-- 第1轮 -->
+            <g transform="translate(0,0)">
+              <text x="72" y="46" class="dfnlab g">轮 1</text>
+              <g stroke="#B9471B" stroke-width="4"><path d="M46 82 L98 82"/></g>
+              <g stroke="#D6B78C" stroke-width="1.8" fill="none">
+                <path d="M46 112 L98 82"/><path d="M46 112 L98 112"/><path d="M46 142 L98 112"/></g>
+              <circle cx="46" cy="82" r="11" fill="#FFF3E2" stroke="#B9471B" stroke-width="2.5"/>
+              <circle cx="46" cy="112" r="11" fill="#FFF3E2" stroke="#B9471B" stroke-width="2.5"/>
+              <circle cx="46" cy="142" r="11" fill="#FFF3E2" stroke="#B9471B" stroke-width="2.5"/>
+              <circle cx="98" cy="82" r="11" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="2.5"/>
+              <circle cx="98" cy="112" r="11" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="2.5"/>
+            </g>
+            <!-- 第2轮 -->
+            <g transform="translate(150,0)">
+              <text x="72" y="46" class="dfnlab g">轮 2（增广）</text>
+              <g stroke="#B9471B" stroke-width="4"><path d="M46 112 L98 82"/><path d="M46 82 L98 112"/></g>
+              <g stroke="#D6B78C" stroke-width="1.8" fill="none"><path d="M46 82 L98 82"/><path d="M46 142 L98 112"/></g>
+              <circle cx="46" cy="82" r="11" fill="#FFF3E2" stroke="#B9471B" stroke-width="2.5"/>
+              <circle cx="46" cy="112" r="11" fill="#FFF3E2" stroke="#B9471B" stroke-width="2.5"/>
+              <circle cx="46" cy="142" r="11" fill="#FFF3E2" stroke="#B9471B" stroke-width="2.5"/>
+              <circle cx="98" cy="82" r="11" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="2.5"/>
+              <circle cx="98" cy="112" r="11" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="2.5"/>
+            </g>
+            <!-- 第3轮 -->
+            <g transform="translate(300,0)">
+              <text x="72" y="46" class="dfnlab g">轮 3</text>
+              <g stroke="#B9471B" stroke-width="4">
+                <path d="M46 112 L98 82"/><path d="M46 82 L98 112"/><path d="M46 142 L98 112"/></g>
+              <g stroke="#D6B78C" stroke-width="1.8" fill="none"><path d="M46 82 L98 82"/></g>
+              <circle cx="46" cy="82" r="11" fill="#FFF3E2" stroke="#B9471B" stroke-width="2.5"/>
+              <circle cx="46" cy="112" r="11" fill="#FFF3E2" stroke="#B9471B" stroke-width="2.5"/>
+              <circle cx="46" cy="142" r="11" fill="#FFF3E2" stroke="#B9471B" stroke-width="2.5"/>
+              <circle cx="98" cy="82" r="11" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="2.5"/>
+              <circle cx="98" cy="112" r="11" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="2.5"/>
+            </g>
+          </g>
+          <text x="210" y="205" text-anchor="middle" class="dfnlab r">左：x₁ x₂ x₃　右：y₁ y₂</text>
+          <g font-family="monospace" font-size="10.5" text-anchor="middle">
+            <rect x="60" y="216" width="300" height="26" rx="9" fill="#2E2118"/>
+            <text x="210" y="234" fill="#7FE0C2">|M| = 1  →  2  →  3　（每轮恰好 +1）</text>
+          </g>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>观察</h3>
+        <ul class="tick ok">
+          <li>每轮<b>恰好一条</b>增广路</li>
+          <li>找不到增广路时<b>立即停止</b>（Berge 定理）</li>
+          <li>回溯是关键：把已匹配的点"让"出去</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 13 匈牙利原理 ═══ -->
+<section class="slide" data-title="匈牙利原理">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HUNGARIAN</div><h2>匈牙利 DFS：<em>让位 + 递归</em></h2></div>
+    <div class="hint"><b>本页回答：</b>回溯"让位"怎么实现？<br><code>vis</code> 数组是干什么的。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>核心动作</h3>
+        <ul class="tick">
+          <li>对左部 u，遍历它的邻居 v</li>
+          <li>v 空闲 ⇒ 直接配对，成功</li>
+          <li>v 被 w 占 ⇒ <b>递归尝试</b>让 w 换个搭档</li>
+          <li>w 换成功 ⇒ u 拿下 v，成功</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>vis 数组的作用</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>vis[v]</code>：本轮增广中 <b>v 已被尝试过</b><br>
+          <span class="dim">防止同一右点被反复试探 → 保证 O(n·m)</span>
+        </div>
+        <p class="muted">注意 <code>vis</code> 作用于<b>右部</b>，每轮重置一次。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>复杂度</h3>
+        <div class="formula" style="font-size:12.2px">
+          外层 <span class="hl">O(nL)</span> 个左点<br>
+          每次 DFS <span class="hl">O(m)</span>（vis 保证不重复）<br>
+          合计 <span class="ok">O(nL · m)</span>
+        </div>
+      </div>
+      <div class="card tint-plum"><h3>易错</h3>
+        <ul class="tick no">
+          <li><code>vis</code> 不重置 → 结果偏小</li>
+          <li><code>vis</code> 作用在左部 → 重复访问</li>
+          <li>递归深度过大 → 栈溢出（n &gt; 10⁴ 时改迭代）</li>
+          <li>只增广一次 → 只算出部分匹配</li>
+        </ul>
+      </div>
+      <div class="note good"><b>记忆：</b><code>if matchR[v] == -1 or dfs(matchR[v])</code>——先试空闲，再试让位。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 14 模板：匈牙利 ═══ -->
+<section class="slide" data-title="模板：匈牙利">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>01 · TEMPLATE</div><h2>模板二：<em class="t">匈牙利算法</em></h2></div>
+    <div class="hint"><b>本页回答：</b>最常用的最大匹配代码。<br>建议闭卷默写。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>关键点</h3>
+        <ul class="tick">
+          <li><code>matchR[v]</code>：右部 v 的搭档（左部编号）</li>
+          <li>每轮新建 <code>vis = [False]*nR</code></li>
+          <li>DFS 返回 True ⇒ 本轮增广成功</li>
+          <li>外层循环<b>覆盖所有左点</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>调用方式</h3>
+        <div class="formula" style="font-size:11.8px">
+          <code>hungarian(g, nL, nR)</code><br>
+          <code>g[u]</code>：左点 u 的邻居（右部编号）<br>
+          <span class="dim">返回 (匹配数, matchL, matchR)</span>
+        </div>
+      </div>
+      <div class="note good"><b>自检：</b>匹配数应等于 <code>sum(1 for v in matchR if v != -1)</code>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>hungarian.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="hungarian"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 15 复杂度分析 ═══ -->
+<section class="slide" data-title="复杂度分析">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · COMPLEXITY</div><h2>复杂度与<em>规模上限</em></h2></div>
+    <div class="hint"><b>本页回答：</b>匈牙利能跑多大？<br>什么时候必须换 HK。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>各项开销</h3>
+        <table style="box-shadow:none">
+          <tr><th>操作</th><th>匈牙利</th><th>HK</th></tr>
+          <tr><td>单次增广</td><td class="mono">O(m)</td><td class="mono">O(m)</td></tr>
+          <tr><td>增广次数</td><td class="mono">O(n)</td><td class="mono">O(√n)</td></tr>
+          <tr><td>合计</td><td class="mono">O(n·m)</td><td class="mono"><b>O(m√n)</b></td></tr>
+          <tr><td>空间</td><td class="mono">O(n+m)</td><td class="mono">O(n+m)</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>规模参考</h3>
+        <ul class="tick">
+          <li>匈牙利：<code>n ≤ 2000, m ≤ 20000</code> 稳过</li>
+          <li>HK：<code>n ≤ 2×10⁵, m ≤ 2×10⁵</code> 稳过</li>
+          <li>更大 → 网络流 + Dinic</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>为什么 HK 更快</h3>
+        <p>HK 每轮找<b>一组互不相交</b>的最短增广路，一轮至少让匹配数增加 <code>√n</code> 量级；总轮数 <code>≤ √n + 1</code>。</p>
+        <div class="split-line"></div>
+        <div class="formula" style="font-size:11.6px">
+          最短增广路长度<b>单调不减</b> → <br>
+          每轮结束 |M| 至少增加 <span class="hl">√n</span> 量级
+        </div>
+      </div>
+      <div class="card tint-teal"><h3>选择建议</h3>
+        <ul class="tick ok">
+          <li>限时赛、n ≤ 2000 → <b>匈牙利</b>（好写）</li>
+          <li>n 很大 / 要稳妥 → <b>Hopcroft-Karp</b></li>
+          <li>要扩展容量、多源多汇 → <b>网络流</b></li>
+        </ul>
+      </div>
+      <div class="note"><b>记忆：</b>匈牙利"一条一条找"，HK"一群一群找"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 16 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：最大匹配">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 02</div>
+      <div class="big">最大匹配：<em style="color:var(--accent)">更快 · 带权 · 可扩展</em></div>
+      <p class="lead">Hopcroft-Karp 分层 · KM 顶标 · 网络流建模<br>同一思想，三种"更聪明的找法"。</p>
+    </div>
+    <div><div class="num-huge">02</div>
+      <div class="note good"><b>目标：</b>能根据数据规模和是否带权，在三种方案里选对。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 17 HK 原理 ═══ -->
+<section class="slide" data-title="Hopcroft-Karp 原理">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · HOPCROFT-KARP</div><h2>Hopcroft-Karp：<em>分层 + 多路增广</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么分层能加速？<br>BFS/DFS 各干什么。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>BFS：建分层图</h3>
+        <ul class="tick">
+          <li>所有<b>未匹配左点</b>入队，<code>dist = 0</code></li>
+          <li>沿<b>非匹配边</b>到右点，再沿<b>匹配边</b>回左点</li>
+          <li>记录每个左点的<b>层号</b> <code>dist[u]</code></li>
+          <li>若碰到<b>未匹配右点</b> ⇒ 存在增广路</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>DFS：多路增广</h3>
+        <ul class="tick ok">
+          <li>只沿 <code>dist[pu] == dist[u] + 1</code> 的边走</li>
+          <li>成功一条就标记，<b>下一条不再用这些边</b></li>
+          <li>一轮 BFS + 多次 DFS = 一次"层内穷尽"</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">分层图：层号 dist[u]</text>
+          <!-- 层 -->
+          <g stroke="#E4CBA3" stroke-width="2" stroke-dasharray="6 6">
+            <path d="M60 40 L60 210"/><path d="M180 40 L180 210"/><path d="M300 40 L300 210"/><path d="M390 40 L390 210"/>
+          </g>
+          <g font-family="monospace" font-size="10.5" text-anchor="middle">
+            <text x="60" y="34" class="dfnlab g">dist=0</text>
+            <text x="180" y="34" class="dfnlab g">dist=1</text>
+            <text x="300" y="34" class="dfnlab g">dist=2</text>
+            <text x="390" y="34" class="dfnlab g">终点</text>
+          </g>
+          <!-- 左点层 0 -->
+          <circle cx="60" cy="80" r="14" fill="#E2612F" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="60" cy="160" r="14" fill="#E2612F" stroke="#B9471B" stroke-width="3"/>
+          <!-- 右点 -->
+          <circle cx="180" cy="80" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="180" cy="160" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <!-- 左点层 2 -->
+          <circle cx="300" cy="80" r="14" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="300" cy="160" r="14" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <!-- 未匹配右点 -->
+          <circle cx="390" cy="120" r="15" fill="#0F7B6C" stroke="#0B6356" stroke-width="3"/>
+          <!-- 边 -->
+          <g stroke="#D6B78C" stroke-width="2.2" fill="none">
+            <path d="M60 80 L180 80"/><path d="M60 160 L180 160"/><path d="M60 160 L180 80"/>
+          </g>
+          <g stroke="#B9471B" stroke-width="4" fill="none">
+            <path d="M180 80 L300 80"/><path d="M180 160 L300 160"/></g>
+          <g stroke="#0F7B6C" stroke-width="3" stroke-dasharray="7 6" fill="none">
+            <path d="M300 80 L390 120"/><path d="M300 160 L390 120"/></g>
+          <g font-family="monospace" font-size="9.5" text-anchor="middle">
+            <text x="40" y="84" class="dfnlab r">u₁</text><text x="40" y="164" class="dfnlab r">u₂</text>
+            <text x="180" y="60" class="dfnlab">v₁</text><text x="180" y="192" class="dfnlab">v₂</text>
+            <text x="300" y="60" class="dfnlab r">w₁</text><text x="300" y="192" class="dfnlab r">w₂</text>
+            <text x="390" y="124" fill="#fff" font-size="10">未匹配</text>
+          </g>
+          <text x="210" y="222" text-anchor="middle" class="dfnlab g">非匹配边（浅）→ 匹配边（红）→ 非匹配边（绿虚）</text>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>正确性</h3>
+        <p>最短增广路长度<b>单调不减</b>；一轮内穷尽当前最短长度的所有增广路，故每轮至少增加 <code>√n</code> 量级。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 18 模板：HK ═══ -->
+<section class="slide" data-title="模板：Hopcroft-Karp">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>02 · TEMPLATE</div><h2>模板三：<em class="t">Hopcroft-Karp</em></h2></div>
+    <div class="hint"><b>本页回答：</b>HK 的标准实现。<br>关键在 BFS 的 <code>found</code>。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>关键点</h3>
+        <ul class="tick">
+          <li><code>pairU / pairV</code>：左右两部的搭档</li>
+          <li>BFS 建层：<code>dist[u]</code> 只对<b>左部</b>记录</li>
+          <li><code>found</code> 标记是否碰到未匹配右点</li>
+          <li>DFS 失败时 <code>dist[u] = INF</code>（剪枝）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>边界</h3>
+        <ul class="tick">
+          <li>图为空 / 无边 ⇒ 返回 0</li>
+          <li>左右点数不同 ⇒ 照常工作</li>
+          <li>自环 / 重边 ⇒ 需要预处理去重</li>
+        </ul>
+      </div>
+      <div class="note good"><b>对比匈牙利：</b>外层 <code>while bfs()</code> 取代了"逐点增广"。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>hopcroft_karp.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="hk"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 19 复杂度对比 ═══ -->
+<section class="slide" data-title="复杂度与对比">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · COMPARE</div><h2>三种最大匹配<em>对比</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一道题该用哪个？<br>各自的甜点区。</div>
+  </div>
+  <table>
+    <tr><th style="width:140px">方案</th><th>时间</th><th>空间</th><th>代码量</th><th>可扩展性</th><th>推荐规模</th></tr>
+    <tr><td><b>匈牙利 DFS</b></td><td class="mono">O(n·m)</td><td class="mono">O(n+m)</td><td><b>极小</b></td><td>差</td><td>n ≤ 2000</td></tr>
+    <tr><td><b>Hopcroft-Karp</b></td><td class="mono">O(m√n)</td><td class="mono">O(n+m)</td><td>小</td><td>中</td><td>n ≤ 2×10⁵</td></tr>
+    <tr><td>网络流 Dinic</td><td class="mono">O(m√n)</td><td class="mono">O(n+m)</td><td>中</td><td><b>好</b></td><td>n ≤ 10⁵，可扩展</td></tr>
+    <tr><td>带花树</td><td class="mono">O(n³)</td><td class="mono">O(n²)</td><td>大</td><td>差</td><td>一般图、n ≤ 500</td></tr>
+    <tr><td>KM（带权）</td><td class="mono">O(n³)</td><td class="mono">O(n²)</td><td>中</td><td>中</td><td>n ≤ 500</td></tr>
+    <tr><td>费用流</td><td class="mono">O(nm·f)</td><td class="mono">O(n+m)</td><td>大</td><td><b>最好</b></td><td>带多重约束</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>怎么选</h3>
+      <ul class="tick arr">
+        <li>n ≤ 2000 → <b>匈牙利</b>（先写出来）</li>
+        <li>只求匹配数、n 很大 → <b>Hopcroft-Karp</b></li>
+        <li>需要容量 / 多源多汇 / 附加约束 → <b>网络流</b></li>
+        <li>带权 → <b>KM</b>；带权 + 约束 → <b>费用流</b></li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>易错提醒</h3>
+      <ul class="tick no">
+        <li>网络流里忘了<b>反向边</b> → 结果偏小</li>
+        <li>HK 的 BFS 里忘了 <code>found</code> → 死循环</li>
+        <li>匈牙利的 <code>vis</code> 不重置 → 匹配偏小</li>
+      </ul>
+      <div class="note good"><b>建议：</b>写完立刻用<b>随机小图对拍</b>（第 42 页脚本）。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 20 KM 原理 ═══ -->
+<section class="slide" data-title="KM 原理">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · KM</div><h2>KM 算法：<em>顶标与相等子图</em></h2></div>
+    <div class="hint"><b>本页回答：</b>顶标是什么？<br>为什么调整就能变最优。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>顶标</h3>
+        <div class="formula" style="font-size:11.8px">
+          左顶标 <code>lx[i]</code>，右顶标 <code>ly[j]</code><br>
+          可行性：<span class="hl">lx[i] + ly[j] ≥ w[i][j]</span><br>
+          相等子图：<code>lx[i] + ly[j] == w[i][j]</code> 的边
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>流程</h3>
+        <ul class="tick arr">
+          <li>初始化 <code>lx[i] = max(w[i])</code>，<code>ly[j] = 0</code></li>
+          <li>在<b>相等子图</b>上找完美匹配</li>
+          <li>找不到 ⇒ 算 <b>δ</b>，调整顶标</li>
+          <li>调整后相等子图扩大，重试</li>
+        </ul>
+      </div>
+      <div class="note good"><b>关键定理：</b>在相等子图上的完美匹配，就是<b>原图的最大权匹配</b>。</div>
+    </div>
+    <div>
+      <div class="card"><h3>调整公式</h3>
+        <div class="formula" style="font-size:11.6px">
+          S = 本轮访问过的左点，T = 访问过的右点<br>
+          <span class="hl">δ = min{ lx[a] + ly[b] − w[a][b] : a∈S, b∉T }</span><br>
+          <code>lx[a] -= δ</code>（a ∈ S）<br>
+          <code>ly[b] += δ</code>（b ∈ T）
+        </div>
+      </div>
+      <div class="card tint-plum"><h3>前提</h3>
+        <ul class="tick no">
+          <li>必须是<b>完全二分图</b>（缺边用极小值填充）</li>
+          <li>通常假定 <code>nL == nR</code>，否则补虚点</li>
+          <li>要求<b>最大</b>权；最小权取负或用 <code>−w</code></li>
+        </ul>
+      </div>
+      <div class="note warn"><b>复杂度：</b>朴素 <code>O(n⁴)</code>；用 <code>slack</code> 优化到 <code>O(n³)</code>。本讲义给朴素版，好懂好验。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 21 模板：KM ═══ -->
+<section class="slide" data-title="模板：KM">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>02 · TEMPLATE</div><h2>模板四：<em class="t">KM 带权最大匹配</em></h2></div>
+    <div class="hint"><b>本页回答：</b>KM 的朴素实现。<br>注意顶标调整的方向。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>关键点</h3>
+        <ul class="tick">
+          <li><code>S / T</code> 记录本轮访问的左右点</li>
+          <li>δ 只在 <code>a∈S, b∉T</code> 上取最小</li>
+          <li><code>lx[a] -= δ</code>（S 内）<code>ly[b] += δ</code>（T 内）</li>
+          <li>成功后累加 <code>w[i][matchL[i]]</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>w = [[1,3],[2,3]]</code><br>
+          <span class="dim">最优：(0,1)+(1,0) = 3+2 = 5</span><br>
+          <span class="ok">需 1 次顶标调整后找到</span>
+        </div>
+      </div>
+      <div class="note good"><b>自检：</b>最优权 ≤ <code>sum(max(row))</code>，且 ≥ <code>min(max(col))</code>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>km.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="km"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 22 网络流建模 ═══ -->
+<section class="slide" data-title="网络流建模">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · FLOW</div><h2>网络流建模：<em>匹配 = 最大流</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么把匹配转成流？<br>为什么需要反向边。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>建图</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="hl">S → u ∈ X</span>（容量 1）<br>
+          <span class="hl">u → v</span>，若 (u,v) ∈ E（容量 1）<br>
+          <span class="hl">v ∈ Y → T</span>（容量 1）
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>为什么反向边必须有</h3>
+        <p>反向边提供"<b>撤销</b>"能力，等价于<b>翻转增广路</b>。没有反向边，算法只能贪心，结果偏小。</p>
+      </div>
+      <div class="note good"><b>结论：</b>最大流 = 最大匹配；在二分图上 Dinic 也是 <code>O(m√n)</code>。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">S → 左部 → 右部 → T（容量全为 1）</text>
+          <g stroke="#D6B78C" stroke-width="2.2" fill="none">
+            <path d="M60 125 L130 80"/><path d="M60 125 L130 125"/><path d="M60 125 L130 170"/>
+            <path d="M130 80 L240 80"/><path d="M130 80 L240 125"/><path d="M130 125 L240 125"/>
+            <path d="M130 170 L240 125"/><path d="M130 170 L240 170"/>
+            <path d="M240 80 L330 125"/><path d="M240 125 L330 125"/><path d="M240 170 L330 125"/>
+          </g>
+          <circle cx="60" cy="125" r="17" fill="#E2612F" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="330" cy="125" r="17" fill="#E2612F" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="130" cy="80" r="14" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="130" cy="125" r="14" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="130" cy="170" r="14" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="240" cy="80" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="240" cy="125" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="240" cy="170" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <g font-family="monospace" font-size="11" text-anchor="middle">
+            <text x="60" y="130" fill="#fff">S</text><text x="330" y="130" fill="#fff">T</text>
+            <text x="130" y="58" class="dfnlab r">X</text><text x="240" y="58" class="dfnlab">Y</text>
+          </g>
+          <text x="210" y="215" text-anchor="middle" class="dfnlab g">每条边容量 1 ⇒ 流量 0/1 ⇒ 自然形成"匹配"</text>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>什么时候必须用流</h3>
+        <ul class="tick ok">
+          <li>左点/右点有<b>容量限制</b>（一人多任务）</li>
+          <li><b>多源多汇</b>、有额外约束</li>
+          <li>需要<b>最小割</b>给出的具体方案</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 23 模板：Dinic ═══ -->
+<section class="slide" data-title="模板：Dinic">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>02 · TEMPLATE</div><h2>模板五：<em class="t">Dinic 最大流</em></h2></div>
+    <div class="hint"><b>本页回答：</b>网络流的标准骨架。<br>反向边与当前弧。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个部件</h3>
+        <ul class="tick">
+          <li><b>add()</b>：同时加正向边和反向边</li>
+          <li><b>bfs()</b>：建 <code>level</code> 分层图</li>
+          <li><b>dfs()</b>：当前弧优化 + 多路增广</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>反向边怎么存</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>add(u, v, c)</code><br>
+          &nbsp;&nbsp;正向边 <code>(v, c, rev=len(g[v]))</code><br>
+          &nbsp;&nbsp;反向边 <code>(u, 0, rev=len(g[u])-1)</code>
+        </div>
+      </div>
+      <div class="note good"><b>二分图特例：</b>S→X、X→Y、Y→T 容量全 1，Dinic 走 <code>O(m√n)</code>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>dinic.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="flow"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 24 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：对偶问题">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 03</div>
+      <div class="big">对偶：<em style="color:var(--teal)">König · 覆盖 · 独立集</em></div>
+      <p class="lead">最小点覆盖 · 最大独立集 · 最小路径覆盖 · Hall 定理<br>一个匹配，回答四类问题。</p>
+    </div>
+    <div><div class="num-huge t">03</div>
+      <div class="note good"><b>目标：</b>能独立写出 König 的"定向 + 可达集"构造。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 25 König ═══ -->
+<section class="slide" data-title="König 定理与构造">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · KÖNIG</div><h2>König 定理：<em class="t">最小点覆盖 = 最大匹配</em></h2></div>
+    <div class="hint"><b>本页回答：</b>构造怎么做？<br>定向规则为什么这样定。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>定理</h3>
+        <div class="formula" style="font-size:12.2px">
+          二分图 G：<span class="ok">最小点覆盖 = 最大匹配</span>
+        </div>
+        <p class="muted">只对<b>二分图</b>成立；一般图是 <code>点覆盖 ≥ 最大匹配</code>。</p>
+      </div>
+      <div class="card tint-amber"><h3>构造（关键）</h3>
+        <ul class="tick arr">
+          <li>建有向图：<b>匹配边 右→左</b>，<b>非匹配边 左→右</b></li>
+          <li>从所有<b>未匹配左点</b>出发 BFS，得可达集 <code>Z</code></li>
+          <li><span class="hl">覆盖 C = (L \ Z) ∪ (R ∩ Z)</span></li>
+        </ul>
+      </div>
+      <div class="note warn"><b>方向搞反就全错：</b>匹配边要<b>反着</b>指（右→左），因为增广时要"让位"。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">Z = 可达集；C = (L\Z) ∪ (R∩Z)</text>
+          <!-- 图：x1-y1, x2-y1, x2-y2, x3-y2；匹配 x2-y1, x3-y2 -->
+          <g stroke="#D6B78C" stroke-width="2.2" fill="none">
+            <path d="M92 82 L300 82"/><path d="M92 142 L300 82"/><path d="M92 142 L300 142"/><path d="M92 200 L300 142"/>
+          </g>
+          <g stroke="#B9471B" stroke-width="4.5" fill="none">
+            <path d="M92 142 L300 82"/><path d="M92 200 L300 142"/></g>
+          <!-- Z 高亮 -->
+          <circle cx="92" cy="82" r="18" fill="#F4A9C0" opacity=".45" class="pulse"/>
+          <circle cx="92" cy="142" r="18" fill="#F4A9C0" opacity=".45" class="pulse"/>
+          <circle cx="300" cy="142" r="18" fill="#F4A9C0" opacity=".45" class="pulse"/>
+          <!-- 节点 -->
+          <circle cx="92" cy="82" r="14" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="92" cy="142" r="14" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="92" cy="200" r="14" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+          <circle cx="300" cy="82" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <circle cx="300" cy="142" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          <g font-family="monospace" font-size="10" text-anchor="middle">
+            <text x="66" y="86" class="dfnlab r">x₁</text><text x="66" y="146" class="dfnlab r">x₂</text>
+            <text x="66" y="204" class="dfnlab r">x₃</text>
+            <text x="326" y="86" class="dfnlab">y₁</text><text x="326" y="146" class="dfnlab">y₂</text>
+          </g>
+          <!-- 图例 -->
+          <g font-family="monospace" font-size="10.5" text-anchor="middle">
+            <rect x="40" y="222" width="120" height="22" rx="8" fill="#F4A9C0" opacity=".55"/>
+            <text x="100" y="238" class="dfnlab p">∈ Z（可达）</text>
+            <rect x="180" y="222" width="110" height="22" rx="8" fill="#B9471B"/>
+            <text x="235" y="238" fill="#fff">∈ C（覆盖）</text>
+            <rect x="310" y="222" width="90" height="22" rx="8" fill="#E9F7F2" stroke="#BEE6D8"/>
+            <text x="355" y="238" class="dfnlab">∉ C</text>
+          </g>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>本例</h3>
+        <p>Z = {x₁, x₂, y₂}；C = (L\Z) ∪ (R∩Z) = {x₃} ∪ {y₂} = <b>{x₃, y₂}</b>。<br>
+        验证：所有边至少一端在 C 中 ✓</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 26 最大独立集 ═══ -->
+<section class="slide" data-title="最大独立集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · INDEPENDENT SET</div><h2>最大独立集：<em>|V| − 最大匹配</em></h2></div>
+    <div class="hint"><b>本页回答：</b>独立集与覆盖什么关系？<br>公式成立的前提。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <ul class="tick">
+          <li><b>独立集</b>：两两<b>无边</b>的顶点集合</li>
+          <li><b>最大</b>独立集：顶点数最多的独立集</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>公式推导</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="hl">最大独立集 = |V| − 最小点覆盖</span><br>
+          由 König：<span class="ok">= |V| − 最大匹配</span>
+        </div>
+      </div>
+      <div class="note warn"><b>只对二分图成立。</b>一般图的最小点覆盖是 NP-hard，公式不适用。</div>
+    </div>
+    <div>
+      <div class="card"><h3>为什么互补</h3>
+        <p>若 <code>C</code> 是最小点覆盖，则 <code>V \ C</code> 必为独立集（否则存在边两端都不在 C，C 就没覆盖住）。反过来亦然。</p>
+        <div class="split-line"></div>
+        <div class="formula" style="font-size:11.6px">
+          <code>C</code> 覆盖 ⇔ <code>V\C</code> 独立<br>
+          <span class="dim">|C| + |V\C| = |V|，故一个最小则另一个最大</span>
+        </div>
+      </div>
+      <div class="card tint-teal"><h3>常见问法</h3>
+        <ul class="tick ok">
+          <li>最多选多少个互不冲突的项目</li>
+          <li>最多放多少个互不攻击的棋子</li>
+          <li>最大团（补图的最大独立集）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>一句话：</b>求最大独立集 = 求最大匹配，不要重新建模。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 27 最小路径覆盖 ═══ -->
+<section class="slide" data-title="最小路径覆盖">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · PATH COVER</div><h2>最小路径覆盖：<em>拆点 + 最大匹配</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么要拆点？<br>公式怎么来的。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>问题</h3>
+        <p>给 DAG，用<b>最少的点不相交路径</b>覆盖所有顶点。</p>
+      </div>
+      <div class="card tint-amber"><h3>建图</h3>
+        <ul class="tick arr">
+          <li>每个点拆成 <code>u_out</code> 与 <code>u_in</code></li>
+          <li>对 DAG 边 <code>u→v</code>，连 <code>u_out → v_in</code></li>
+          <li>求<b>最大匹配</b> m</li>
+          <li><span class="hl">最小路径覆盖 = n − m</span></li>
+        </ul>
+      </div>
+      <div class="note good"><b>直觉：</b>一条匹配边把两条路径<b>接起来</b>，减少一条；n 个点独立时需 n 条。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 235" preserveAspectRatio="xMidYMid meet">
+          <text x="210" y="18" text-anchor="middle" class="dfnlab r">DAG 1→2→3 → 匹配 2 条 → 路径 1 条</text>
+          <!-- 拆点 -->
+          <g stroke="#D6B78C" stroke-width="2.2" fill="none">
+            <path d="M110 80 L180 80"/><path d="M110 140 L180 140"/><path d="M110 200 L180 200"/>
+            <path d="M180 80 L250 140"/><path d="M180 140 L250 200"/>
+          </g>
+          <g stroke="#B9471B" stroke-width="4.5" fill="none">
+            <path d="M180 80 L250 140"/><path d="M180 140 L250 200"/></g>
+          <g>
+            <circle cx="110" cy="80" r="14" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+            <circle cx="110" cy="140" r="14" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+            <circle cx="110" cy="200" r="14" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/>
+            <circle cx="250" cy="80" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+            <circle cx="250" cy="140" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+            <circle cx="250" cy="200" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/>
+          </g>
+          <g font-family="monospace" font-size="10" text-anchor="middle">
+            <text x="76" y="84" class="dfnlab r">1out</text><text x="76" y="144" class="dfnlab r">2out</text>
+            <text x="76" y="204" class="dfnlab r">3out</text>
+            <text x="288" y="84" class="dfnlab">1in</text><text x="288" y="144" class="dfnlab">2in</text>
+            <text x="288" y="204" class="dfnlab">3in</text>
+          </g>
+          <g font-family="monospace" font-size="10.5" text-anchor="middle">
+            <rect x="60" y="220" width="300" height="24" rx="8" fill="#2E2118"/>
+            <text x="210" y="237" fill="#7FE0C2">n = 3, m = 2  ⇒  最小路径覆盖 = 3 − 2 = 1</text>
+          </g>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>区分两种"覆盖"</h3>
+        <ul class="tick ok">
+          <li><b>点不相交</b>（本页）：<code>n − 最大匹配</code></li>
+          <li><b>可重复经过</b>（最小链覆盖）：需<b>传递闭包</b>后再匹配</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 28 Hall 定理 ═══ -->
+<section class="slide" data-title="Hall 定理">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · HALL</div><h2>Hall 定理：<em>完美匹配的充要条件</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么时候存在完美匹配？<br>怎么找反例。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>定理</h3>
+        <div class="formula" style="font-size:11.8px">
+          二分图 <code>G = (X ∪ Y, E)</code> 存在<b>覆盖 X 全部</b>的匹配<br>
+          <span class="ok">⇔ ∀S ⊆ X, |N(S)| ≥ |S|</span><br>
+          <span class="dim">N(S) = S 的邻居集合</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>怎么用</h3>
+        <ul class="tick">
+          <li>判存在性：直接跑最大匹配更快</li>
+          <li>找<b>反例</b>：最小的 <code>S</code> 使 <code>|N(S)| &lt; |S|</code></li>
+          <li>证明题 / 构造题常用</li>
+        </ul>
+      </div>
+      <div class="note good"><b>推论：</b>若 |X| = |Y| 且每个点度数 ≥ |X|/2，则必有完美匹配。</div>
+    </div>
+    <div>
+      <div class="card"><h3>反例示例</h3>
+        <div class="formula" style="font-size:11.6px">
+          X = {x₁,x₂,x₃}, Y = {y₁,y₂}<br>
+          边：x₁-y₁, x₂-y₁, x₃-y₁<br>
+          取 <code>S = X</code>：<span class="hl">|N(S)| = 1 &lt; 3</span><br>
+          <span class="dim">⇒ 不存在覆盖 X 的匹配</span>
+        </div>
+      </div>
+      <div class="card tint-plum"><h3>易混</h3>
+        <ul class="tick no">
+          <li>Hall 是<b>存在性</b>条件，不是求最大匹配的算法</li>
+          <li>只对"覆盖 X 全部"不对称；覆盖 Y 需另一条</li>
+          <li>一般图没有 Hall 定理的对应形式</li>
+        </ul>
+      </div>
+      <div class="note"><b>实战：</b>主要用来<b>理解</b>为什么匹配会失败，真正求解用匈牙利/HK。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 29 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：建模">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 04</div>
+      <div class="big">建模：<em style="color:var(--accent)">把题变成二分图</em></div>
+      <p class="lead">棋盘/骨牌 · 任务分配 · 行列拆点 · 二分答案 + 匹配<br>识别"两两配对"是关键能力。</p>
+    </div>
+    <div><div class="num-huge">04</div>
+      <div class="note good"><b>要领：</b>问自己"<b>什么东西不能同时被选</b>"，那就是匹配的边。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 30 建模套路 ═══ -->
+<section class="slide" data-title="建模套路">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · MODELING</div><h2>四个<em>建模套路</em></h2></div>
+    <div class="hint"><b>本页回答：</b>拿到题怎么拆成二分图？<br>每条都配了题型。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3><span class="n">1</span>天然两部</h3>
+      <p>工人/任务、学生/志愿、题目/人。<b>题面直接给</b>，照抄建图。</p>
+      <div class="split-line"></div><p class="muted">→ 直接最大匹配</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>染色分部</h3>
+      <p>棋盘按 <code>(i+j)%2</code> 分黑白；网格相邻格连边。</p>
+      <div class="split-line"></div><p class="muted">→ 骨牌/覆盖类</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>拆点分部</h3>
+      <p>行/列拆开（矩阵问题）；DAG 拆 <code>in/out</code>（路径覆盖）。</p>
+      <div class="split-line t"></div><p class="muted">→ 覆盖/链问题</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>二分答案</h3>
+      <p>二分阈值 <code>t</code>，保留 <code>w ≤ t</code> 的边，判定是否存在完美匹配。</p>
+      <div class="split-line p"></div><p class="muted">→ 最小化最大 / 最大化最小</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>识别信号</h3>
+      <ul class="tick">
+        <li>"每个 X 至多配一个 Y"、"互不冲突"</li>
+        <li>"最多能配多少对"、"最少选几个点"</li>
+        <li>"能否全覆盖"（Hall / 完美匹配）</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>识别陷阱</h3>
+      <ul class="tick no">
+        <li>一个 X 能配<b>多个</b> Y → 转<b>网络流</b>（容量 &gt; 1）</li>
+        <li>有<b>先后顺序</b>约束 → 加拓扑 / 费用流</li>
+        <li>图有<b>奇环</b> → 一般图匹配（带花树）</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 31 建模示例 ═══ -->
+<section class="slide" data-title="建模示例">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>04 · EXAMPLE</div><h2>建模示例：<em class="t">棋盘骨牌覆盖</em></h2></div>
+    <div class="hint"><b>本页回答：</b>一个完整的建模过程。<br>从棋盘到二分图。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>问题</h3>
+        <p>n×m 棋盘，部分格子被挖掉（<code>#</code>）。问最多能放多少块 <b>1×2 骨牌</b>（不能重叠、不能越界）。</p>
+      </div>
+      <div class="card tint-amber"><h3>建模三步</h3>
+        <ul class="tick arr">
+          <li>按 <code>(i+j)%2</code> 分<b>黑白两部</b></li>
+          <li>相邻可放格子之间<b>连边</b>（每条边 = 一块骨牌的可能位置）</li>
+          <li><b>最大匹配</b> = 最多骨牌数</li>
+        </ul>
+      </div>
+      <div class="note good"><b>为什么合法：</b>每块骨牌覆盖一黑一白；不重叠 ⇔ 匹配的边不共点。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>domino.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="modeling"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 32 完整例题 ═══ -->
+<section class="slide" data-title="完整例题">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>04 · WORKED</div><h2>完整例题：<em class="t">工人任务分配</em></h2></div>
+    <div class="hint"><b>本页回答：</b>从读题到输出方案的全流程。<br>含 König 解释。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个问</h3>
+        <ul class="tick">
+          <li>最多能完成几个任务？</li>
+          <li>一组最优分配方案是什么？</li>
+          <li>最少要"保证"多少个工人/任务（最小点覆盖）？</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>结果</h3>
+        <div class="formula" style="font-size:11.8px">
+          最大完成数 = <span class="ok">3</span><br>
+          最小点覆盖 = <span class="hl">{x₃, y₂}</span> 之类<br>
+          <span class="dim">覆盖解释：删掉这些点后没有"能做"关系</span>
+        </div>
+      </div>
+      <div class="note good"><b>自检：</b>方案中任意两个工人做不同任务；完成数 = 匹配数。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>assignment.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="example"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 33 拆点与容量 ═══ -->
+<section class="slide" data-title="拆点与容量限制">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · SPLIT</div><h2>拆点与<em>容量限制</em></h2></div>
+    <div class="hint"><b>本页回答：</b>一人能做多个任务怎么办？<br>怎么把"容量"塞进匹配。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>三种扩展</h3>
+        <ul class="tick">
+          <li><b>容量 &gt; 1</b>：把左点复制 <code>c</code> 份</li>
+          <li><b>多个搭档</b>：转网络流，边容量 = 上限</li>
+          <li><b>有先后顺序</b>：DAG + 路径覆盖 / 费用流</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>复制法示例</h3>
+        <div class="formula" style="font-size:11.6px">
+          工人 i 最多做 <code>c_i</code> 个任务<br>
+          <span class="hl">拆成 c_i 个左点</span>，每个都能连到原邻居<br>
+          <span class="dim">总左点数 = Σc_i，注意规模爆炸</span>
+        </div>
+      </div>
+      <div class="note warn"><b>规模提醒：</b>复制法只在 <code>Σc_i</code> 较小时可行；大了必须用网络流。</div>
+    </div>
+    <div>
+      <div class="card"><h3>为什么网络流更好</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>S → u</code> 容量 <code>c_u</code><br>
+          <code>u → v</code> 容量 1<br>
+          <code>v → T</code> 容量 1
+        </div>
+        <p class="muted">同一张图直接表达"一个人最多接 c 个任务"。</p>
+      </div>
+      <div class="card tint-teal"><h3>典型变形</h3>
+        <ul class="tick ok">
+          <li>一个任务可由<b>多人</b>做 → 右点容量 &gt; 1</li>
+          <li>需要<b>最少人数</b> → 最小点覆盖</li>
+          <li>要<b>总收益最大</b> → 费用流（每条边带费用）</li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>匹配是网络流的<b>特例</b>；一旦有容量或费用，直接升级到流。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 34 章节 ═══ -->
+<section class="slide section-slide plum" data-title="章节：变体">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker plum"><i></i>CHAPTER 05</div>
+      <div class="big">变体与选型：<em style="color:var(--plum)">带花树 · 对比 · 决策</em></div>
+      <p class="lead">一般图最大匹配（带花树）· KM 进阶 · vs 网络流/费用流 · 选型决策树<br>知道什么时候不该用二分图。</p>
+    </div>
+    <div><div class="num-huge p">05</div>
+      <div class="note warn"><b>要领：</b>先确认<b>确实是二分图</b>，再决定用哪个匹配算法。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 35 带花树 ═══ -->
+<section class="slide" data-title="一般图匹配">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>05 · BLOSSOM</div><h2>带花树：<em class="p">一般图最大匹配</em></h2></div>
+    <div class="hint"><b>本页回答：</b>奇环为什么麻烦？<br>收缩是怎么做的。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>难点</h3>
+        <ul class="tick">
+          <li>一般图<b>可能有奇环</b>，无法 2-染色</li>
+          <li>增广路可能在奇环里"绕圈"</li>
+          <li>需要把奇环<b>收缩成一个点</b>（花）</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>核心动作</h3>
+        <ul class="tick arr">
+          <li>BFS 找增广路</li>
+          <li>遇到<b>花</b>（奇环）⇒ 收缩，重新标基</li>
+          <li>找到增广路 ⇒ 展开并翻转</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>复杂度：</b><code>O(n³)</code>，常数较大。<b>能用二分图就别用它</b>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>blossom.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="blossom"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 36 对比 ═══ -->
+<section class="slide" data-title="二分图 vs 网络流 vs 费用流">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>05 · COMPARE</div><h2>匹配 / 流 / 费用流<em class="p">对比</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一批问题，三种框架都能解？<br>各自的甜点区。</div>
+  </div>
+  <table>
+    <tr><th style="width:150px">框架</th><th>最大匹配</th><th>带权</th><th>容量限制</th><th>最小割/方案</th><th>代码量</th><th>推荐</th></tr>
+    <tr><td><b>二分图匹配</b></td><td>✓</td><td>KM</td><td>❌</td><td>König</td><td><b>小</b></td><td>纯匹配题</td></tr>
+    <tr><td>网络流（Dinic）</td><td>✓</td><td>❌</td><td>✓</td><td>✓</td><td>中</td><td>有容量/多源汇</td></tr>
+    <tr><td>费用流（MCMF）</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td><td>大</td><td>带权 + 约束</td></tr>
+    <tr><td>带花树</td><td>一般图</td><td>❌</td><td>❌</td><td>❌</td><td>大</td><td>非二分图</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>什么时候升级到网络流</h3>
+      <ul class="tick arr">
+        <li>点有<b>容量</b>（一人多任务）</li>
+        <li>有<b>多源多汇</b>或中间节点</li>
+        <li>要<b>最小割</b>给出具体方案</li>
+        <li>要<b>可扩展</b>（后续加约束）</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>什么时候用费用流</h3>
+      <ul class="tick ok">
+        <li>带权且有<b>容量</b>约束</li>
+        <li>要<b>总费用最小/最大</b></li>
+        <li>要<b>k 条</b>增广路（k-匹配）</li>
+      </ul>
+      <div class="note good"><b>记忆：</b>匹配是"容量 1"的流；费用流是"带价签"的流。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 37 决策树 ═══ -->
+<section class="slide" data-title="选型决策树">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>05 · DECISION</div><h2>四步决策树</h2></div>
+    <div class="hint"><b>本页回答：</b>拿到题怎么判断？<br>建议打印贴在机位旁。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>第一步：是二分图吗</h3>
+        <ul class="tick">
+          <li>能 2-染色 / 题面天然两部 → <b>继续</b></li>
+          <li>有奇环 → <b>带花树</b> 或重新建模</li>
+        </ul>
+      </div>
+      <div class="card"><h3>第二步：要什么</h3>
+        <ul class="tick ok">
+          <li>最大匹配 / 点覆盖 / 独立集 / 路径覆盖 → <b>匈牙利 or HK</b></li>
+          <li>带权 → <b>KM</b></li>
+          <li>带容量或约束 → <b>网络流 / 费用流</b></li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>第三步：数据规模</h3>
+        <ul class="tick">
+          <li>n ≤ 2000 → <b>匈牙利</b>（先写出来）</li>
+          <li>n ≤ 2×10⁵ → <b>Hopcroft-Karp</b></li>
+          <li>n ≤ 500 且带权 → <b>KM</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>速判表</h3>
+        <table style="box-shadow:none">
+          <tr><th>题面关键词</th><th>方案</th></tr>
+          <tr><td>互不冲突 / 一一配对</td><td class="mono">最大匹配</td></tr>
+          <tr><td>最少删几个点</td><td class="mono">König 覆盖</td></tr>
+          <tr><td>最多选几个不冲突</td><td class="mono">最大独立集</td></tr>
+          <tr><td>最少几条链</td><td class="mono">路径覆盖</td></tr>
+          <tr><td>收益最大</td><td class="mono">KM / 费用流</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 38 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：工程">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 06</div>
+      <div class="big">工程：<em style="color:var(--teal)">避坑 · 提速 · 验证</em></div>
+      <p class="lead">易错清单 · 模板合集 · 对拍脚本 · 题单<br>把二分图代码写成"永不写错"。</p>
+    </div>
+    <div><div class="num-huge t">06</div>
+      <div class="note good"><b>要领：</b>bug 集中在<b>vis 重置、定向方向、反向边、拆点下标</b>四处。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 39 易错清单 ═══ -->
+<section class="slide" data-title="易错清单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PITFALLS</div><h2>易错清单 <em>Checklist</em></h2></div>
+    <div class="hint"><b>本页回答：</b>提交前自检什么？<br>（每条都对应本讲义的坑）</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-plum"><h3>匈牙利 / HK</h3>
+      <ul class="tick no">
+        <li><code>vis</code> 不每轮重置 → 匹配偏小</li>
+        <li><code>vis</code> 作用在左部 → 重复访问</li>
+        <li>只增广一次 → 只算部分匹配</li>
+        <li>递归深度过大 → 栈溢出</li>
+        <li>HK 里忘 <code>found</code> → 死循环</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>König / 对偶</h3>
+      <ul class="tick">
+        <li>定向方向写反 → 覆盖错误</li>
+        <li>起点只取一个未匹配左点</li>
+        <li>公式套到<b>非二分图</b>上</li>
+        <li>路径覆盖忘记<b>拆点</b></li>
+        <li>把"点不相交"与"可重复"混用</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>网络流 / KM</h3>
+      <ul class="tick ok">
+        <li>忘了<b>反向边</b> → 结果偏小</li>
+        <li>反向边容量写成 <code>c</code> 而非 0</li>
+        <li>KM 顶标调整方向搞反</li>
+        <li>KM 忘记"完全二分图"前提</li>
+        <li>拆点下标 <code>nL + v</code> 写混</li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>提交前 30 秒四连问：</b>① <code>vis</code> 每轮新建了吗 ② König 定向对吗 ③ 网络流有反向边吗 ④ 拆点下标 <code>nL + v</code> 对吗。</div>
+</section>
+
+<!-- ═══ 40 模板合集 ═══ -->
+<section class="slide" data-title="模板合集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · TOOLBOX</div><h2>模板合集：<em>一页速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>实战里需要的都在这里。<br>建议直接抄进模板库。</div>
+  </div>
+  <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>bipartite_toolbox.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="toolbox"></code></pre></pre>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3>扩展点</h3><p>加容量 → 走 <code>max_matching_by_flow</code>；加费用 → 换费用流。</p></div>
+    <div class="card tint-teal"><h3>多组数据</h3><p>每组重建 <code>pairU / pairV / dist</code>，不要复用。</p></div>
+    <div class="card"><h3>输入</h3><p>大数据一次性读入；邻接表用 <code>list of list</code>。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 41 改一改就能用 ═══ -->
+<section class="slide" data-title="改一改就能用">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · ADAPT</div><h2>改一改<em>就能用</em>：四个改点</h2></div>
+    <div class="hint"><b>本页回答：</b>换一道题要改哪里？<br>只有四处。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3><span class="n">1</span>建图</h3>
+      <p>决定谁是左部、谁是右部；边的含义是什么（可配对 / 可覆盖 / 可连接）。</p></div>
+    <div class="card tint-amber"><h3><span class="n">2</span>求解量</h3>
+      <p>只要匹配数 → 匈牙利/HK；要方案 → 读 <code>matchL/matchR</code>；要对偶 → König。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>输出</h3>
+      <p>匹配方案、最小点覆盖、最大独立集、路径覆盖——都是<b>同一份匹配</b>的不同视角。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>规模</h3>
+      <p>看 <code>n, m</code> 决定用匈牙利、HK 还是网络流；带权换 KM。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>换题检查表</h3>
+      <ul class="tick">
+        <li>是二分图吗（无奇环）？</li>
+        <li>边的含义搞对了吗？</li>
+        <li>要的是匹配数还是具体方案？</li>
+        <li>有没有容量 / 费用 / 顺序约束？</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>什么时候该换框架</h3>
+      <p>有容量 → 网络流；有费用 → 费用流；有奇环 → 带花树；要绝对正确且规模大 → 优先 HK。</p>
+      <div class="note"><b>别硬上：</b>把非二分图硬套二分图匹配，结果是错的而不是"略差"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 42 验证 ═══ -->
+<section class="slide" data-title="调试与验证">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · VERIFY</div><h2>怎么验证答案<em>是对的</em></h2></div>
+    <div class="hint"><b>本页回答：</b>四种算法怎么互相对拍？<br>边界用例有哪些。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card tint-teal"><h3><span class="n t">1</span>四算法对拍</h3>
+        <p>暴力枚举所有匹配作<b>基准</b>，与匈牙利 / HK / 网络流比对。随机小图 <b>2000 组</b>，四个数必须<b>完全相等</b>。</p>
+      </div>
+      <div class="card tint-amber"><h3><span class="n">3</span>边界用例</h3>
+        <ul class="tick">
+          <li>无边图（匹配 0）</li>
+          <li>完全二分图（匹配 = min(nL,nR)）</li>
+          <li>只有一条边</li>
+          <li>左右点数不等</li>
+          <li>有孤立点</li>
+          <li>单点 / 空图</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3><span class="n">2</span>不变量检查</h3>
+        <ul class="tick ok">
+          <li>匹配数 = <code>sum(1 for v in matchR if v != -1)</code></li>
+          <li>匹配的边<b>互不共点</b></li>
+          <li><code>|C| == 匹配数</code>（König）</li>
+          <li><code>|独立集| + |覆盖| == n</code></li>
+          <li><code>路径覆盖 + 匹配 == n</code></li>
+        </ul>
+      </div>
+      <div class="note good"><b>小技巧：</b>随机<b>打乱点编号</b>重跑，答案应不变——能抓出下标类 bug。</div>
+      <div class="note warn"><b>König 自检：</b>遍历所有边，确认至少一端在覆盖集中。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 43 题单 ═══ -->
+<section class="slide" data-title="练习题单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PRACTICE</div><h2>练习题单（洛谷 / LeetCode / 本地）</h2></div>
+    <div class="hint"><b>本页回答：</b>课后练什么？<br>每张卡都写了<b>题意</b>，可按图索骥。</div>
+  </div>
+  <div class="cols c3" style="gap:8px">
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3386" target="_blank"><span class="src lg">洛谷</span><span class="t">P3386 【模板】二分图最大匹配</span><span class="d">题意：给二分图求最大匹配数。先闭卷默写匈牙利，再换 Hopcroft-Karp。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2756" target="_blank"><span class="src lg">洛谷</span><span class="t">P2756 飞行员配对方案问题</span><span class="d">题意：外籍/本籍飞行员配对，最多能派出几组。经典"两部配对"建模题。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1129" target="_blank"><span class="src lg">洛谷</span><span class="t">P1129 [ZJOI2007] 矩阵游戏</span><span class="d">题意：能否通过交换行/列使对角线全 1。行列拆点建二分图。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2764" target="_blank"><span class="src lg">洛谷</span><span class="t">P2764 最小路径覆盖问题</span><span class="d">题意：DAG 最小点不相交路径覆盖，并输出方案。拆点 + 匹配。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/is-graph-bipartite/" target="_blank"><span class="src">LeetCode</span><span class="t">785. 判断二分图</span><span class="d">题意：判断给定图是否二分图。练染色法，注意多连通分量。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/possible-bipartition/" target="_blank"><span class="src">LeetCode</span><span class="t">886. 可能的二分法</span><span class="d">题意：n 个人分两组，某些人不能同组。转成二分图判定。</span></a>
+    <a class="a-link" href="https://leetcode.cn/problems/maximum-compatibility-score-sum/" target="_blank"><span class="src">LeetCode</span><span class="t">1947. 最大兼容性评分和</span><span class="d">题意：学生与导师一一配对求最大评分和。带权匹配 / KM 入门。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6001" target="_blank"><span class="src lg">LibreOJ</span><span class="t">#6001. 太空飞行计划</span><span class="d">题意：实验与仪器的收益最大化。网络流建模经典，体会匹配与流的边界。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">棋盘骨牌覆盖</span><span class="d">用第 31 页的 domino_cover，随机挖格子，与暴力回溯对拍。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">工人任务 + König 覆盖</span><span class="d">跑第 32 页的 assignment.py，手算最小点覆盖并验证每条边都被覆盖。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">四算法随机对拍</span><span class="d">跑第 42 页的 stress()，暴力 / 匈牙利 / HK / 网络流 四者必须一致。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">带权任务分配（KM）</span><span class="d">用第 21 页的 km_max_weight，与费用流结果对照。</span></a>
+  </div>
+  <div class="note"><b>节奏建议：</b>基础 4 题（P3386、P2756、LC 785、LC 886）→ 建模 3 题（P1129、P2764、本地骨牌）→ 进阶 5 题（LC 1947、LOJ 6001、本地三题）。每题写 100 字题解：<b>问题 → 建图方式 → 为什么是二分图</b>。</div>
+</section>
+
+<!-- ═══ 44 总结 ═══ -->
+<section class="slide" data-title="总结">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · SUMMARY</div><h2>带走这 <em>五句话</em></h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记住一页，<br>就记这一页。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><div class="step"><div class="idx">1</div><div><b>核心动作是"增广"：</b>找到起止都自由的交错路，翻转它，匹配数 +1。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">2</div><div><b>最大 ⇔ 无增广路</b>（Berge 定理）；所有算法都只是"更聪明地找增广路"。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">3</div><div><b>König：</b>最小点覆盖 = 最大匹配；构造靠<b>匹配边右→左</b>的定向。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">4</div><div><b>对偶量归一：</b>点覆盖、独立集、路径覆盖都从同一个匹配导出。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">5</div><div><b>有容量/费用就升级到流；</b>有奇环就用带花树——别硬套二分图。</div></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 350 260" preserveAspectRatio="xMidYMid meet">
+          <circle cx="175" cy="130" r="115" fill="#E2612F" opacity=".12" class="pulse"/>
+          <circle cx="175" cy="130" r="52" fill="#2E2118"/>
+          <text x="175" y="122" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="11">最大</text>
+          <text x="175" y="140" text-anchor="middle" fill="#FFD9A8" font-family="monospace" font-size="11">匹配</text>
+          <g font-family="monospace" font-size="10.5" fill="#7A4A22">
+            <rect x="112" y="10" width="126" height="30" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="175" y="30" text-anchor="middle">二分图判定</text>
+            <rect x="248" y="58" width="96" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="296" y="78" text-anchor="middle">最小点覆盖</text>
+            <rect x="252" y="170" width="92" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="298" y="190" text-anchor="middle">最大独立集</text>
+            <rect x="100" y="216" width="150" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="236" text-anchor="middle">最小路径覆盖</text>
+            <rect x="6" y="170" width="106" height="30" rx="11" fill="#EFF9F5" stroke="#BEE6D8"/><text x="59" y="190" text-anchor="middle">Hall 定理</text>
+            <rect x="8" y="58" width="102" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="59" y="78" text-anchor="middle">KM 带权</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" class="dash" fill="none">
+            <path d="M175 78 L175 42"/><path d="M224 110 L250 82"/><path d="M224 154 L254 184"/>
+            <path d="M175 182 L175 216"/><path d="M126 154 L110 184"/><path d="M126 110 L108 82"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>升华：</b>二分图匹配最值得学的不是代码，而是"<b>用增广路统一配对类问题</b>"这种<strong>建模能力</strong>——能把题拆成"两两配对"，比背模板更重要。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 45 结语 ═══ -->
+<section class="slide cover" data-title="结语 Q&A">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">THANKS · Q&A</div>
+      <h1>谢谢！<br><em class="t">开始提问</em></h1>
+      <p class="sub">课后三步：<br>
+        ① 10 分钟默写匈牙利 + Hopcroft-Karp<br>
+        ② 手算第 12 页的三轮增广（应得 |M| = 3），并画出 König 覆盖<br>
+        ③ 跑一遍 <code>stress()</code> 对拍脚本，确认四算法一致后再刷 12 题</p>
+      <div class="meta"><span>增广路</span><span>König 定向</span><span>反向边</span></div>
+    </div>
+    <div>
+      <svg viewBox="0 0 460 300" preserveAspectRatio="xMidYMid meet">
+        <circle cx="230" cy="150" r="145" fill="#E2612F" opacity=".16" class="pulse"/>
+        <g stroke="#E2612F" stroke-width="3" fill="none"><path d="M230 236 L158 158"/><path d="M230 236 L302 158"/><path d="M230 236 L230 118"/></g>
+        <path d="M302 158 L230 236" stroke="#A33A64" stroke-width="3" stroke-dasharray="7 7" fill="none"/>
+        <g class="float">
+          <g><circle cx="230" cy="236" r="30" fill="#E2612F" stroke="#B9471B" stroke-width="3"/><text x="230" y="244" font-size="13" text-anchor="middle" fill="#fff" font-family="monospace">M</text></g>
+          <g><circle cx="158" cy="158" r="24" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="158" y="165" font-size="11" text-anchor="middle" fill="#0B6356" font-family="monospace">增广</text></g>
+          <g><circle cx="302" cy="158" r="24" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="302" y="165" font-size="11" text-anchor="middle" fill="#0B6356" font-family="monospace">覆盖</text></g>
+          <g><circle cx="230" cy="118" r="24" fill="#fff" stroke="#D9B98D" stroke-width="3"/><text x="230" y="125" font-size="11" text-anchor="middle" fill="#4A3722" font-family="monospace">建模</text></g>
+        </g>
+      </svg>
+      <div class="note"><b>快捷键：</b><code>O</code> 目录 · <code>←/→</code> 翻页 · <code>⛶</code> 全屏</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="brand">BIPARTITE MATCHING · 80MIN</div>
+<div class="hud">
+  <button id="tocBtn" title="目录">☰</button>
+  <button id="prevBtn" title="上一页">←</button>
+  <div class="pgn"><span id="cur">1</span> / <span id="tot">45</span></div>
+  <button id="nextBtn" title="下一页">→</button>
+  <button id="fullBtn" title="全屏">⛶</button>
+</div>
+
+<div class="toc" id="toc"><h4>目录 · 45 页</h4><div class="grid" id="tocGrid"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+const CODE = {
+
+core: `
+def is_bipartite(g, n):
+    """二分图判定：BFS 二染色，O(n + m)
+       g: 邻接表（无向图，双向都存）
+       返回 (是否二分图, 染色方案 0/1)
+       等价条件：图中不含奇环"""
+    color = [-1] * n
+    for s in range(n):                 # 必须遍历所有连通分量
+        if color[s] != -1:
+            continue
+        color[s] = 0
+        q = [s]
+        head = 0
+        while head < len(q):
+            u = q[head]; head += 1
+            for v in g[u]:
+                if color[v] == -1:
+                    color[v] = color[u] ^ 1   # 相邻点不同色
+                    q.append(v)
+                elif color[v] == color[u]:
+                    return False, color        # 出现奇环
+    return True, color
+
+
+# 用法：
+#   n = 4
+#   g = [[1,3],[0,2],[1,3],[0,2]]       # 4 元环
+#   print(is_bipartite(g, n))            # (True, [0,1,0,1])
+#
+#   g2 = [[1,2],[0,2],[0,1]]             # 三角形
+#   print(is_bipartite(g2, 3))           # (False, ...)
+#
+# 染色方案可直接用来分两部：color==0 → 左部，color==1 → 右部
+`,
+
+hungarian: `
+def hungarian(g, nL, nR):
+    """匈牙利算法（DFS 增广），O(nL * m)
+       g[u]: 左部顶点 u 能连到的右部顶点列表
+       返回 (最大匹配数, matchL, matchR)"""
+    matchR = [-1] * nR        # matchR[v] = 与右部 v 配对的左部顶点
+
+    def dfs(u, vis):
+        """为左部 u 找增广路；vis 作用于右部"""
+        for v in g[u]:
+            if vis[v]:
+                continue
+            vis[v] = True     # 本轮不再重复尝试 v
+            if matchR[v] == -1 or dfs(matchR[v], vis):
+                matchR[v] = u
+                return True
+        return False
+
+    matching = 0
+    for u in range(nL):
+        vis = [False] * nR    # 每轮重置，否则结果偏小
+        if dfs(u, vis):
+            matching += 1
+
+    matchL = [-1] * nL
+    for v in range(nR):
+        if matchR[v] != -1:
+            matchL[matchR[v]] = v
+    return matching, matchL, matchR
+
+
+# 用法：
+#   g = [[0,1],[1,2],[0,2]]
+#   print(hungarian(g, 3, 3))    # (3, [0,1,2], [0,1,2])
+#
+# 自检：matching == sum(1 for v in matchR if v != -1)
+# n 很大（> 2000）时改用 Hopcroft-Karp
+`,
+
+hk: `
+from collections import deque
+
+def hopcroft_karp(g, nL, nR):
+    """Hopcroft-Karp：分层 + 多路增广，O(m * sqrt(n))
+       返回 (最大匹配数, pairU, pairV)"""
+    INF = nL + nR + 5
+    pairU = [-1] * nL          # pairU[u] = 右部搭档
+    pairV = [-1] * nR          # pairV[v] = 左部搭档
+    dist = [0] * nL
+
+    def bfs():
+        """建分层图，返回是否存在未匹配右点"""
+        q = deque()
+        for u in range(nL):
+            if pairU[u] == -1:
+                dist[u] = 0
+                q.append(u)
+            else:
+                dist[u] = INF
+        found = False
+        while q:
+            u = q.popleft()
+            for v in g[u]:
+                pu = pairV[v]
+                if pu == -1:
+                    found = True          # 有未匹配右点
+                elif dist[pu] == INF:
+                    dist[pu] = dist[u] + 1
+                    q.append(pu)
+        return found
+
+    def dfs(u):
+        """沿最短层寻找增广路"""
+        for v in g[u]:
+            pu = pairV[v]
+            if pu == -1 or (dist[pu] == dist[u] + 1 and dfs(pu)):
+                pairU[u] = v
+                pairV[v] = u
+                return True
+        dist[u] = INF        # 剪枝：本轮 u 不再有用
+        return False
+
+    matching = 0
+    while bfs():
+        for u in range(nL):
+            if pairU[u] == -1 and dfs(u):
+                matching += 1
+    return matching, pairU, pairV
+
+
+# 与匈牙利的区别：外层 "while bfs()" 取代了"逐点增广"
+# 一轮 BFS + 多次 DFS = 穷尽当前最短长度的所有增广路
+`,
+
+km: `
+INF = float('inf')
+
+def km_max_weight(w):
+    """KM 算法（带权最大权匹配），朴素 O(n^4)
+       w[i][j]：左 i 与右 j 的权；必须是【完全】二分图
+       返回 (最大权, matchL)"""
+    nL = len(w); nR = len(w[0])
+    lx = [max(row) for row in w]    # 左顶标，初值取行最大（可行）
+    ly = [0] * nR                   # 右顶标
+    matchL = [-1] * nL
+    matchR = [-1] * nR
+
+    def dfs(i, S, T):
+        """在相等子图上为 i 找增广路"""
+        S[i] = True
+        for j in range(nR):
+            if T[j]:
+                continue
+            if lx[i] + ly[j] == w[i][j]:      # 只走相等子图
+                T[j] = True
+                if matchR[j] == -1 or dfs(matchR[j], S, T):
+                    matchL[i] = j
+                    matchR[j] = i
+                    return True
+        return False
+
+    for i in range(nL):
+        while True:
+            S = [False] * nL
+            T = [False] * nR
+            if dfs(i, S, T):
+                break
+            # delta = min{ lx[a]+ly[b]-w[a][b] : a∈S, b∉T }
+            d = INF
+            for a in range(nL):
+                if not S[a]:
+                    continue
+                for b in range(nR):
+                    if T[b]:
+                        continue
+                    d = min(d, lx[a] + ly[b] - w[a][b])
+            for a in range(nL):
+                if S[a]:
+                    lx[a] -= d       # S 内左点降
+            for b in range(nR):
+                if T[b]:
+                    ly[b] += d       # T 内右点升
+
+    total = sum(w[i][matchL[i]] for i in range(nL) if matchL[i] != -1)
+    return total, matchL
+
+
+# 用法：
+#   w = [[1, 3], [2, 3]]
+#   print(km_max_weight(w))    # (5, [1, 0])  即 (0,1)+(1,0)
+#
+# 前提：完全二分图（缺边用 -10**18 填充）；通常 nL == nR
+# 求最小权：改 w[i][j] = -w[i][j]，最后取负
+`,
+
+flow: `
+from collections import deque
+
+class Dinic:
+    """Dinic 最大流；二分图上 O(m * sqrt(n))"""
+    def __init__(self, n):
+        self.n = n
+        self.g = [[] for _ in range(n)]
+
+    def add(self, u, v, c):
+        """添加有向边 u->v（容量 c），同时加容量 0 的反向边"""
+        self.g[u].append([v, c, len(self.g[v])])
+        self.g[v].append([u, 0, len(self.g[u]) - 1])
+
+    def bfs(self, s, t):
+        self.level = [-1] * self.n
+        q = deque([s])
+        self.level[s] = 0
+        while q:
+            u = q.popleft()
+            for v, c, _ in self.g[u]:
+                if c > 0 and self.level[v] < 0:
+                    self.level[v] = self.level[u] + 1
+                    q.append(v)
+        return self.level[t] >= 0
+
+    def dfs(self, u, t, f):
+        if u == t:
+            return f
+        for i in range(self.it[u], len(self.g[u])):
+            self.it[u] = i
+            v, c, rev = self.g[u][i]
+            if c > 0 and self.level[v] == self.level[u] + 1:
+                d = self.dfs(v, t, min(f, c))
+                if d > 0:
+                    self.g[u][i][1] -= d
+                    self.g[v][rev][1] += d
+                    return d
+        return 0
+
+    def max_flow(self, s, t):
+        flow = 0
+        INF = 10 ** 18
+        while self.bfs(s, t):
+            self.it = [0] * self.n
+            while True:
+                f = self.dfs(s, t, INF)
+                if f == 0:
+                    break
+                flow += f
+        return flow
+
+
+def max_matching_by_flow(g, nL, nR):
+    """二分图最大匹配 = 网络最大流
+       S -> 左部 -> 右部 -> T，容量全为 1"""
+    S, T = nL + nR, nL + nR + 1
+    dinic = Dinic(nL + nR + 2)
+    for u in range(nL):
+        dinic.add(S, u, 1)
+        for v in g[u]:
+            dinic.add(u, nL + v, 1)
+    for v in range(nR):
+        dinic.add(nL + v, T, 1)
+    return dinic.max_flow(S, T)
+
+
+# 反向边是"撤销"能力，等价于翻转增广路；缺了它结果会偏小
+`,
+
+konig: `
+def konig_cover(g, nL, nR, pairU, pairV):
+    """König 定理构造最小点覆盖，O(n + m)
+       定向规则：匹配边 右→左，非匹配边 左→右
+       从所有未匹配左点出发 BFS 得可达集 Z
+       最小点覆盖 C = (L \\ Z) ∪ (R ∩ Z)"""
+    N = nL + nR
+    Z = [False] * N
+    q = [u for u in range(nL) if pairU[u] == -1]
+    for u in q:
+        Z[u] = True
+    head = 0
+    while head < len(q):
+        x = q[head]; head += 1
+        if x < nL:
+            u = x
+            for v in g[u]:
+                if pairU[u] == v:
+                    continue                  # 匹配边不朝这个方向
+                if not Z[nL + v]:
+                    Z[nL + v] = True
+                    q.append(nL + v)
+        else:
+            v = x - nL
+            u = pairV[v]                      # 匹配边：右 -> 左
+            if u != -1 and not Z[u]:
+                Z[u] = True
+                q.append(u)
+
+    cover = [u for u in range(nL) if not Z[u]] + \\
+            [nL + v for v in range(nR) if Z[nL + v]]
+    return cover
+
+
+def max_independent_set(n, cover):
+    """最大独立集 = 全体顶点 − 最小点覆盖（仅二分图成立）"""
+    in_cover = set(cover)
+    return [i for i in range(n) if i not in in_cover]
+
+
+# 自检：|cover| 应等于最大匹配数；每条边至少一端在 cover 中
+# 注意：公式 "最大独立集 = n - 最大匹配" 只对二分图成立
+`,
+
+dagcover: `
+def min_path_cover_dag(n, edges):
+    """DAG 最小【点不相交】路径覆盖，O(m * sqrt(n))
+       建图：u_out -> v_in（拆点）
+       公式：最小路径覆盖 = n - 最大匹配"""
+    g = [[] for _ in range(n)]
+    for u, v in edges:
+        g[u].append(v)
+    m, pairU, pairV = hopcroft_karp(g, n, n)
+    return n - m
+
+
+# 验证：
+#   n = 3, edges = [(0,1),(1,2)]
+#   匹配 2 条 ⇒ 路径覆盖 = 3 - 2 = 1（一条链 0→1→2）
+#
+#   n = 3, edges = [(0,1),(0,2)]
+#   匹配 1 条 ⇒ 路径覆盖 = 3 - 1 = 2
+#
+# 注意区分：
+#   点不相交路径覆盖（本题）：n - 最大匹配
+#   可重复经过的最小链覆盖：先求传递闭包，再匹配
+`,
+
+modeling: `
+# 例：棋盘骨牌覆盖
+# n×m 棋盘，'#' 表示挖掉，问最多能放多少块 1×2 骨牌
+# 建模：按 (i+j)%2 分左右部，相邻可放格子连边，求最大匹配
+
+def domino_cover(board):
+    n, m = len(board), len(board[0])
+    idx = {}
+    left, right = [], []
+    for i in range(n):
+        for j in range(m):
+            if board[i][j] == '#':
+                continue
+            if (i + j) % 2 == 0:
+                idx[(i, j)] = ('L', len(left))
+                left.append((i, j))
+            else:
+                idx[(i, j)] = ('R', len(right))
+                right.append((i, j))
+
+    g = [[] for _ in left]
+    for i, j in left:
+        for di, dj in ((1,0), (-1,0), (0,1), (0,-1)):
+            ni, nj = i + di, j + dj
+            if 0 <= ni < n and 0 <= nj < m and (ni, nj) in idx:
+                kind, v = idx[(ni, nj)]
+                if kind == 'R':
+                    g[idx[(i, j)][1]].append(v)
+
+    m_, _, _ = hungarian(g, len(left), len(right))
+    return m_
+
+
+# 为什么合法：每块骨牌覆盖一黑一白；不重叠 ⇔ 匹配的边不共点
+# 用法：
+#   board = ["....", ".##.", "...."]
+#   print(domino_cover(board))    # 最多骨牌数
+`,
+
+example: `
+# 例题：n 个工人、m 个任务，工人 i 能做若干任务
+# (1) 最多完成几个任务  (2) 一组方案  (3) 最小点覆盖
+
+nL, nR = 5, 3
+g = [
+    [0, 1],        # 工人 0 能做任务 0, 1
+    [1, 2],        # 工人 1 能做任务 1, 2
+    [0, 2],        # 工人 2 能做任务 0, 2
+    [2],           # 工人 3 只能做任务 2
+    [],            # 工人 4 什么都不会
+]
+
+m, pairU, pairV = hopcroft_karp(g, nL, nR)
+print("最大完成数 =", m)                 # 3
+
+print("方案：")
+for u in range(nL):
+    if pairU[u] != -1:
+        print(f"  工人 {u} -> 任务 {pairU[u]}")
+
+# 最小点覆盖：最少的"工人/任务"点，使每条能做关系至少涉及其一
+cover = konig_cover(g, nL, nR, pairU, pairV)
+print("最小点覆盖 =", cover)
+print("覆盖大小 =", len(cover), "（应等于最大匹配数", m, "）")
+
+# 最大独立集：最多的互不冲突点（工人/任务）
+indep = max_independent_set(nL + nR, cover)
+print("最大独立集大小 =", len(indep), "（应等于", nL + nR - m, "）")
+
+# 自检：遍历所有边，确认至少一端在 cover 中
+for u in range(nL):
+    for v in g[u]:
+        assert u in set(cover) or (nL + v) in set(cover)
+`,
+
+blossom: `
+def blossom_max_matching(n, g):
+    """一般图最大匹配（带花树 / Blossom），O(n^3)
+       g: 无向图邻接表（0-indexed）
+       返回 (匹配数, match 列表)
+       仅在图【不是二分图】时才需要它"""
+    match = [-1] * n
+    p = [-1] * n
+    base = list(range(n))
+    used = [False] * n
+    blossom = [False] * n
+    q = [0] * n
+
+    def lca(a, b):
+        vis = [False] * n
+        while True:
+            a = base[a]
+            vis[a] = True
+            if match[a] == -1:
+                break
+            a = p[match[a]]
+        while True:
+            b = base[b]
+            if vis[b]:
+                return b
+            b = p[match[b]]
+
+    def mark_path(v, b, x):
+        while base[v] != b:
+            blossom[base[v]] = True
+            blossom[base[match[v]]] = True
+            p[v] = x
+            x = match[v]
+            v = p[match[v]]
+
+    def find_path(root):
+        for i in range(n):
+            used[i] = False
+            p[i] = -1
+            base[i] = i
+        used[root] = True
+        qh = qt = 0
+        q[qt] = root; qt += 1
+        while qh < qt:
+            v = q[qh]; qh += 1
+            for to in g[v]:
+                if base[v] == base[to] or match[v] == to:
+                    continue
+                if to == root or (match[to] != -1 and p[match[to]] != -1):
+                    curbase = lca(v, to)          # 找到"花"
+                    for i in range(n):
+                        blossom[i] = False
+                    mark_path(v, curbase, to)
+                    mark_path(to, curbase, v)
+                    for i in range(n):
+                        if blossom[base[i]]:
+                            base[i] = curbase     # 收缩花
+                            if not used[i]:
+                                used[i] = True
+                                q[qt] = i; qt += 1
+                elif p[to] == -1:
+                    p[to] = v
+                    if match[to] == -1:           # 找到增广路
+                        cur = to
+                        while cur != -1:
+                            pv = p[cur]
+                            ppv = match[pv] if pv != -1 else -1
+                            match[cur] = pv
+                            if pv != -1:
+                                match[pv] = cur
+                            cur = ppv
+                        return True
+                    used[match[to]] = True
+                    q[qt] = match[to]; qt += 1
+        return False
+
+    ans = 0
+    for i in range(n):
+        if match[i] == -1 and find_path(i):
+            ans += 1
+    return ans, match
+
+
+# 验证：
+#   三角形 n=3, g=[[1,2],[0,2],[0,1]]   → 匹配 1
+#   3 点路径 n=3, g=[[1],[0,2],[1]]     → 匹配 1
+#
+# 二分图请用 Hopcroft-Karp；带花树常数大、易写错
+`,
+
+toolbox: `
+from collections import deque
+
+
+# ============ 1. 二分图判定 ============
+def is_bipartite(g, n):
+    color = [-1] * n
+    for s in range(n):
+        if color[s] != -1:
+            continue
+        color[s] = 0
+        q = [s]; head = 0
+        while head < len(q):
+            u = q[head]; head += 1
+            for v in g[u]:
+                if color[v] == -1:
+                    color[v] = color[u] ^ 1
+                    q.append(v)
+                elif color[v] == color[u]:
+                    return False, color
+    return True, color
+
+
+# ============ 2. 最大匹配（Hopcroft-Karp）============
+def max_matching(g, nL, nR):
+    INF = nL + nR + 5
+    pairU = [-1] * nL
+    pairV = [-1] * nR
+    dist = [0] * nL
+
+    def bfs():
+        q = deque()
+        for u in range(nL):
+            if pairU[u] == -1:
+                dist[u] = 0; q.append(u)
+            else:
+                dist[u] = INF
+        found = False
+        while q:
+            u = q.popleft()
+            for v in g[u]:
+                pu = pairV[v]
+                if pu == -1:
+                    found = True
+                elif dist[pu] == INF:
+                    dist[pu] = dist[u] + 1
+                    q.append(pu)
+        return found
+
+    def dfs(u):
+        for v in g[u]:
+            pu = pairV[v]
+            if pu == -1 or (dist[pu] == dist[u] + 1 and dfs(pu)):
+                pairU[u] = v; pairV[v] = u
+                return True
+        dist[u] = INF
+        return False
+
+    ans = 0
+    while bfs():
+        for u in range(nL):
+            if pairU[u] == -1 and dfs(u):
+                ans += 1
+    return ans, pairU, pairV
+
+
+# ============ 3. König 最小点覆盖 ============
+def konig_cover(g, nL, nR, pairU, pairV):
+    N = nL + nR
+    Z = [False] * N
+    q = [u for u in range(nL) if pairU[u] == -1]
+    for u in q: Z[u] = True
+    head = 0
+    while head < len(q):
+        x = q[head]; head += 1
+        if x < nL:
+            for v in g[x]:
+                if pairU[x] == v: continue
+                if not Z[nL + v]:
+                    Z[nL + v] = True; q.append(nL + v)
+        else:
+            u = pairV[x - nL]
+            if u != -1 and not Z[u]:
+                Z[u] = True; q.append(u)
+    return [u for u in range(nL) if not Z[u]] + \\
+           [nL + v for v in range(nR) if Z[nL + v]]
+
+
+# ============ 4. DAG 最小路径覆盖 ============
+def min_path_cover(n, edges):
+    g = [[] for _ in range(n)]
+    for u, v in edges:
+        g[u].append(v)
+    m, _, _ = max_matching(g, n, n)
+    return n - m
+
+
+# ============ 5. KM 带权最大匹配 ============
+def km_max_weight(w):
+    nL, nR = len(w), len(w[0])
+    INF = float('inf')
+    lx = [max(row) for row in w]
+    ly = [0] * nR
+    matchL = [-1] * nL; matchR = [-1] * nR
+
+    def dfs(i, S, T):
+        S[i] = True
+        for j in range(nR):
+            if T[j]: continue
+            if lx[i] + ly[j] == w[i][j]:
+                T[j] = True
+                if matchR[j] == -1 or dfs(matchR[j], S, T):
+                    matchL[i] = j; matchR[j] = i
+                    return True
+        return False
+
+    for i in range(nL):
+        while True:
+            S = [False] * nL; T = [False] * nR
+            if dfs(i, S, T): break
+            d = INF
+            for a in range(nL):
+                if S[a]:
+                    for b in range(nR):
+                        if not T[b]:
+                            d = min(d, lx[a] + ly[b] - w[a][b])
+            for a in range(nL):
+                if S[a]: lx[a] -= d
+            for b in range(nR):
+                if T[b]: ly[b] += d
+
+    return sum(w[i][matchL[i]] for i in range(nL) if matchL[i] != -1), matchL
+
+
+# ============ 6. 派生量 ============
+def max_independent_set(n, cover):
+    s = set(cover)
+    return [i for i in range(n) if i not in s]
+
+
+# 换题只需改：建图方式 + 调用哪个函数
+# 有容量 / 费用 → 转网络流；有奇环 → 用带花树
+`,
+
+verify: `
+import random
+
+def brute_max_matching(g, nL, nR):
+    """暴力枚举所有匹配，仅用于对拍"""
+    edges = [(u, v) for u in range(nL) for v in g[u]]
+    best = 0
+
+    def dfs(i, usedL, usedR, cnt):
+        nonlocal best
+        if i == len(edges):
+            best = max(best, cnt)
+            return
+        dfs(i + 1, usedL, usedR, cnt)                # 不取
+        u, v = edges[i]
+        if not usedL[u] and not usedR[v]:
+            usedL[u] = usedR[v] = True
+            dfs(i + 1, usedL, usedR, cnt + 1)        # 取
+            usedL[u] = usedR[v] = False
+
+    dfs(0, [False] * nL, [False] * nR, 0)
+    return best
+
+
+def stress(max_n=6, trials=2000, seed=1):
+    """随机小图对拍：暴力 / 匈牙利 / HK / 网络流 必须一致"""
+    rnd = random.Random(seed)
+    for _ in range(trials):
+        nL = rnd.randint(1, max_n)
+        nR = rnd.randint(1, max_n)
+        g = [[] for _ in range(nL)]
+        for u in range(nL):
+            for v in range(nR):
+                if rnd.random() < 0.4:
+                    g[u].append(v)
+
+        a = hungarian(g, nL, nR)[0]
+        b = hopcroft_karp(g, nL, nR)[0]
+        c = max_matching_by_flow(g, nL, nR)
+        d = brute_max_matching(g, nL, nR)
+        assert a == b == c == d, (g, a, b, c, d)
+
+        # König 自检：覆盖数 = 匹配数，且每条边都被覆盖
+        m, pairU, pairV = hopcroft_karp(g, nL, nR)
+        cover = set(konig_cover(g, nL, nR, pairU, pairV))
+        assert len(cover) == m
+        for u in range(nL):
+            for v in g[u]:
+                assert u in cover or (nL + v) in cover
+    print("all ok")
+
+
+# 还可以：
+#   - 随机打乱点编号重跑，答案应不变（抓下标 bug）
+#   - 构造边界：无边图、完全二分图、单边、孤立点
+#   - 检查 |独立集| + |覆盖| == n，|路径覆盖| + |匹配| == n
+`
+};
+
+function applyCode(){
+  document.querySelectorAll('code[data-src]').forEach(el => {
+    const raw = CODE[el.dataset.src];
+    if (typeof raw === 'string') {
+      el.textContent = raw.replace(/^\n+/, '').replace(/\s+$/, '');
+    }
+  });
+  if (window.Prism && Prism.highlightAll) { Prism.highlightAll(); }
+}
+
+const deck = document.getElementById('deck');
+function fit(){
+  const s = Math.min(window.innerWidth / 1320, window.innerHeight / 780);
+  deck.style.transform = 'scale(' + s + ')';
+}
+
+function fitCode(){
+  document.querySelectorAll('pre.code').forEach(pre => {
+    pre.style.fontSize = '';
+    let fs = 12.4, guard = 0;
+    while (pre.scrollHeight > pre.clientHeight + 2 && fs > 10.2 && guard < 40) {
+      fs -= 0.15;
+      pre.style.fontSize = fs.toFixed(2) + 'px';
+      guard++;
+    }
+  });
+}
+function relayout(){ fit(); requestAnimationFrame(fitCode); }
+window.addEventListener('resize', relayout);
+window.addEventListener('load', relayout);
+
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let idx = 0;
+document.getElementById('tot').textContent = total;
+
+function show(n){
+  idx = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('on', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('prog').style.width = ((idx + 1) / total * 100) + '%';
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  requestAnimationFrame(fitCode);
+}
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(total - 1);
+  else if (e.key.toLowerCase() === 'o') document.getElementById('toc').classList.toggle('on');
+  else if (e.key === 'Escape') document.getElementById('toc').classList.remove('on');
+});
+document.getElementById('fullBtn').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+const tocGrid = document.getElementById('tocGrid');
+slides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + (i + 1);
+  a.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b>' + (s.dataset.title || '');
+  a.onclick = e => { e.preventDefault(); show(i); document.getElementById('toc').classList.remove('on'); };
+  tocGrid.appendChild(a);
+});
+document.getElementById('tocBtn').onclick = () => document.getElementById('toc').classList.toggle('on');
+document.getElementById('toc').onclick = e => { if (e.target.id === 'toc') e.classList.remove('on'); };
+
+applyCode();
+const h = parseInt(location.hash.replace('#', ''), 10);
+show(isNaN(h) ? 0 : h - 1);
+relayout();
+</script>
+</body>
+</html>

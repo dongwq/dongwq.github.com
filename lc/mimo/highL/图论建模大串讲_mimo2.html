@@ -1,0 +1,2573 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>图论建模大串讲：并查集 / 二分图 / 网络流</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{
+  --paper:#FFF8F0; --card:#FFFFFF;
+  --ink:#2B1D12; --ink2:#6E5842; --line:#EEDCC2;
+  --accent:#E2612F; --amber:#F2A63B; --teal:#0F7B6C; --plum:#A33A64;
+  --code-bg:#2C2117;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EFE0C8;font-family:var(--sans);color:var(--ink);overflow:hidden}
+body{background:
+  radial-gradient(1200px 700px at 12% -10%, #FBE9CE 0%, rgba(251,233,206,0) 60%),
+  radial-gradient(900px 600px at 105% 110%, #F7DCC0 0%, rgba(247,220,192,0) 55%), #EFE0C8;}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center center;
+  border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(90,52,18,.28),0 4px 12px rgba(90,52,18,.14)}
+
+.slide{position:absolute;inset:0;padding:22px 38px 26px;opacity:0;visibility:hidden;
+  transform:translateX(22px) scale(.996);transition:opacity .38s ease,transform .38s ease,visibility .38s;
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(160deg,#FFFBF5 0%,#FFF4E6 55%,#FDEBD3 100%)}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.slide::after{content:"";position:absolute;right:-120px;top:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(242,166,59,.18),rgba(242,166,59,0) 70%);pointer-events:none}
+.slide::before{content:"";position:absolute;left:-90px;bottom:-140px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,rgba(226,97,47,.11),rgba(226,97,47,0) 70%);pointer-events:none}
+.slide>*{position:relative;z-index:2}
+
+.kicker{display:inline-flex;align-items:center;gap:7px;font-size:10.6px;font-weight:700;letter-spacing:.13em;
+  color:var(--accent);background:#FFEEDC;border:1px solid #F6D2B2;padding:3px 11px;border-radius:999px}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+.kicker.teal{color:var(--teal);background:#E9F7F2;border-color:#BEE6D8}
+.kicker.teal i{background:var(--teal)}
+.kicker.plum{color:var(--plum);background:#FDF1F5;border-color:#EFCBD8}
+.kicker.plum i{background:var(--plum)}
+.kicker.amber{color:#A9700B;background:#FFF3DC;border-color:#F1D6A2}
+.kicker.amber i{background:#F2A63B}
+
+.sl-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+  border-bottom:2px solid var(--line);padding-bottom:8px}
+.sl-head h2{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1.14;margin-top:5px}
+.sl-head h2 em{font-style:normal;color:var(--accent)}
+.sl-head h2 em.t{color:var(--teal)}
+.sl-head h2 em.p{color:var(--plum)}
+.sl-head h2 em.a{color:#C9830F}
+.sl-head .hint{font-size:11.6px;color:var(--ink2);text-align:right;max-width:340px;line-height:1.5}
+.sl-head .hint b{color:#8A5A2C}
+.lead{font-size:15px;line-height:1.66;color:#42301F}
+.muted{color:var(--ink2)}
+
+.cols{display:grid;gap:11px;min-height:0;flex:1 1 auto}
+.c2{grid-template-columns:1fr 1fr}
+.c2a{grid-template-columns:1.08fr .92fr}
+.c2b{grid-template-columns:.92fr 1.08fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+.cols > div{min-height:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.card h3 .n{width:21px;height:21px;border-radius:7px;background:var(--accent);color:#fff;font-size:11.5px;
+  display:grid;place-items:center;font-family:var(--sans);font-weight:700;flex:none}
+.card h3 .n.t{background:var(--teal)}
+.card h3 .n.p{background:var(--plum)}
+.card h3 .n.a{background:var(--amber)}
+.card p,.card li{font-size:13px;line-height:1.6;color:#4A3722}
+.card ul,ol{padding-left:16px}
+.card li{margin:2px 0}
+.card.tint-teal{background:#F2FBF7;border-color:#BEE6D8}
+.card.tint-amber{background:#FFF7E6;border-color:#F4DCAC}
+.card.tint-plum{background:#FDF1F5;border-color:#EFCBD8}
+.card.tint-rose{background:#FFF1EA;border-color:#F7CDB4}
+
+.formula{font-family:var(--mono);font-size:14.5px;background:#2E2118;color:#FFEBD2;border-radius:11px;
+  padding:10px 14px;line-height:1.55;flex:none;overflow-x:auto}
+.formula .hl{color:#FFB169;font-weight:600}
+.formula .ok{color:#7FE0C2;font-weight:600}
+.formula .dim{color:#A8846A}
+
+.codewrap{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;
+  border:1px solid #4B3823;border-radius:12px;overflow:hidden;background:var(--code-bg)}
+.code-head{flex:none;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#241A12;
+  border-bottom:1px solid #46341F}
+.code-head .dot{width:9px;height:9px;border-radius:50%;background:#6B5238}
+.code-head .dot.r{background:#B9471B}
+.code-head .dot.g{background:#0F7B6C}
+.code-head .dot.p{background:#A33A64}
+.code-head em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B29272;letter-spacing:.08em;margin-left:6px}
+.code-head .lang{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7A5F45;letter-spacing:.12em}
+pre.code{margin:0;flex:1 1 auto;min-height:0;overflow:auto;background:var(--code-bg)!important;
+  padding:11px 14px;font-family:var(--mono);font-size:12.4px;line-height:1.56;white-space:pre;tab-size:4}
+pre.code::-webkit-scrollbar{height:8px;width:8px}
+pre.code::-webkit-scrollbar-track{background:#241A12}
+pre.code::-webkit-scrollbar-thumb{background:#6B5238;border-radius:8px}
+pre.code::-webkit-scrollbar-thumb:hover{background:#8E6E4C}
+pre.code code,code[class*="language-"]{font-family:var(--mono)!important;font-size:inherit;
+  background:transparent!important;color:#F0E0CC!important;text-shadow:none!important}
+pre.code .token.comment,pre.code .token.prolog,pre.code .token.doctype,pre.code .token.cdata{color:#A8846A!important;font-style:italic}
+pre.code .token.punctuation{color:#C0A183!important}
+pre.code .token.keyword,pre.code .token.atrule,pre.code .token.rule,pre.code .token.important{color:#FFB169!important;font-weight:600}
+pre.code .token.string,pre.code .token.char,pre.code .token.attr-value{color:#9BE0BE!important}
+pre.code .token.function,pre.code .token.class-name,pre.code .token.builtin{color:#FFD9A8!important}
+pre.code .token.number,pre.code .token.boolean,pre.code .token.constant,pre.code .token.symbol{color:#F4A9C0!important}
+pre.code .token.operator{color:#FFC98B!important}
+
+.note{border-left:4px solid var(--amber);background:#FFF6E4;padding:8px 12px;border-radius:0 11px 11px 0;
+  font-size:12.6px;line-height:1.58;flex:none}
+.note.warn{border-color:var(--plum);background:#FDF0F4}
+.note.good{border-color:var(--teal);background:#EFF9F5}
+.note b{color:var(--accent)}.note.warn b{color:var(--plum)}.note.good b{color:var(--teal)}
+code:not([class*="language-"]){font-family:var(--mono);font-size:.93em;background:#F6EADA;padding:1px 5px;border-radius:5px}
+
+table{width:100%;border-collapse:collapse;font-size:12.1px;background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);flex:none}
+th,td{padding:5.5px 10px;text-align:left;border-bottom:1px solid var(--line);line-height:1.45}
+th{background:#F7E7CF;font-family:var(--serif);font-size:12.6px;color:#7A4A22}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:11px}
+td.no{color:#A33A64;font-weight:700}
+td.yes{color:#0F7B6C;font-weight:700}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:7px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.2px;
+  font-weight:600;color:#5B4429}
+.pill.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill.tq{background:var(--teal);color:#fff;border-color:var(--teal)}
+.pill.pl{background:var(--plum);color:#fff;border-color:var(--plum)}
+.pill.am{background:var(--amber);color:#fff;border-color:var(--amber)}
+ul.tick{list-style:none;padding:0}
+ul.tick li{position:relative;padding-left:20px;margin:3px 0;font-size:12.8px;line-height:1.55}
+ul.tick li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:4px;
+  background:#FFE2C6;border:2px solid var(--accent)}
+ul.tick.ok li::before{background:#CDEEE2;border-color:var(--teal)}
+ul.tick.no li::before{background:#F7D6E1;border-color:var(--plum);border-radius:50%}
+ul.tick.arr li::before{background:#FBD9A2;border-color:var(--amber);border-radius:2px;transform:rotate(45deg);width:9px;height:9px}
+
+.a-link{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:11px;padding:8px 11px;transition:.18s;box-shadow:0 4px 10px rgba(120,70,20,.06);overflow:hidden}
+.a-link:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 20px rgba(226,97,47,.16)}
+.a-link .t{font-size:12.4px;font-weight:700;color:#7A3A12;display:block;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link .d{font-size:11px;color:var(--ink2);line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.a-link .src{font-size:9.6px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--teal);
+  padding:1px 7px;border-radius:999px;display:inline-block;margin-bottom:4px}
+.a-link .src.dsu{background:var(--accent)}
+.a-link .src.flow{background:var(--plum)}
+.a-link .src.loc{background:var(--amber)}
+
+.step{display:flex;gap:9px;align-items:flex-start}
+.step .idx{flex:none;width:23px;height:23px;border-radius:7px;background:#2E2118;color:#FFD9A8;
+  display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.split-line{height:2px;background:linear-gradient(90deg,#E2612F,#F2A63B,rgba(242,166,59,0));border-radius:2px;margin:6px 0;flex:none}
+.split-line.t{background:linear-gradient(90deg,#0F7B6C,#7FE0C2,rgba(127,224,194,0))}
+.split-line.p{background:linear-gradient(90deg,#A33A64,#F4A9C0,rgba(244,169,192,0))}
+.num-huge{font-family:var(--serif);font-size:110px;font-weight:900;line-height:.9;
+  background:linear-gradient(160deg,#E2612F,#F2A63B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.t{background:linear-gradient(160deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.p{background:linear-gradient(160deg,#A33A64,#F4A9C0);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+svg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;overflow:visible}
+.dfnlab{font-family:var(--mono);font-size:11.5px;font-weight:700;fill:#0F7B6C}
+.dfnlab.r{fill:#B9471B}
+.dfnlab.p{fill:#A33A64}
+.dfnlab.g{fill:#8A6A45}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.62;transform:scale(1.07)}}
+.dash{stroke-dasharray:8 8;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.cover{background:linear-gradient(150deg,#FFF6E8 0%,#FFE9CD 48%,#FFDCB4 100%)}
+.cover .badge{display:inline-flex;gap:8px;align-items:center;background:#2E2118;color:#FFD9A8;
+  padding:6px 14px;border-radius:999px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.cover h1{font-family:var(--serif);font-size:50px;line-height:1.1;font-weight:900}
+.cover h1 em{font-style:normal;background:linear-gradient(92deg,#E2612F,#F2A63B);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.cover h1 em.t{background:linear-gradient(92deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cover .sub{font-size:15.5px;color:#6B4A2C;line-height:1.66;max-width:600px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta span{background:rgba(255,255,255,.72);border:1px solid #F0D2AC;padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#7A4A22}
+.section-slide{background:linear-gradient(150deg,#FFF3E0,#FFE0BC)}
+.section-slide.teal{background:linear-gradient(150deg,#EFF9F4,#CFE9DE)}
+.section-slide.plum{background:linear-gradient(150deg,#FDF0F4,#F5CBD8)}
+.section-slide.rose{background:linear-gradient(150deg,#FFF1EA,#F9D3BC)}
+.section-slide .big{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1.18}
+
+.hud{position:fixed;right:18px;bottom:14px;display:flex;gap:7px;align-items:center;z-index:50}
+.hud button{border:1px solid rgba(120,70,20,.2);background:rgba(255,250,242,.92);color:#7A4A22;
+  width:34px;height:34px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:700;backdrop-filter:blur(6px);transition:.16s}
+.hud button:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.pgn{background:rgba(255,250,242,.92);border:1px solid rgba(120,70,20,.2);border-radius:10px;height:34px;
+  display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:12.5px;color:#7A4A22;font-weight:600}
+.prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,#E2612F,#F2A63B);z-index:60;
+  transition:width .35s ease;box-shadow:0 1px 6px rgba(226,97,47,.5)}
+.brand{position:fixed;left:18px;bottom:14px;z-index:50;background:rgba(255,250,242,.9);border:1px solid rgba(120,70,20,.2);
+  border-radius:10px;padding:8px 13px;font-size:10.5px;color:#7A4A22;letter-spacing:.1em;font-weight:700}
+.toc{position:fixed;inset:0;background:rgba(46,33,24,.82);backdrop-filter:blur(8px);z-index:80;display:none;
+  padding:42px 56px;overflow:auto}
+.toc.on{display:block}
+.toc h4{color:#FFE2BF;font-family:var(--serif);font-size:24px;margin-bottom:16px}
+.toc .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.toc a{background:rgba(255,246,232,.94);border-radius:10px;padding:9px 12px;text-decoration:none;color:#4A3722;
+  font-size:12.2px;line-height:1.4;border:1px solid rgba(255,255,255,.18);transition:.16s}
+.toc a:hover{background:#FFB169;transform:translateY(-2px)}
+.toc a b{display:block;font-family:var(--mono);font-size:10px;color:#B9471B;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- ═══ 01 封面 ═══ -->
+<section class="slide cover on" data-title="封面">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">GRAPH MODELING · DSU × BIPARTITE × FLOW · 80 MIN</div>
+      <h1>图论建模大串讲<br><em>先问关系是什么</em></h1>
+      <p class="sub">并查集问"<b>是不是同类</b>"，二分图问"<b>能不能配对</b>"，网络流问"<b>能送多少 / 花多少</b>"。<br>
+        三种模型横向对比，看清<b>什么时候用哪个、什么时候用了就错</b>。</p>
+      <div class="meta">
+        <span>45 页 · 约 80 分钟</span><span>12 个可运行 Python 模板</span>
+        <span>含跨模型交叉对拍</span><span>洛谷 / LibreOJ 题单</span>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 500 310" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="ga" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#8A6A45"/></marker>
+        </defs>
+        <!-- 中心枢纽 -->
+        <circle cx="250" cy="150" r="82" fill="#E2612F" opacity=".16" class="pulse"/>
+        <circle cx="250" cy="150" r="52" fill="#2E2118"/>
+        <text x="250" y="143" text-anchor="middle" fill="#FFD9A8" font-family="serif" font-size="21" font-weight="700">建模</text>
+        <text x="250" y="166" text-anchor="middle" fill="#FFB169" font-family="monospace" font-size="9.5">三问定模型</text>
+
+        <!-- 连线 -->
+        <g stroke="#D6B78C" stroke-width="3" fill="none">
+          <path d="M212 112 L128 78"/><path d="M288 112 L372 78"/><path d="M250 202 L250 252"/>
+        </g>
+
+        <!-- 三个模型节点 -->
+        <g>
+          <circle cx="98" cy="62" r="36" fill="#FFF3E2" stroke="#B9471B" stroke-width="3.5"/>
+          <circle cx="402" cy="62" r="36" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3.5"/>
+          <circle cx="250" cy="282" r="36" fill="#FDF1F5" stroke="#A33A64" stroke-width="3.5"/>
+        </g>
+        <g text-anchor="middle">
+          <text x="98" y="56" class="dfnlab r" font-size="13">并查集</text>
+          <text x="98" y="72" class="dfnlab g" font-size="8.6">同等价</text>
+          <text x="402" y="56" class="dfnlab" font-size="13">二分图</text>
+          <text x="402" y="72" class="dfnlab g" font-size="8.6">能配对</text>
+          <text x="250" y="276" class="dfnlab p" font-size="13">网络流</text>
+          <text x="250" y="292" class="dfnlab g" font-size="8.6">能传输</text>
+        </g>
+
+        <!-- 小图形装饰：并查集树 -->
+        <g stroke="#B9471B" stroke-width="2.2" fill="#FFF3E2">
+          <path d="M52 22 L72 40"/><path d="M92 22 L72 40"/>
+          <circle cx="52" cy="20" r="5"/><circle cx="92" cy="20" r="5"/><circle cx="72" cy="42" r="5"/>
+        </g>
+        <!-- 二分图匹配 -->
+        <g stroke="#0F7B6C" stroke-width="2.2">
+          <circle cx="352" cy="22" r="5" fill="#E9F7F2"/><circle cx="352" cy="42" r="5" fill="#E9F7F2"/>
+          <circle cx="392" cy="22" r="5" fill="#E9F7F2"/><circle cx="392" cy="42" r="5" fill="#E9F7F2"/>
+          <path d="M357 22 L387 42"/><path d="M357 42 L387 22" stroke-dasharray="3 3"/>
+        </g>
+        <!-- 网络流 -->
+        <g stroke="#A33A64" stroke-width="2.2" fill="none">
+          <path d="M196 314 L222 314"/><path d="M232 314 L258 314"/>
+          <circle cx="192" cy="314" r="5" fill="#FDF1F5"/><circle cx="226" cy="314" r="5" fill="#FDF1F5"/>
+          <circle cx="262" cy="314" r="5" fill="#FDF1F5"/>
+        </g>
+
+        <!-- 问题气泡 -->
+        <g text-anchor="middle" font-family="monospace" font-size="9.6">
+          <rect x="46" y="106" width="104" height="22" rx="9" fill="#fff" stroke="#F0D2AC"/>
+          <text x="98" y="121" class="dfnlab r">是 同 类 吗</text>
+          <rect x="350" y="106" width="104" height="22" rx="9" fill="#fff" stroke="#BEE6D8"/>
+          <text x="402" y="121" class="dfnlab">能 配 对 吗</text>
+          <rect x="198" y="216" width="104" height="22" rx="9" fill="#fff" stroke="#EFCBD8"/>
+          <text x="250" y="231" class="dfnlab p">能 送 多 少</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 路线图 ═══ -->
+<section class="slide" data-title="路线图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>ROADMAP</div><h2>六站，一条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>这份讲义怎么走？<br>每站先给"要解决的问题"，再给"为什么这样写"。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card"><h3><span class="n">1</span>建模总纲</h3><p>建模五问 · 三大模型速查 · 识别信号 → 模型</p></div>
+    <div class="card tint-rose"><h3><span class="n">2</span>并查集</h3><p>等价关系三性质 · 基本 / 带权 · Kruskal · 离线删边</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>二分图</h3><p>染色判定 · 匈牙利 / HK · König 定理 · 方案输出</p></div>
+    <div class="card tint-plum"><h3><span class="n p">4</span>网络流</h3><p>容量与代价 · Dinic · 最小割 · 闭合子图 · 费用流</p></div>
+    <div class="card tint-amber"><h3><span class="n a">5</span>横向对比</h3><p>同题三解 · 归约关系 · 六轴雷达 · 不可替代性</p></div>
+    <div class="card"><h3><span class="n">6</span>工程</h3><p>易错清单 · 模板合集 · 跨模型对拍 · 题单</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>时间分配</h3><p class="muted">总纲 10' · 并查集 14' · 二分图 14' · 网络流 14' · 对比 18' · 工程 10'</p></div>
+    <div class="card"><h3>验收标准</h3><p class="muted">能对一道题<b>说出三问</b>并选定模型；能说明<b>另外两个模型为什么不适用</b>。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 03 钩子 ═══ -->
+<section class="slide" data-title="一道题，三种模型">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HOOK</div><h2>三道"长得像"的题，<em>三个模型</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么不能背模板？<br>因为选错模型 = 全错。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3><span class="n">A</span>分组</h3>
+      <p><b>题意：</b>n 个物品，有些<b>必须一起拿</b>，最少分几组？</p>
+      <div class="split-line"></div>
+      <p class="muted">→ 并查集，O(α(n)) 每次。<br>关系是"<b>同类</b>"，自反 / 对称 / 传递。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">B</span>配对</h3>
+      <p><b>题意：</b>n 个工人 m 个任务，每人最多做 1 个，最多配几对？</p>
+      <div class="split-line t"></div>
+      <p class="muted">→ 二分图匹配，O(E√V)。<br>关系是"<b>可以配对</b>"，非传递。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">C</span>分配</h3>
+      <p><b>题意：</b>工人有工作上限，任务有权重，最小总代价？</p>
+      <div class="split-line p"></div>
+      <p class="muted">→ 网络流 / 费用流，O(V²E)。<br>关系是"<b>可以传输</b>"，带容量与代价。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n a">★</span>共同点与差异</h3>
+      <p class="lead">三者都是"<b>把对象和关系编成图</b>"，但<b>关系的代数性质不同</b>：等价关系可合并，配对关系不可传递，传输关系带容量。选错模型不是"略差"，而是<b>答案就错</b>。</p>
+      <div class="note"><b>一句话：</b>建模的第一步不是画图，而是<b>问清楚"关系"是什么</b>。</div>
+    </div>
+    <div class="card">
+      <h3>三个判断题</h3>
+      <div class="pill-row">
+        <span class="pill hot">必须同类吗</span>
+        <span class="pill tq">可以配对吗</span>
+        <span class="pill pl">有容量/代价吗</span>
+      </div>
+      <div class="split-line"></div>
+      <p class="muted">答对这三题，模型就定了一大半。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 建模五问 ═══ -->
+<section class="slide" data-title="建模是什么">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · PROBLEM</div><h2>建模是什么：<em>五个问题</em></h2></div>
+    <div class="hint"><b>本页回答：</b>拿到题该问什么？<br>每一问都指向一个模型。</div>
+  </div>
+  <table>
+    <tr><th style="width:110px">问题</th><th style="width:200px">问的是</th><th style="width:150px">答案指向</th><th>典型陷阱</th></tr>
+    <tr><td><b>① 对象</b></td><td>点代表什么？（人 / 任务 / 集合 / 位置）</td><td>建图基础</td><td>把"集合"当"元素"，重复建点</td></tr>
+    <tr><td><b>② 关系</b></td><td>边代表什么？（同类 / 配对 / 传输）</td><td>选模型的关键</td><td>把"可以配对"当成"同类"，用并查集 → 全错</td></tr>
+    <tr><td><b>③ 等价</b></td><td>有没有"必须同类"的传递闭包？</td><td class="yes">→ 并查集</td><td>漏掉传递性，少合并</td></tr>
+    <tr><td><b>④ 容量</b></td><td>有没有"最多 / 至少"的限制？</td><td class="yes">→ 网络流</td><td>容量的语义是"限制"还是"代价"</td></tr>
+    <tr><td><b>⑤ 代价</b></td><td>有没有"最小 / 最大"的总代价？</td><td class="yes">→ 费用流 / KM</td><td>求最大收益忘了取负</td></tr>
+    <tr><td><b>⑥ 方案</b></td><td>只要数值还是要具体方案？</td><td>决定怎么读残量</td><td>割方向、匹配方案输出</td></tr>
+    <tr><td><b>⑦ 规模</b></td><td>n、m、边数各多大？</td><td>选算法</td><td>用 O(V²E) 跑 n=10⁵</td></tr>
+    <tr><td><b>⑧ 动态</b></td><td>边会不会删？查询在线吗？</td><td>→ 离线倒序</td><td>在线删边用并查集 → 错</td></tr>
+    <tr><td><b>⑨ 一般图</b></td><td>图一定是二分图吗？</td><td>→ 带花树</td><td>有奇环还硬套二分图</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>三个最常见的错</h3>
+      <ul class="tick no">
+        <li>把"<b>可以配对</b>"当"同类" → 用并查集，答案必错</li>
+        <li>把"<b>不能同组</b>"当"配对" → 用二分图匹配，答非所问</li>
+        <li>忽略<b>奇环</b> → 硬套二分图，染色冲突</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>好的建模长什么样</h3>
+      <p>三句话说清：<b>点是什么 → 边是什么 → 求什么</b>。<br>说不出来 = 还没想清楚，先别写代码。</p>
+      <div class="note good"><b>习惯：</b>写题解时固定写"<b>源/汇 → 容量 → 费用 → 为什么是流</b>"或"<b>等价类 → 代表元 → 合并规则</b>"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 取舍链 ═══ -->
+<section class="slide" data-title="取舍链">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · ROADMAP</div><h2>取舍链：<em>DSU → 二分图 → 网络流 → 更重的工具</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么有这么多工具？<br>各自的甜点在哪、边界在哪。</div>
+  </div>
+  <table>
+    <tr><th style="width:175px">工具</th><th>时间（单次）</th><th>代码量</th><th>核心能力</th><th>边界</th></tr>
+    <tr><td><b>并查集</b></td><td class="mono">O(α(n))</td><td>20 行</td><td>等价关系 / 连通性</td><td>不能配对、无容量</td></tr>
+    <tr><td>带权并查集</td><td class="mono">O(α(n))</td><td>35 行</td><td>到根的"关系偏移"</td><td>关系必须是群运算</td></tr>
+    <tr><td><b>二分图匹配</b></td><td class="mono">O(E√V)</td><td>50 行</td><td>配对 / 覆盖</td><td>必须二分；无容量费用</td></tr>
+    <tr><td>一般图匹配</td><td class="mono">O(V³)</td><td>200 行</td><td>有奇环也能配</td><td>带花树，难写难调</td></tr>
+    <tr><td><b>网络流</b></td><td class="mono">O(V²E)</td><td>60 行</td><td>容量 / 代价 / 割</td><td>建模复杂，容易想错</td></tr>
+    <tr><td>费用流</td><td class="mono">O(E log V·f)</td><td>80 行</td><td>最小总代价</td><td>负环、势函数易错</td></tr>
+    <tr><td>上下界流</td><td class="mono">O(V²E)</td><td>90 行</td><td>流量下限</td><td>符号约定易写反</td></tr>
+    <tr><td>NP-hard 类</td><td>—</td><td>—</td><td>装箱 / 背包 / 一般独立集</td><td class="no">不可用上述任何工具</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>不可替代的三件事</h3>
+      <ul class="tick">
+        <li><b>并查集</b>：动态连通性、离线删边、等价闭包</li>
+        <li><b>二分图</b>：2-着色判定、König 方案、一般图匹配入口</li>
+        <li><b>网络流</b>：带容量的分配、最小割方案、费用流</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>心智模型</h3>
+      <p>三种模型都在做<b>"把关系编成图"</b>，区别在关系的<b>代数性质</b>：等价 / 配对 / 传输。</p>
+      <div class="note good"><b>建议：</b>先练<b>识别信号</b>（第 9 页），再练建图。识别错了，代码再漂亮也没用。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：建模总纲">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 01</div>
+      <div class="big">建模总纲：<em style="color:var(--accent)">五问 · 速查 · 识别</em></div>
+      <p class="lead">建模五问 · 三大模型速查表 · 识别信号 → 模型<br>先把"选模型"这一步变成可操作的流程。</p>
+    </div>
+    <div><div class="num-huge">01</div>
+      <div class="note good"><b>目标：</b>拿到题 30 秒内能说出"关系是什么、该用哪个模型"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 建模五问详解 ═══ -->
+<section class="slide" data-title="建模五问详解">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · FIVE QUESTIONS</div><h2>五问<em>逐条展开</em></h2></div>
+    <div class="hint"><b>本页回答：</b>每一问具体怎么答？<br>答错了会怎样。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3><span class="n">1</span>关系是等价吗</h3>
+      <ul class="tick">
+        <li>自反：A 和 A 同类 ✓</li>
+        <li>对称：A 同 B ⇒ B 同 A</li>
+        <li>传递：A 同 B、B 同 C ⇒ A 同 C</li>
+      </ul>
+      <div class="split-line"></div>
+      <p class="muted">三性都满足 ⇒ <b>并查集</b>。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">2</span>关系是配对吗</h3>
+      <ul class="tick ok">
+        <li>"A <b>可以</b>和 B 配" ≠ 等价</li>
+        <li>不对称（工人↔任务）</li>
+        <li>不传递（A 配 B、B 配 C ≠ A 配 C）</li>
+      </ul>
+      <div class="split-line t"></div>
+      <p class="muted">⇒ <b>二分图匹配</b>。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">3</span>关系带容量吗</h3>
+      <ul class="tick no">
+        <li>"最多 k 个 / 至少 k 个"</li>
+        <li>"每条边能送 c"</li>
+        <li>"每单位有代价 w"</li>
+      </ul>
+      <div class="split-line p"></div>
+      <p class="muted">⇒ <b>网络流 / 费用流</b>。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>三问的"排他性"</h3>
+      <p>一道题可以同时有等价 + 配对 + 容量（例如"先缩点，再匹配，再限流"），这时<b>按顺序叠加模型</b>，而不是三选一。</p>
+    </div>
+    <div class="card tint-amber"><h3>常见组合</h3>
+      <ul class="tick arr">
+        <li>并查集缩点 → 二分图判定（关押罪犯）</li>
+        <li>二分图匹配 → 网络流（带容量 / 费用的匹配）</li>
+        <li>二分答案 → 网络流判定（最大值最小）</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>模型是<b>可叠加</b>的积木，不是互斥的标签。</div>
+  </div>
+</section>
+
+<!-- ═══ 08 三大模型速查 ═══ -->
+<section class="slide" data-title="三大模型速查">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · CHEAT SHEET</div><h2>三大模型<em>速查表</em>（核心页）</h2></div>
+    <div class="hint"><b>本页回答：</b>一页看懂三种模型。<br>建议打印贴墙上。</div>
+  </div>
+  <table>
+    <tr><th style="width:112px">维度</th><th style="width:245px">并查集</th><th style="width:245px">二分图</th><th>网络流</th></tr>
+    <tr><td><b>核心对象</b></td><td>等价类 / 代表元</td><td>左部 + 右部</td><td>源 s + 汇 t + 中间点</td></tr>
+    <tr><td><b>核心关系</b></td><td>必须同类（等价）</td><td>可以配对</td><td>可以传输</td></tr>
+    <tr><td><b>典型问题</b></td><td>连通 / 分组 / 判同类</td><td>匹配 / 覆盖 / 独立集</td><td>分配 / 割 / 代价</td></tr>
+    <tr><td><b>关键操作</b></td><td class="mono">find / union</td><td class="mono">增广 / 交替路</td><td class="mono">增广 / 反向边</td></tr>
+    <tr><td><b>核心定理</b></td><td>等价闭包唯一</td><td>König：|匹配| = |最小点覆盖|</td><td>最大流 = 最小割</td></tr>
+    <tr><td><b>复杂度</b></td><td class="mono">O(α(n)) 每次</td><td class="mono">O(E√V)</td><td class="mono">O(V²E)</td></tr>
+    <tr><td><b>代码量</b></td><td>20 行</td><td>50 行</td><td>60 行</td></tr>
+    <tr><td><b>方案输出</b></td><td>集合 / 代表元</td><td>匹配对 / 覆盖点集</td><td>割边 / 流量分布</td></tr>
+    <tr><td><b>不适用</b></td><td class="no">配对、容量、代价</td><td class="no">一般图、容量、费用</td><td class="no">纯等价（杀鸡用牛刀）</td></tr>
+    <tr><td><b>扩展</b></td><td>带权 / 可撤销 / 离线</td><td>带花树 / KM / HK</td><td>费用流 / 上下界 / 拆点</td></tr>
+    <tr><td><b>颜色</b></td><td><span class="pill hot">赤陶</span></td><td><span class="pill tq">青绿</span></td><td><span class="pill pl">李子</span></td></tr>
+  </table>
+  <div class="note good"><b>记忆：</b>并查集问"<b>是不是同类</b>"、二分图问"<b>能不能配对</b>"、网络流问"<b>能送多少 / 花多少</b>"。三个问句就是三个模型。</div>
+</section>
+
+<!-- ═══ 09 识别信号 ═══ -->
+<section class="slide" data-title="识别信号">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · SIGNALS</div><h2>识别信号 <em>→ 模型</em></h2></div>
+    <div class="hint"><b>本页回答：</b>看到这些词就想到那个模型。<br>速查表 + 决策树。</div>
+  </div>
+  <table>
+    <tr><th style="width:290px">题面关键词</th><th style="width:150px">模型</th><th>关键建模</th></tr>
+    <tr><td>同类 / 同一集合 / 必须一起</td><td class="yes">并查集</td><td class="mono">union(u, v)</td></tr>
+    <tr><td>传递关系 / 等价闭包 / 亲戚</td><td class="yes">并查集</td><td class="mono">find 找代表元</td></tr>
+    <tr><td>不能同队 / 不能同组 / 奇偶性</td><td class="yes">带权并查集</td><td class="mono">d[x] = 关系偏移</td></tr>
+    <tr><td>边会删 / 查询在线离线</td><td class="yes">并查集（离线倒序）</td><td class="mono">倒序 union</td></tr>
+    <tr><td>一对多配对 / 最多配几对</td><td class="yes">二分图匹配</td><td class="mono">左部 → 右部</td></tr>
+    <tr><td>每人最多做 1 个任务</td><td class="yes">二分图匹配</td><td class="mono">容量 1</td></tr>
+    <tr><td>最少覆盖 / 最大独立集</td><td class="yes">二分图</td><td class="mono">König 定理</td></tr>
+    <tr><td>最少链覆盖 / 不相交路径</td><td class="yes">二分图 / 网络流</td><td class="mono">拆点 + 匹配</td></tr>
+    <tr><td>带容量的资源分配</td><td class="yes">网络流</td><td class="mono">源/汇 + 容量</td></tr>
+    <tr><td>最少切断 / 最大收益 / 选与不选</td><td class="yes">网络流最小割</td><td class="mono">割 = 代价</td></tr>
+    <tr><td>有依赖的项目选择</td><td class="yes">闭合子图</td><td class="mono">INF 依赖边</td></tr>
+    <tr><td>最小总代价 / 最大总收益</td><td class="yes">费用流</td><td class="mono">费用 = 代价</td></tr>
+    <tr><td>最大值最小 / 最小值最大</td><td class="yes">二分 + 网络流</td><td class="mono">二分 T 再判定</td></tr>
+    <tr><td>点只能用一次 / 点有容量</td><td class="yes">网络流拆点</td><td class="mono">2u / 2u+1</td></tr>
+    <tr><td>图有奇环、一般图匹配</td><td class="no">带花树（不是二分图）</td><td class="mono">blossom</td></tr>
+    <tr><td>装箱 / 一般独立集 / 子集和</td><td class="no">NP-hard，无多项式模型</td><td class="mono">—</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>决策树（口诀）</h3>
+      <p><b>先问等价</b>，再问配对，最后问容量与代价。三问都问完再下笔。</p>
+    </div>
+    <div class="card tint-plum"><h3>反向检查</h3>
+      <p>如果答案是"<b>连通块个数</b>"或"<b>代表元</b>"，却用了网络流——<b>杀鸡用牛刀</b>，而且容易把容量语义写错。</p>
+    </div>
+    <div class="note"><b>关键：</b>识别不出关键词时，回到<b>第 4 页的五问</b>逐条问一遍。</div>
+  </div>
+</section>
+
+<!-- ═══ 10 章节 ═══ -->
+<section class="slide section-slide rose" data-title="章节：并查集">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 02</div>
+      <div class="big">并查集：<em style="color:var(--accent)">等价 · 带权 · 反向</em></div>
+      <p class="lead">等价关系三性质 · 基本模板 · 带权并查集 · Kruskal · 离线删边<br>最轻、最快、最常被误用。</p>
+    </div>
+    <div><div class="num-huge">02</div>
+      <div class="note good"><b>目标：</b>能解释"为什么并查集做不了配对"，并写出带权版的食物链。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 11 DSU 等价关系 ═══ -->
+<section class="slide" data-title="DSU：等价关系">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · EQUIVALENCE</div><h2>并查集：<em>等价关系的传递闭包</em></h2></div>
+    <div class="hint"><b>本页回答：</b>并查集维护的是什么？<br>路径压缩为什么对。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三性质</h3>
+        <ul class="tick">
+          <li><b>自反</b>：A 与 A 同类</li>
+          <li><b>对称</b>：A 同 B ⇒ B 同 A</li>
+          <li><b>传递</b>：A 同 B、B 同 C ⇒ A 同 C</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>两个优化</h3>
+        <ul class="tick ok">
+          <li><b>路径压缩</b>：find 时把沿途点挂到根</li>
+          <li><b>按秩合并</b>：矮树挂到高树下</li>
+          <li>两者同时用 ⇒ 单次 <code>O(α(n))</code></li>
+        </ul>
+      </div>
+      <div class="note warn"><b>边界：</b>并查集<b>不支持删边</b>（在线）。要删边请离线倒序（第 16 页）。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 430 235" preserveAspectRatio="xMidYMid meet">
+          <text x="112" y="18" text-anchor="middle" class="dfnlab r">压缩前：树高 3</text>
+          <text x="322" y="18" text-anchor="middle" class="dfnlab">压缩后：全部指向根</text>
+          <defs><marker id="gb" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#B9471B"/></marker>
+            <marker id="gc" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#0F7B6C"/></marker></defs>
+          <!-- 左：树 -->
+          <g stroke="#B9471B" stroke-width="2.4" fill="none" marker-end="url(#gb)">
+            <path d="M84 60 L108 92"/><path d="M132 60 L112 92"/>
+            <path d="M96 112 L92 148"/><path d="M124 112 L136 148"/>
+            <path d="M84 168 L80 198"/><path d="M148 168 L152 198"/>
+          </g>
+          <g fill="#FFF3E2" stroke="#B9471B" stroke-width="2.6">
+            <circle cx="108" cy="48" r="13"/><circle cx="88" cy="102" r="13"/><circle cx="132" cy="102" r="13"/>
+            <circle cx="84" cy="158" r="13"/><circle cx="144" cy="158" r="13"/>
+            <circle cx="76" cy="210" r="13"/><circle cx="158" cy="210" r="13"/>
+          </g>
+          <g text-anchor="middle" class="dfnlab r" font-size="9.6">
+            <text x="108" y="52">root</text><text x="88" y="106">a</text><text x="132" y="106">b</text>
+            <text x="84" y="162">c</text><text x="144" y="162">d</text>
+            <text x="76" y="214">e</text><text x="158" y="214">f</text>
+          </g>
+          <!-- 箭头 -->
+          <path d="M196 122 L236 122" stroke="#8A6A45" stroke-width="3" fill="none" marker-end="url(#gb)"/>
+          <text x="216" y="112" text-anchor="middle" class="dfnlab g" font-size="9.5">路径压缩</text>
+          <!-- 右：星形 -->
+          <g stroke="#0F7B6C" stroke-width="2.4" fill="none" marker-end="url(#gc)">
+            <path d="M300 58 L322 92"/><path d="M352 58 L332 92"/><path d="M290 112 L318 118"/>
+            <path d="M372 112 L338 118"/><path d="M296 172 L320 134"/><path d="M368 172 L336 134"/>
+          </g>
+          <g fill="#E9F7F2" stroke="#0F7B6C" stroke-width="2.6">
+            <circle cx="326" cy="112" r="14"/>
+            <circle cx="302" cy="48" r="12"/><circle cx="350" cy="48" r="12"/>
+            <circle cx="282" cy="112" r="12"/><circle cx="372" cy="112" r="12"/>
+            <circle cx="290" cy="180" r="12"/><circle cx="364" cy="180" r="12"/>
+          </g>
+          <g text-anchor="middle" class="dfnlab" font-size="9.6">
+            <text x="326" y="116">root</text><text x="302" y="52">a</text><text x="350" y="52">b</text>
+            <text x="282" y="116">c</text><text x="372" y="116">d</text>
+            <text x="290" y="184">e</text><text x="364" y="184">f</text>
+          </g>
+          <text x="215" y="228" text-anchor="middle" class="dfnlab g">find(e) 之后：e 的父指针直接指向 root，下次 O(1)</text>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>为什么并查集做不了"配对"</h3>
+        <p>"A 可以和 B 配"不是<b>等价关系</b>（不传递）。若强行 <code>union(A,B)</code>，会把所有可配对对象合并成一个集合，<b>答案必错</b>。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 12 模板：DSU ═══ -->
+<section class="slide" data-title="模板：并查集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · TEMPLATE</div><h2>模板一：<em>并查集</em></h2></div>
+    <div class="hint"><b>本页回答：</b>标准写法。<br>四个关键点。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li><code>find</code> 走<b>路径减半</b>（或递归全压缩）</li>
+          <li><code>union</code> 用<b>按秩合并</b></li>
+          <li><code>cnt</code> 维护<b>连通块数</b></li>
+          <li><code>same</code> 是 <code>find</code> 的比较</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <div class="formula" style="font-size:11.8px">
+          单次 <span class="ok">O(α(n))</span>（反阿克曼）<br>
+          n 次操作 <span class="ok">O(n α(n))</span> ≈ <span class="ok">O(n)</span>
+        </div>
+      </div>
+      <div class="note good"><b>何时用：</b>任何"判断两点是否同类 / 统计连通块 / 合并集合"的问题。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>dsu.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="dsu"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 13 带权并查集 ═══ -->
+<section class="slide" data-title="带权并查集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · WEIGHTED</div><h2>带权并查集：<em>关系偏移</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么维护"两点之间的关系"？<br>符号怎么推。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>核心</h3>
+        <div class="formula" style="font-size:11.8px">
+          <code>d[x]</code> = x 与父节点的关系<br>
+          <span class="hl">type[x] = (type[root] + d[x]) % 3</span><br>
+          <span class="dim">rel(x,y) = (d[y] − d[x]) % 3（同根时）</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>合并公式</h3>
+        <div class="formula" style="font-size:11.8px">
+          想要 <code>rel(x,y) = rel</code><br>
+          <span class="hl">d[ry] = (rel + d[x] − d[y]) % 3</span><br>
+          <span class="dim">由 type[y] − type[x] ≡ d[ry] + d[y] − d[x] 推出</span>
+        </div>
+      </div>
+      <div class="note warn"><b>符号最易写反：</b>已从守恒式重新推导并逐句验证（见右下角）。</div>
+    </div>
+    <div>
+      <div class="card"><h3>三种关系（食物链）</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>rel = (type[y] − type[x]) % 3</code><br>
+          <code>0</code> = 同类<br>
+          <code>1</code> = x 吃 y<br>
+          <code>2</code> = y 吃 x<br>
+          <span class="dim">约定 type i 吃 type (i+1)%3</span>
+        </div>
+      </div>
+      <div class="card tint-teal"><h3>逐句验证</h3>
+        <ul class="tick ok">
+          <li><code>union(0,1,1)</code>：0 吃 1 → True</li>
+          <li><code>union(1,2,1)</code>：1 吃 2 → True</li>
+          <li><code>union(2,0,1)</code>：2 吃 0 → True（环形）</li>
+          <li><code>union(0,1,0)</code>：0 与 1 同类 → <b>False</b> ✓</li>
+        </ul>
+      </div>
+      <div class="note good"><b>二元版本：</b>把 <code>% 3</code> 换成 <code>^</code>（异或），<code>rel ∈ {0,1}</code>，用于分队 / 关押罪犯。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 14 模板：带权 DSU ═══ -->
+<section class="slide" data-title="模板：带权并查集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · TEMPLATE</div><h2>模板二：<em>带权并查集</em></h2></div>
+    <div class="hint"><b>本页回答：</b>三类关系的标准实现。<br>含逐句验证。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个关键</h3>
+        <ul class="tick">
+          <li><code>find</code> 递归压缩时<b>累加 d</b></li>
+          <li>压缩顺序：先递归，再更新 <code>d[x]</code>，最后改 <code>p[x]</code></li>
+          <li>同根时只做<b>一致性检查</b>，不合并</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>易错</h3>
+        <ul class="tick no">
+          <li><code>d[ry]</code> 公式符号写反 → 语句真假全错</li>
+          <li>压缩时先改 <code>p[x]</code> 再读 <code>d[p[x]]</code> → 读到根的值</li>
+          <li>把"必须同类"和"不能同队"混成一种 rel</li>
+        </ul>
+      </div>
+      <div class="note good"><b>用途：</b>食物链、关押罪犯、奇偶并查集、银河英雄。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>dsu_weighted.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="dsu_weighted"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 15 DSU 建模案例 ═══ -->
+<section class="slide" data-title="DSU 建模案例">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · CASES</div><h2>并查集<em>建模案例</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪类题想到并查集？<br>四个典型。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-rose"><h3><span class="n">A</span>亲戚</h3>
+      <p><b>题意：</b>给出若干"X 与 Y 是亲戚"，判断两人是否亲戚。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>点 = 人，边 = "是亲戚"。<br><b>答案：</b><code>same(x,y)</code>。</p></div>
+    <div class="card"><h3><span class="n">B</span>食物链</h3>
+      <p><b>题意：</b>三类动物，A 吃 B、B 吃 C、C 吃 A。统计假话数。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>带权并查集，<code>rel ∈ {0,1,2}</code>。<br><b>答案：</b>矛盾即假话。</p></div>
+    <div class="card tint-amber"><h3><span class="n a">C</span>关押罪犯</h3>
+      <p><b>题意：</b>n 个罪犯分两所监狱，某些人不能同监，最小化最大怨气。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>二分答案 + <b>奇偶并查集</b>（rel ∈ {0,1}）。<br><b>答案：</b>最小可行怨气。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">D</span>银河英雄</h3>
+      <p><b>题意：</b>战舰排成队列，合并队列、查询两舰间距。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>带权并查集 + <b>距离偏移</b> + 队列长度。<br><b>答案：</b>两点间距 − 1。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>共同结构</h3>
+      <p>都是"<b>给出若干约束，判断一致性 / 统计状态</b>"。并查集把<b>传递闭包</b>压缩成 <code>find</code>，代价几乎为零。</p>
+    </div>
+    <div class="card tint-plum"><h3>什么时候不够用</h3>
+      <ul class="tick no">
+        <li>要<b>配对</b>（最多几对）→ 二分图</li>
+        <li>要<b>容量 / 代价</b> → 网络流</li>
+        <li>要<b>删边</b>（在线）→ LCT 或离线倒序</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>看到"<b>必须 / 同类 / 亲戚 / 一起</b>"这类传递性词，第一反应是并查集。</div>
+  </div>
+</section>
+
+<!-- ═══ 16 DSU 反向运用 ═══ -->
+<section class="slide" data-title="DSU 反向运用">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · REVERSE</div><h2>并查集的<em>反向运用</em></h2></div>
+    <div class="hint"><b>本页回答：</b>正着做不出来时，<br>倒着做为什么就顺了。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>两个经典</h3>
+        <ul class="tick arr">
+          <li><b>Kruskal</b>：边按权排序，能连就连</li>
+          <li><b>离线删边</b>：倒序处理，删边变<b>合并</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>为什么倒序有效</h3>
+        <p>"删边"在并查集里<b>不可撤销</b>，但把时间倒过来，"删"就变成了"<b>加</b>"，而"加"正是并查集擅长的。</p>
+      </div>
+      <div class="card tint-plum"><h3>适用条件</h3>
+        <ul class="tick no">
+          <li>所有操作<b>提前给出</b>（离线）</li>
+          <li>只问"<b>连通性</b>"，不问最短路</li>
+          <li>要<b>在线</b>回答 → 需 LCT / 线段树分治</li>
+        </ul>
+      </div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>dsu_reverse.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="dsu_reverse"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 17 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：二分图">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 03</div>
+      <div class="big">二分图：<em style="color:var(--teal)">染色 · 匹配 · König</em></div>
+      <p class="lead">判定与染色 · 匈牙利 / HK · König 定理与方案 · 三种问法速查<br>"能配对"的完整工具箱。</p>
+    </div>
+    <div><div class="num-huge t">03</div>
+      <div class="note good"><b>目标：</b>能独立写出 HK 并输出最小点覆盖方案。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 18 二分图判定 ═══ -->
+<section class="slide" data-title="二分图：判定与染色">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · BIPARTITE</div><h2>二分图：<em class="t">判定与染色</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么是二分图？<br>判定与匹配的区别。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>定义</h3>
+        <div class="formula" style="font-size:11.8px">
+          顶点可分为 <span class="hl">X ∪ Y</span>，每条边一端在 X、一端在 Y<br>
+          <span class="ok">⇔ 无奇环</span>　<span class="dim">（2-可着色）</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>判定 ≠ 匹配</h3>
+        <ul class="tick">
+          <li><b>判定</b>：能不能二染色？（可行性）</li>
+          <li><b>匹配</b>：最多配几对？（最优化）</li>
+          <li>先判定再匹配，否则可能在非二分图上跑 HK</li>
+        </ul>
+      </div>
+      <div class="note good"><b>判别技巧：</b>见到"不能同组 / 互斥 / 敌对"就是<b>边</b>，判定染色。</div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 430 235" preserveAspectRatio="xMidYMid meet">
+          <text x="112" y="18" text-anchor="middle" class="dfnlab">二分图（无奇环）</text>
+          <text x="330" y="18" text-anchor="middle" class="dfnlab p">非二分图（有奇环）</text>
+          <!-- 左：二分图 -->
+          <g stroke="#0F7B6C" stroke-width="2.2" fill="none">
+            <path d="M72 60 L152 60"/><path d="M72 60 L152 120"/><path d="M72 120 L152 60"/>
+            <path d="M72 120 L152 180"/><path d="M72 180 L152 180"/>
+          </g>
+          <g>
+            <circle cx="72" cy="60" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="2.8"/>
+            <circle cx="72" cy="120" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="2.8"/>
+            <circle cx="72" cy="180" r="14" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="2.8"/>
+            <circle cx="152" cy="60" r="14" fill="#fff" stroke="#0F7B6C" stroke-width="2.8"/>
+            <circle cx="152" cy="120" r="14" fill="#fff" stroke="#0F7B6C" stroke-width="2.8"/>
+            <circle cx="152" cy="180" r="14" fill="#fff" stroke="#0F7B6C" stroke-width="2.8"/>
+          </g>
+          <g text-anchor="middle" class="dfnlab" font-size="9.6">
+            <text x="42" y="64">X</text><text x="42" y="124">X</text><text x="42" y="184">X</text>
+            <text x="182" y="64">Y</text><text x="182" y="124">Y</text><text x="182" y="184">Y</text>
+          </g>
+          <!-- 右：奇环 -->
+          <g stroke="#A33A64" stroke-width="2.4" fill="none">
+            <path d="M330 48 L382 84"/><path d="M382 84 L368 148"/><path d="M368 148 L296 148"/>
+            <path d="M296 148 L282 84"/><path d="M282 84 L330 48"/>
+          </g>
+          <g fill="#FDF1F5" stroke="#A33A64" stroke-width="2.8">
+            <circle cx="330" cy="44" r="13"/><circle cx="384" cy="86" r="13"/><circle cx="368" cy="152" r="13"/>
+            <circle cx="292" cy="152" r="13"/><circle cx="280" cy="86" r="13"/>
+          </g>
+          <text x="330" y="188" text-anchor="middle" class="dfnlab p">5 个点环形相连 ⇒ 奇环 ⇒ 染色冲突</text>
+          <text x="215" y="222" text-anchor="middle" class="dfnlab g">二分图 ⇔ 无奇环 ⇔ 2-可着色</text>
+        </svg>
+      </div>
+      <div class="card tint-teal"><h3>什么时候会误用</h3>
+        <ul class="tick no">
+          <li>图<b>未必</b>是二分图（题面没说）</li>
+          <li>把<b>容量</b>塞进二分图 → 应该用网络流</li>
+          <li>把<b>一般图匹配</b>硬当二分图 → 需带花树</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 19 模板：二分图判定 ═══ -->
+<section class="slide" data-title="模板：二分图判定">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · TEMPLATE</div><h2>模板三：<em class="t">二分图判定</em></h2></div>
+    <div class="hint"><b>本页回答：</b>染色怎么写？<br>返回什么。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个关键</h3>
+        <ul class="tick">
+          <li>BFS / DFS 二染色，<code>color[v] = color[u] ^ 1</code></li>
+          <li>每个连通分量<b>独立起点</b></li>
+          <li>同色相邻 ⇒ <b>有奇环</b>，返回 False</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="ok">O(V + E)</span>，一次遍历<br>
+          <span class="dim">DFS 也行，但 BFS 更不易爆栈</span>
+        </div>
+      </div>
+      <div class="note good"><b>用途：</b>关押罪犯（缩点后）、奇偶并查集的替代、二分图匹配前置检查。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>bipartite.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="bipartite_check"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 20 匹配模型 ═══ -->
+<section class="slide" data-title="匹配模型：匈牙利 vs HK">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · MATCHING</div><h2>匹配模型：<em class="t">匈牙利 vs Hopcroft-Karp</em></h2></div>
+    <div class="hint"><b>本页回答：</b>两种匹配算法怎么选？<br>各自的甜点区。</div>
+  </div>
+  <table>
+    <tr><th style="width:160px">算法</th><th>时间</th><th>代码量</th><th>思路</th><th>推荐</th></tr>
+    <tr><td>匈牙利（DFS）</td><td class="mono">O(V·E)</td><td>25 行</td><td>逐点找增广路</td><td>教学 / n ≤ 500</td></tr>
+    <tr><td><b>Hopcroft-Karp</b></td><td class="mono">O(E√V)</td><td>50 行</td><td>BFS 分层 + 多路增广</td><td><b>默认</b></td></tr>
+    <tr><td>Dinic（容量 1）</td><td class="mono">O(E√V)</td><td>60 行</td><td>网络流自动降级</td><td>需要容量 / 费用扩展</td></tr>
+    <tr><td>一般图匹配（带花树）</td><td class="mono">O(V³)</td><td>200 行</td><td>处理奇环</td><td>非二分图时唯一解</td></tr>
+    <tr><td>KM（最大权匹配）</td><td class="mono">O(V²E)</td><td>120 行</td><td>顶标 + 交错树</td><td>有权配对</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>HK 与 Dinic 的关系</h3>
+      <ul class="tick arr">
+        <li>HK 就是"<b>二分图上的 Dinic</b>"</li>
+        <li>两者都<b>每轮 BFS 分层、多路增广</b></li>
+        <li>网络流版更通用（可加容量 / 费用）</li>
+        <li>纯匹配时 HK 代码更短、常数更小</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>三种问法的转换</h3>
+      <div class="formula" style="font-size:11.6px">
+        最小点覆盖 = <span class="ok">最大匹配</span>（König）<br>
+        最大独立集 = n − <span class="ok">最大匹配</span><br>
+        最小路径覆盖 = n − <span class="ok">最大匹配</span>
+      </div>
+      <p class="muted">求<b>方案</b>时用交替 BFS 输出（第 22 页）。</p>
+    </div>
+    <div class="note good"><b>记忆：</b>匹配三连问——<b>最大匹配、最小点覆盖、最大独立集</b>，数值互相可推。</div>
+  </div>
+</section>
+
+<!-- ═══ 21 模板：HK ═══ -->
+<section class="slide" data-title="模板：Hopcroft-Karp">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · TEMPLATE</div><h2>模板四：<em class="t">Hopcroft-Karp</em></h2></div>
+    <div class="hint"><b>本页回答：</b>O(E√V) 匹配的标准实现。<br>三个关键点。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个关键</h3>
+        <ul class="tick">
+          <li><code>dist</code> <b>只在左部</b>，BFS 从所有未匹配左点出发</li>
+          <li><code>bfs</code> 返回"<b>是否存在未匹配右点</b>"</li>
+          <li><code>dfs</code> 里 <code>dist[u] = -1</code> 是<b>死点剪枝</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="ok">O(E √V)</span>（每轮多路增广）<br>
+          <span class="dim">最坏 √V 轮，每轮 O(E)</span>
+        </div>
+      </div>
+      <div class="note good"><b>自检：</b>对照 <code>by_flow</code>（Dinic 版），两者必须给出同一答案。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>hopcroft_karp.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="hopcroft_karp"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 22 König 定理与方案 ═══ -->
+<section class="slide" data-title="König 定理与方案">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · KÖNIG</div><h2>König 定理：<em class="t">匹配 ↔ 覆盖</em></h2></div>
+    <div class="hint"><b>本页回答：</b>怎么从匹配拿到最小点覆盖方案？<br>交替 BFS 怎么走。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三个量的关系</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="ok">最小点覆盖 = 最大匹配</span><br>
+          <span class="ok">最大独立集 = n − 最大匹配</span><br>
+          <span class="dim">（n = 左 + 右总点数）</span>
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>交替 BFS 口诀</h3>
+        <ul class="tick arr">
+          <li>起点：<b>未匹配左点</b></li>
+          <li>左 → 右：<b>走非匹配边</b></li>
+          <li>右 → 左：<b>走匹配边</b></li>
+          <li>覆盖 = <b>左部未访问 ∪ 右部已访问</b></li>
+        </ul>
+      </div>
+      <div class="note good"><b>自检：</b><code>|cover| == |匹配|</code> 且 <code>|indep| == n − |匹配|</code>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>konig.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="konig_cover"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 23 二分图建模案例 ═══ -->
+<section class="slide" data-title="二分图建模案例">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · CASES</div><h2>二分图<em class="t">建模案例</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪类题想到二分图？<br>四个典型。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-teal"><h3><span class="n t">A</span>棋盘覆盖</h3>
+      <p><b>题意：</b>n×m 棋盘放 1×2 骨牌，最多放几块？</p>
+      <div class="split-line t"></div>
+      <p class="muted"><b>建模：</b>黑白染色，黑格→白格连边。<br><b>答案：</b>最大匹配。</p></div>
+    <div class="card"><h3><span class="n t">B</span>任务分配</h3>
+      <p><b>题意：</b>n 个工人 m 个任务，每人最多 1 个，最多配几对？</p>
+      <div class="split-line t"></div>
+      <p class="muted"><b>建模：</b>左 = 工人，右 = 任务。<br><b>答案：</b>最大匹配。</p></div>
+    <div class="card tint-amber"><h3><span class="n a">C</span>最小路径覆盖</h3>
+      <p><b>题意：</b>DAG 用最少条点不相交路径覆盖所有点。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>拆点 + 匹配。<br><b>答案：</b><code>n − 最大匹配</code>。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">D</span>关押罪犯</h3>
+      <p><b>题意：</b>分两所监狱，某些人不能同监，最小化最大怨气。</p>
+      <div class="split-line p"></div>
+      <p class="muted"><b>建模：</b>二分答案 + 奇偶并查集 / 染色。<br><b>答案：</b>最小可行怨气。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>共同结构</h3>
+      <p>都是"<b>两组对象、若干可行配对、求最大配对数</b>"。只要能分成左右两部，就套 HK。</p>
+    </div>
+    <div class="card tint-plum"><h3>什么时候不够用</h3>
+      <ul class="tick no">
+        <li>有<b>容量</b>（每人最多 k 个）→ 网络流</li>
+        <li>有<b>费用</b>（配对有代价）→ 费用流 / KM</li>
+        <li>图<b>不是二分图</b> → 带花树</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>看到"<b>配 / 对应 / 分配 / 覆盖</b>"，第一反应是二分图。</div>
+  </div>
+</section>
+
+<!-- ═══ 24 二分图三种问法 ═══ -->
+<section class="slide" data-title="二分图三种问法速查">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · CHEAT SHEET</div><h2>二分图<em class="t">三种问法速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>问法变了怎么换公式？<br>一页看全。</div>
+  </div>
+  <table>
+    <tr><th style="width:175px">问法</th><th>含义</th><th style="width:215px">与最大匹配的关系</th><th>输出方式</th></tr>
+    <tr><td><b>最大匹配</b></td><td>最多配几对</td><td class="mono">= |匹配|</td><td><code>matchL / matchR</code></td></tr>
+    <tr><td><b>最小点覆盖</b></td><td>最少删几个点断掉所有边</td><td class="mono">= |匹配|</td><td>交替 BFS（König）</td></tr>
+    <tr><td><b>最大独立集</b></td><td>最多选几个点互不相邻</td><td class="mono">= n − |匹配|</td><td>覆盖的补集</td></tr>
+    <tr><td><b>最小路径覆盖</b></td><td>DAG 最少条不相交路径</td><td class="mono">= n − |匹配|</td><td>沿匹配边串起来</td></tr>
+    <tr><td><b>最大团</b></td><td>补图的最大独立集</td><td class="mono">= 补图独立集</td><td>先建补图</td></tr>
+    <tr><td><b>最大权匹配</b></td><td>配对权值和最大</td><td>KM / 费用流</td><td>顶标 / 残量</td></tr>
+    <tr><td><b>多重匹配</b></td><td>一个可配多个</td><td>网络流（容量 &gt; 1）</td><td>流分布</td></tr>
+    <tr><td><b>带容量匹配</b></td><td>每点有上限</td><td>网络流</td><td>流分布</td></tr>
+    <tr><td><b>一般图匹配</b></td><td>有奇环</td><td class="no">带花树，不可用 HK</td><td>blossom</td></tr>
+    <tr><td><b>动态匹配</b></td><td>边会加删</td><td class="no">需离线 / LCT</td><td>倒序</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>公式速记</h3>
+      <div class="formula" style="font-size:11.6px">
+        覆盖 = 匹配　<span class="dim">（König）</span><br>
+        独立 = n − 匹配<br>
+        路径覆盖 = n − 匹配
+      </div>
+    </div>
+    <div class="card tint-teal"><h3>什么时候升级到网络流</h3>
+      <ul class="tick arr">
+        <li>容量 &gt; 1 → 多重匹配</li>
+        <li>有费用 → 费用流 / KM</li>
+        <li>要最小割方案 → 网络流</li>
+      </ul>
+    </div>
+    <div class="note"><b>关键：</b>三问<b>数值互推</b>，但<b>方案输出方式不同</b>——求方案时别只报数字。</div>
+  </div>
+</section>
+
+<!-- ═══ 25 章节 ═══ -->
+<section class="slide section-slide plum" data-title="章节：网络流">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker plum"><i></i>CHAPTER 04</div>
+      <div class="big">网络流：<em style="color:var(--plum)">容量 · 割 · 代价</em></div>
+      <p class="lead">容量与代价 · Dinic · 最小割建模 · 闭合子图 · 费用流<br>把"限制"和"代价"一起编码。</p>
+    </div>
+    <div><div class="num-huge p">04</div>
+      <div class="note warn"><b>要领：</b>网络流的难点<b>不在代码</b>，而在<b>建图</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 26 网络流：容量与代价 ═══ -->
+<section class="slide" data-title="网络流：容量与代价">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · FLOW</div><h2>网络流：<em class="p">容量与代价</em></h2></div>
+    <div class="hint"><b>本页回答：</b>网络流编码什么？<br>建模三问怎么答。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>建模三问</h3>
+        <ul class="tick arr">
+          <li><b>源 / 汇</b>代表什么？（供给 / 需求）</li>
+          <li><b>容量</b>代表什么限制？</li>
+          <li><b>费用</b>代表什么代价？</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>两个对偶量</h3>
+        <div class="formula" style="font-size:11.8px">
+          <span class="ok">最大流 = 最小割</span><br>
+          割 (S,T)：s ∈ S，t ∈ T<br>
+          <span class="dim">割容量 = Σ c(u,v)，u∈S, v∈T</span>
+        </div>
+      </div>
+      <div class="note good"><b>增广：</b>残量网络上找 s→t 路径，加 Δ（正减反加）。反向边 = 撤销能力。</div>
+    </div>
+    <div>
+      <div class="card"><h3>三种建模模式</h3>
+        <ul class="tick">
+          <li><b>选 / 不选</b>：割 = 代价（闭合子图）</li>
+          <li><b>分配</b>：容量 = 限制（多重匹配）</li>
+          <li><b>传输</b>：费用 = 代价（MCMF）</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>什么时候网络流是"杀鸡用牛刀"</h3>
+        <ul class="tick no">
+          <li>只要<b>连通块</b> → 并查集就够</li>
+          <li>只要<b>最大匹配</b> → HK 更短更快</li>
+          <li>纯<b>等价关系</b> → 并查集，不用流</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>但注意：</b>一旦出现<b>容量或代价</b>，二分图就顶不住了，必须升级到网络流。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 27 模板：Dinic ═══ -->
+<section class="slide" data-title="模板：Dinic">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · TEMPLATE</div><h2>模板五：<em class="p">Dinic</em></h2></div>
+    <div class="hint"><b>本页回答：</b>最大流的默认写法。<br>建议闭卷默写。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li><code>add</code> 必须同时加<b>反向边（容量 0）</b></li>
+          <li><code>bfs</code> 建分层，返回能否到 t</li>
+          <li><code>it</code> <b>每轮 BFS 后复位</b></li>
+          <li><code>level[v] == level[u]+1</code> 保证最短</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>复杂度</h3>
+        <div class="formula" style="font-size:11.8px">
+          一般 <span class="ok">O(V²E)</span><br>
+          单位容量 / 二分图 <span class="ok">O(E√V)</span>
+        </div>
+      </div>
+      <div class="note good"><b>用途：</b>跑完后 <code>dinIC.g</code> 就是残量网络，可直接做最小割构造。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot p"></span><span class="dot"></span><span class="dot"></span><em>dinic.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="dinic"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 28 最小割建模 ═══ -->
+<section class="slide" data-title="最小割建模：选/不选">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · MIN-CUT</div><h2>最小割建模：<em class="p">选 / 不选</em></h2></div>
+    <div class="hint"><b>本页回答：</b>割代表什么决策？<br>怎么把代价编码成割。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>核心手法</h3>
+        <ul class="tick arr">
+          <li>S 侧 = <b>选</b>，T 侧 = <b>不选</b></li>
+          <li>割容量 = 付出的总代价</li>
+          <li>INF 依赖边 = <b>不许割</b>（约束）</li>
+          <li>答案 = <code>常数 − 最小割</code></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>三个典型</h3>
+        <ul class="tick ok">
+          <li><b>闭合子图</b>：选项目，有依赖</li>
+          <li><b>方格取数</b>：相邻不能同取</li>
+          <li><b>黑白染色代价</b>：二分图上的割</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>构造步骤</h3>
+        <div class="formula" style="font-size:11.8px">
+          1) 跑 <code>max_flow(s, t)</code><br>
+          2) 残量上 <code>s</code> BFS → 可达集 <code>S</code><br>
+          3) 割 = <code>(S, V\S)</code>；方案 = <code>S</code> 中的点
+        </div>
+      </div>
+      <div class="card tint-plum"><h3>易错</h3>
+        <ul class="tick no">
+          <li>割只算 <b>S→T</b> 方向的边</li>
+          <li>INF 不够大 → 依赖被误割</li>
+          <li>忘了减 <code>Σ正权</code> → 结果是割不是收益</li>
+          <li>权可正可负 → 先判全负 / 全正</li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>把"<b>选择的代价</b>"编码成割，把"<b>资源的限制</b>"编码成容量。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 29 模板：闭合子图 ═══ -->
+<section class="slide" data-title="模板：最大权闭合子图">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · TEMPLATE</div><h2>模板六：<em class="p">最大权闭合子图</em></h2></div>
+    <div class="hint"><b>本页回答：</b>闭合子图怎么写？<br>为什么转成最小割。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>关键点</h3>
+        <ul class="tick">
+          <li>正权点接 <code>s</code>，负权点接 <code>t</code></li>
+          <li>依赖边容量 = <b>INF</b></li>
+          <li>答案 = <code>正权总和 − 最小割</code></li>
+          <li>选中点 = 残量上 <code>s</code> <b>可达</b>的点</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>验证样例</h3>
+        <div class="formula" style="font-size:11.6px">
+          <code>weight = [3, -1]</code>，<code>deps = [(0,1)]</code><br>
+          <span class="dim">选 0 必选 1 ⇒ 3−1 = 2</span><br>
+          <span class="ok">输出 (2, [0, 1])</span>
+        </div>
+      </div>
+      <div class="note good"><b>自检：</b>选中点集必须<b>满足闭合性</b>（u 选则 v 选）。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot p"></span><span class="dot"></span><span class="dot"></span><em>closure.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="closure"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 30 费用流速查 ═══ -->
+<section class="slide" data-title="费用流速查">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · MCMF</div><h2>费用流<em class="p">速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>费用流和二分图有什么关系？<br>什么时候必须上费用流。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>两种算法</h3>
+        <ul class="tick">
+          <li><b>SPFA 版</b>：O(V·E·flow)，支持负权</li>
+          <li><b>Dijkstra + 势</b>：O(E log V·flow)，默认</li>
+        </ul>
+        <div class="formula" style="font-size:11.6px">
+          反向边费用 = <span class="hl">−w</span>（不是 +w）<br>
+          <code>cost += d * h[t]</code>（不是 <code>dist[t]</code>）
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>与 KM 的等价</h3>
+        <p>二分图<b>最大权匹配</b> = 网络流<b>费用流</b>的特例。<br>KM 的<b>顶标</b> ≈ MCMF 的<b>势函数 h</b>——两者都是"抬权使边非负"。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>什么时候必须上费用流</h3>
+        <ul class="tick arr">
+          <li>配对<b>有权</b>且要<b>最大权</b> → KM / MCMF</li>
+          <li>配对有<b>容量</b>（&gt; 1）→ MCMF</li>
+          <li>要<b>最小总代价</b>的流分配 → MCMF</li>
+          <li>要<b>最小割</b>方案 → Dinic</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>易错清单</h3>
+        <ul class="tick no">
+          <li>反向边费用写成 <code>+w</code></li>
+          <li>求最大收益忘了取负</li>
+          <li>势未对可达点更新 → Dijkstra 挂</li>
+          <li>负环未处理 → 死循环</li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>费用流 = "<b>Dinic 的思想 + 最短路的骨架</b>"；KM = "<b>费用流的特例</b>"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 31 网络流建模案例 ═══ -->
+<section class="slide" data-title="网络流建模案例">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>04 · CASES</div><h2>网络流<em class="p">建模案例</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪类题想到网络流？<br>四个典型。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-plum"><h3><span class="n p">A</span>太空飞行计划</h3>
+      <p><b>题意：</b>实验获利、仪器花费、实验依赖仪器，求最大利润。</p>
+      <div class="split-line p"></div>
+      <p class="muted"><b>建模：</b>闭合子图。<br><b>答案：</b>正权总和 − 最小割。</p></div>
+    <div class="card"><h3><span class="n p">B</span>数字梯形</h3>
+      <p><b>题意：</b>数字梯形走 n 条路径，数字和最大，三问不同约束。</p>
+      <div class="split-line p"></div>
+      <p class="muted"><b>建模：</b>拆点 + 费用流（费用 = −数字）。<br><b>答案：</b>−cost。</p></div>
+    <div class="card tint-amber"><h3><span class="n a">C</span>圆桌问题</h3>
+      <p><b>题意：</b>单位派代表坐圆桌，同单位不同桌。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>多重匹配，单位→桌子容量 1。<br><b>答案：</b>最大流。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">D</span>方格取数</h3>
+      <p><b>题意：</b>棋盘取格子，相邻不能同取，格子有权。</p>
+      <div class="split-line t"></div>
+      <p class="muted"><b>建模：</b>二分图最小割。<br><b>答案：</b>总权 − 最小割。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>共同结构</h3>
+      <p>都是"<b>在带容量的图上做最优分配</b>"。识别信号：<b>容量、代价、割</b>。</p>
+    </div>
+    <div class="card tint-plum"><h3>为什么容易错</h3>
+      <ul class="tick no">
+        <li>容量语义搞混（限制 vs 代价）</li>
+        <li>依赖边 INF 不够大</li>
+        <li>割方向搞反（只算 S→T）</li>
+        <li>费用取负忘了</li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>建图前先写"<b>源→容量→费用→为什么是流</b>"四句话。</div>
+  </div>
+</section>
+
+<!-- ═══ 32 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：横向对比">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker amber"><i></i>CHAPTER 05</div>
+      <div class="big">横向对比：<em style="color:#C9830F">同题三解 · 归约 · 雷达</em></div>
+      <p class="lead">同题三解 · 归约关系图 · 六轴雷达 · 不可替代性<br>看清每种模型的<b>甜点区与失效区</b>。</p>
+    </div>
+    <div><div class="num-huge">05</div>
+      <div class="note warn"><b>本章重点：</b>知道"<b>什么时候用了就错</b>"，比"都能做"更重要。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 33 同题三解 A ═══ -->
+<section class="slide" data-title="同题三解 A：任务分配">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · CROSS A</div><h2>同题三解 A：<em class="a">任务分配</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一题，二分图 vs 网络流，<br>哪个更好？并查集为什么不适用。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>题意</h3>
+        <p>n 个工人、m 个任务，工人 <code>i</code> 能做任务 <code>j</code>。每人最多做 <b>1 个</b>，求<b>最多完成数</b>。</p>
+      </div>
+      <div class="card tint-teal"><h3>三种建模</h3>
+        <ul class="tick ok">
+          <li><b>二分图匹配</b> ✅ 左=工人，右=任务 → HK</li>
+          <li><b>网络流</b> ✅ s→工人(1)→任务→t(1) → Dinic</li>
+          <li><b>并查集</b> ❌ "可以配对"不是等价关系</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>结论：</b>纯匹配用 <b>HK</b>（更快更短）；<b>需要容量/费用扩展时</b>用网络流。<b>并查集不适用</b>，强行用必错。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot a"></span><span class="dot"></span><span class="dot"></span><em>cross_assign.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="model_cross"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 34 同题三解 B ═══ -->
+<section class="slide" data-title="同题三解 B：分队判定">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · CROSS B</div><h2>同题三解 B：<em class="a">分队判定</em></h2></div>
+    <div class="hint"><b>本页回答：</b>并查集怎么做二分图判定？<br>网络流为什么不适用。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>题意</h3>
+        <p>n 个人，<code>must = [(a,b)]</code> 必须同队，<code>conflict = [(a,b)]</code> 不能同队。能否分成两队？</p>
+      </div>
+      <div class="card tint-rose"><h3>三种建模</h3>
+        <ul class="tick">
+          <li><b>奇偶并查集</b> ✅ <code>rel ∈ {0,1}</code>，O(α(n))</li>
+          <li><b>DSU 缩点 + 二分图判定</b> ✅ 概念清晰</li>
+          <li><b>网络流</b> ❌ "不能同队"是非子模约束</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>为什么网络流不行：</b>"不能同队"的代价表 <code>(0,0)=∞, (1,1)=∞, (0,1)=0, (1,0)=0</code> <b>不满足子模性</b>，无法规约到最小割。强行建模得到的是无意义解。</div>
+    </div>
+    <div>
+      <div class="card"><h3>两种正确解法</h3>
+        <div class="formula" style="font-size:11.6px">
+          <span class="hl">解 1</span> 奇偶并查集<br>
+          &nbsp;&nbsp;<code>union(a, b, 0)</code> 必须同队<br>
+          &nbsp;&nbsp;<code>union(a, b, 1)</code> 必须不同队<br>
+          &nbsp;&nbsp;矛盾 ⇒ False<br><br>
+          <span class="hl">解 2</span> DSU 缩点 + 二分图判定<br>
+          &nbsp;&nbsp;先按 <code>must</code> 合并<br>
+          &nbsp;&nbsp;再在缩点图上建 <code>conflict</code> 边<br>
+          &nbsp;&nbsp;<code>is_bipartite</code> 判染色
+        </div>
+      </div>
+      <div class="card tint-amber"><h3>两者等价</h3>
+        <p>奇偶并查集维护的 <code>d[x]</code> 就是<b>到根的染色偏移</b>；缩点 + 染色是它的<b>图论视角</b>。两者答案必然一致。</p>
+        <div class="note good"><b>自检：</b>用随机小图对拍两种写法，答案必须相同。</div>
+      </div>
+      <div class="card tint-plum"><h3>核心教训</h3>
+        <p><b>不是所有约束都能进网络流。</b>能进的是"<b>子模</b>"约束（同类、代价单调），不能进的是"<b>互斥</b>"类硬约束。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 35 同题三解 C ═══ -->
+<section class="slide" data-title="同题三解 C：连通 / 断开">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · CROSS C</div><h2>同题三解 C：<em class="a">连通 / 断开</em></h2></div>
+    <div class="hint"><b>本页回答：</b>"连通"和"断开"各归谁？<br>二分图为什么不适用。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3><span class="n">Q1</span>最少删几条边断开 s,t？</h3>
+      <p><b>模型：网络流最小割。</b></p>
+      <div class="split-line"></div>
+      <ul class="tick">
+        <li>建图：边容量 = 1</li>
+        <li>跑 <code>max_flow(s,t)</code></li>
+        <li>答案 = 最大流 = 最小割</li>
+      </ul>
+      <p class="muted">并查集 ❌ 二分图 ❌</p></div>
+    <div class="card tint-teal"><h3><span class="n t">Q2</span>最少加几条边连通全图？</h3>
+      <p><b>模型：并查集。</b></p>
+      <div class="split-line t"></div>
+      <ul class="tick ok">
+        <li>建图：边 = "已连通"</li>
+        <li>数连通块个数 <code>cnt</code></li>
+        <li>答案 = <code>cnt − 1</code></li>
+      </ul>
+      <p class="muted">网络流 ❌（杀鸡用牛刀）</p></div>
+    <div class="card tint-amber"><h3><span class="n a">Q3</span>最小权生成树？</h3>
+      <p><b>模型：并查集 + Kruskal。</b></p>
+      <div class="split-line"></div>
+      <ul class="tick arr">
+        <li>边按权排序</li>
+        <li>能连就连（<code>union</code>）</li>
+        <li>答案 = 选中边权和</li>
+      </ul>
+      <p class="muted">二分图 ❌ 网络流 ❌</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>一句话对照</h3>
+      <p class="lead">"<b>连通</b>"问的是<b>存在性</b>，用并查集；"<b>断开</b>"问的是<b>最小代价</b>，用网络流。两者<b>方向相反</b>，不能互换。</p>
+    </div>
+    <div class="card tint-plum"><h3>二分图在哪</h3>
+      <p>本题<b>完全用不上二分图</b>——没有"配对"语义。强行套二分图匹配，答非所问。</p>
+      <div class="note warn"><b>提醒：</b>模型不是越多越好，<b>选对一个</b>比套三个更重要。</div>
+    </div>
+    <div class="note good"><b>心法：</b>问"<b>要连通还是要断开</b>"——这一个词就能定模型。</div>
+  </div>
+</section>
+
+<!-- ═══ 36 归约关系 ═══ -->
+<section class="slide" data-title="归约关系">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · REDUCTION</div><h2><em class="a">归约关系</em>：谁是谁的特例</h2></div>
+    <div class="hint"><b>本页回答：</b>三种模型能互相转化吗？<br>哪些不能。</div>
+  </div>
+  <table>
+    <tr><th style="width:280px">归约</th><th style="width:120px">方向</th><th>说明</th></tr>
+    <tr><td>二分图最大匹配 → 网络最大流</td><td class="yes">✅ 成立</td><td>容量全设 1，s→左→右→t</td></tr>
+    <tr><td>二分图最大权独立集 → 最小割</td><td class="yes">✅ 成立</td><td>二分图上的割，闭合子图特例</td></tr>
+    <tr><td>二分图 2-着色 → 带权并查集</td><td class="yes">✅ 成立</td><td>奇偶并查集（rel ∈ {0,1}）</td></tr>
+    <tr><td>最小点覆盖 → 最大匹配</td><td class="yes">✅ 成立</td><td>König 定理</td></tr>
+    <tr><td>最小路径覆盖 → 最大匹配</td><td class="yes">✅ 成立</td><td>拆点，<code>n − |匹配|</code></td></tr>
+    <tr><td>二分图最大权匹配 → 费用流</td><td class="yes">✅ 成立</td><td>KM ≡ MCMF（顶标 ≡ 势）</td></tr>
+    <tr><td>一般图匹配 → 网络流</td><td class="no">❌ 不成立</td><td>需带花树（blossom）</td></tr>
+    <tr><td>"不能同队"约束 → 最小割</td><td class="no">❌ 不成立</td><td>非子模约束</td></tr>
+    <tr><td>动态连通（在线删边）→ 并查集</td><td class="no">❌ 不成立</td><td>需 LCT / 离线倒序</td></tr>
+    <tr><td>NP-hard（装箱 / 一般独立集）</td><td class="no">❌ 不成立</td><td>无多项式模型</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>重要结论</h3>
+      <ul class="tick arr">
+        <li>二分图匹配 <b>⊂</b> 网络流（容量 1 的特例）</li>
+        <li>并查集 <b>⊂</b> 二分图判定（奇偶关系）</li>
+        <li>但<b>三者不可互相替代</b>——各有失效区</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>为什么归约有用</h3>
+      <p>把<b>新问题</b>归约到<b>已知模型</b>，就能直接复用代码与复杂度结论。<br>但要先确认<b>归约条件成立</b>（二分、子模、离线……）。</p>
+      <div class="note good"><b>心法：</b>归约前先问"<b>这个转化保不保最优解</b>"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 37 六轴雷达 ═══ -->
+<section class="slide" data-title="六轴雷达对比">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · RADAR</div><h2>六轴<em class="a">能力雷达</em></h2></div>
+    <div class="hint"><b>本页回答：</b>三种模型各擅长什么？<br>一图看懂。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>读图方式</h3>
+        <ul class="tick">
+          <li>轴越外 = 越擅长</li>
+          <li><b>赤陶</b> 并查集 · <b>青绿</b> 二分图 · <b>李子</b> 网络流</li>
+          <li>重叠区 = 都能做，选快的</li>
+          <li>单边突出区 = 该模型的<b>主场</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>三个结论</h3>
+        <ul class="tick arr">
+          <li><b>等价关系 / 连通性</b> → 并查集碾压</li>
+          <li><b>配对 / 覆盖 / 方案</b> → 二分图最优</li>
+          <li><b>容量 / 代价</b> → 网络流唯一解</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 300" preserveAspectRatio="xMidYMid meet">
+          <!-- 网格 -->
+          <g stroke="#E4CBA3" stroke-width="1.2" fill="none">
+            <polygon points="210,42 255,68 255,120 210,146 165,120 165,68"/>
+            <polygon points="210,64 241,82 241,118 210,136 179,118 179,82"/>
+            <polygon points="210,86 227,96 227,116 210,126 193,116 193,96"/>
+          </g>
+          <g stroke="#E4CBA3" stroke-width="1">
+            <path d="M210 104 L210 42"/><path d="M210 104 L255 68"/><path d="M210 104 L255 120"/>
+            <path d="M210 104 L210 146"/><path d="M210 104 L165 120"/><path d="M210 104 L165 68"/>
+          </g>
+          <!-- 轴标签 -->
+          <g text-anchor="middle" class="dfnlab g" font-size="9.8">
+            <text x="210" y="32">等价关系</text>
+            <text x="278" y="62">连通性</text>
+            <text x="278" y="130">配对</text>
+            <text x="210" y="164">容量分配</text>
+            <text x="142" y="130">代价优化</text>
+            <text x="142" y="62">方案输出</text>
+          </g>
+          <!-- 多边形 -->
+          <polygon points="210,42 255,68 227,116 210,126 193,116 177,92"
+                   fill="#E2612F" fill-opacity=".22" stroke="#E2612F" stroke-width="2.6"/>
+          <polygon points="210,86 227,96 255,120 210,136 193,116 165,68"
+                   fill="#0F7B6C" fill-opacity=".22" stroke="#0F7B6C" stroke-width="2.6"/>
+          <polygon points="210,104 227,96 244,112 210,146 165,120 165,68"
+                   fill="#A33A64" fill-opacity=".22" stroke="#A33A64" stroke-width="2.6"/>
+          <!-- 图例 -->
+          <g font-family="monospace" font-size="10">
+            <rect x="42" y="192" width="118" height="22" rx="8" fill="#E2612F"/>
+            <text x="101" y="207" text-anchor="middle" fill="#fff">并查集 5/5/2/1/1/3</text>
+            <rect x="168" y="192" width="118" height="22" rx="8" fill="#0F7B6C"/>
+            <text x="227" y="207" text-anchor="middle" fill="#fff">二分图 2/2/5/3/2/5</text>
+            <rect x="294" y="192" width="118" height="22" rx="8" fill="#A33A64"/>
+            <text x="353" y="207" text-anchor="middle" fill="#fff">网络流 1/2/4/5/5/5</text>
+          </g>
+          <text x="210" y="238" text-anchor="middle" class="dfnlab g" font-size="10.5">轴序：等价 / 连通 / 配对 / 容量 / 代价 / 方案（满分 5）</text>
+          <g font-family="monospace" font-size="9.6" text-anchor="middle">
+            <rect x="34" y="256" width="352" height="30" rx="9" fill="#2E2118"/>
+            <text x="210" y="276" fill="#7FE0C2">三者<b>互补</b>而非替代：各有一个"主场"，别硬套</text>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>记忆：</b>并查集 = <b>同类</b>；二分图 = <b>配对</b>；网络流 = <b>容量与代价</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 38 不可替代性 ═══ -->
+<section class="slide" data-title="不可替代性">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>05 · IRREPLACEABLE</div><h2>什么时候<em class="a">必须用哪个</em></h2></div>
+    <div class="hint"><b>本页回答：</b>三个"不换不行"的场景。<br>以及换掉会怎样。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3><span class="n">并查集</span></h3>
+      <ul class="tick">
+        <li><b>动态连通性</b>：O(α(n))，网络流是 O(V²E)</li>
+        <li><b>Kruskal</b>：MST 唯一自然解</li>
+        <li><b>离线删边</b>：倒序 union</li>
+        <li><b>等价闭包</b>：连通块 / 代表元</li>
+      </ul>
+      <div class="split-line"></div>
+      <p class="muted"><b>换掉会：</b>慢 4~5 个数量级，或直接错。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">二分图</span></h3>
+      <ul class="tick ok">
+        <li><b>2-着色判定</b>：O(V+E)，最快</li>
+        <li><b>König 方案</b>：交替 BFS 直出</li>
+        <li><b>一般图匹配入口</b>：判断是否需带花树</li>
+        <li><b>纯匹配</b>：HK 比 Dinic 短</li>
+      </ul>
+      <div class="split-line t"></div>
+      <p class="muted"><b>换掉会：</b>能做但更重、更易错。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">网络流</span></h3>
+      <ul class="tick no">
+        <li><b>带容量的分配</b>：HK 顶不住</li>
+        <li><b>最小割方案</b>：二分图做不到</li>
+        <li><b>费用流</b>：KM 是特例</li>
+        <li><b>闭合子图</b>：依赖 + 权</li>
+      </ul>
+      <div class="split-line p"></div>
+      <p class="muted"><b>换掉会：</b>问题无解（其他模型表达不了）。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>三种"选错"的后果</h3>
+      <ul class="tick no">
+        <li>把<b>配对</b>当<b>同类</b> → 并查集答案必错</li>
+        <li>把<b>互斥</b>塞进<b>最小割</b> → 无意义解</li>
+        <li>在<b>非二分图</b>跑 HK → 漏匹配</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>决策口诀</h3>
+      <p class="lead"><b>先问关系是什么</b>，再问有没有<b>容量</b>和<b>代价</b>。<br>关系定模型，容量代价定<b>升级到网络流</b>。</p>
+    </div>
+    <div class="note good"><b>升华：</b>建模能力 = <b>"识别关系的代数性质"</b>，而不是背模板。</div>
+  </div>
+</section>
+
+<!-- ═══ 39 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：工程">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 06</div>
+      <div class="big">工程：<em style="color:var(--teal)">避坑 · 交叉验证</em></div>
+      <p class="lead">易错清单 · 模板合集 · 跨模型对拍 · 题单<br>把建模写成"永不写错"。</p>
+    </div>
+    <div><div class="num-huge t">06</div>
+      <div class="note good"><b>要领：</b>能<b>跨模型互证</b>的题，一定要对拍——这是最强的正确性检查。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 40 易错清单 ═══ -->
+<section class="slide" data-title="易错清单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PITFALLS</div><h2>易错清单 <em>Checklist</em></h2></div>
+    <div class="hint"><b>本页回答：</b>提交前自检什么？<br>（每条都对应本讲义的坑）</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3>并查集</h3>
+      <ul class="tick no">
+        <li>把"可以配对"当"同类" → <b>答案必错</b></li>
+        <li>带权版 <code>d[ry]</code> 符号写反</li>
+        <li>压缩时先改 <code>p[x]</code> 再读 <code>d[p[x]]</code></li>
+        <li>在线删边用并查集 → 错</li>
+        <li>忘记维护 <code>cnt</code></li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>二分图</h3>
+      <ul class="tick ok">
+        <li>没判定是否二分图就跑 HK</li>
+        <li><code>dist</code> 只在<b>左部</b>，别写成两边</li>
+        <li><code>dist[u] = -1</code> 剪枝漏掉 → TLE</li>
+        <li>König 交替方向搞反</li>
+        <li>方案输出只报数字，不给点集</li>
+      </ul>
+    </div>
+    <div class="card tint-plum"><h3>网络流</h3>
+      <ul class="tick no">
+        <li>忘了<b>反向边</b> → 结果偏小</li>
+        <li><code>it</code> 没每轮 BFS 后复位</li>
+        <li>割方向搞反（只算 S→T）</li>
+        <li>INF 不够大 → 依赖被误割</li>
+        <li>费用取负忘了 / 反向费用写成 <code>+w</code></li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>提交前 30 秒三连问：</b>① 关系是<b>等价 / 配对 / 传输</b>哪一个 ② 有没有<b>容量 / 代价</b>没编码 ③ 另外两个模型<b>为什么不适用</b>。</div>
+</section>
+
+<!-- ═══ 41 模板合集 ═══ -->
+<section class="slide" data-title="模板合集">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · TOOLBOX</div><h2>模板合集：<em>一页速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>实战里需要的都在这里。<br>建议直接抄进模板库。</div>
+  </div>
+  <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>graph_toolbox.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="toolbox"></code></pre></pre>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3>选类口诀</h3><p>有"<b>必须同类</b>"→ DSU；有"<b>配对</b>"→ HK；有"<b>容量/代价</b>"→ Dinic / MCMF。</p></div>
+    <div class="card tint-teal"><h3>多组数据</h3><p>每组新建对象，不要复用 <code>g</code> / <code>matchL</code>。</p></div>
+    <div class="card"><h3>输入</h3><p>大数据一次性读入；邻接表用 <code>list of list</code>。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 42 对拍验证 ═══ -->
+<section class="slide" data-title="跨模型对拍">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · VERIFY</div><h2>怎么验证<em>模型选对了</em></h2></div>
+    <div class="hint"><b>本页回答：</b>三种模型怎么互相对拍？<br>边界用例有哪些。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card tint-teal"><h3><span class="n t">1</span>跨模型对拍</h3>
+        <p>能用<b>两种模型</b>解的题，必须对拍。<code>by_hk</code> vs <code>by_flow</code>，答案必须相等——这是最强的正确性检查。</p>
+      </div>
+      <div class="card tint-amber"><h3><span class="n a">3</span>边界用例</h3>
+        <ul class="tick">
+          <li>空图 / 单点 / 单边</li>
+          <li>不连通 / 自环 / 重边</li>
+          <li>左部为空 / 右部为空</li>
+          <li>全冲突 / 全必须同类</li>
+          <li>容量 0 / 容量 INF</li>
+          <li>点编号乱序</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3><span class="n">2</span>不变量检查</h3>
+        <ul class="tick ok">
+          <li><b>最大流 = 最小割</b>（必查）</li>
+          <li><b>|匹配| = |最小点覆盖|</b>（König）</li>
+          <li><b>|独立集| = n − |匹配|</b></li>
+          <li><b>DSU 组件数 = BFS 连通块数</b></li>
+          <li>带权版语句<b>真假统计</b>与暴力一致</li>
+          <li>选中点集满足<b>闭合性</b></li>
+        </ul>
+      </div>
+      <div class="note good"><b>小技巧：</b>随机<b>打乱点编号</b>重跑，答案应不变——能抓出下标类 bug。</div>
+      <div class="note warn"><b>最强自检：</b>能用两种模型的题，<b>一定对拍</b>；不能的题，<b>用暴力小图对拍</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 43 题单 ═══ -->
+<section class="slide" data-title="练习题单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>06 · PRACTICE</div><h2>练习题单（洛谷 / LibreOJ / 本地）</h2></div>
+    <div class="hint"><b>本页回答：</b>课后练什么？<br>按模型分组，每张卡都写了<b>题意</b>。</div>
+  </div>
+  <div class="cols c3" style="gap:8px">
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3367" target="_blank"><span class="src dsu">洛谷 · 并查集</span><span class="t">P3367 【模板】并查集</span><span class="d">题意：给出若干合并与查询，判断两点是否同类。闭卷默写 DSU。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2024" target="_blank"><span class="src dsu">洛谷 · 并查集</span><span class="t">P2024 食物链</span><span class="d">题意：三类动物循环相食，统计假话数。带权并查集，重点验 d[ry] 符号。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1525" target="_blank"><span class="src dsu">洛谷 · 并查集</span><span class="t">P1525 关押罪犯</span><span class="d">题意：分两所监狱，某些人不能同监，最小化最大怨气。二分答案 + 奇偶并查集。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1196" target="_blank"><span class="src dsu">洛谷 · 并查集</span><span class="t">P1196 银河英雄传说</span><span class="d">题意：战舰排成队列，合并队列、查询两舰间距。带权并查集 + 距离偏移。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3386" target="_blank"><span class="src">洛谷 · 二分图</span><span class="t">P3386 【模板】二分图最大匹配</span><span class="d">题意：二分图最大匹配。用 HK 与匈牙利对照，验证 O(E√V)。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P2756" target="_blank"><span class="src">洛谷 · 二分图</span><span class="t">P2756 飞行员配对方案问题</span><span class="d">题意：外籍/本籍飞行员配对，输出具体方案。匹配 + matchL 输出。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6002" target="_blank"><span class="src">LibreOJ · 二分图</span><span class="t">#6002. 最小路径覆盖</span><span class="d">题意：DAG 最小点不相交路径覆盖并输出路径。拆点 + 匹配 + 串路径。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3376" target="_blank"><span class="src flow">洛谷 · 网络流</span><span class="t">P3376 【模板】网络最大流</span><span class="d">题意：给流网络求最大流。闭卷默写 Dinic，检查反向边与 it 复位。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6001" target="_blank"><span class="src flow">LibreOJ · 网络流</span><span class="t">#6001. 太空飞行计划</span><span class="d">题意：实验获利、仪器花费、实验依赖仪器，求最大利润。经典闭合子图。</span></a>
+    <a class="a-link" href="https://loj.ac/p/6006" target="_blank"><span class="src flow">LibreOJ · 网络流</span><span class="t">#6006. 数字梯形</span><span class="d">题意：数字梯形三问（点不相交 / 边不相交 / 无限制）。拆点 + 费用流。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">跨模型交叉验证</span><span class="d">跑 cross_check：by_hk 与 by_flow 必须一致；再随机 1000 组。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">同题三解对照</span><span class="d">用第 34 页的分队判定，跑奇偶 DSU 与缩点+染色，答案必须相同。</span></a>
+  </div>
+  <div class="note"><b>节奏建议：</b>并查集 4 题（P3367 → P2024 → P1525 → P1196）→ 二分图 3 题（P3386 → P2756 → LOJ 6002）→ 网络流 3 题（P3376 → LOJ 6001 → LOJ 6006）→ 本地 2 题。每题写 100 字题解：<b>关系是什么 → 为什么是这个模型 → 另外两个为什么不行</b>。</div>
+</section>
+
+<!-- ═══ 44 总结 ═══ -->
+<section class="slide" data-title="总结">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · SUMMARY</div><h2>带走这 <em>五句话</em></h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记住一页，<br>就记这一页。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><div class="step"><div class="idx">1</div><div><b>先问关系是什么：</b>等价 → 并查集；配对 → 二分图；传输 → 网络流。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">2</div><div><b>等价关系可合并，配对关系不可传递。</b>把"配对"当"同类"是最大坑。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">3</div><div><b>容量与代价是升级信号。</b>一出现就从二分图升到网络流。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">4</div><div><b>模型可叠加：</b>缩点 → 染色 → 匹配 → 限流，按顺序堆。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">5</div><div><b>不是所有约束都能进网络流。</b>互斥类硬约束是非子模，只能用并查集 / 染色。</div></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 350 262" preserveAspectRatio="xMidYMid meet">
+          <circle cx="175" cy="130" r="115" fill="#E2612F" opacity=".12" class="pulse"/>
+          <circle cx="175" cy="130" r="52" fill="#2E2118"/>
+          <text x="175" y="122" text-anchor="middle" fill="#FFD9A8" font-family="serif" font-size="15" font-weight="700">建模</text>
+          <text x="175" y="141" text-anchor="middle" fill="#FFB169" font-family="monospace" font-size="9.5">关系定模型</text>
+          <g font-family="monospace" font-size="10" fill="#7A4A22">
+            <rect x="112" y="10" width="126" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="30" text-anchor="middle">等价 → 并查集</text>
+            <rect x="240" y="58" width="102" height="30" rx="11" fill="#E9F7F2" stroke="#BEE6D8"/><text x="291" y="78" text-anchor="middle">配对 → 二分图</text>
+            <rect x="248" y="170" width="94" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="295" y="190" text-anchor="middle">容量 → 网络流</text>
+            <rect x="100" y="216" width="150" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="175" y="236" text-anchor="middle">代价 → 费用流</text>
+            <rect x="8" y="170" width="112" height="30" rx="11" fill="#E9F7F2" stroke="#BEE6D8"/><text x="64" y="190" text-anchor="middle">方案 → 残量</text>
+            <rect x="14" y="58" width="110" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="69" y="78" text-anchor="middle">动态 → 离线</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" class="dash" fill="none">
+            <path d="M175 78 L175 42"/><path d="M224 110 L242 82"/><path d="M224 154 L250 184"/>
+            <path d="M175 182 L175 216"/><path d="M126 154 L118 184"/><path d="M126 110 L122 82"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>升华：</b>建模最值得学的不是模板，而是"<b>识别关系的代数性质</b>"——<strong>等价可合并、配对不传递、传输带容量</strong>。这一条判断力，比任何单个算法都值钱。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 45 结语 ═══ -->
+<section class="slide cover" data-title="结语 Q&A">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">THANKS · Q&A</div>
+      <h1>谢谢！<br><em class="t">开始提问</em></h1>
+      <p class="sub">课后三步：<br>
+        ① 10 分钟默写 <b>DSU + HK + Dinic</b> 三段核心<br>
+        ② 手算第 13 页的带权并查集四句（应得 <code>True/True/True/False</code>），确认符号<br>
+        ③ 跑一遍 <code>cross_check</code> 与 <code>stress_models()</code>，跨模型对拍通过后再刷 12 题</p>
+      <div class="meta"><span>等价</span><span>配对</span><span>容量</span></div>
+    </div>
+    <div>
+      <svg viewBox="0 0 460 300" preserveAspectRatio="xMidYMid meet">
+        <circle cx="230" cy="150" r="145" fill="#E2612F" opacity=".16" class="pulse"/>
+        <g stroke="#E2612F" stroke-width="3" fill="none"><path d="M230 236 L158 158"/><path d="M230 236 L302 158"/><path d="M230 236 L230 118"/></g>
+        <path d="M302 158 L230 236" stroke="#A33A64" stroke-width="3" stroke-dasharray="7 7" fill="none"/>
+        <g class="float">
+          <g><circle cx="230" cy="236" r="30" fill="#E2612F" stroke="#B9471B" stroke-width="3"/><text x="230" y="244" font-size="13" text-anchor="middle" fill="#fff" font-family="serif">建模</text></g>
+          <g><circle cx="158" cy="158" r="24" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="158" y="165" font-size="11" text-anchor="middle" fill="#0B6356" font-family="monospace">二分图</text></g>
+          <g><circle cx="302" cy="158" r="24" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="302" y="165" font-size="11" text-anchor="middle" fill="#0B6356" font-family="monospace">网络流</text></g>
+          <g><circle cx="230" cy="118" r="24" fill="#FFF3E2" stroke="#B9471B" stroke-width="3"/><text x="230" y="125" font-size="11" text-anchor="middle" fill="#B9471B" font-family="monospace">并查集</text></g>
+        </g>
+      </svg>
+      <div class="note"><b>快捷键：</b><code>O</code> 目录 · <code>←/→</code> 翻页 · <code>⛶</code> 全屏</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="brand">GRAPH MODELING · 80MIN</div>
+<div class="hud">
+  <button id="tocBtn" title="目录">☰</button>
+  <button id="prevBtn" title="上一页">←</button>
+  <div class="pgn"><span id="cur">1</span> / <span id="tot">45</span></div>
+  <button id="nextBtn" title="下一页">→</button>
+  <button id="fullBtn" title="全屏">⛶</button>
+</div>
+
+<div class="toc" id="toc"><h4>目录 · 45 页</h4><div class="grid" id="tocGrid"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+const CODE = {
+
+dsu: `
+class DSU:
+    """并查集（路径压缩 + 按秩合并），单次操作 O(alpha(n))"""
+    def __init__(self, n):
+        self.p = list(range(n))
+        self.r = [0] * n          # 秩
+        self.cnt = n              # 连通块个数
+
+    def find(self, x):
+        while self.p[x] != x:
+            self.p[x] = self.p[self.p[x]]   # 路径减半
+            x = self.p[x]
+        return x
+
+    def union(self, a, b):
+        a, b = self.find(a), self.find(b)
+        if a == b:
+            return False
+        if self.r[a] < self.r[b]:
+            a, b = b, a
+        self.p[b] = a
+        if self.r[a] == self.r[b]:
+            self.r[a] += 1
+        self.cnt -= 1
+        return True
+
+    def same(self, a, b):
+        return self.find(a) == self.find(b)
+
+    def components(self):
+        return self.cnt
+
+
+# 用法：
+#   dsu = DSU(n)
+#   dsu.union(u, v)          # 合并两个集合
+#   dsu.same(u, v)           # 是否同类
+#   dsu.components()         # 连通块个数
+#
+# 建模三问：
+#   点 = 对象；边 = "必须同类"
+#   并查集 = 等价关系（自反 / 对称 / 传递）的传递闭包
+#
+# 反面提醒：
+#   "可以配对"不是等价关系（不传递），用并查集会全错
+`,
+
+dsu_weighted: `
+class WeightedDSU:
+    """带权并查集（三类关系，如 POJ 1182 食物链）
+       type[x] = (type[root] + d[x]) % 3
+       rel = (type[y] - type[x]) % 3：
+         0 = 同类，1 = x 吃 y，2 = y 吃 x
+       约定 type i 吃 type (i+1)%3"""
+    def __init__(self, n):
+        self.p = list(range(n))
+        self.d = [0] * n          # x 与父节点的关系
+
+    def find(self, x):
+        if self.p[x] != x:
+            root = self.find(self.p[x])
+            self.d[x] = (self.d[x] + self.d[self.p[x]]) % 3
+            self.p[x] = root
+        return self.p[x]
+
+    def union(self, x, y, rel):
+        """rel = (type[y] - type[x]) % 3；返回该语句是否为真"""
+        rx, ry = self.find(x), self.find(y)
+        if rx == ry:
+            return (self.d[y] - self.d[x]) % 3 == rel
+        self.p[ry] = rx
+        self.d[ry] = (rel + self.d[x] - self.d[y]) % 3
+        return True
+
+
+# 逐句验证（N=3，type 0/1/2）：
+#   w = WeightedDSU(3)
+#   w.union(0, 1, 1)   # 0 吃 1      -> True
+#   w.union(1, 2, 1)   # 1 吃 2      -> True
+#   w.union(2, 0, 1)   # 2 吃 0      -> True（环形食物链）
+#   w.union(0, 1, 0)   # 0 与 1 同类  -> False（矛盾）
+#
+# 符号推导（最易写反）：
+#   type[y] - type[x] ≡ d[ry] + d[y] - d[x]  (mod 3)
+#   要求 ≡ rel  ⇒  d[ry] = (rel + d[x] - d[y]) % 3
+#
+# 二元版本（只分同 / 异）：
+#   把 % 3 换成 ^（异或），rel ∈ {0,1}，用于分队 / 关押罪犯
+`,
+
+dsu_reverse: `
+# 并查集的两种"反向"用法：正着做不可行，倒着做就顺了
+
+# ---- 1. 最小生成树（Kruskal）----
+def mst_kruskal(n, edges):
+    """edges = (w, u, v)；返回 (总权, 选中的边)"""
+    dsu = DSU(n)
+    total = 0
+    chosen = []
+    for w, u, v in sorted(edges):
+        if dsu.union(u, v):
+            total += w
+            chosen.append((u, v, w))
+            if len(chosen) == n - 1:
+                break
+    return total, chosen
+
+
+# ---- 2. 离线删边：倒序变并查集合并 ----
+def offline_deletion(n, edges, ops):
+    """edges = [(u, v)]
+       ops   = [(0, eid) 删边] 或 [(1, u, v) 询问连通]
+       倒序处理：删边变为"合并"
+       返回各询问的答案（按原顺序）"""
+    dead = {op[1] for op in ops if op[0] == 0}
+    dsu = DSU(n)
+    for eid in range(len(edges)):
+        if eid not in dead:
+            dsu.union(*edges[eid])
+    ans = []
+    for op in reversed(ops):
+        if op[0] == 0:
+            dsu.union(*edges[op[1]])
+        else:
+            ans.append(dsu.same(op[1], op[2]))
+    return ans[::-1]
+
+
+# 验证：
+#   edges = [(0, 1), (1, 2)]
+#   ops   = [(1, 0, 1), (0, 0), (1, 0, 2)]   # 问 / 删 / 问
+#   print(offline_deletion(3, edges, ops))   # [True, False]
+#
+# 心法：在线做不出来的"删边连通性"，离线倒序后就是并查集合并
+# 要在线回答 -> 需 LCT / 线段树分治
+`,
+
+bipartite_check: `
+from collections import deque
+
+def is_bipartite(g, n):
+    """二分图判定：BFS 二染色
+       g: 邻接表
+       返回 (是否二分图, 染色数组 或 None)"""
+    color = [-1] * n
+    for s in range(n):
+        if color[s] != -1:
+            continue
+        color[s] = 0
+        q = deque([s])
+        while q:
+            u = q.popleft()
+            for v in g[u]:
+                if color[v] == -1:
+                    color[v] = color[u] ^ 1
+                    q.append(v)
+                elif color[v] == color[u]:
+                    return False, None     # 出现奇环
+    return True, color
+
+
+# 用法：
+#   g = [[1], [0, 2], [1]]
+#   print(is_bipartite(g, 3))    # (True, [0, 1, 0])
+#
+# 判定与"匹配"是两件事：
+#   判定 = 能不能二染色（可行性）
+#   匹配 = 最多配几对（最优化）
+# 建模三问：
+#   点 = 对象；边 = "不能同组"
+#   二分图 ⇔ 无奇环 ⇔ 2-可着色
+#
+# 复杂度 O(V + E)；DFS 也行，但 BFS 更不易爆栈
+`,
+
+hopcroft_karp: `
+from collections import deque
+
+class HopcroftKarp:
+    """二分图最大匹配，O(E sqrt(V))
+       左部 0..nL-1，右部 0..nR-1"""
+    def __init__(self, nL, nR):
+        self.nL, self.nR = nL, nR
+        self.g = [[] for _ in range(nL)]
+
+    def add(self, u, v):
+        self.g[u].append(v)
+
+    def bfs(self):
+        """从所有未匹配左点出发建层次；返回是否存在增广路"""
+        self.dist = [-1] * self.nL
+        q = deque()
+        for u in range(self.nL):
+            if self.matchL[u] < 0:
+                self.dist[u] = 0
+                q.append(u)
+        found = False
+        while q:
+            u = q.popleft()
+            for v in self.g[u]:
+                w = self.matchR[v]
+                if w < 0:
+                    found = True              # 存在未匹配右点
+                elif self.dist[w] < 0:
+                    self.dist[w] = self.dist[u] + 1
+                    q.append(w)
+        return found
+
+    def dfs(self, u):
+        for v in self.g[u]:
+            w = self.matchR[v]
+            if w < 0 or (self.dist[w] == self.dist[u] + 1 and self.dfs(w)):
+                self.matchL[u] = v
+                self.matchR[v] = u
+                return True
+        self.dist[u] = -1        # 死点剪枝
+        return False
+
+    def max_matching(self):
+        self.matchL = [-1] * self.nL
+        self.matchR = [-1] * self.nR
+        flow = 0
+        while self.bfs():
+            for u in range(self.nL):
+                if self.matchL[u] < 0 and self.dfs(u):
+                    flow += 1
+        return flow
+
+    def partners(self):
+        return self.matchL[:]     # 左点 -> 右点，-1 表示未匹配
+
+
+# 三个关键：
+#   1) dist 只在左部，BFS 从所有未匹配左点出发
+#   2) bfs 返回"是否存在未匹配右点"
+#   3) dfs 里 dist[u] = -1 是死点剪枝
+#
+# 与 Dinic 的关系：HK 就是"二分图上的 Dinic"（同样 BFS 分层 + 多路增广）
+`,
+
+konig_cover: `
+from collections import deque
+
+def konig_cover(hk):
+    """König 定理：最小点覆盖 = 最大匹配
+       从【未匹配左点】出发交替 BFS：
+         左 -> 右 走非匹配边
+         右 -> 左 走匹配边
+       最小点覆盖 = (左部未访问) ∪ (右部已访问)
+       最大独立集 = (左部已访问) ∪ (右部未访问)"""
+    nL, nR = hk.nL, hk.nR
+    visL = [False] * nL
+    visR = [False] * nR
+    q = deque()
+    for u in range(nL):
+        if hk.matchL[u] < 0:
+            visL[u] = True
+            q.append(u)
+    while q:
+        u = q.popleft()
+        for v in hk.g[u]:
+            if visR[v] or hk.matchL[u] == v:
+                continue          # 只走非匹配边
+            visR[v] = True
+            w = hk.matchR[v]
+            if w >= 0 and not visL[w]:
+                visL[w] = True    # 只走匹配边
+                q.append(w)
+    cover = [u for u in range(nL) if not visL[u]] + \\
+            [nL + v for v in range(nR) if visR[v]]
+    indep = [u for u in range(nL) if visL[u]] + \\
+            [nL + v for v in range(nR) if not visR[v]]
+    return cover, indep
+
+
+# 验证（必做）：
+#   assert len(cover) == max_matching
+#   assert len(indep) == nL + nR - max_matching
+#
+# 三量互推：
+#   最小点覆盖 = 最大匹配
+#   最大独立集 = n - 最大匹配
+#   最小路径覆盖 = n - 最大匹配（DAG 拆点）
+`,
+
+dinic: `
+from collections import deque
+
+class Dinic:
+    """Dinic 最大流
+       一般 O(V^2 E)；单位容量 / 二分图 O(E sqrt(V))"""
+    def __init__(self, n):
+        self.n = n
+        self.g = [[] for _ in range(n)]
+
+    def add(self, u, v, c):
+        """加边 u->v，容量 c；反向边容量 0（撤销能力）"""
+        self.g[u].append([v, c, len(self.g[v])])
+        self.g[v].append([u, 0, len(self.g[u]) - 1])
+
+    def bfs(self, s, t):
+        """建分层图；返回能否到达 t"""
+        self.level = [-1] * self.n
+        q = deque([s])
+        self.level[s] = 0
+        while q:
+            u = q.popleft()
+            for v, c, _ in self.g[u]:
+                if c > 0 and self.level[v] < 0:
+                    self.level[v] = self.level[u] + 1
+                    q.append(v)
+        return self.level[t] >= 0
+
+    def dfs(self, u, t, f):
+        if u == t:
+            return f
+        for i in range(self.it[u], len(self.g[u])):
+            self.it[u] = i
+            v, c, rev = self.g[u][i]
+            if c > 0 and self.level[v] == self.level[u] + 1:
+                d = self.dfs(v, t, min(f, c))
+                if d > 0:
+                    self.g[u][i][1] -= d
+                    self.g[v][rev][1] += d
+                    return d
+        return 0
+
+    def max_flow(self, s, t):
+        flow = 0
+        INF = 10 ** 18
+        while self.bfs(s, t):
+            self.it = [0] * self.n      # 当前弧每轮复位
+            while True:
+                f = self.dfs(s, t, INF)
+                if f == 0:
+                    break
+                flow += f
+        return flow
+
+
+# 四个关键：
+#   1) add 必须同时加反向边，容量 0
+#   2) bfs 返回值决定 while 终止
+#   3) it 每轮 BFS 后复位
+#   4) level[v] == level[u]+1 保证最短
+#
+# 跑完后 self.g 就是残量网络，可直接用于最小割构造
+`,
+
+closure: `
+def max_weight_closure(n, weight, deps):
+    """最大权闭合子图
+       weight[i]：点 i 的权（可正可负）
+       deps: (u, v) 表示"选 u 则必须选 v"
+       返回 (最大权, 选中的点集)"""
+    S, T = n, n + 1
+    dinic = Dinic(n + 2)
+    pos = sum(w for w in weight if w > 0)   # 所有正权之和
+
+    for i in range(n):
+        if weight[i] > 0:
+            dinic.add(S, i, weight[i])      # 正权点：s -> i
+        elif weight[i] < 0:
+            dinic.add(i, T, -weight[i])     # 负权点：i -> t
+    for u, v in deps:
+        dinic.add(u, v, 10 ** 18)           # 依赖边，容量必须够大
+
+    cut = dinic.max_flow(S, T)
+    reach = set(min_cut(dinic, S))          # 残量上 s 可达 = "选"
+    chosen = [i for i in range(n) if i in reach]
+    return pos - cut, chosen
+
+
+# 验证：
+#   weight = [3, -1]; deps = [(0, 1)]
+#   print(max_weight_closure(2, weight, deps))   # (2, [0, 1])
+#
+# 原理：
+#   闭合子图 C：u ∈ C 且 u -> v ⇒ v ∈ C
+#   最大权 = 正权总和 - 最小割
+#   INF 边保证依赖关系不被割断
+#
+# 心法：把"选择的代价"编码成割，把"资源的限制"编码成容量
+`,
+
+model_cross: `
+# 同题三解 A：任务分配
+#   n 个工人、m 个任务，worker i 能做 task j（can[i] = 任务编号列表）
+#   每人最多做一个任务，求最多完成数
+#
+#   模型 1：二分图匹配（HK）        ✅ 最优
+#   模型 2：网络流最大流（Dinic）   ✅ 通用（可加容量 / 费用）
+#   模型 3：并查集                  ❌ "配对"不是等价关系
+
+def by_hk(n, m, can):
+    hk = HopcroftKarp(n, m)
+    for i in range(n):
+        for j in can[i]:
+            hk.add(i, j)
+    return hk.max_matching()
+
+def by_flow(n, m, can):
+    S, T = n + m, n + m + 1
+    d = Dinic(n + m + 2)
+    for i in range(n):
+        d.add(S, i, 1)
+        for j in can[i]:
+            d.add(i, n + j, 1)
+    for j in range(m):
+        d.add(n + j, T, 1)
+    return d.max_flow(S, T)
+
+
+def cross_check(n, m, can):
+    """交叉验证：两种模型必须给出同一答案"""
+    a = by_hk(n, m, can)
+    b = by_flow(n, m, can)
+    assert a == b, (n, m, can, a, b)
+    return a
+
+
+# 验证：
+#   can = [[0, 1], [0], [1]]     # n=3, m=2
+#   print(cross_check(3, 2, can))    # 2
+#
+# 为什么并查集不适用：
+#   并查集只维护"等价"（自反 / 对称 / 传递）
+#   "worker i 可以做 task j" 不是等价关系，无法合并
+#   强行 union 会把所有可配对对象合并成一堆，答案必错
+#
+# 什么时候用 by_flow：
+#   要加容量（每人最多 k 个）、加费用（配对有代价）、要割方案
+`,
+
+toolbox: `
+from collections import deque
+import heapq
+
+
+# ===== 1. 并查集 =====
+class DSU:
+    def __init__(self, n):
+        self.p = list(range(n)); self.r = [0] * n; self.cnt = n
+    def find(self, x):
+        while self.p[x] != x:
+            self.p[x] = self.p[self.p[x]]; x = self.p[x]
+        return x
+    def union(self, a, b):
+        a, b = self.find(a), self.find(b)
+        if a == b: return False
+        if self.r[a] < self.r[b]: a, b = b, a
+        self.p[b] = a
+        if self.r[a] == self.r[b]: self.r[a] += 1
+        self.cnt -= 1; return True
+    def same(self, a, b): return self.find(a) == self.find(b)
+
+
+# ===== 2. 带权并查集（二元关系：0 同类，1 异类）=====
+class ParityDSU:
+    def __init__(self, n):
+        self.p = list(range(n)); self.d = [0] * n
+    def find(self, x):
+        if self.p[x] != x:
+            r = self.find(self.p[x])
+            self.d[x] ^= self.d[self.p[x]]
+            self.p[x] = r
+        return self.p[x]
+    def union(self, x, y, rel):
+        rx, ry = self.find(x), self.find(y)
+        if rx == ry: return (self.d[x] ^ self.d[y]) == rel
+        self.p[ry] = rx
+        self.d[ry] = self.d[x] ^ self.d[y] ^ rel
+        return True
+
+
+# ===== 3. 二分图判定 =====
+def is_bipartite(g, n):
+    color = [-1] * n
+    for s in range(n):
+        if color[s] != -1: continue
+        color[s] = 0; q = deque([s])
+        while q:
+            u = q.popleft()
+            for v in g[u]:
+                if color[v] == -1:
+                    color[v] = color[u] ^ 1; q.append(v)
+                elif color[v] == color[u]:
+                    return False, None
+    return True, color
+
+
+# ===== 4. Hopcroft-Karp =====
+class HopcroftKarp:
+    def __init__(self, nL, nR):
+        self.nL, self.nR = nL, nR; self.g = [[] for _ in range(nL)]
+    def add(self, u, v): self.g[u].append(v)
+    def bfs(self):
+        self.dist = [-1] * self.nL; q = deque()
+        for u in range(self.nL):
+            if self.matchL[u] < 0: self.dist[u] = 0; q.append(u)
+        found = False
+        while q:
+            u = q.popleft()
+            for v in self.g[u]:
+                w = self.matchR[v]
+                if w < 0: found = True
+                elif self.dist[w] < 0:
+                    self.dist[w] = self.dist[u] + 1; q.append(w)
+        return found
+    def dfs(self, u):
+        for v in self.g[u]:
+            w = self.matchR[v]
+            if w < 0 or (self.dist[w] == self.dist[u] + 1 and self.dfs(w)):
+                self.matchL[u] = v; self.matchR[v] = u; return True
+        self.dist[u] = -1; return False
+    def max_matching(self):
+        self.matchL = [-1] * self.nL; self.matchR = [-1] * self.nR
+        f = 0
+        while self.bfs():
+            for u in range(self.nL):
+                if self.matchL[u] < 0 and self.dfs(u): f += 1
+        return f
+
+
+# ===== 5. Dinic 最大流 =====
+class Dinic:
+    def __init__(self, n):
+        self.n = n; self.g = [[] for _ in range(n)]
+    def add(self, u, v, c):
+        self.g[u].append([v, c, len(self.g[v])])
+        self.g[v].append([u, 0, len(self.g[u]) - 1])
+    def bfs(self, s, t):
+        self.level = [-1] * self.n; q = deque([s]); self.level[s] = 0
+        while q:
+            u = q.popleft()
+            for v, c, _ in self.g[u]:
+                if c > 0 and self.level[v] < 0:
+                    self.level[v] = self.level[u] + 1; q.append(v)
+        return self.level[t] >= 0
+    def dfs(self, u, t, f):
+        if u == t: return f
+        for i in range(self.it[u], len(self.g[u])):
+            self.it[u] = i
+            v, c, rev = self.g[u][i]
+            if c > 0 and self.level[v] == self.level[u] + 1:
+                d = self.dfs(v, t, min(f, c))
+                if d > 0:
+                    self.g[u][i][1] -= d; self.g[v][rev][1] += d
+                    return d
+        return 0
+    def max_flow(self, s, t):
+        flow = 0
+        while self.bfs(s, t):
+            self.it = [0] * self.n
+            while True:
+                f = self.dfs(s, t, 10 ** 18)
+                if f == 0: break
+                flow += f
+        return flow
+
+
+# ===== 6. 最小割构造 =====
+def min_cut(dinic, s):
+    n = dinic.n; vis = [False] * n; vis[s] = True
+    q = [s]; h = 0
+    while h < len(q):
+        u = q[h]; h += 1
+        for v, cap, _ in dinic.g[u]:
+            if cap > 0 and not vis[v]:
+                vis[v] = True; q.append(v)
+    return [i for i in range(n) if vis[i]]
+
+
+# ===== 7. 最大权闭合子图 =====
+def max_weight_closure(n, weight, deps):
+    S, T = n, n + 1
+    d = Dinic(n + 2)
+    pos = sum(w for w in weight if w > 0)
+    for i in range(n):
+        if weight[i] > 0: d.add(S, i, weight[i])
+        elif weight[i] < 0: d.add(i, T, -weight[i])
+    for u, v in deps: d.add(u, v, 10 ** 18)
+    cut = d.max_flow(S, T)
+    reach = set(min_cut(d, S))
+    return pos - cut, [i for i in range(n) if i in reach]
+
+
+# 选类口诀：
+#   有"必须同类"  -> DSU / ParityDSU
+#   有"配对"      -> HopcroftKarp
+#   有"容量/代价"  -> Dinic / MCMF
+#   有"选/不选"    -> min_cut / max_weight_closure
+`,
+
+verify: `
+import random
+
+
+def stress_models(trials=1000, seed=1):
+    """随机小图对拍：
+       1) 二分图匹配 HK == 网络流最大流
+       2) 最大匹配 == 最小点覆盖（König）
+       3) 最大匹配 + 最大独立集 == n
+       4) DSU 组件数 == BFS 连通块数"""
+    rnd = random.Random(seed)
+    for _ in range(trials):
+        # ---- 1) 与 2)：随机二分图 ----
+        nL = rnd.randint(1, 6)
+        nR = rnd.randint(1, 6)
+        can = [[] for _ in range(nL)]
+        for i in range(nL):
+            for j in range(nR):
+                if rnd.random() < 0.4:
+                    can[i].append(j)
+
+        a = by_hk(nL, nR, can)
+        b = by_flow(nL, nR, can)
+        assert a == b, (nL, nR, can, a, b)
+
+        hk = HopcroftKarp(nL, nR)
+        for i in range(nL):
+            for j in can[i]:
+                hk.add(i, j)
+        m = hk.max_matching()
+        cover, indep = konig_cover(hk)
+        assert len(cover) == m, (can, m, cover)
+        assert len(indep) == nL + nR - m, (can, m, indep)
+
+        # ---- 4)：随机图上的 DSU vs BFS ----
+        n = rnd.randint(1, 8)
+        g = [[] for _ in range(n)]
+        dsu = DSU(n)
+        for _ in range(n + 3):
+            u, v = rnd.randrange(n), rnd.randrange(n)
+            g[u].append(v); g[v].append(u)
+            dsu.union(u, v)
+        seen = [False] * n
+        blocks = 0
+        for s in range(n):
+            if seen[s]:
+                continue
+            blocks += 1
+            stack = [s]; seen[s] = True
+            while stack:
+                u = stack.pop()
+                for w in g[u]:
+                    if not seen[w]:
+                        seen[w] = True; stack.append(w)
+        assert dsu.components() == blocks, (g, dsu.components(), blocks)
+    print("all ok")
+
+
+# 还可以：
+#   - 随机打乱点编号重跑，答案应不变（抓下标 bug）
+#   - 构造边界：空图、单点、单边、不连通、自环、重边、全冲突、全必须同类
+#   - 带权并查集：随机语句序列，与暴力三色枚举对照假话数
+#   - 奇偶 DSU vs 缩点+染色：分队判定两种写法必须一致
+`
+};
+
+function applyCode(){
+  document.querySelectorAll('code[data-src]').forEach(el => {
+    const raw = CODE[el.dataset.src];
+    if (typeof raw === 'string') {
+      el.textContent = raw.replace(/^\n+/, '').replace(/\s+$/, '');
+    }
+  });
+  if (window.Prism && Prism.highlightAll) { Prism.highlightAll(); }
+}
+
+const deck = document.getElementById('deck');
+function fit(){
+  const s = Math.min(window.innerWidth / 1320, window.innerHeight / 780);
+  deck.style.transform = 'scale(' + s + ')';
+}
+
+function fitCode(){
+  document.querySelectorAll('pre.code').forEach(pre => {
+    pre.style.fontSize = '';
+    let fs = 12.4, guard = 0;
+    while (pre.scrollHeight > pre.clientHeight + 2 && fs > 10.2 && guard < 40) {
+      fs -= 0.15;
+      pre.style.fontSize = fs.toFixed(2) + 'px';
+      guard++;
+    }
+  });
+}
+function relayout(){ fit(); requestAnimationFrame(fitCode); }
+window.addEventListener('resize', relayout);
+window.addEventListener('load', relayout);
+
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let idx = 0;
+document.getElementById('tot').textContent = total;
+
+function show(n){
+  idx = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('on', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('prog').style.width = ((idx + 1) / total * 100) + '%';
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  requestAnimationFrame(fitCode);
+}
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(total - 1);
+  else if (e.key.toLowerCase() === 'o') document.getElementById('toc').classList.toggle('on');
+  else if (e.key === 'Escape') document.getElementById('toc').classList.remove('on');
+});
+document.getElementById('fullBtn').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+const tocGrid = document.getElementById('tocGrid');
+slides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + (i + 1);
+  a.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b>' + (s.dataset.title || '');
+  a.onclick = e => { e.preventDefault(); show(i); document.getElementById('toc').classList.remove('on'); };
+  tocGrid.appendChild(a);
+});
+document.getElementById('tocBtn').onclick = () => document.getElementById('toc').classList.toggle('on');
+document.getElementById('toc').onclick = e => { if (e.target.id === 'toc') e.classList.remove('on'); };
+
+applyCode();
+const h = parseInt(location.hash.replace('#', ''), 10);
+show(isNaN(h) ? 0 : h - 1);
+relayout();
+</script>
+</body>
+</html>

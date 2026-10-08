@@ -1,0 +1,2956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>网络流的思想与应用 · 完整讲义 · 34 页</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --canvas:#FBF6ED; --s1:#FFFFFF; --s2:#F4EDE0;
+  --hair:#E7DCC8; --hair2:#D6C6A9;
+  --ink:#241A11; --ink2:#4B3A29; --muted:#8E7B62;
+  --volt:#D9541F; --moss:#2F7D5D; --gold:#B8860B; --hot:#A32132;
+  --disp:'Space Grotesk',Archivo,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --han:'Noto Sans SC',system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,'Cascadia Code',monospace;
+  --shadow:0 1px 2px rgba(140,105,60,.05), 0 12px 30px rgba(140,105,60,.06);
+}
+html{scroll-behavior:smooth}
+body{
+  background:linear-gradient(180deg,#FCF8F1 0%,#F7F0E3 100%);
+  background-attachment:fixed;
+  color:var(--ink);font-family:var(--han);
+  font-size:clamp(18px, 1.05vw, 21px);
+  line-height:1.72;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;scroll-snap-type:y proximity;
+}
+::selection{background:rgba(217,84,31,.18)}
+b{font-weight:500;color:var(--ink)}
+.g{color:var(--volt)}.m{color:var(--moss)}.a{color:var(--gold)}.p{color:var(--hot)}
+.mono{font-family:var(--mono)}
+
+.progress{position:fixed;top:0;left:0;height:5px;width:0;background:var(--volt);z-index:80;transition:width .25s ease}
+.topbar{position:fixed;top:0;left:0;right:0;height:48px;z-index:70;background:rgba(251,246,237,.92);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--hair);display:flex;align-items:center;
+  justify-content:space-between;padding:0 30px;font-family:var(--mono);font-size:12.5px;
+  letter-spacing:.12em;color:var(--muted)}
+@supports not ((backdrop-filter:blur(8px)) or (-webkit-backdrop-filter:blur(8px))){
+  .topbar{background:rgba(251,246,237,.98)}
+}
+.topbar .r{display:flex;gap:20px;align-items:center}
+.topbar .count{color:var(--ink)}
+.topbar .clock.done{color:var(--volt);font-weight:500}
+
+.rail{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:60;
+  display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.rail button{background:none;border:0;cursor:pointer;font-family:var(--mono);font-size:11px;
+  letter-spacing:.10em;color:var(--muted);opacity:.4;display:flex;align-items:center;gap:9px;
+  padding:0;transition:opacity .25s,color .25s}
+.rail button i{display:block;width:15px;height:1.5px;background:currentColor;transition:width .25s}
+.rail button.on{opacity:1;color:var(--volt)}
+.rail button.on i{width:28px}
+.rail button:hover{opacity:.85}
+
+.navctl{position:fixed;left:clamp(16px, 2vw, 30px);bottom:clamp(14px, 2vh, 22px);
+  z-index:60;display:flex;gap:10px;align-items:center}
+.navctl button{height:40px;padding:0 17px;background:var(--s1);border:1px solid var(--hair2);
+  border-radius:4px;color:var(--ink2);font-family:var(--mono);font-size:12px;letter-spacing:.12em;
+  cursor:pointer;transition:.16s;box-shadow:0 1px 2px rgba(140,105,60,.06)}
+.navctl button:hover{color:var(--volt);border-color:var(--volt);background:#fff}
+.navctl button:active{transform:translateY(1px)}
+.navctl .key{color:var(--muted);opacity:.7;font-family:var(--mono);font-size:12px}
+
+.slide{min-height:100vh;display:flex;align-items:center;
+  padding:clamp(56px, 7vh, 84px) 0 clamp(52px, 7vh, 78px);
+  scroll-snap-align:start;position:relative}
+.wrap{
+  width:100%;
+  max-width:min(1760px, 94vw);
+  margin:0 auto;
+  padding:0 clamp(20px, 3.2vw, 64px);
+}
+
+.s-head{display:flex;gap:20px;align-items:flex-start;margin-bottom:18px}
+.s-num{font-family:var(--mono);font-size:12.5px;letter-spacing:.16em;color:var(--volt);
+  padding-top:11px;flex:0 0 auto;font-weight:500}
+.s-head h2{font-family:var(--disp);font-size:34px;font-weight:600;line-height:1.18;letter-spacing:-.016em}
+.s-head .sub{margin-top:8px;color:var(--muted);font-size:16.5px;line-height:1.62;max-width:1000px}
+.s-head .sub b{color:var(--ink)}
+
+.pill{display:inline-block;font-family:var(--mono);font-size:11px;letter-spacing:.13em;
+  padding:3px 9px;border-radius:3px;vertical-align:middle;margin-right:8px}
+.pill.base{background:var(--s2);color:var(--muted);border:1px solid var(--hair2)}
+.pill.main{background:#FFF4EF;color:var(--volt);border:1px solid rgba(217,84,31,.34)}
+.pill.opt{background:#F7F2E8;color:var(--muted);border:1px dashed var(--hair2)}
+.pill.hot{background:#FDF2F1;color:var(--hot);border:1px solid rgba(163,33,50,.3)}
+
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:clamp(16px, 1.5vw, 24px)}
+.c1-6{grid-column:1/7}.c7-12{grid-column:7/13}
+.c1-5{grid-column:1/6}.c6-12{grid-column:6/13}
+.c1-7{grid-column:1/8}.c8-12{grid-column:8/13}
+.c1-4{grid-column:1/5}.c5-8{grid-column:5/9}.c9-12{grid-column:9/13}
+.full{grid-column:1/13}
+
+.card{background:var(--s1);border:1px solid var(--hair);border-radius:11px;
+  padding:clamp(18px, 1.6vw, 26px) clamp(20px, 1.8vw, 30px);
+  box-shadow:var(--shadow)}
+.card.volt{border-color:rgba(217,84,31,.34);background:linear-gradient(180deg,#FFF9F4,#FFFFFF)}
+.card.moss{border-color:rgba(47,125,93,.32);background:linear-gradient(180deg,#F5FBF7,#FFFFFF)}
+.card.hot{border-color:rgba(163,33,50,.28);background:linear-gradient(180deg,#FFF6F5,#FFFFFF)}
+.card.gold{border-color:rgba(184,134,11,.32);background:linear-gradient(180deg,#FFFBEE,#FFFFFF)}
+.ct{font-family:var(--disp);font-size:19.5px;font-weight:600;letter-spacing:-.010em;line-height:1.3}
+.ct .ix{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;
+  color:var(--muted);font-weight:400;margin-bottom:5px}
+.card p{margin-top:7px;font-size:16.5px;color:var(--ink2);line-height:1.6}
+.card p b{color:var(--ink)}
+.card + .card{margin-top:15px}
+
+.kv{display:flex;gap:12px;align-items:baseline;padding:6px 0;border-top:1px solid var(--hair)}
+.kv:first-of-type{border-top:0}
+.kv .k{font-family:var(--mono);font-size:12px;letter-spacing:.10em;color:var(--muted);flex:0 0 106px}
+.kv .v{font-size:16.5px;line-height:1.5;color:var(--ink2)}
+
+.stat{display:flex;flex-direction:column;gap:3px}
+.stat .n{font-family:var(--disp);font-size:42px;font-weight:600;line-height:1;letter-spacing:-.025em}
+.stat .l{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted)}
+
+.tagrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:11px}
+.tag{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;color:var(--muted);
+  border:1px solid var(--hair2);border-radius:4px;padding:5px 9px;background:var(--s1);
+  text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:.16s}
+.tag:hover{border-color:var(--volt);color:var(--volt);background:#FFF4EF;transform:translateY(-1px)}
+.tag.moss{color:var(--moss);border-color:rgba(47,125,93,.38);background:#F4FAF6}
+.tag.moss:hover{border-color:var(--moss);background:#EAF5EE;color:#256349}
+.tag.bt{color:var(--gold);border-color:rgba(184,134,11,.38);background:#FFFBEE}
+.tag.bt:hover{border-color:var(--gold);background:#FAF0D2;color:#8C5A00}
+.tag .ar{opacity:.5;font-size:10px}
+
+.chip{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.08em;border-radius:4px;padding:5px 10px;margin-top:10px}
+.chip.warn{color:var(--gold);border:1px solid rgba(184,134,11,.35);background:#FDF7E6}
+.chip.bad{color:var(--hot);border:1px solid rgba(163,33,50,.32);background:#FDF2F1}
+.chip.good{color:var(--moss);border:1px solid rgba(47,125,93,.32);background:#F2F9F4}
+
+.dg{width:100%;height:auto;display:block;overflow:visible}
+.figure .dg{min-height:200px}
+.dg .cell{fill:#FFFFFF;stroke:var(--hair2);stroke-width:1.6}
+.dg .lb{font-family:var(--mono);font-size:18px;fill:var(--ink);text-anchor:middle;dominant-baseline:central}
+.dg .lb.volt{fill:var(--volt)}.dg .lb.moss{fill:var(--moss)}
+.dg .lb.gold{fill:var(--gold)}.dg .lb.hot{fill:var(--hot)}
+.dg .ed{stroke:var(--hair2);stroke-width:1.6;fill:none}
+.dg .ed.volt{stroke:var(--volt);stroke-width:2.8}
+.dg .ed.moss{stroke:var(--moss);stroke-width:2.8}
+.dg .ed.hot{stroke:var(--hot);stroke-width:2.8}
+.dg .ed.gold{stroke:var(--gold);stroke-width:2.8}
+.dg .lead{stroke:var(--hair2);stroke-width:1.2;fill:none}
+.dg .cap{font-family:var(--mono);font-size:12.5px;fill:var(--muted);letter-spacing:.07em}
+.dg .capv{font-family:var(--mono);font-size:12.5px;fill:var(--volt);letter-spacing:.07em}
+.dg .capm{font-family:var(--mono);font-size:12.5px;fill:var(--moss);letter-spacing:.07em}
+.dg .capa{font-family:var(--mono);font-size:12.5px;fill:var(--gold);letter-spacing:.07em}
+.dg .caph{font-family:var(--mono);font-size:12.5px;fill:var(--hot);letter-spacing:.07em}
+.dg .cn{font-family:var(--han);font-size:14.5px;fill:var(--ink2)}
+.dg .wt{font-family:var(--mono);font-size:11.5px;fill:var(--gold);letter-spacing:.05em}
+
+.figure{background:var(--s1);border:1px solid var(--hair);border-radius:11px;
+  padding:clamp(18px, 1.6vw, 26px) clamp(20px, 1.8vw, 30px);
+  box-shadow:var(--shadow)}
+.figure .fcap{margin-top:9px;font-family:var(--mono);font-size:11.5px;letter-spacing:.10em;color:var(--muted)}
+
+.code{background:#F7F1E3;border:1px solid var(--hair);border-radius:8px;padding:15px 17px;overflow:auto}
+.code pre{font-family:var(--mono);font-size:13px;line-height:1.62;color:#2A2016;white-space:pre}
+.code.sm pre{font-size:12px;line-height:1.55}
+.code .kw{color:#B0431F}.code .cm{color:#A2907A}.code .nu{color:#2F7D5D}
+.code .fn{color:#8C5A00}.code .st{color:#2F7D5D}
+.codelabel{font-family:var(--mono);font-size:11.5px;letter-spacing:.14em;color:var(--muted);margin-bottom:8px}
+.codenote{margin-top:9px;padding-top:8px;border-top:1px solid var(--hair);
+  display:flex;gap:11px;align-items:baseline;flex-wrap:wrap}
+.codenote .n-k{font-family:var(--mono);font-size:11px;letter-spacing:.13em;color:var(--volt);flex:0 0 auto}
+.codenote .n-v{font-size:15px;color:var(--ink2);line-height:1.5}
+
+ol.steps{list-style:none;counter-reset:s}
+ol.steps li{counter-increment:s;position:relative;padding:6px 0 6px 40px;border-top:1px solid var(--hair);
+  font-size:16px;line-height:1.55;color:var(--ink2)}
+ol.steps li:before{content:counter(s,decimal-leading-zero);position:absolute;left:0;top:9px;
+  font-family:var(--mono);font-size:12px;letter-spacing:.10em;color:var(--volt);font-weight:500}
+ul.pit{list-style:none}
+ul.pit li{padding:6px 0 6px 24px;border-top:1px solid var(--hair);font-size:16px;line-height:1.52;
+  position:relative;color:var(--ink2)}
+ul.pit li:before{content:"✕";position:absolute;left:0;top:8px;color:var(--hot);font-family:var(--mono);font-size:12.5px}
+ul.ok{list-style:none}
+ul.ok li{padding:6px 0 6px 24px;border-top:1px solid var(--hair);font-size:16px;line-height:1.52;
+  position:relative;color:var(--ink2)}
+ul.ok li:before{content:"✓";position:absolute;left:0;top:8px;color:var(--moss);font-family:var(--mono);font-size:12.5px}
+
+table.cmp{width:100%;border-collapse:collapse;font-size:15.5px}
+table.cmp th{font-family:var(--mono);font-size:11px;letter-spacing:.11em;color:var(--muted);
+  text-align:left;padding:6px 8px;border-bottom:1px solid var(--hair2);font-weight:400}
+table.cmp td{padding:6px 8px;border-bottom:1px solid var(--hair);color:var(--ink2);line-height:1.45}
+table.cmp td:first-child{color:var(--ink)}
+table.cmp tr:last-child td{border-bottom:0}
+table.cmp tr.hi td{background:#FFF7F2}
+
+.chant{display:flex;flex-direction:column;gap:10px;margin-top:11px}
+.chant .row{display:grid;grid-template-columns:126px 22px 1fr;gap:13px;align-items:center;
+  background:var(--s2);border:1px solid var(--hair);border-radius:9px;padding:11px 14px}
+.chant .q{font-family:var(--disp);font-size:15.5px;font-weight:600;letter-spacing:-.012em}
+.chant .ar{font-family:var(--mono);font-size:14px;color:var(--muted);text-align:center}
+.chant .v{font-family:var(--disp);font-size:18px;font-weight:600;letter-spacing:-.014em}
+.chant .v small{display:block;font-family:var(--han);font-size:13.5px;font-weight:400;
+  color:var(--muted);letter-spacing:0;line-height:1.5;margin-top:1px}
+.chant .row.volt{border-color:rgba(217,84,31,.36);background:#FFF4EF}
+.chant .row.volt .q,.chant .row.volt .v{color:var(--volt)}
+.chant .row.moss{border-color:rgba(47,125,93,.32);background:#F2F9F4}
+.chant .row.moss .q,.chant .row.moss .v{color:var(--moss)}
+.chant .row.hot{border-color:rgba(163,33,50,.3);background:#FDF2F1}
+.chant .row.hot .q,.chant .row.hot .v{color:var(--hot)}
+.chant .row.gold{border-color:rgba(184,134,11,.34);background:#FFFBEE}
+.chant .row.gold .q,.chant .row.gold .v{color:var(--gold)}
+.chant .row.gray{border-color:var(--hair2);background:#F7F2E8}
+.chant .row.gray .q{color:var(--ink2)}.chant .row.gray .v{color:var(--ink2)}
+
+.pl{border-top:1px solid var(--hair)}
+.pl a{display:grid;grid-template-columns:76px 1fr 82px 62px;gap:11px;align-items:baseline;
+  padding:7px 4px;border-bottom:1px solid var(--hair);text-decoration:none;color:var(--ink2);
+  transition:background .15s}
+.pl a:hover{background:#FFF6F1}
+.pl .no{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;color:var(--volt)}
+.pl .ti{font-size:15.5px;line-height:1.42}
+.pl .ti small{display:block;color:var(--muted);font-size:13px;margin-top:1px}
+.pl .src{font-family:var(--mono);font-size:10px;letter-spacing:.07em;color:var(--muted)}
+.pl .pt{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--muted);text-align:right}
+
+.bigbtn{height:44px;padding:0 20px;font-family:var(--han);font-size:16px;border-radius:5px;
+  cursor:pointer;transition:.16s;display:inline-flex;align-items:center}
+.btn-volt{background:#FFF4EF;border:1px solid var(--volt);color:var(--volt);text-decoration:none}
+.btn-hot{background:#FDF2F1;border:1px solid var(--hot);color:var(--hot);text-decoration:none}
+
+.rv{opacity:0;transform:translateY(18px);
+  transition:opacity .55s ease,transform .55s cubic-bezier(.22,1,.36,1);transition-delay:var(--d,0s)}
+.slide.on .rv{opacity:1;transform:none}
+
+@media (max-width:1440px){ .rail{display:none} }
+@media (max-width:1180px){
+  .grid{grid-template-columns:1fr}
+  .c1-6,.c7-12,.c1-5,.c6-12,.c1-7,.c8-12,
+  .c1-4,.c5-8,.c9-12,.full{grid-column:1/2}
+  .s-head h2{font-size:30px}
+}
+@media (max-width:1040px){ .wrap{padding:0 clamp(18px, 3.2vw, 32px)} }
+@media (max-width:980px){
+  .slide{padding:82px 0 82px}
+}
+@media (max-width:680px){
+  body{scroll-snap-type:none;font-size:16px}
+  .s-head h2{font-size:25px}.s-head .sub{font-size:15px}
+  .navctl{left:16px;bottom:16px}.stat .n{font-size:32px}
+  .pl a{grid-template-columns:62px 1fr;gap:9px}
+  .pl .src,.pl .pt{display:none}
+  .chant .row{grid-template-columns:1fr;gap:3px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition-duration:.01ms!important;animation-duration:.01ms!important}
+  html{scroll-behavior:auto}
+}
+</style>
+</head>
+<body>
+
+<div class="progress" id="prog"></div>
+
+<div class="topbar">
+  <div>网络流的思想与应用 · NETWORK FLOW · 34 SLIDES</div>
+  <div class="r">
+    <span class="clock" id="clock">00:00 / 40:00</span>
+    <span class="count" id="count">01 / 34</span>
+  </div>
+</div>
+
+<nav class="rail" id="rail"></nav>
+
+<div class="navctl">
+  <button id="prevBtn">← PREV</button>
+  <button id="nextBtn">NEXT →</button>
+  <span class="key">↑↓ / SPACE 翻页</span>
+</div>
+
+<main id="deck">
+
+<!-- ==================== 01 封面 ==================== -->
+<section class="slide" data-t="封面">
+  <div class="wrap">
+    <div class="grid">
+      <div class="c1-6">
+        <div class="mono rv" style="--d:.05s;font-size:12px;letter-spacing:.16em;color:var(--volt)">
+          FORD-FULKERSON · DINIC · MIN-CUT · MCMF · BOUNDED FLOW
+        </div>
+        <h1 class="rv" style="--d:.12s;font-family:var(--disp);font-size:62px;font-weight:700;
+          line-height:1.05;letter-spacing:-.032em;margin-top:18px">网络流的<br>思想与应用</h1>
+        <div class="rv" style="--d:.18s;font-family:var(--disp);font-size:20px;color:var(--muted);
+          letter-spacing:.02em;margin-top:10px">五次被逼出来的转变</div>
+        <p class="rv" style="--d:.24s;margin-top:20px;font-size:20px;line-height:1.72;max-width:520px">
+          一张管道图，<b>最多能运多少水</b>？<br>
+          这个问题<b class="p">骗了我们四次</b>——<br>
+          每换一次算法，都是因为上一个办法<b class="g">真的不行了</b>。
+        </p>
+        <div class="grid rv" style="--d:.3s;margin-top:24px;grid-template-columns:repeat(3,1fr);gap:16px">
+          <div class="stat"><div class="n g">5</div><div class="l">核心算法</div></div>
+          <div class="stat"><div class="n g">10</div><div class="l">PYTHON 模板</div></div>
+          <div class="stat"><div class="n a">30</div><div class="l">洛谷 + LC 题</div></div>
+        </div>
+        <div class="rv" style="--d:.36s;margin-top:22px;display:flex;gap:9px;flex-wrap:wrap">
+          <span class="pill main">主线 40 MIN</span>
+          <span class="pill opt">★ 选讲 20 MIN</span>
+          <span class="pill base">面向算法初学者</span>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.26s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 560 330">
+            <text class="cap" x="20" y="26">同一个网络，问的「最多」不一样，答案就不一样</text>
+            <circle cx="80" cy="190" r="24" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.2"/>
+            <text class="lb volt" x="80" y="191" style="font-size:15px">S</text>
+            <circle cx="480" cy="190" r="24" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.2"/>
+            <text class="lb moss" x="480" y="191" style="font-size:15px">T</text>
+
+            <path class="ed moss" d="M104 190 L456 190" stroke-width="3"/>
+            <path class="ed moss" d="M448 182 L458 190 L448 198"/>
+            <text class="capm" x="280" y="176" text-anchor="middle">① 最大流</text>
+
+            <path class="ed volt" d="M104 180 C 200 90, 360 90, 456 180" stroke-width="3"/>
+            <text class="capv" x="280" y="102" text-anchor="middle">② 最小割</text>
+
+            <path class="ed gold" d="M104 202 C 200 292, 360 292, 456 202" stroke-width="3" stroke-dasharray="7 5"/>
+            <text class="capa" x="280" y="288" text-anchor="middle">③ 最小费用流</text>
+
+            <path class="ed hot" d="M104 184 C 220 236, 340 150, 456 186" stroke-width="3"/>
+            <text class="caph" x="280" y="236" text-anchor="middle">④ 上下界可行流</text>
+
+            <line class="lead" x1="20" y1="312" x2="540" y2="312"/>
+            <text class="cap" x="20" y="328">「最大」不是客观事实，是你选的约束目标</text>
+          </svg>
+          <div class="fcap">FIG.01 · 四种问法，四个问题</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 02 网络流在问什么 ==================== -->
+<section class="slide" data-t="网络流到底在问什么">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">02</div>
+      <div>
+        <h2>先问清楚：<b>网络流到底在问什么</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>这一页解决<b class="g">「问题的形状」</b>。<b>网络流不是最短路，它问的是「容量」。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 300">
+            <text class="cap" x="20" y="22">网络 = 点 + 有向边 + 容量 + 源汇</text>
+            <circle cx="80" cy="150" r="22" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.6"/>
+            <text class="lb volt" x="80" y="151" style="font-size:14px">S</text>
+            <circle cx="520" cy="150" r="22" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.6"/>
+            <text class="lb moss" x="520" y="151" style="font-size:14px">T</text>
+            <circle class="cell" cx="240" cy="80" r="19" fill="#FFF"/><text class="lb" x="240" y="81" style="font-size:12px">a</text>
+            <circle class="cell" cx="240" cy="220" r="19" fill="#FFF"/><text class="lb" x="240" y="221" style="font-size:12px">b</text>
+            <circle class="cell" cx="380" cy="150" r="19" fill="#FFF"/><text class="lb" x="380" y="151" style="font-size:12px">c</text>
+
+            <g class="lead" stroke="#C7B18B" stroke-width="1.8">
+              <path d="M102 142 L218 90 M102 158 L218 210
+                      M260 88 L362 142 M260 212 L362 158
+                      M400 142 L498 148"/>
+            </g>
+            <text class="wt" x="150" y="106">10</text>
+            <text class="wt" x="150" y="196">8</text>
+            <text class="wt" x="300" y="106">6</text>
+            <text class="wt" x="300" y="196">9</text>
+            <text class="wt" x="440" y="134">12</text>
+
+            <line class="lead" x1="20" y1="266" x2="600" y2="266"/>
+            <text class="capv" x="20" y="288">求：从 S 到 T 能「同时」运多少，且每条边不超容量</text>
+          </svg>
+          <div class="fcap">FIG.02 · 「最大流」= 可行流中流量最大者</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">THREE MISREADINGS</span>三个常见误解</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>「每条边取最小容量」就是最大流 —— <b class="p">错</b>，还要守恒</li>
+            <li>「最短路走一遍」就能算流量 —— <b class="p">错</b>，和最短路是两回事</li>
+            <li>最大流唯一 —— <b class="p">错</b>，方案很多，值唯一</li>
+          </ul>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">THE REAL PROBLEM</span>真正在解决的事</div>
+          <p>人眼能看懂 5 个点，但 <b>10⁴ 个点</b>就不行了。</p>
+          <p>我们要的是一套<b class="a">能反复增广</b>的机械步骤。</p>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">HOW</span>今天怎么讲</div>
+          <p>不并列讲五个算法，而是<b class="m">一次次被失败逼着换方法</b>。</p>
+          <p>这样你遇到新题，能<b>自己推</b>出该用哪个。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 03 演化路线图 ==================== -->
+<section class="slide" data-t="演化路线图：一次被逼出来的转变">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">03</div>
+      <div>
+        <h2>演化路线图：<b>五级阶梯，四次被迫转变</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">这张图就是全篇的目录</b>，也是唯一的演化总览。<b>记住它，后面都不容易迷路。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="full rv" style="--d:.06s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 1240 400">
+            <text class="caph" x="196" y="30">↑ 暴力找路太慢，一次只能推一条</text>
+            <text class="caph" x="452" y="30">↑ 只问流量，题目还问「割在哪」</text>
+            <text class="caph" x="708" y="30">↑ 只算流量，题目还要算「花多少钱」</text>
+            <text class="caph" x="964" y="30">↑ 题目根本不是网络，得靠建模</text>
+
+            <rect x="20" y="300" width="220" height="76" rx="10" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="2.4"/>
+            <text class="capm" x="130" y="326" text-anchor="middle">STEP 1</text>
+            <text class="cn" x="130" y="352" text-anchor="middle" style="fill:#2F7D5D;font-size:17px">暴力增广</text>
+            <text class="capm" x="130" y="372" text-anchor="middle">Ford-Fulkerson</text>
+
+            <rect x="276" y="230" width="220" height="146" rx="10" fill="#FFF4EF" stroke="#D9541F" stroke-width="2.6"/>
+            <text class="capv" x="386" y="256" text-anchor="middle">STEP 2</text>
+            <text class="cn" x="386" y="284" text-anchor="middle" style="fill:#D9541F;font-size:18px">一次多路</text>
+            <text class="capv" x="386" y="312" text-anchor="middle">Dinic</text>
+            <text class="capv" x="386" y="336" text-anchor="middle">分层 + 当前弧</text>
+            <text class="cap" x="386" y="358" text-anchor="middle" style="font-size:11px">O(n²m)</text>
+
+            <rect x="532" y="158" width="220" height="218" rx="10" fill="#FFF6F5" stroke="#A32132" stroke-width="2.6"/>
+            <text class="caph" x="642" y="184" text-anchor="middle">STEP 3</text>
+            <text class="cn" x="642" y="212" text-anchor="middle" style="fill:#A32132;font-size:18px">最小割</text>
+            <text class="caph" x="642" y="240" text-anchor="middle">max-flow = min-cut</text>
+            <text class="cap" x="642" y="264" text-anchor="middle" style="font-size:11px">割 = 瓶颈</text>
+            <text class="caph" x="642" y="290" text-anchor="middle">二值化技巧</text>
+            <text class="cap" x="642" y="312" text-anchor="middle" style="font-size:11px">选 / 不选</text>
+            <text class="caph" x="642" y="338" text-anchor="middle" style="font-size:11px">闭合子图</text>
+            <text class="cap" x="642" y="362" text-anchor="middle" style="font-size:11px">二分图最小点覆盖</text>
+
+            <rect x="788" y="86" width="220" height="290" rx="10" fill="#FFFBEE" stroke="#B8860B" stroke-width="2.6"/>
+            <text class="capa" x="898" y="112" text-anchor="middle">STEP 4</text>
+            <text class="cn" x="898" y="140" text-anchor="middle" style="fill:#B8860B;font-size:18px">费用流</text>
+            <text class="capa" x="898" y="168" text-anchor="middle">MCMF（SPFA）</text>
+            <text class="cap" x="898" y="192" text-anchor="middle" style="font-size:11px">每单位流花 c</text>
+            <text class="cap" x="898" y="216" text-anchor="middle" style="font-size:11px">增广「最短路」</text>
+            <text class="capa" x="898" y="246" text-anchor="middle" style="font-size:11px">最大流 / 最小费用</text>
+            <text class="cap" x="898" y="268" text-anchor="middle" style="font-size:11px">二分图最优匹配</text>
+            <text class="cap" x="898" y="288" text-anchor="middle" style="font-size:11px">餐巾计划</text>
+            <text class="cap" x="898" y="318" text-anchor="middle" style="font-size:11px">O(nmf)</text>
+            <text class="cap" x="898" y="350" text-anchor="middle" style="font-size:11px">Dijkstra + 势能 可加速</text>
+
+            <rect x="1044" y="20" width="180" height="356" rx="10" fill="#F7F2E8" stroke="#D6C6A9" stroke-width="2.2"/>
+            <text class="cap" x="1134" y="48" text-anchor="middle">STEP 5</text>
+            <text class="cn" x="1134" y="78" text-anchor="middle" style="font-size:18px">建模 + 上下界</text>
+            <line class="lead" x1="1064" y1="98" x2="1204" y2="98"/>
+            <text class="cap" x="1064" y="124">拆点</text>
+            <text class="cap" x="1064" y="148" style="font-size:11px">点容量 → 边容量</text>
+            <text class="cap" x="1064" y="176">虚拟源汇</text>
+            <text class="cap" x="1064" y="200" style="font-size:11px">多源多汇 / 匹配</text>
+            <text class="cap" x="1064" y="228">上下界</text>
+            <text class="cap" x="1064" y="252" style="font-size:11px">可行流 → 循环流</text>
+            <text class="cap" x="1064" y="280">有源汇上下界</text>
+            <text class="cap" x="1064" y="304" style="font-size:11px">最大 / 最小流</text>
+            <text class="cap" x="1064" y="332">最小路径覆盖</text>
+            <text class="cap" x="1064" y="356" style="font-size:11px">拆点 + 二分图匹配</text>
+
+            <path class="lead" d="M130 296 L266 226 M386 226 L522 154 M642 154 L778 82 M898 82 L1034 22"
+                  stroke="#C7B18B" stroke-width="1.6" stroke-dasharray="6 5"/>
+          </svg>
+          <div class="fcap">FIG.03 · 每一级都是被上一级的失败逼出来的</div>
+        </div>
+      </div>
+
+      <div class="c1-6 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">READING</span>怎么读这张图</div>
+          <p>横着看是<b>能力递增</b>，竖着看<b class="g">每次跨越都要付代价</b>：</p>
+          <div class="kv"><div class="k">①→②</div><div class="v">暴力 BFS → 一次多路增广</div></div>
+          <div class="kv"><div class="k">②→③</div><div class="v">只答流量 → 还要答割 / 选择</div></div>
+          <div class="kv"><div class="k">③→④</div><div class="v">只算容量 → 还要算单位费用</div></div>
+          <p style="margin-top:10px"><b>没有免费的午餐，只有「为了解决什么」。</b></p>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.22s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">TAKEAWAY</span>记三句就够</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>算法之间<b>不是平级</b>，是<b class="m">层层放宽限制</b></li>
+            <li>每一步的驱动力都是<b class="p">上一个方法在某类输入上失效</b></li>
+            <li>Step 5 是<b>建模层</b>，不改算法，只改<b>「图长什么样」</b></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 04 术语与守恒 ==================== -->
+<section class="slide" data-t="术语与流守恒">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">04</div>
+      <div>
+        <h2>术语与<b>流守恒</b>：把话说清楚</h2>
+        <p class="sub"><span class="pill main">MAIN</span>这一页是<b class="g">全文唯一一次术语页</b>。<b>后面所有页都只用这里定义过的词。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card">
+          <div class="ct"><span class="ix">VOCABULARY</span>七个词</div>
+          <div class="kv"><div class="k">容量 c(u,v)</div><div class="v">这条边<b>最多</b>能过多少</div></div>
+          <div class="kv"><div class="k">流量 f(u,v)</div><div class="v">这条边<b>实际</b>过了多少</div></div>
+          <div class="kv"><div class="k">可行流</div><div class="v">不超容量 + 除源汇外守恒</div></div>
+          <div class="kv"><div class="k">残量</div><div class="v"><b>c − f</b>，还能再塞多少</div></div>
+          <div class="kv"><div class="k">增广路</div><div class="v">残量网络里 S→T 的路径</div></div>
+          <div class="kv"><div class="k">割</div><div class="v">把点分成 S 侧 / T 侧</div></div>
+          <div class="kv"><div class="k">最大流</div><div class="v">可行流里流量最大者</div></div>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">CONSERVATION</span>「流守恒」的正式定义</div>
+          <p>除源 S 和汇 T 外，每个点的<b>入流 = 出流</b>：</p>
+          <div class="mono g" style="margin-top:10px;font-size:15px;line-height:1.7">
+            Σ f(u,v) = Σ f(v,w)<br>
+            &nbsp;&nbsp;进 v&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;出 v
+          </div>
+          <p style="margin-top:10px"><b>所有流算法都在维护这条性质，只是「怎么找增广」不同。</b></p>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 260">
+            <text class="cap" x="20" y="22">容量 c 与流量 f 的写法：f / c</text>
+            <circle cx="80" cy="130" r="22" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.4"/>
+            <text class="lb volt" x="80" y="131" style="font-size:14px">S</text>
+            <circle cx="300" cy="60" r="19" fill="#FFF"/><text class="lb" x="300" y="61" style="font-size:12px">a</text>
+            <circle cx="300" cy="200" r="19" fill="#FFF"/><text class="lb" x="300" y="201" style="font-size:12px">b</text>
+            <circle cx="520" cy="130" r="22" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.4"/>
+            <text class="lb moss" x="520" y="131" style="font-size:14px">T</text>
+
+            <g class="lead" stroke="#C7B18B" stroke-width="1.8">
+              <path d="M102 122 L278 68 M102 138 L278 192
+                      M322 68 L498 122 M322 192 L498 138"/>
+            </g>
+            <text class="capm" x="170" y="86">5 / 10</text>
+            <text class="capm" x="170" y="176">3 / 8</text>
+            <text class="capm" x="400" y="86">5 / 6</text>
+            <text class="capm" x="400" y="176">3 / 9</text>
+
+            <text class="cn" x="80" y="176" style="font-size:12px">流入 8</text>
+            <text class="cn" x="520" y="176" style="font-size:12px">流出 8</text>
+            <text class="capv" x="240" y="240">a：入 5 = 出 5 ✓</text>
+            <text class="capv" x="240" y="258">b：入 3 = 出 3 ✓</text>
+          </svg>
+          <div class="fcap">FIG.04 · 除源汇外，每个点必须收支平衡</div>
+        </div>
+
+        <div class="card volt">
+          <div class="ct"><span class="ix">CAPACITY</span>两个约束</div>
+          <div class="kv"><div class="k">容量约束</div><div class="v"><b>0 ≤ f(u,v) ≤ c(u,v)</b></div></div>
+          <div class="kv"><div class="k">守恒约束</div><div class="v">除 S / T 外入 = 出</div></div>
+          <p style="margin-top:9px"><b>两条约束都满足 = 可行流。 </b></p>
+        </div>
+
+        <div class="card hot">
+          <div class="ct"><span class="ix">REVERSE</span>反向边：网络流最反直觉的设计</div>
+          <p>每条正向边都配一条<b class="p">容量 0 的反向边</b>。</p>
+          <p>推流时：<b>正向 −f</b>，<b>反向 +f</b>。</p>
+          <p>反向边的物理意义是<b>「撤回之前的决定」</b>。</p>
+          <p><b>没有反向边，就没有正确的最大流。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 05 图的存储 ==================== -->
+<section class="slide" data-t="网络怎么存进程序">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">05</div>
+      <div>
+        <h2>网络怎么<b>存进程序</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>网络流的存储有<b class="g">一个专属技巧</b>：<b>把正反两条边存在相邻下标</b>。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · 边表 + 邻接（推荐）</div>
+        <div class="code"><pre><span class="cm"># 边：to 终点，cap 剩余容量</span>
+<span class="cm"># 技巧：正边下标 i，反边下标 i^1</span>
+<span class="kw">class</span> <span class="fn">Edge</span>:
+    __slots__ = (<span class="st">'to'</span>, <span class="st">'cap'</span>, <span class="st">'cost'</span>)
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, to, cap, cost=<span class="nu">0</span>):
+        self.to = to; self.cap = cap; self.cost = cost
+
+g = [[] <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]
+
+<span class="kw">def</span> <span class="fn">add_edge</span>(u, v, cap, cost=<span class="nu">0</span>):
+    g[u].append(Edge(v, cap, cost))     <span class="cm"># 下标偶数：正</span>
+    g[v].append(Edge(u, <span class="nu">0</span>, -cost))    <span class="cm"># 下标奇数：反</span>
+
+<span class="cm"># 找反边：e = g[u][i]，反边 = g[e.to][i ^ 1]</span></pre></div>
+        <div class="codenote">
+          <div class="n-k">关键</div>
+          <div class="n-v"><b>i ^ 1</b> 取反边：正反成对，永不混乱</div>
+        </div>
+
+        <div class="codelabel" style="margin-top:16px">PYTHON · 邻接矩阵（仅限小图 / 教学）</div>
+        <div class="code sm"><pre>cap = [[<span class="nu">0</span>]*n <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(n)]
+cap[u][v] += w          <span class="cm"># 重边要累加！</span>
+<span class="cm"># 反边：cap[v][u] 初始为 0，推流时一起改</span></pre></div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">COMPARE</span>两种存法</div>
+          <table class="cmp" style="margin-top:7px">
+            <tr><th></th><th>边表 + 邻接</th><th>邻接矩阵</th></tr>
+            <tr><td>空间</td><td><b class="m">O(n+m)</b></td><td><b class="p">O(n²)</b></td></tr>
+            <tr><td>查残量</td><td>O(1) 通过指针</td><td class="m">O(1)</td></tr>
+            <tr><td>遍历邻边</td><td class="m">O(度数)</td><td>O(n)</td></tr>
+            <tr class="hi"><td>用途</td><td><b>几乎所有题</b></td><td>n ≤ 300 教学</td></tr>
+          </table>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">THREE DETAIL</span>三个存储细节</div>
+          <ul class="ok" style="margin-top:8px">
+            <li><b class="a">重边</b>：不能覆盖，要<b>累加容量</b>（除非题目明说是两条独立边）</li>
+            <li><b class="a">自环</b>：自己到自己，容量加进去没意义，一般忽略</li>
+            <li>反向边的<b class="a">容量初始为 0</b>，费用为 −c</li>
+          </ul>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">PYTHON</span>Python 性能三句</div>
+          <ul class="ok" style="margin-top:8px">
+            <li><b class="m">__slots__</b> 能省 30% 内存</li>
+            <li>大输入用 <b class="m">sys.stdin.readline</b></li>
+            <li>INF 统一 <span class="mono">10**18</span>，容量别用浮点</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 06 残量网络 ==================== -->
+<section class="slide" data-t="残量网络：反悔的机制">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">06</div>
+      <div>
+        <h2>残量网络：<b>「反悔」的机制</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>这一页解决<b class="g">「推错了怎么办」</b>。<b>没有这一页，后面的算法全部不成立。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 300">
+            <text class="cap" x="20" y="22">推流后，正向残量减少，反向残量增加</text>
+            <text class="capm" x="20" y="56">① 原始网络（边上是容量）</text>
+            <circle cx="80" cy="100" r="20" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.2"/>
+            <text class="lb volt" x="80" y="101" style="font-size:12px">S</text>
+            <circle cx="280" cy="100" r="18" fill="#FFF"/><text class="lb" x="280" y="101" style="font-size:11px">a</text>
+            <circle cx="480" cy="100" r="20" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.2"/>
+            <text class="lb moss" x="480" y="101" style="font-size:12px">T</text>
+            <path class="lead" d="M102 96 L258 96"/>
+            <path class="lead" d="M302 96 L458 96"/>
+            <text class="cap" x="180" y="88">10</text>
+            <text class="cap" x="380" y="88">10</text>
+
+            <line class="lead" x1="20" y1="150" x2="600" y2="150"/>
+
+            <text class="capv" x="20" y="184">② 推 6 单位 S→a→T 之后</text>
+            <circle cx="80" cy="230" r="20" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.2"/>
+            <text class="lb volt" x="80" y="231" style="font-size:12px">S</text>
+            <circle cx="280" cy="230" r="18" fill="#FFF"/><text class="lb" x="280" y="231" style="font-size:11px">a</text>
+            <circle cx="480" cy="230" r="20" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.2"/>
+            <text class="lb moss" x="480" y="231" style="font-size:12px">T</text>
+            <path class="ed moss" d="M102 226 L258 226" stroke-width="2.6"/>
+            <path class="ed moss" d="M302 226 L458 226" stroke-width="2.6"/>
+            <text class="capm" x="180" y="218">4 / 10</text>
+            <text class="capm" x="380" y="218">4 / 10</text>
+
+            <path class="ed hot" d="M258 240 L102 240" stroke-width="2.4" stroke-dasharray="5 4"/>
+            <path class="ed hot" d="M458 240 L302 240" stroke-width="2.4" stroke-dasharray="5 4"/>
+            <text class="caph" x="180" y="258">反 6</text>
+            <text class="caph" x="380" y="258">反 6</text>
+            <text class="cap" x="20" y="292">「反 6」不是真的倒流，是「可以撤回这 6」</text>
+          </svg>
+          <div class="fcap">FIG.06 · 反向边让算法有「后悔药」</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">WHY</span>为什么必须有反向边</div>
+          <p>贪心找一条增广路，很可能<b>不是全局最优</b>。</p>
+          <p>反向边给算法一个「<b class="g">退回这步、换条路走</b>」的机会。</p>
+          <p><b>没有它，FF 只能算出一个不是最大的「最大流」。</b></p>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">CLASSIC</span>一个经典反例</div>
+          <p>如果在残量网络里先找到 S→a→b→T（走了<b class="a">次优</b>的桥），</p>
+          <p>后面通过反向边 b→a，可以<b class="a">撤回</b>这一段，改走更好的路径。</p>
+          <p>最终结果依然是最大流。</p>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">CODE</span>推流的两行</div>
+          <div class="code sm" style="margin-top:9px"><pre>e.cap      -= f          <span class="cm"># 正向减</span>
+g[e.to][i^<span class="nu">1</span>].cap += f  <span class="cm"># 反向加</span></pre></div>
+          <p style="margin-top:9px"><b class="m">所有流算法，推流都只改这两行。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 07 FF 思想 ==================== -->
+<section class="slide" data-t="阶梯一：Ford-Fulkerson 的思想">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">07</div>
+      <div>
+        <h2>阶梯一 · <b>Ford-Fulkerson</b>：不断找增广路</h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>怎么从零流量开始，<b>一步步把流量堆到最大</b>。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 290">
+            <text class="cap" x="20" y="22">重复：在残量网络里找一条 S→T 的路，能推多少推多少</text>
+            <circle cx="80" cy="100" r="20" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.2"/>
+            <text class="lb volt" x="80" y="101" style="font-size:12px">S</text>
+            <circle cx="300" cy="60" r="17" fill="#FFF"/><text class="lb" x="300" y="61" style="font-size:11px">a</text>
+            <circle cx="300" cy="150" r="17" fill="#FFF"/><text class="lb" x="300" y="151" style="font-size:11px">b</text>
+            <circle cx="520" cy="100" r="20" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.2"/>
+            <text class="lb moss" x="520" y="101" style="font-size:12px">T</text>
+
+            <path class="ed moss" d="M102 96 L280 64" stroke-width="2.6"/>
+            <path class="ed moss" d="M320 64 L498 96" stroke-width="2.6"/>
+            <text class="capm" x="180" y="68">6 / 10</text>
+            <text class="capm" x="410" y="68">6 / 10</text>
+
+            <path class="lead" d="M102 104 L280 146"/>
+            <path class="lead" d="M320 146 L498 104"/>
+            <text class="cap" x="180" y="138">4</text>
+            <text class="cap" x="410" y="138">4</text>
+
+            <path class="ed hot" d="M280 162 L102 120" stroke-width="2.2" stroke-dasharray="5 4"/>
+            <path class="ed hot" d="M498 120 L320 162" stroke-width="2.2" stroke-dasharray="5 4"/>
+            <text class="caph" x="180" y="184">反 6</text>
+            <text class="caph" x="410" y="184">反 6</text>
+
+            <line class="lead" x1="20" y1="214" x2="600" y2="214"/>
+            <text class="capv" x="20" y="240">路径：S → a → T，瓶颈 = min(6, 6) = 6，推 6</text>
+            <text class="capm" x="20" y="266">反复直到找不到 S→T 的路径 → 已得最大流</text>
+          </svg>
+          <div class="fcap">FIG.07 · 一条一条推，直到推不动</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">THE IDEA</span>核心：增广</div>
+          <p>在残量网络里找一条 <b>S→T</b> 的路径，设路径上<b>最小残量</b>为 d。</p>
+          <p>沿路径<b>推 d 单位</b>。</p>
+          <p>重复，直到找不到 S→T 的路径。</p>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">WHY CORRECT</span>为什么停止时就是最大</div>
+          <p>没有 S→T 路径时，把「S 在残量网络里能到达的点」划成一侧，就是一个<b class="m">割</b>。</p>
+          <p>这个割的容量 = 当前流量 → <b>这正是最大流最小割定理</b>（第 14 页讲）。</p>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">LIMIT</span>它的问题</div>
+          <p>若每次只推<b class="p">1 单位</b>，而最大流是 <b class="p">10⁹</b>，就要推 10⁹ 次。</p>
+          <p>甚至遇到刻意构造的数据，<b>永远跑不完</b>。</p>
+          <p><b>下一页代码，第 9 页看它怎么崩。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 08 FF 代码 ==================== -->
+<section class="slide" data-t="FF 代码：DFS 与 BFS">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">08</div>
+      <div>
+        <h2>Ford-Fulkerson：<b>DFS 版与 BFS 版</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>把思想变成<b>可提交的程序</b>。<b>DFS 简单但慢，BFS 是 Edmonds-Karp。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · FF · DFS 版（教学用）</div>
+        <div class="code"><pre><span class="kw">def</span> <span class="fn">dfs</span>(u, t, f):
+    <span class="kw">if</span> u == t: <span class="kw">return</span> f
+    vis[u] = <span class="kw">True</span>
+    <span class="kw">for</span> i, e <span class="kw">in</span> <span class="fn">enumerate</span>(g[u]):
+        <span class="kw">if</span> <span class="kw">not</span> vis[e.to] <span class="kw">and</span> e.cap &gt; <span class="nu">0</span>:
+            d = dfs(e.to, t, <span class="fn">min</span>(f, e.cap))
+            <span class="kw">if</span> d &gt; <span class="nu">0</span>:
+                e.cap -= d
+                g[e.to][i ^ <span class="nu">1</span>].cap += d
+                <span class="kw">return</span> d
+    <span class="kw">return</span> <span class="nu">0</span>
+
+<span class="kw">def</span> <span class="fn">ff_dfs</span>(s, t):
+    flow = <span class="nu">0</span>
+    <span class="kw">while</span> <span class="kw">True</span>:
+        vis = [<span class="kw">False</span>]*n
+        d = dfs(s, t, INF)
+        <span class="kw">if</span> d == <span class="nu">0</span>: <span class="kw">break</span>
+        flow += d
+    <span class="kw">return</span> flow</pre></div>
+        <div class="codenote">
+          <div class="n-k">问题</div>
+          <div class="n-v">每次 DFS 只推一条路，<b>最坏 O(f · m)</b>，f 是最大流值</div>
+        </div>
+
+        <div class="codelabel" style="margin-top:16px">PYTHON · Edmonds-Karp（BFS 找增广路）</div>
+        <div class="code"><pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">ek</span>(s, t):
+    flow = <span class="nu">0</span>
+    <span class="kw">while</span> <span class="kw">True</span>:
+        pre = [(-<span class="nu">1</span>, -<span class="nu">1</span>)]*n
+        pre[s] = (s, -<span class="nu">1</span>)
+        q = deque([s])
+        <span class="kw">while</span> q <span class="kw">and</span> pre[t][0] == -<span class="nu">1</span>:
+            u = q.popleft()
+            <span class="kw">for</span> i, e <span class="kw">in</span> <span class="fn">enumerate</span>(g[u]):
+                <span class="kw">if</span> e.cap &gt; <span class="nu">0</span> <span class="kw">and</span> pre[e.to][0] == -<span class="nu">1</span>:
+                    pre[e.to] = (u, i)
+                    q.append(e.to)
+        <span class="kw">if</span> pre[t][0] == -<span class="nu">1</span>: <span class="kw">break</span>
+
+        <span class="cm"># 回溯找瓶颈</span>
+        d = INF; v = t
+        <span class="kw">while</span> v != s:
+            u, i = pre[v]
+            d = <span class="fn">min</span>(d, g[u][i].cap)
+            v = u
+        v = t
+        <span class="kw">while</span> v != s:
+            u, i = pre[v]
+            g[u][i].cap -= d
+            g[v][i ^ <span class="nu">1</span>].cap += d
+            v = u
+        flow += d
+    <span class="kw">return</span> flow</pre></div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card gold">
+          <div class="ct"><span class="ix">EK</span>BFS 版为什么更好</div>
+          <p>每次选<b class="a">边数最少</b>的增广路（BFS）。</p>
+          <p>可以证明增广次数是 <b>O(nm)</b>。</p>
+          <div class="kv"><div class="k">复杂度</div><div class="v"><span class="mono">O(n · m²)</span></div></div>
+          <div class="kv"><div class="k">优点</div><div class="v">不依赖流量大小 f，<b class="m">多项式</b></div></div>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">COMMON</span>两个版本的共同骨架</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>找一条 S→T 的增广路</li>
+            <li>找路径<b>瓶颈容量</b> d</li>
+            <li>沿路<b>推 d</b>，正向减反向加</li>
+            <li>重复，直到找不到路径</li>
+          </ol>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">PITFALL</span>三处易错</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>忘了 <b class="p">vis / pre</b>，DFS 死循环</li>
+            <li>推流时<b class="p">只改正向忘了反向</b></li>
+            <li>瓶颈 d 用 <span class="mono p">min</span>，别写成边权</li>
+          </ul>
+        </div>
+
+        <div class="mono" style="font-size:10.5px;letter-spacing:.15em;color:var(--muted);margin-top:14px">
+          PRACTICE · FF / EK
+        </div>
+        <div class="tagrow">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P3376" target="_blank" rel="noopener">P3376 网络最大流 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/maximum-students-taking-exam/" target="_blank" rel="noopener">LC 1349 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 09 转折：FF 太慢 ==================== -->
+<section class="slide" data-t="转折一：FF 被卡到跑不动">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">09</div>
+      <div>
+        <h2>转折一：<b>FF 每次只推一条，太慢</b></h2>
+        <p class="sub"><span class="pill hot">TURNING POINT</span><b class="p">这是全篇最重要的一次失败。</b>看清它为什么慢，后面才是理解而不是背诵。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 280">
+            <text class="cap" x="20" y="22">一个让 DFS 版跑断腿的网络</text>
+            <circle cx="80" cy="140" r="20" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.2"/>
+            <text class="lb volt" x="80" y="141" style="font-size:12px">S</text>
+            <circle cx="300" cy="60" r="17" fill="#FFF"/><text class="lb" x="300" y="61" style="font-size:11px">a</text>
+            <circle cx="300" cy="220" r="17" fill="#FFF"/><text class="lb" x="300" y="221" style="font-size:11px">b</text>
+            <circle cx="520" cy="140" r="20" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.2"/>
+            <text class="lb moss" x="520" y="141" style="font-size:12px">T</text>
+
+            <path class="ed" d="M102 132 L278 68"/>
+            <path class="ed" d="M102 148 L278 212"/>
+            <path class="ed hot" d="M322 68 L498 132" stroke-width="2.8"/>
+            <path class="ed hot" d="M322 212 L498 148" stroke-width="2.8"/>
+            <path class="ed" d="M322 68 L322 212" stroke-dasharray="5 4" style="display:none"/>
+
+            <text class="cap" x="180" y="86">10⁹</text>
+            <text class="cap" x="180" y="196">10⁹</text>
+            <text class="caph" x="400" y="86">10⁹</text>
+            <text class="caph" x="400" y="196">10⁹</text>
+
+            <path class="ed gold" d="M278 78 L322 200" stroke-width="2.4" stroke-dasharray="5 4"/>
+            <text class="capa" x="300" y="150" text-anchor="middle" style="font-size:11px">1</text>
+
+            <line class="lead" x1="20" y1="256" x2="600" y2="256"/>
+            <text class="caph" x="20" y="278">每次沿 a↔b 推 1 单位，要推 10⁹ 次 —— 直接 TLE</text>
+          </svg>
+          <div class="fcap">FIG.09 · FF 的复杂度依赖流量大小</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">WHAT BROKE</span>到底错在哪</div>
+          <p>FF 的复杂度是 <b class="p">O(f · m)</b>，依赖<b>最大流值 f</b>。</p>
+          <p>f 可能是 <b class="p">10⁹</b>，甚至更大。</p>
+          <p>更糟：如果容量是<b class="p">无理数</b>，FF 甚至可能不终止。</p>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">NEW REQUIREMENT</span>新的要求</div>
+          <p>不能一次只推一条，要<b class="g">一次推多条</b>。</p>
+          <p>而且要保证：<b>每次推完，距离 T 的层数至少 +1</b>。</p>
+          <p>这样增广次数就和 n 挂钩，而不是 f。</p>
+        </div>
+        <div class="card volt">
+          <div class="ct"><span class="ix">HINT</span>先别急着想算法</div>
+          <p>先想清楚：<b>「怎么一次性把同层的路全推完」？</b></p>
+          <p>如果能用 BFS 分层 + DFS 一次推完，算法就出来了。</p>
+          <p><b>下一页回答这个。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 10 Dinic 思想 ==================== -->
+<section class="slide" data-t="阶梯二：Dinic 的思想">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">10</div>
+      <div>
+        <h2>阶梯二 · <b>Dinic</b>：分层图 + 一次多路增广</h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>怎么把「一次只推一条」变成「<b>一次推完同层所有能推的</b>」。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">TWO LINES</span>两句口诀</div>
+          <div class="chant">
+            <div class="row volt">
+              <div class="q">① 分层</div>
+              <div class="ar">→</div>
+              <div class="v">BFS 标出每个点到 S 的<b>最短边数</b><small>只保留「层数 +1」的边</small></div>
+            </div>
+            <div class="row gold">
+              <div class="q">② 阻塞流</div>
+              <div class="ar">→</div>
+              <div class="v">DFS 一次推完所有<b>能推的路</b><small>当前弧优化：走过的边不再回退</small></div>
+            </div>
+          </div>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">PROOF</span>为什么分层就快</div>
+          <p>每次阻塞流推完，<b>S→T 的最短路长度至少 +1</b>。</p>
+          <p>最短路最多 <b class="g">n−1</b>，所以最多 <b class="g">n</b> 个阶段。</p>
+          <p>每个阶段 <b>O(nm)</b> → 总复杂度 <b class="g">O(n²m)</b>，与容量无关。</p>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 300">
+            <text class="cap" x="20" y="22">BFS 分层：层数 = 从 S 出发的最少边数</text>
+            <circle cx="60" cy="150" r="18" fill="#FFF9F4" stroke="#D9541F" stroke-width="2"/>
+            <text class="lb volt" x="60" y="151" style="font-size:11px">S</text>
+            <text class="capv" x="60" y="186" text-anchor="middle">0</text>
+
+            <circle cx="180" cy="80" r="16" fill="#FFF4EF" stroke="#D9541F" stroke-width="1.6"/>
+            <text class="lb volt" x="180" y="81" style="font-size:10px">a</text>
+            <text class="capv" x="180" y="112" text-anchor="middle">1</text>
+
+            <circle cx="180" cy="220" r="16" fill="#FFF4EF" stroke="#D9541F" stroke-width="1.6"/>
+            <text class="lb volt" x="180" y="221" style="font-size:10px">b</text>
+            <text class="capv" x="180" y="252" text-anchor="middle">1</text>
+
+            <circle cx="340" cy="150" r="16" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="1.6"/>
+            <text class="lb moss" x="340" y="151" style="font-size:10px">c</text>
+            <text class="capm" x="340" y="182" text-anchor="middle">2</text>
+
+            <circle cx="520" cy="150" r="18" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2"/>
+            <text class="lb moss" x="520" y="151" style="font-size:11px">T</text>
+            <text class="capm" x="520" y="186" text-anchor="middle">3</text>
+
+            <path class="ed moss" d="M78 142 L162 92"/>
+            <path class="ed moss" d="M78 158 L162 208"/>
+            <path class="ed moss" d="M198 88 L322 142"/>
+            <path class="ed moss" d="M198 212 L322 158"/>
+            <path class="ed moss" d="M358 150 L500 150"/>
+
+            <path class="ed hot" d="M196 92 L198 208" stroke-dasharray="5 4"/>
+            <text class="caph" x="212" y="152" style="font-size:11px">跳过（层差 0）</text>
+          </svg>
+          <div class="fcap">FIG.10 · 只保留「层数 +1」的边，图变成 DAG</div>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">REST</span>剩下的只有两件事</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>BFS 分层怎么写（第 12 页）</li>
+            <li>DFS 多路增广 + 当前弧（第 13 页）</li>
+          </ol>
+          <p style="margin-top:10px"><b>思想部分到此为止，接下来都是工程细节。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 11 Dinic 手推 ==================== -->
+<section class="slide" data-t="Dinic 手工模拟">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">11</div>
+      <div>
+        <h2>Dinic：<b>手工走一遍</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>先在纸上验证思路，<b>代码只是这张表的直译</b>。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 260">
+            <text class="cap" x="20" y="22">图：S 出发，求最大流</text>
+            <circle cx="80" cy="130" r="20" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.4"/>
+            <text class="lb volt" x="80" y="131" style="font-size:12px">S</text>
+            <circle cx="280" cy="60" r="17" fill="#FFF"/><text class="lb" x="280" y="61" style="font-size:11px">a</text>
+            <circle cx="280" cy="200" r="17" fill="#FFF"/><text class="lb" x="280" y="201" style="font-size:11px">b</text>
+            <circle cx="480" cy="130" r="20" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.4"/>
+            <text class="lb moss" x="480" y="131" style="font-size:12px">T</text>
+
+            <g class="lead" stroke="#C7B18B" stroke-width="1.8">
+              <path d="M102 122 L258 68 M102 138 L258 192
+                      M302 68 L458 122 M302 192 L458 138
+                      M302 68 L302 192" style="opacity:.35"/>
+            </g>
+            <text class="wt" x="160" y="86">10</text>
+            <text class="wt" x="160" y="176">8</text>
+            <text class="wt" x="380" y="86">6</text>
+            <text class="wt" x="380" y="176">9</text>
+            <text class="wt" x="290" y="130" style="font-size:10px">4</text>
+          </svg>
+          <div class="fcap">FIG.11 · 边权是容量，不是长度</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card">
+          <div class="ct"><span class="ix">TRACE</span>过程跟踪</div>
+          <div class="code sm" style="margin-top:9px"><pre><span class="cm"># 阶段 1：BFS 分层</span>
+层数：S=<span class="nu">0</span>, a=<span class="nu">1</span>, b=<span class="nu">1</span>, T=<span class="nu">2</span>
+保留边：S→a, S→b, a→T, b→T
+<span class="cm"># DFS 阻塞流</span>
+S→a→T：min(<span class="nu">10</span>,<span class="nu">6</span>) = <span class="nu">6</span>
+S→b→T：min(<span class="nu">8</span>,<span class="nu">9</span>) = <span class="nu">8</span>
+本阶段流量 = <span class="nu">14</span>
+
+<span class="cm"># 阶段 2：重新 BFS</span>
+a 边满了，a 不在层里
+S=<span class="nu">0</span>, b=<span class="nu">1</span>, a=<span class="nu">2</span>（经 b→a 的反向边）, T=<span class="nu">3</span>
+保留边：S→b, b→a（反）, a→T
+<span class="cm"># DFS 阻塞流</span>
+S→b→a（反）→T：瓶颈 min(<span class="nu">0</span>,<span class="nu">4</span>,<span class="nu">0</span>) = <span class="nu">0</span>
+<span class="cm"># 推不动，本阶段流量 = 0，结束 ✓</span>
+最大流 = <span class="nu">14</span></pre></div>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">WATCH</span>两个容易混的点</div>
+          <div class="kv"><div class="k">谁分层</div><div class="v">BFS 分层，只保留<b>层数 +1</b> 的边</div></div>
+          <div class="kv"><div class="k">谁增广</div><div class="v">DFS 增广，<b>一次推多条</b>，不是一条</div></div>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">NOTE</span>第 2 阶段要注意</div>
+          <p>反向边也参与分层！<b class="m">这是「撤回」的来源。</b></p>
+          <p>当所有增广路都推不动，算法结束。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 12 Dinic 代码 BFS ==================== -->
+<section class="slide" data-t="Dinic 代码：BFS 分层">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">12</div>
+      <div>
+        <h2>Dinic：<b>BFS 分层</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>把「所有 S→T 最短路」一次标出来，并<b>只保留有用的边</b>。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · Dinic 的 BFS</div>
+        <div class="code"><pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">bfs_level</span>(s, t):
+    <span class="st">"""返回 level 数组；t 不可达时 level[t] = -1"""</span>
+    level = [-<span class="nu">1</span>] * n
+    level[s] = <span class="nu">0</span>
+    q = deque([s])
+    <span class="kw">while</span> q:
+        u = q.popleft()
+        <span class="kw">for</span> e <span class="kw">in</span> g[u]:
+            <span class="kw">if</span> e.cap &gt; <span class="nu">0</span> <span class="kw">and</span> level[e.to] == -<span class="nu">1</span>:
+                level[e.to] = level[u] + <span class="nu">1</span>
+                q.append(e.to)
+    <span class="kw">return</span> level</pre></div>
+        <div class="codenote">
+          <div class="n-k">关键</div>
+          <div class="n-v">只看 <b>e.cap &gt; 0</b> 的边（<b>残量边</b>）——反向边也参与！</div>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">WHY</span>为什么反向边也参与</div>
+          <p>反向边的残量 &gt; 0，说明「这条路可以撤回一些流量」。</p>
+          <p>撤回后，可能腾出位置走别的路——<b class="a">这正是最大流正确的关键。</b></p>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">TERMINATE</span>什么时候结束</div>
+          <p>BFS 后 <span class="mono">level[t] == -1</span>，说明 S 到 T <b class="m">已经不可达</b>。</p>
+          <p>当前流量就是最大流。</p>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 520 240">
+            <text class="cap" x="20" y="22">BFS 分层把图「梳」成一层一层</text>
+            <rect x="20" y="50" width="480" height="42" rx="9" fill="#FFF4EF" stroke="#D9541F" stroke-width="1.6"/>
+            <text class="capv" x="260" y="76" text-anchor="middle">层 0：S</text>
+
+            <rect x="20" y="100" width="480" height="42" rx="9" fill="#FFF4EF" stroke="#D9541F" stroke-width="1.6"/>
+            <text class="capv" x="260" y="126" text-anchor="middle">层 1：a, b</text>
+
+            <rect x="20" y="150" width="480" height="42" rx="9" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="1.6"/>
+            <text class="capm" x="260" y="176" text-anchor="middle">层 2：c</text>
+
+            <rect x="20" y="200" width="480" height="30" rx="9" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2"/>
+            <text class="capm" x="260" y="220" text-anchor="middle">层 3：T</text>
+
+            <text class="cap" x="20" y="40">层数 = 从 S 到该点的最短边数</text>
+          </svg>
+          <div class="fcap">FIG.12 · 分层把残量网络整理成 DAG</div>
+        </div>
+
+        <div class="card">
+          <div class="ct"><span class="ix">COMPLEXITY</span>一次 BFS 的代价</div>
+          <div class="kv"><div class="k">时间</div><div class="v"><span class="mono">O(n + m)</span></div></div>
+          <div class="kv"><div class="k">调用次数</div><div class="v">最多 <b>n</b> 次（每阶段一次）</div></div>
+          <div class="kv"><div class="k">合计</div><div class="v">BFS 部分 <span class="mono">O(n(n+m))</span></div></div>
+        </div>
+
+        <div class="card hot">
+          <div class="ct"><span class="ix">PITFALL</span>两处易错</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>只给正向边分层，漏了<b class="p">反向边</b></li>
+            <li>忘了判 <span class="mono p">level[e.to] == -1</span>，同一个点重复入队</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 13 Dinic 代码 DFS ==================== -->
+<section class="slide" data-t="Dinic 代码：DFS 阻塞流">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">13</div>
+      <div>
+        <h2>Dinic：<b>DFS 阻塞流 + 当前弧</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>一次 DFS 把同层能推的全推完，并用<b>当前弧</b>避免重复扫描。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · Dinic 完整版</div>
+        <div class="code"><pre><span class="kw">def</span> <span class="fn">dfs</span>(u, t, f):
+    <span class="st">"""沿 level 增广，返回实际推的流量"""</span>
+    <span class="kw">if</span> u == t: <span class="kw">return</span> f
+    i = cur[u]
+    <span class="kw">while</span> i &lt; <span class="fn">len</span>(g[u]):
+        cur[u] = i               <span class="cm"># ★ 记住当前弧</span>
+        e = g[u][i]
+        <span class="kw">if</span> e.cap &gt; <span class="nu">0</span> <span class="kw">and</span> level[e.to] == level[u] + <span class="nu">1</span>:
+            d = dfs(e.to, t, <span class="fn">min</span>(f, e.cap))
+            <span class="kw">if</span> d &gt; <span class="nu">0</span>:
+                e.cap -= d
+                g[e.to][i ^ <span class="nu">1</span>].cap += d
+                <span class="kw">return</span> d
+        i += <span class="nu">1</span>
+        cur[u] = i
+    <span class="kw">return</span> <span class="nu">0</span>
+
+<span class="kw">def</span> <span class="fn">dinic</span>(s, t):
+    flow = <span class="nu">0</span>
+    <span class="kw">while</span> <span class="kw">True</span>:
+        level = bfs_level(s, t)
+        <span class="kw">if</span> level[t] == -<span class="nu">1</span>: <span class="kw">break</span>
+        cur = [<span class="nu">0</span>] * n
+        <span class="kw">while</span> <span class="kw">True</span>:
+            d = dfs(s, t, INF)
+            <span class="kw">if</span> d == <span class="nu">0</span>: <span class="kw">break</span>
+            flow += d
+    <span class="kw">return</span> flow</pre></div>
+        <div class="codenote">
+          <div class="n-k">30 行</div>
+          <div class="n-v"><b>记住这一段，能应付绝大多数最大流题</b></div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card gold">
+          <div class="ct"><span class="ix">CURRENT ARC</span>当前弧是什么</div>
+          <p><span class="mono">cur[u]</span> 记录「u 的第几条出边已经试过了」。</p>
+          <p>下次从 u 出发，<b class="a">直接从 cur[u] 开始扫</b>，不再从头。</p>
+          <p><b>没有当前弧，Dinic 会退化成 EK。</b></p>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">WHY CORRECT</span>为什么 DFS 一次能推多条</div>
+          <p>DFS 推完一条路后，<b>不返回顶层</b>，而是继续在同层里找下一条。</p>
+          <p>直到所有出边都试过、再没有可推的，才返回 0。</p>
+          <p>这样一轮 DFS = 一个「阻塞流」。</p>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">COMPLEXITY</span>总复杂度</div>
+          <div class="kv"><div class="k">阶段数</div><div class="v">最多 <b>n</b>（层数每阶段 +1）</div></div>
+          <div class="kv"><div class="k">每阶段</div><div class="v"><span class="mono">O(nm)</span>（当前弧保证）</div></div>
+          <div class="kv"><div class="k">合计</div><div class="v"><b class="g">O(n²m)</b></div></div>
+          <div class="kv"><div class="k">实际</div><div class="v">远快于上界，<b class="m">竞赛默认首选</b></div></div>
+        </div>
+
+        <div class="mono" style="font-size:10.5px;letter-spacing:.15em;color:var(--muted);margin-top:14px">
+          PRACTICE · Dinic
+        </div>
+        <div class="tagrow">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P3376" target="_blank" rel="noopener">P3376 最大流 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2756" target="_blank" rel="noopener">P2756 飞行员配对 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/maximum-number-of-accepted-invitations/" target="_blank" rel="noopener">LC 1820 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 14 最大流最小割 ==================== -->
+<section class="slide" data-t="最大流最小割定理">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">14</div>
+      <div>
+        <h2>阶梯三 · <b>最大流最小割定理</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>题目不只问「最多流多少」，还问「<b>瓶颈在哪</b>」。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 300">
+            <text class="cap" x="20" y="22">割：把点分成 S 侧 / T 侧，容量 = 跨过去的正向边之和</text>
+            <circle cx="80" cy="150" r="20" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.4"/>
+            <text class="lb volt" x="80" y="151" style="font-size:12px">S</text>
+            <circle cx="280" cy="80" r="17" fill="#FFF9F4" stroke="#D9541F" stroke-width="1.6"/>
+            <text class="lb volt" x="280" y="81" style="font-size:11px">a</text>
+            <circle cx="280" cy="220" r="17" fill="#FFF9F4" stroke="#D9541F" stroke-width="1.6"/>
+            <text class="lb volt" x="280" y="221" style="font-size:11px">b</text>
+            <circle cx="460" cy="150" r="17" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="1.6"/>
+            <text class="lb moss" x="460" y="151" style="font-size:11px">c</text>
+            <circle cx="540" cy="150" r="18" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2"/>
+            <text class="lb moss" x="540" y="151" style="font-size:11px">T</text>
+
+            <path class="ed" d="M100 140 L262 88"/>
+            <path class="ed" d="M100 160 L262 212"/>
+            <path class="ed hot" d="M298 84 L442 144" stroke-width="2.8"/>
+            <path class="ed hot" d="M298 216 L442 156" stroke-width="2.8"/>
+            <path class="ed" d="M478 150 L522 150"/>
+
+            <text class="cap" x="160" y="102">10</text>
+            <text class="cap" x="160" y="196">8</text>
+            <text class="caph" x="360" y="102">6</text>
+            <text class="caph" x="360" y="196">9</text>
+            <text class="cap" x="500" y="140">12</text>
+
+            <path class="lead" d="M250 30 L250 270" stroke="#A32132" stroke-width="2" stroke-dasharray="8 6"/>
+            <text class="caph" x="260" y="42">割线</text>
+
+            <line class="lead" x1="20" y1="284" x2="600" y2="284"/>
+            <text class="capv" x="20" y="302">割容量 = 6 + 9 = 15，就是最大流</text>
+          </svg>
+          <div class="fcap">FIG.14 · 割是「瓶颈」，也是最大流的另一面</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">THE THEOREM</span>定理：max-flow = min-cut</div>
+          <p>最大流的值 = 最小割的容量。</p>
+          <p>换句话说：<b class="g">「最多能运多少」 = 「最窄的切口有多宽」</b>。</p>
+          <p><b>这是网络流最美的一条定理。</b></p>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">HOW TO FIND</span>怎么找出最小割</div>
+          <p>跑完最大流后，在残量网络上<b class="a">从 S 做一次 BFS / DFS</b>。</p>
+          <p>所有能到达的点划为 S 侧，其余划为 T 侧。</p>
+          <p>跨过去的正向边就是最小割。</p>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">WHY USEFUL</span>为什么这是「阶梯」</div>
+          <p>最小割能把「<b>选择 / 放弃</b>」类问题变成网络流：</p>
+          <ul class="ok" style="margin-top:8px">
+            <li>选谁不选谁（<b class="m">闭合子图</b>）</li>
+            <li>二分图<b class="m">最小点覆盖</b></li>
+            <li>每个点二选一，代价是「矛盾边」</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 15 最小割建模 ==================== -->
+<section class="slide" data-t="最小割建模：三件套">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">15</div>
+      <div>
+        <h2>最小割建模：<b>三件套</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>怎么把「选不选」「花不花」翻译成割。<b>这三招覆盖 80% 的应用。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">T1</span>二选一：源表示 A，汇表示 B</div>
+          <p>每个点 i 必须选 A 或 B。选 A 的代价 aᵢ，选 B 的代价 bᵢ。</p>
+          <div class="code sm" style="margin-top:9px"><pre>S → i 容量 a_i
+i → T 容量 b_i</pre></div>
+          <p style="margin-top:9px"><b>割边 = 选了另一边</b>。最小割 = 最小代价。</p>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">T2</span>关联代价：加一条边</div>
+          <p>若 i 和 j <b>选了不同侧</b>，额外付 c。</p>
+          <div class="code sm" style="margin-top:9px"><pre>i → j 容量 c
+j → i 容量 c   (无向)</pre></div>
+          <p style="margin-top:9px"><b>跨侧时，这条边被割。</b></p>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="card gold">
+          <div class="ct"><span class="ix">T3</span>最大权闭合子图</div>
+          <p>点有正权 p（收益）和负权 −q（成本），选了一个点必须选它的所有后继。</p>
+          <p><b class="a">构图：</b></p>
+          <div class="code sm" style="margin-top:9px"><pre>正权点：S → i 容量 p_i
+负权点：i → T 容量 q_i
+依赖：  u → v 容量 INF（选了 u 必须选 v）
+
+答案 = 正权总和 − 最小割</pre></div>
+          <p style="margin-top:9px"><b>经典题：太空飞行计划（P2762）</b></p>
+        </div>
+
+        <div class="card hot">
+          <div class="ct"><span class="ix">WHY INF</span>为什么依赖边是 INF</div>
+          <p>依赖必须满足，<b class="p">不能被割断</b>。</p>
+          <p>如果这条边被割，代价会趋于无穷——最小割自然避开它。</p>
+        </div>
+
+        <div class="card">
+          <div class="ct"><span class="ix">RECIPE</span>最小割建模三步</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>谁是<b>源侧</b>，谁是<b>汇侧</b>？</li>
+            <li>「选一边」的代价写成 <b>S→i / i→T</b></li>
+            <li>「矛盾」的代价写成 <b>i→j</b>（INF 表示不可违背）</li>
+          </ol>
+        </div>
+
+        <div class="mono" style="font-size:10.5px;letter-spacing:.15em;color:var(--muted);margin-top:14px">
+          PRACTICE · 最小割
+        </div>
+        <div class="tagrow">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2762" target="_blank" rel="noopener">P2762 太空飞行计划 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2774" target="_blank" rel="noopener">P2774 方格取数 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/maximum-students-taking-exam/" target="_blank" rel="noopener">LC 1349 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 16 转折：只算流量不够 ==================== -->
+<section class="slide" data-t="转折三：还要算钱">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">16</div>
+      <div>
+        <h2>转折三：<b>流量够大，但账单太贵</b></h2>
+        <p class="sub"><span class="pill hot">TURNING POINT</span><b class="g">要解决的问题：</b>题目不只问「最多流多少」，还问「<b>在最大流前提下，最少花多少钱</b>」。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 280">
+            <text class="cap" x="20" y="22">同一个最大流，可以有多种「走法」，花费不同</text>
+            <circle cx="80" cy="140" r="20" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.4"/>
+            <text class="lb volt" x="80" y="141" style="font-size:12px">S</text>
+            <circle cx="300" cy="70" r="17" fill="#FFF"/><text class="lb" x="300" y="71" style="font-size:11px">a</text>
+            <circle cx="300" cy="210" r="17" fill="#FFF"/><text class="lb" x="300" y="211" style="font-size:11px">b</text>
+            <circle cx="520" cy="140" r="20" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.4"/>
+            <text class="lb moss" x="520" y="141" style="font-size:12px">T</text>
+
+            <path class="ed gold" d="M102 132 L278 78" stroke-width="2.8"/>
+            <path class="ed gold" d="M322 78 L498 132" stroke-width="2.8"/>
+            <text class="capa" x="160" y="94">5 元 / 单位</text>
+            <text class="capa" x="400" y="94">2 元 / 单位</text>
+
+            <path class="ed moss" d="M102 148 L278 202" stroke-width="2.8"/>
+            <path class="ed moss" d="M322 202 L498 148" stroke-width="2.8"/>
+            <text class="capm" x="160" y="196">1 元 / 单位</text>
+            <text class="capm" x="400" y="196">3 元 / 单位</text>
+
+            <line class="lead" x1="20" y1="252" x2="600" y2="252"/>
+            <text class="capv" x="20" y="274">两条路都能推 10 单位，但走 b 那条更便宜</text>
+          </svg>
+          <div class="fcap">FIG.16 · 容量一样，价格不同</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">WHAT BROKE</span>最大流不够用了</div>
+          <p>Dinic 只关心<b class="p">能推多少</b>，完全不看<b>每条边花多少钱</b>。</p>
+          <p>同一个最大流，<b>费用可能差好几倍</b>。</p>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">NEW REQUIREMENT</span>新的要求</div>
+          <p>每条边除了容量 c，还带一个<b class="a">单位费用 w</b>。</p>
+          <p>走 f 单位流，就要付 <b>f × w</b>。</p>
+          <p>在最大流前提下，让总费用最小。</p>
+        </div>
+        <div class="card volt">
+          <div class="ct"><span class="ix">HINT</span>先别急着想算法</div>
+          <p>既然要「省」，那就<b class="g">每次找最便宜的路</b>来推。</p>
+          <p>但最便宜的路不一定是最大流的必须路径——怎么保证最终最大？</p>
+          <p><b>下一页回答这个。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 17 MCMF 思想 ==================== -->
+<section class="slide" data-t="阶梯四：最小费用最大流的思想">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">17</div>
+      <div>
+        <h2>阶梯四 · <b>MCMF</b>：把「最短路」搬到流上</h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>怎么在增广的同时，保证每一步都选<b>当前最便宜</b>的路。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">TWO LINES</span>两句口诀</div>
+          <div class="chant">
+            <div class="row volt">
+              <div class="q">① 找最短路</div>
+              <div class="ar">→</div>
+              <div class="v">在残量网络上，把<b>费用</b>当边权<small>SPFA 找 S→T 费用最小的路</small></div>
+            </div>
+            <div class="row gold">
+              <div class="q">② 沿路增广</div>
+              <div class="ar">→</div>
+              <div class="v">推<b>瓶颈容量</b>，累加费用<small>反向边费用取负，支持反悔</small></div>
+            </div>
+          </div>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">PROOF</span>为什么贪心能到最优</div>
+          <p>每次沿<b class="g">最短路</b>增广，是一种「最小费用流的连续最短路算法」。</p>
+          <p>可以证明：<b>每一步都不亏</b>，最终得到最大流下最小费用。</p>
+          <div class="chip good">◆ 前提：初始没有负环（一般题目满足）</div>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 560 300">
+            <text class="cap" x="20" y="22">费用流每轮做三件事</text>
+            <rect x="20" y="40" width="240" height="60" rx="9" fill="#FFF4EF" stroke="#D9541F" stroke-width="2"/>
+            <text class="capv" x="140" y="64" text-anchor="middle">① SPFA 找最小费用路</text>
+            <text class="cap" x="140" y="86" text-anchor="middle" style="font-size:11px">把费用当边权</text>
+
+            <rect x="300" y="40" width="240" height="60" rx="9" fill="#FFFBEE" stroke="#B8860B" stroke-width="2"/>
+            <text class="capa" x="420" y="64" text-anchor="middle">② 求瓶颈 d</text>
+            <text class="cap" x="420" y="86" text-anchor="middle" style="font-size:11px">路径上剩余容量最小</text>
+
+            <rect x="20" y="130" width="520" height="60" rx="9" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="2"/>
+            <text class="capm" x="280" y="154" text-anchor="middle">③ 沿路推 d：正向减、反向加</text>
+            <text class="capm" x="280" y="176" text-anchor="middle" style="font-size:11px">总费用 += d × 路径总费用</text>
+
+            <line class="lead" x1="20" y1="220" x2="540" y2="220"/>
+            <text class="capv" x="20" y="248">重复，直到找不到 S→T 的路</text>
+            <text class="cap" x="20" y="274">此时流量最大，费用最小</text>
+          </svg>
+          <div class="fcap">FIG.17 · 最短路 + 增广，交替进行</div>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">REST</span>剩下的只有两件事</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>SPFA 怎么写（第 18 页）</li>
+            <li>怎么保证最终一定最大（第 19 页）</li>
+          </ol>
+          <p style="margin-top:10px"><b>思想部分到此为止，接下来都是工程细节。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 18 MCMF 代码 ==================== -->
+<section class="slide" data-t="MCMF 代码：SPFA 版">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">18</div>
+      <div>
+        <h2>MCMF：<b>SPFA 版代码</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>把「最短路 + 增广」写成<b>可提交的代码</b>。<b>SPFA 能处理负费用反向边。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="codelabel">PYTHON · 最小费用最大流（SPFA）</div>
+        <div class="code"><pre><span class="kw">from</span> collections <span class="kw">import</span> deque
+
+<span class="kw">def</span> <span class="fn">mcmf</span>(s, t):
+    flow = cost = <span class="nu">0</span>
+    <span class="kw">while</span> <span class="kw">True</span>:
+        <span class="cm"># ① SPFA 求费用最短路</span>
+        dist = [INF] * n
+        vis  = [<span class="kw">False</span>] * n
+        pre  = [(-<span class="nu">1</span>, -<span class="nu">1</span>)] * n
+        dist[s] = <span class="nu">0</span>
+        q = deque([s]); vis[s] = <span class="kw">True</span>
+        <span class="kw">while</span> q:
+            u = q.popleft(); vis[u] = <span class="kw">False</span>
+            <span class="kw">for</span> i, e <span class="kw">in</span> <span class="fn">enumerate</span>(g[u]):
+                <span class="kw">if</span> e.cap &gt; <span class="nu">0</span> <span class="kw">and</span> dist[u] + e.cost &lt; dist[e.to]:
+                    dist[e.to] = dist[u] + e.cost
+                    pre[e.to] = (u, i)
+                    <span class="kw">if</span> <span class="kw">not</span> vis[e.to]:
+                        q.append(e.to); vis[e.to] = <span class="kw">True</span>
+
+        <span class="kw">if</span> dist[t] == INF:
+            <span class="kw">break</span>              <span class="cm"># 不可达，已最大</span>
+
+        <span class="cm"># ② 找瓶颈</span>
+        d = INF; v = t
+        <span class="kw">while</span> v != s:
+            u, i = pre[v]
+            d = <span class="fn">min</span>(d, g[u][i].cap)
+            v = u
+
+        <span class="cm"># ③ 推流，累加费用</span>
+        v = t
+        <span class="kw">while</span> v != s:
+            u, i = pre[v]
+            g[u][i].cap -= d
+            g[v][i ^ <span class="nu">1</span>].cap += d
+            v = u
+        flow += d
+        cost += d * dist[t]
+    <span class="kw">return</span> flow, cost</pre></div>
+        <div class="codenote">
+          <div class="n-k">30 行</div>
+          <div class="n-v"><b>费用累加在 dist[t] 上</b>，不是逐边加</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card gold">
+          <div class="ct"><span class="ix">WHY SPFA</span>为什么用 SPFA 而不是 Dijkstra</div>
+          <p>反向边的费用是 <b class="a">−c</b>，是负数。</p>
+          <p>Dijkstra 处理不了负权边。</p>
+          <p><b>SPFA 天然支持负权。</b></p>
+          <div class="chip warn">◆ 想用 Dijkstra？需要「Johnson 势能」（选讲）</div>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">COMPLEXITY</span>代价</div>
+          <div class="kv"><div class="k">每轮</div><div class="v">SPFA <span class="mono">O(nm)</span> 最坏</div></div>
+          <div class="kv"><div class="k">轮数</div><div class="v">最多 <b>O(f)</b> 次增广</div></div>
+          <div class="kv"><div class="k">合计</div><div class="v"><span class="mono">O(nmf)</span>，f 是最大流</div></div>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">PITFALL</span>三处易错</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>反向边费用写成 <b class="p">+c</b>（必须 −c）</li>
+            <li>用 <span class="mono p">vis</span> 判重入队漏了，SPFA 会卡死</li>
+            <li>费用累加写成 <span class="mono p">cost += dist[t]</span>（漏了 d）</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 19 费用流应用 ==================== -->
+<section class="slide" data-t="费用流的三类应用">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">19</div>
+      <div>
+        <h2>费用流：<b>三类典型应用</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>识别题目里「容量 + 代价」的结构。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">A</span>二分图最优匹配</div>
+          <p>n 个人 n 个任务，每人做每个任务<b>效率 / 成本不同</b>。</p>
+          <p><b>构图：</b></p>
+          <div class="code sm" style="margin-top:9px"><pre>S → 人    容量 1, 费用 0
+人 → 任务  容量 1, 费用 c
+任务 → T  容量 1, 费用 0</pre></div>
+          <p style="margin-top:9px"><b>跑 MCMF 得最小费用最大匹配。</b></p>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">B</span>餐巾计划 / 货物调度</div>
+          <p>每天需要 rᵢ 个干净餐巾，可以买、可以洗、可以留。</p>
+          <p><b>拆点：</b>每天拆成「早上」「晚上」，用边表示不同策略。</p>
+          <p>经典题：<b class="a">P1251 餐巾计划</b>。</p>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">C</span>最大权匹配 / 最大费用流</div>
+          <p>要「收益最大」，不是「费用最小」。</p>
+          <p><b class="m">技巧：</b>费用取负 → 跑最小费用流 → 结果取反。</p>
+          <div class="code sm" style="margin-top:9px"><pre>add_edge(u, v, cap, -value)  <span class="cm"># 取负</span>
+<span class="cm"># 跑完 (flow, cost)，最大收益 = -cost</span></pre></div>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">DISTINGUISH</span>怎么判断「最大流」还是「费用流」</div>
+          <div class="kv"><div class="k">只问流量</div><div class="v">最大流 → Dinic</div></div>
+          <div class="kv"><div class="k">问流量 + 钱</div><div class="v">费用流 → MCMF</div></div>
+          <div class="kv"><div class="k">只问钱，流量固定</div><div class="v">费用流（不限最大）</div></div>
+          <div class="kv"><div class="k">「最多 k 单位」</div><div class="v">费用流 + 流量上限</div></div>
+        </div>
+
+        <div class="card">
+          <div class="ct"><span class="ix">RECIPE</span>费用流建模三步</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>什么是<b>「一份流量」</b>？（一个人 / 一天 / 一个任务）</li>
+            <li>什么是<b>「容量 1」</b>？什么可以复用？</li>
+            <li>每条边的<b>费用</b>是多少？反向取负。</li>
+          </ol>
+        </div>
+
+        <div class="mono" style="font-size:10.5px;letter-spacing:.15em;color:var(--muted);margin-top:14px">
+          PRACTICE · 费用流
+        </div>
+        <div class="tagrow">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P3381" target="_blank" rel="noopener">P3381 最小费用最大流 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P4014" target="_blank" rel="noopener">P4014 分配问题 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P4015" target="_blank" rel="noopener">P4015 运输问题 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P1251" target="_blank" rel="noopener">P1251 餐巾计划 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 20 转折：不是网络 ==================== -->
+<section class="slide" data-t="转折四：题目根本不是网络">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">20</div>
+      <div>
+        <h2>转折四：<b>题目根本不是网络</b></h2>
+        <p class="sub"><span class="pill hot">TURNING POINT</span><b class="g">要解决的问题：</b>题目里没有管道、没有源汇，<b>但答案就是网络流</b>。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 300">
+            <text class="cap" x="20" y="22">建模：把「选择 / 依赖 / 配对」变成点与边</text>
+
+            <rect x="20" y="50" width="140" height="60" rx="9" fill="#FDF2F1" stroke="#A32132" stroke-width="1.8"/>
+            <text class="caph" x="90" y="76" text-anchor="middle">题目</text>
+            <text class="cap" x="90" y="96" text-anchor="middle" style="font-size:11px">不是网络</text>
+
+            <path class="ed" d="M164 80 L218 80"/>
+            <text class="capm" x="191" y="70" text-anchor="middle" style="font-size:11px">翻译</text>
+
+            <rect x="220" y="50" width="380" height="60" rx="9" fill="#F2F9F4" stroke="#2F7D5D" stroke-width="1.8"/>
+            <text class="capm" x="410" y="76" text-anchor="middle">网络：点 = 决策对象，边 = 约束 / 代价</text>
+            <text class="cap" x="410" y="96" text-anchor="middle" style="font-size:11px">容量 / 费用 就是题目里的「限制 / 代价」</text>
+
+            <line class="lead" x1="20" y1="140" x2="600" y2="140"/>
+
+            <text class="capv" x="20" y="170">常见翻译表</text>
+            <text class="cap" x="20" y="200">选 / 不选</text>
+            <text class="capa" x="180" y="200">→ 源 / 汇侧，割</text>
+
+            <text class="cap" x="20" y="228">最多 / 至少</text>
+            <text class="capa" x="180" y="228">→ 容量 / 上下界</text>
+
+            <text class="cap" x="20" y="256">花多少钱</text>
+            <text class="capa" x="180" y="256">→ 费用</text>
+
+            <text class="cap" x="20" y="284">互相依赖</text>
+            <text class="capa" x="180" y="284">→ INF 边</text>
+          </svg>
+          <div class="fcap">FIG.20 · 从题目到网络，中间隔一次翻译</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">WHAT BROKE</span>算法够用，翻译不够用</div>
+          <p>Dinic / MCMF 本身没问题。</p>
+          <p>问题是：<b class="p">很多人看到题，根本想不到这是网络流。</b></p>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">NEW REQUIREMENT</span>新的要求</div>
+          <p>要一套<b class="a">通用建模套路</b>，把题目转成网络：</p>
+          <ul class="ok" style="margin-top:8px">
+            <li>点容量 → <b class="a">拆点</b></li>
+            <li>多源多汇 → <b class="a">超级源 / 超级汇</b></li>
+            <li>必须选 / 不能选 → <b class="a">上下界</b></li>
+            <li>配对 / 覆盖 → <b class="a">二分图</b></li>
+          </ul>
+        </div>
+        <div class="card volt">
+          <div class="ct"><span class="ix">HINT</span>建模第一步</div>
+          <p>不要先想算法。先问自己三句：</p>
+          <ol class="steps" style="margin-top:8px">
+            <li>这里「一份」是什么？</li>
+            <li>什么限制了「最多」？</li>
+            <li>什么被「选择」了？</li>
+          </ol>
+          <p style="margin-top:9px"><b>这三问，就是下一页的开头。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 21 建模四件套 ==================== -->
+<section class="slide" data-t="建模四件套">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">21</div>
+      <div>
+        <h2>建模<b>四件套</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>把 80% 的网络流建模压缩成四个动作。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">T1</span>拆点：点也有限制</div>
+          <p>点 i 最多通过 c 单位流。</p>
+          <div class="code sm" style="margin-top:9px"><pre>i_in  →  i_out  容量 c
+所有入边接 i_in
+所有出边接 i_out</pre></div>
+          <p style="margin-top:9px"><b>经典：最小路径覆盖（P2764）</b></p>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">T2</span>超级源 / 超级汇：多源多汇</div>
+          <p>有多个源 s₁..sₖ，多个汇 t₁..tₘ。</p>
+          <div class="code sm" style="margin-top:9px"><pre>S → s_i  容量 = 该源最大输出
+t_j → T  容量 = 该汇最大输入</pre></div>
+          <p style="margin-top:9px"><b>经典：二分图匹配（P2756）</b></p>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="card gold">
+          <div class="ct"><span class="ix">T3</span>二分图：源 → 左 → 右 → 汇</div>
+          <p>左边的点和右边的点，之间只能一对一或一对多。</p>
+          <div class="code sm" style="margin-top:9px"><pre>S → 左点    容量 1
+左点 → 右点  容量 1   (只给合法配对)
+右点 → T    容量 1</pre></div>
+          <p style="margin-top:9px"><b>最大流 = 最大匹配。最小割 = 最小点覆盖（König 定理）。</b></p>
+        </div>
+
+        <div class="card hot">
+          <div class="ct"><span class="ix">T4</span>上下界：必须选 / 必须不选</div>
+          <p>边有下界 lo 和上界 hi：<b class="p">lo ≤ f ≤ hi</b>。</p>
+          <p>先强推 lo，再调节——<b>第 24 页详解。</b></p>
+          <p>经典：<b class="p">有源汇上下界最大流（P5192）</b></p>
+        </div>
+
+        <div class="card">
+          <div class="ct"><span class="ix">RECIPE</span>四件套怎么选</div>
+          <div class="kv"><div class="k">点有限制</div><div class="v">拆点</div></div>
+          <div class="kv"><div class="k">多源多汇</div><div class="v">超级源 / 汇</div></div>
+          <div class="kv"><div class="k">配对 / 覆盖</div><div class="v">二分图</div></div>
+          <div class="kv"><div class="k">至少 / 必须</div><div class="v">上下界</div></div>
+        </div>
+
+        <div class="mono" style="font-size:10.5px;letter-spacing:.15em;color:var(--muted);margin-top:14px">
+          PRACTICE · 建模
+        </div>
+        <div class="tagrow">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2756" target="_blank" rel="noopener">P2756 飞行员配对 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2764" target="_blank" rel="noopener">P2764 最小路径覆盖 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2763" target="_blank" rel="noopener">P2763 试题库 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/bus-routes/" target="_blank" rel="noopener">LC 815 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 22 二分图匹配 ==================== -->
+<section class="slide" data-t="二分图匹配与 König 定理">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">22</div>
+      <div>
+        <h2>二分图匹配与 <b>König 定理</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>网络流最经典的应用——<b>匹配、覆盖、独立集是一家人</b>。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 300">
+            <text class="cap" x="20" y="22">二分图：左 → 右，只连合法边</text>
+            <circle cx="100" cy="80" r="16" fill="#FFF"/><text class="lb" x="100" y="81" style="font-size:11px">L1</text>
+            <circle cx="100" cy="160" r="16" fill="#FFF"/><text class="lb" x="100" y="161" style="font-size:11px">L2</text>
+            <circle cx="100" cy="240" r="16" fill="#FFF"/><text class="lb" x="100" y="241" style="font-size:11px">L3</text>
+
+            <circle cx="500" cy="80" r="16" fill="#FFF"/><text class="lb" x="500" y="81" style="font-size:11px">R1</text>
+            <circle cx="500" cy="160" r="16" fill="#FFF"/><text class="lb" x="500" y="161" style="font-size:11px">R2</text>
+            <circle cx="500" cy="240" r="16" fill="#FFF"/><text class="lb" x="500" y="241" style="font-size:11px">R3</text>
+
+            <g class="lead" stroke="#C7B18B" stroke-width="1.8">
+              <path d="M116 80 L484 80 M116 80 L484 160
+                      M116 160 L484 160 M116 160 L484 240
+                      M116 240 L484 160"/>
+            </g>
+            <path class="ed moss" d="M116 80 L484 80" stroke-width="2.8"/>
+            <path class="ed moss" d="M116 160 L484 160" stroke-width="2.8"/>
+            <path class="ed moss" d="M116 240 L484 160" stroke-width="2.8"/>
+
+            <line class="lead" x1="20" y1="284" x2="600" y2="284"/>
+            <text class="capm" x="20" y="302">最大匹配 = 2（L1-R1, L2-R2）</text>
+          </svg>
+          <div class="fcap">FIG.22 · 匹配是「一对一」的最大数量</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">BUILD</span>网络流建图</div>
+          <div class="code sm" style="margin-top:9px"><pre>S → 左点    容量 1
+左点 → 右点  容量 1   (仅合法)
+右点 → T    容量 1
+
+最大流 = 最大匹配</pre></div>
+          <p style="margin-top:9px"><b>每条边容量 1 保证「一对一」。</b></p>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">KONIG</span>König 定理（二分图专属）</div>
+          <p><b class="a">最大匹配 = 最小点覆盖</b></p>
+          <p>即：用最少的点盖住所有边，这个数量等于最大匹配数。</p>
+          <p>推论：<b>最大独立集 = n − 最大匹配</b>。</p>
+          <p><b>这三件事在二分图上是一回事。</b></p>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">APPLY</span>三类问法</div>
+          <div class="kv"><div class="k">最多配对</div><div class="v">最大匹配</div></div>
+          <div class="kv"><div class="k">最少覆盖</div><div class="v">最小点覆盖 = 最大匹配</div></div>
+          <div class="kv"><div class="k">最多不相邻</div><div class="v">最大独立集 = n − 匹配</div></div>
+        </div>
+
+        <div class="card hot">
+          <div class="ct"><span class="ix">NOTE</span>为什么只用二分图</div>
+          <p>一般图匹配要用<b class="p">带花树</b>，不是网络流。</p>
+          <p>网络流只负责二分图匹配，别搞混。</p>
+        </div>
+
+        <div class="tagrow" style="margin-top:14px">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2756" target="_blank" rel="noopener">P2756 飞行员配对 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2764" target="_blank" rel="noopener">P2764 最小路径覆盖 <span class="ar">↗</span></a>
+          <a class="tag" href="https://leetcode.cn/problems/maximum-number-of-accepted-invitations/" target="_blank" rel="noopener">LC 1820 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 23 最小路径覆盖 ==================== -->
+<section class="slide" data-t="最小路径覆盖">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">23</div>
+      <div>
+        <h2>最小路径覆盖：<b>拆点 + 匹配</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span><b class="g">要解决的问题：</b>用最少的不相交路径覆盖 DAG 上所有点。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 280">
+            <text class="cap" x="20" y="22">DAG 上的路径，可以理解为「接龙」</text>
+            <circle cx="100" cy="80" r="18" fill="#FFF"/><text class="lb" x="100" y="81" style="font-size:12px">1</text>
+            <circle cx="280" cy="80" r="18" fill="#FFF"/><text class="lb" x="280" y="81" style="font-size:12px">2</text>
+            <circle cx="460" cy="80" r="18" fill="#FFF"/><text class="lb" x="460" y="81" style="font-size:12px">3</text>
+            <circle cx="180" cy="200" r="18" fill="#FFF"/><text class="lb" x="180" y="201" style="font-size:12px">4</text>
+            <circle cx="380" cy="200" r="18" fill="#FFF"/><text class="lb" x="380" y="201" style="font-size:12px">5</text>
+
+            <path class="ed" d="M118 80 L262 80"/>
+            <path class="ed" d="M298 80 L442 80"/>
+            <path class="ed" d="M100 98 L172 184"/>
+            <path class="ed" d="M200 200 L362 200"/>
+            <path class="ed" d="M280 96 L374 186"/>
+            <path class="ed" d="M460 96 L390 186"/>
+
+            <line class="lead" x1="20" y1="248" x2="600" y2="248"/>
+            <text class="capv" x="20" y="272">拆点后：每个点拆成「入口」「出口」，匹配边 = 接龙</text>
+          </svg>
+          <div class="fcap">FIG.23 · 拆点是路径覆盖的关键</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">BUILD</span>建图</div>
+          <p>每个点 i 拆成 i_in 和 i_out。</p>
+          <div class="code sm" style="margin-top:9px"><pre>每条有向边 u→v：
+    u_out → v_in  容量 1
+
+S → i_out  容量 1
+i_in → T  容量 1</pre></div>
+          <p style="margin-top:9px"><b>答案 = n − 最大匹配</b></p>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">INTUITION</span>为什么</div>
+          <p>初始时 n 个点各自一条路径，共 n 条。</p>
+          <p>每匹配一条边，就<b class="a">把两条路径接在一起</b>，路径总数减 1。</p>
+          <p>所以：<b>最小路径数 = n − 最大匹配数</b>。</p>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">APPLY</span>常见问法</div>
+          <ul class="ok" style="margin-top:8px">
+            <li>DAG 最少几条路径覆盖所有点</li>
+            <li>最少几组串接（如零件装配顺序）</li>
+            <li>序列分割的最少段数</li>
+          </ul>
+        </div>
+
+        <div class="card hot">
+          <div class="ct"><span class="ix">PITFALL</span>两处易错</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>忘记「<b class="p">有向</b>」，无向图要先定向</li>
+            <li>图里有<b class="p">环</b>，最路径覆盖不成立，要先判 DAG</li>
+          </ul>
+        </div>
+
+        <div class="tagrow" style="margin-top:14px">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2764" target="_blank" rel="noopener">P2764 最小路径覆盖 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P2765" target="_blank" rel="noopener">P2765 魔术球 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 24 上下界：思想 ==================== -->
+<section class="slide" data-t="★ 上下界：思想">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">24</div>
+      <div>
+        <h2>★ 进阶一：<b>上下界可行流</b></h2>
+        <p class="sub"><span class="pill opt">★ OPTIONAL</span><b class="g">要解决的问题：</b>有些边<b>「至少」</b>要流 lo，<b>「至多」</b>流 hi。普通最大流只处理上界。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 300">
+            <text class="cap" x="20" y="22">一条边 [lo, hi]：先强推 lo，再调节</text>
+            <circle cx="120" cy="100" r="20" fill="#FFF9F4" stroke="#D9541F" stroke-width="2"/>
+            <text class="lb volt" x="120" y="101" style="font-size:12px">u</text>
+            <circle cx="420" cy="100" r="20" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2"/>
+            <text class="lb moss" x="420" y="101" style="font-size:12px">v</text>
+            <path class="ed gold" d="M142 100 L398 100" stroke-width="3"/>
+            <path class="ed gold" d="M390 92 L400 100 L390 108"/>
+            <text class="capa" x="270" y="90" text-anchor="middle">[lo, hi]</text>
+
+            <line class="lead" x1="20" y1="160" x2="600" y2="160"/>
+            <text class="capv" x="20" y="190">等价变换：f = lo + f'，f' ∈ [0, hi − lo]</text>
+            <text class="cap" x="20" y="222">点 u 先「流出 lo」→ 划给 v</text>
+            <text class="cap" x="20" y="252">用「超级源 / 超级汇」补平不平衡</text>
+            <text class="capm" x="20" y="282">关键：所有点的「强行差额」必须能被虚拟边补平</text>
+          </svg>
+          <div class="fcap">FIG.24 · 下界先扣掉，问题就归约到普通最大流</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">TRANSFORM</span>变换三步</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>先把每条边的<b>下界 lo 扣掉</b>：容量变为 hi − lo</li>
+            <li>算每个点的<b>净流入 dᵢ</b>：Σlo_in − Σlo_out</li>
+            <li><b>dᵢ &gt; 0</b>（入多）：加 <b class="g">SS → i</b> 容量 dᵢ<br>
+                <b>dᵢ &lt; 0</b>（出多）：加 <b class="g">i → TT</b> 容量 −dᵢ</li>
+          </ol>
+          <p style="margin-top:11px"><b>跑 SS→TT 最大流，若所有 SS 边都满，则可行。</b></p>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">WHY</span>为什么这样就对</div>
+          <p>每条边的「下界」已经被虚拟边补平。</p>
+          <p>剩下的容量就是「可自由调节的量」。</p>
+          <p>若连虚拟边都补不满，说明<b class="a">不存在可行流</b>。</p>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">FOLLOW-UP</span>后面还有三问</div>
+          <div class="kv"><div class="k">可行流</div><div class="v">本页：是否存在？</div></div>
+          <div class="kv"><div class="k">最大流</div><div class="v">第 25 页</div></div>
+          <div class="kv"><div class="k">最小流</div><div class="v">第 25 页</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 25 有源汇上下界 ==================== -->
+<section class="slide" data-t="★ 有源汇上下界最大 / 最小流">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">25</div>
+      <div>
+        <h2>★ 进阶二：<b>有源汇上下界</b>最大 / 最小流</h2>
+        <p class="sub"><span class="pill opt">★ OPTIONAL</span><b class="g">要解决的问题：</b>原图没有循环流，但有源 S 和汇 T。<b>先把它变成循环流。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 280">
+            <text class="cap" x="20" y="22">加一条 T → S 的边 [0, INF]，变成「循环流」</text>
+            <circle cx="120" cy="140" r="22" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.4"/>
+            <text class="lb volt" x="120" y="141" style="font-size:13px">S</text>
+            <circle cx="500" cy="140" r="22" fill="#F5FBF7" stroke="#2F7D5D" stroke-width="2.4"/>
+            <text class="lb moss" x="500" y="141" style="font-size:13px">T</text>
+            <path class="ed" d="M144 130 L476 130"/>
+            <path class="ed" d="M476 150 L144 150"/>
+            <text class="cap" x="300" y="120" text-anchor="middle">原网络</text>
+            <path class="ed gold" d="M500 162 C 500 220, 120 220, 120 162" stroke-width="3" stroke-dasharray="6 4"/>
+            <text class="capa" x="310" y="248" text-anchor="middle">T → S : [0, INF]</text>
+
+            <line class="lead" x1="20" y1="266" x2="600" y2="266"/>
+          </svg>
+          <div class="fcap">FIG.25 · 加一条回边，有源汇 → 无源汇</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">MAX FLOW</span>有源汇上下界最大流</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>先按第 24 页方法求<b>可行流</b>（存在即继续）</li>
+            <li>记录此时的 T→S 流量 f₀，然后把这条回边<b class="g">删掉</b></li>
+            <li>在残量网络上，跑一次 <b>S→T 最大流 f₁</b></li>
+            <li><b>答案 = f₀ + f₁</b></li>
+          </ol>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">MIN FLOW</span>有源汇上下界最小流</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>同样先求可行流，记录 T→S 流量 f₀</li>
+            <li>删掉回边，在<b class="a">反向</b>残量图上跑 <b>T→S 最大流 f₁</b></li>
+            <li><b>答案 = f₀ − f₁</b></li>
+          </ol>
+          <p style="margin-top:9px"><b>最大流用 S→T，最小流用 T→S，方向别搞反。</b></p>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">WHY</span>为什么要「先可行再调节」</div>
+          <p>原图没可行流时，直接跑最大流没意义。</p>
+          <p>所以第一步永远是<b class="m">判可行</b>。</p>
+        </div>
+
+        <div class="card hot">
+          <div class="ct"><span class="ix">PITFALL</span>三处易错</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>忘了<b class="p">先判可行性</b>，直接算最大流</li>
+            <li>回边容量写成 <b class="p">∞ 而非 INF</b>，溢出</li>
+            <li>最大 / 最小流的<b class="p">调节方向搞反</b></li>
+          </ul>
+        </div>
+
+        <div class="tagrow" style="margin-top:14px">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P5192" target="_blank" rel="noopener">P5192 有源汇上下界最大流 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P4843" target="_blank" rel="noopener">P4843 清理雪道 <span class="ar">↗</span></a>
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P4553" target="_blank" rel="noopener">P4553 80 人环游世界 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 26 上下界应用 ==================== -->
+<section class="slide" data-t="★ 上下界应用：清理雪道">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">26</div>
+      <div>
+        <h2>★ 上下界应用：<b>清理雪道</b></h2>
+        <p class="sub"><span class="pill opt">★ OPTIONAL</span><b class="g">要解决的问题：</b>有向图，从任意点出发，每条边<b>至少走一次</b>，最少总步数。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 280">
+            <text class="cap" x="20" y="22">每条边 [1, INF]：至少走一次，无上限</text>
+            <circle cx="120" cy="80" r="18" fill="#FFF"/><text class="lb" x="120" y="81" style="font-size:12px">1</text>
+            <circle cx="320" cy="80" r="18" fill="#FFF"/><text class="lb" x="320" y="81" style="font-size:12px">2</text>
+            <circle cx="520" cy="80" r="18" fill="#FFF"/><text class="lb" x="520" y="81" style="font-size:12px">3</text>
+            <circle cx="220" cy="200" r="18" fill="#FFF"/><text class="lb" x="220" y="201" style="font-size:12px">4</text>
+            <circle cx="420" cy="200" r="18" fill="#FFF"/><text class="lb" x="420" y="201" style="font-size:12px">5</text>
+
+            <path class="ed gold" d="M138 80 L302 80"/>
+            <path class="ed gold" d="M338 80 L502 80"/>
+            <path class="ed gold" d="M120 98 L208 186"/>
+            <path class="ed gold" d="M238 200 L402 200"/>
+            <path class="ed gold" d="M320 98 L414 186"/>
+            <path class="ed gold" d="M520 98 L432 186"/>
+
+            <line class="lead" x1="20" y1="248" x2="600" y2="248"/>
+            <text class="capv" x="20" y="272">每条边下界 1，找「可行流」的最小值</text>
+          </svg>
+          <div class="fcap">FIG.26 · 每条边「必须走」= 下界 1</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">BUILD</span>建图</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>原图每条边容量 <b class="g">[1, INF]</b></li>
+            <li>加超级源 S、超级汇 T</li>
+            <li><b>S → 每个点</b>容量 [0, INF]（可以从任意点开始）</li>
+            <li><b>每个点 → T</b>容量 [0, INF]（可以停在任意点）</li>
+            <li>加回边 <b>T → S</b> 容量 [0, INF]</li>
+            <li>求有源汇上下界最小流</li>
+          </ol>
+        </div>
+
+        <div class="card gold">
+          <div class="ct"><span class="ix">INSIGHT</span>为什么这样对</div>
+          <p>每条边至少走一次 = 流量下界 1。</p>
+          <p>「可以从任意点出发 / 任意点结束」= S / T 与每个点都连通。</p>
+          <p>「最少总步数」= 最小流（总流量 = 走过的边数）。</p>
+        </div>
+
+        <div class="card moss">
+          <div class="ct"><span class="ix">PATTERN</span>这一类题的共性</div>
+          <div class="kv"><div class="k">每条边必须走</div><div class="v">下界 = 1</div></div>
+          <div class="kv"><div class="k">可以重复走</div><div class="v">上界 = INF</div></div>
+          <div class="kv"><div class="k">起点终点自由</div><div class="v">S / T 连所有点</div></div>
+        </div>
+
+        <div class="tagrow" style="margin-top:14px">
+          <a class="tag bt" href="https://www.luogu.com.cn/problem/P4843" target="_blank" rel="noopener">P4843 清理雪道 <span class="ar">↗</span></a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 27 总表 ==================== -->
+<section class="slide" data-t="五大算法总表">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">27</div>
+      <div>
+        <h2>五大算法：<b>一张表看清</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>全文<b class="g">唯一一张对比表</b>。<b>建议截图带走。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="full rv" style="--d:.06s">
+        <div class="card" style="padding:24px">
+          <table class="cmp" style="font-size:16px">
+            <tr>
+              <th>算法</th><th>适用</th><th>复杂度</th><th>能力</th>
+              <th>记忆点</th>
+            </tr>
+            <tr>
+              <td><b class="m">FF / EK</b></td><td>入门 / 教学</td>
+              <td><span class="mono">O(f·m)</span> / <span class="mono">O(nm²)</span></td>
+              <td>最大流</td>
+              <td>BFS 找一条增广路</td>
+            </tr>
+            <tr class="hi">
+              <td><b class="g">Dinic</b></td><td>几乎所有最大流</td>
+              <td><span class="mono">O(n²m)</span></td>
+              <td>最大流 + 最小割</td>
+              <td>BFS 分层 + DFS 阻塞流 + 当前弧</td>
+            </tr>
+            <tr>
+              <td><b class="p">最小割</b></td><td>选择 / 依赖</td>
+              <td>同 Dinic</td>
+              <td>割边 = 代价</td>
+              <td>max-flow = min-cut</td>
+            </tr>
+            <tr>
+              <td><b class="a">MCMF（SPFA）</b></td><td>带费用</td>
+              <td><span class="mono">O(nmf)</span></td>
+              <td>最大流下最小费用</td>
+              <td>费用当边权，SPFA 找最短路</td>
+            </tr>
+            <tr>
+              <td><b class="a">有源汇上下界</b></td><td>至少 / 至多</td>
+              <td>同 Dinic × 2</td>
+              <td>可行 / 最大 / 最小流</td>
+              <td>先可行，再调节</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="c1-6 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">SPEED</span>按快到慢</div>
+          <div class="chant">
+            <div class="row moss"><div class="q">Dinic</div><div class="ar">→</div>
+              <div class="v">O(n²m)<small>默认首选</small></div></div>
+            <div class="row volt"><div class="q">EK</div><div class="ar">→</div>
+              <div class="v">O(nm²)<small>小图</small></div></div>
+            <div class="row gold"><div class="q">MCMF</div><div class="ar">→</div>
+              <div class="v">O(nmf)<small>带费用</small></div></div>
+            <div class="row hot"><div class="q">上下界</div><div class="ar">→</div>
+              <div class="v">同 Dinic × 2<small>先判可行</small></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.22s">
+        <div class="card gold">
+          <div class="ct"><span class="ix">LOGIC</span>它们的关系是一条「加约束」的链</div>
+          <div class="kv"><div class="k">FF / EK</div><div class="v">只有容量约束</div></div>
+          <div class="kv"><div class="k">Dinic</div><div class="v">同样约束，但<b>加速</b></div></div>
+          <div class="kv"><div class="k">最小割</div><div class="v">换视角：<b>割 = 代价</b></div></div>
+          <div class="kv"><div class="k">MCMF</div><div class="v">加<b>费用维度</b></div></div>
+          <div class="kv"><div class="k">上下界</div><div class="v">加<b>下界维度</b></div></div>
+          <p style="margin-top:11px"><b class="m">每一步都是被「题目多问一件事」逼出来的。</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 28 决策 ==================== -->
+<section class="slide" data-t="决策流程与四句口诀">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">28</div>
+      <div>
+        <h2>拿到题，<b>怎么选</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>全文<b class="g">唯一的选型页</b>。<b>照着走，基本不会选错。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 620 430">
+            <rect x="10" y="20" width="230" height="62" rx="10" fill="#FFF" stroke="#D9541F" stroke-width="2"/>
+            <text class="cn" x="125" y="46" text-anchor="middle">① 有「费用」吗？</text>
+            <text class="cap" x="125" y="70" text-anchor="middle" style="font-size:11px">COST?</text>
+            <path class="ed" d="M240 51 L278 51"/>
+            <text class="capm" x="259" y="38" text-anchor="middle" style="font-size:12px">有</text>
+            <rect x="278" y="20" width="190" height="62" rx="10" fill="#FFFBEE" stroke="#B8860B" stroke-width="2.6"/>
+            <text class="cn" x="373" y="48" text-anchor="middle" style="fill:#B8860B;font-weight:500">MCMF</text>
+            <text class="capa" x="373" y="72" text-anchor="middle" style="font-size:11px">SPFA 找最短路</text>
+
+            <path class="ed" d="M125 82 L125 116"/>
+            <text class="cap" x="143" y="104" style="font-size:12px">无</text>
+
+            <rect x="10" y="116" width="230" height="62" rx="10" fill="#FFF" stroke="#D9541F" stroke-width="2"/>
+            <text class="cn" x="125" y="142" text-anchor="middle">② 有「至少 / 必须」吗？</text>
+            <text class="cap" x="125" y="166" text-anchor="middle" style="font-size:11px">LOWER BOUND?</text>
+            <path class="ed" d="M240 147 L278 147"/>
+            <text class="capm" x="259" y="134" text-anchor="middle" style="font-size:12px">有</text>
+            <rect x="278" y="116" width="190" height="62" rx="10" fill="#FDF2F1" stroke="#A32132" stroke-width="2.6"/>
+            <text class="cn" x="373" y="144" text-anchor="middle" style="fill:#A32132;font-weight:500">上下界</text>
+            <text class="caph" x="373" y="168" text-anchor="middle" style="font-size:11px">先判可行</text>
+
+            <path class="ed" d="M125 178 L125 212"/>
+            <text class="cap" x="143" y="200" style="font-size:12px">无</text>
+
+            <rect x="10" y="212" width="230" height="62" rx="10" fill="#FFF" stroke="#D9541F" stroke-width="2"/>
+            <text class="cn" x="125" y="238" text-anchor="middle">③ 是「选 / 不选」吗？</text>
+            <text class="cap" x="125" y="262" text-anchor="middle" style="font-size:11px">SELECT?</text>
+            <path class="ed" d="M240 243 L278 243"/>
+            <text class="capm" x="259" y="230" text-anchor="middle" style="font-size:12px">是</text>
+            <rect x="278" y="212" width="190" height="62" rx="10" fill="#FFF6F5" stroke="#A32132" stroke-width="2.6"/>
+            <text class="cn" x="373" y="240" text-anchor="middle" style="fill:#A32132;font-weight:500">最小割</text>
+            <text class="caph" x="373" y="264" text-anchor="middle" style="font-size:11px">max-flow = min-cut</text>
+
+            <path class="ed" d="M125 274 L125 308"/>
+            <text class="cap" x="143" y="296" style="font-size:12px">否</text>
+
+            <rect x="10" y="308" width="230" height="62" rx="10" fill="#FFF9F4" stroke="#D9541F" stroke-width="2.6"/>
+            <text class="cn" x="125" y="336" text-anchor="middle" style="fill:#D9541F;font-weight:500">Dinic</text>
+            <text class="capv" x="125" y="360" text-anchor="middle" style="font-size:11px">默认首选</text>
+
+            <line class="lead" x1="20" y1="392" x2="600" y2="392"/>
+            <text class="capm" x="20" y="418">特殊结构再换：点容量 → 拆点；多源汇 → 超级源汇；配对 → 二分图</text>
+          </svg>
+          <div class="fcap">FIG.28 · 四问决策树</div>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">CHANT</span>四句口诀</div>
+          <div class="chant">
+            <div class="row volt">
+              <div class="q">「最多流多少」</div>
+              <div class="ar">→</div>
+              <div class="v">Dinic<small>BFS 分层 + DFS 阻塞流</small></div>
+            </div>
+            <div class="row hot">
+              <div class="q">「选 / 不选」</div>
+              <div class="ar">→</div>
+              <div class="v">最小割<small>源侧 / 汇侧</small></div>
+            </div>
+            <div class="row gold">
+              <div class="q">「还要花钱」</div>
+              <div class="ar">→</div>
+              <div class="v">MCMF<small>费用当边权，SPFA</small></div>
+            </div>
+            <div class="row moss">
+              <div class="q">「至少 / 必须」</div>
+              <div class="ar">→</div>
+              <div class="v">上下界<small>先可行，再调节</small></div>
+            </div>
+          </div>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">CHECKLIST</span>选之前先过三关</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>「一份流」是什么？（人 / 天 / 任务）</li>
+            <li>什么在「限制最多」？（容量 / 下界）</li>
+            <li>有没有「代价」？（费用）</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 29 变体地图 ==================== -->
+<section class="slide" data-t="变体地图：还会遇到什么">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">29</div>
+      <div>
+        <h2>★ 变体地图：<b>你还会遇到什么</b></h2>
+        <p class="sub"><span class="pill opt">★ OPTIONAL</span>这一页<b class="g">不教新算法</b>，只画一张<b>「还有哪些问法」的地图</b>，方便你以后自己找资料。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.08s">
+        <div class="card volt">
+          <div class="ct"><span class="ix">GROUP A</span>改「问什么」</div>
+          <div class="kv"><div class="k">最大流</div><div class="v">本讲义主线</div></div>
+          <div class="kv"><div class="k">最小割</div><div class="v">对偶问题（第 14 页）</div></div>
+          <div class="kv"><div class="k">费用流</div><div class="v">加费用维度（第 17 页）</div></div>
+          <div class="kv"><div class="k">最小费用可行流</div><div class="v">不要求最大流</div></div>
+          <div class="kv"><div class="k">最大费用最大流</div><div class="v">费用取负</div></div>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">GROUP B</span>改「图怎么长」</div>
+          <div class="kv"><div class="k">拆点</div><div class="v">点容量（第 21 页）</div></div>
+          <div class="kv"><div class="k">超级源汇</div><div class="v">多源多汇</div></div>
+          <div class="kv"><div class="k">二分图</div><div class="v">匹配 / 覆盖 / 独立集</div></div>
+          <div class="kv"><div class="k">闭合子图</div><div class="v">依赖关系（第 15 页）</div></div>
+          <div class="kv"><div class="k">上下界</div><div class="v">至少 / 至多（第 24 页）</div></div>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">GROUP C</span>和别的算法组合</div>
+          <div class="kv"><div class="k">+ 二分</div><div class="v">二分答案 + 最大流</div></div>
+          <div class="kv"><div class="k">+ 最短路</div><div class="v">费用流本质就是最短路</div></div>
+          <div class="kv"><div class="k">+ 时间轴</div><div class="v">按时间拆点建图</div></div>
+          <div class="kv"><div class="k">+ DP</div><div class="v">状态压缩 + 流（小规模）</div></div>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">GROUP D</span>网络流的边界</div>
+          <div class="kv"><div class="k">一般图匹配</div><div class="v">带花树（不是流）</div></div>
+          <div class="kv"><div class="k">最小费用循环流</div><div class="v">负环消去法</div></div>
+          <div class="kv"><div class="k">最大密度子图</div><div class="v">分数规划 + 最小割</div></div>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="ix">ADVICE</span>怎么用这张图</div>
+          <p>遇到新题先问：<b>「它属于哪一类变化？」</b></p>
+          <p>然后<b class="g">拿第 27、28 页的骨架套</b>，比硬想算法有效得多。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 30 常见坑 ==================== -->
+<section class="slide" data-t="常见坑汇总">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">30</div>
+      <div>
+        <h2>常见坑汇总：<b>一处看完</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>全文<b class="g">唯一的坑汇总页</b>。<b>代码不长，但坑很密。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-6 rv" style="--d:.05s">
+        <div class="card hot">
+          <div class="ct"><span class="ix">WRONG ANSWER</span>会直接出错的六处</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>反向边初始容量<b class="p">不是 0</b></li>
+            <li>推流只改正向，<b class="p">忘了反向</b></li>
+            <li>Dinic 分层<b class="p">漏了反向边</b></li>
+            <li>费用流反向边费用<b class="p">写成 +c</b></li>
+            <li>INF 取 <span class="mono p">10⁹</span>，与容量相加溢出</li>
+            <li>上下界忘了<b class="p">先判可行性</b></li>
+          </ul>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">TLE</span>会超时的四处</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>用 FF 跑大图（<b class="p">f 可能 10⁹</b>）</li>
+            <li>Dinic 没有<b class="p">当前弧</b>优化</li>
+            <li>Python 大图<b class="p">没用 sys.stdin</b></li>
+            <li>费用流 SPFA 被卡（考虑势能 Dijkstra）</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="c7-12 rv" style="--d:.14s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">SEMANTIC</span>语义上的四处错</div>
+          <ul class="pit" style="margin-top:8px">
+            <li>最大流<b class="p">唯一</b>（错，方案很多）</li>
+            <li>把「最小割」当成「最少边数的割」（割论容量）</li>
+            <li>无向图当有向处理（要加两条边）</li>
+            <li>重边<b class="p">当成两条独立边</b>（多数题要合并）</li>
+          </ul>
+        </div>
+        <div class="card volt">
+          <div class="ct"><span class="ix">HABITS</span>四个好习惯</div>
+          <ul class="ok" style="margin-top:8px">
+            <li>INF 统一 <b class="g">10¹⁸</b>，别和容量相加溢出</li>
+            <li>先跑<b class="g">小样例</b>，再跑<b class="g">手算</b>（n=2 / 重边 / 无解）</li>
+            <li>不确定稠稀时，<b class="g">默认 Dinic + 边表</b></li>
+            <li>看到「<b>至少</b>」<b class="g">立刻想上下界</b></li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="ix">DEBUG</span>答案不对，按顺序查</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>图<b>建对了吗</b>？（有向 / 无向，容量对没对）</li>
+            <li><b>反向边</b>有没有加？容量 / 费用写反没？</li>
+            <li><b>源汇</b>设置对吗？</li>
+            <li>输出格式：不可行 / 无解要输出什么？</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 31 题单 A ==================== -->
+<section class="slide" data-t="题单 A：入门">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">31</div>
+      <div>
+        <h2>题单 A：<b>入门热身</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>八道必做题，<b class="g">把模板写成肌肉记忆</b>。每题标注「练什么」。</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="pl">
+          <a href="https://www.luogu.com.cn/problem/P3376" target="_blank" rel="noopener">
+            <div class="no">P3376</div>
+            <div class="ti">【模板】网络最大流<small>Dinic，<b>必背</b></small></div>
+            <div class="src">洛谷</div><div class="pt">标准</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P3381" target="_blank" rel="noopener">
+            <div class="no">P3381</div>
+            <div class="ti">【模板】最小费用最大流<small>SPFA 版 MCMF</small></div>
+            <div class="src">洛谷</div><div class="pt">标准</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P2756" target="_blank" rel="noopener">
+            <div class="no">P2756</div>
+            <div class="ti">飞行员配对方案<small><b>二分图最大匹配</b></small></div>
+            <div class="src">洛谷</div><div class="pt">普及+/提高</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P2763" target="_blank" rel="noopener">
+            <div class="no">P2763</div>
+            <div class="ti">试题库问题<small>二分图多重匹配</small></div>
+            <div class="src">洛谷</div><div class="pt">普及+/提高</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P2764" target="_blank" rel="noopener">
+            <div class="no">P2764</div>
+            <div class="ti">最小路径覆盖问题<small><b>拆点 + 匹配</b></small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P4014" target="_blank" rel="noopener">
+            <div class="no">P4014</div>
+            <div class="ti">分配问题<small>费用流入门</small></div>
+            <div class="src">洛谷</div><div class="pt">普及+/提高</div>
+          </a>
+          <a href="https://leetcode.cn/problems/maximum-number-of-accepted-invitations/" target="_blank" rel="noopener">
+            <div class="no">LC 1820</div>
+            <div class="ti">最多邀请的数目<small>二分图匹配</small></div>
+            <div class="src">LeetCode</div><div class="pt">中等</div>
+          </a>
+          <a href="https://leetcode.cn/problems/maximum-students-taking-exam/" target="_blank" rel="noopener">
+            <div class="no">LC 1349</div>
+            <div class="ti">参加考试的最大学生数<small>最小割建模</small></div>
+            <div class="src">LeetCode</div><div class="pt">困难</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">ORDER</span>推荐顺序</div>
+          <div class="kv"><div class="k">第 1 天</div><div class="v">P3376 → LC 1820（同一件事）</div></div>
+          <div class="kv"><div class="k">第 2 天</div><div class="v">P2756 → P2763（二分图）</div></div>
+          <div class="kv"><div class="k">第 3 天</div><div class="v">P2764（拆点 + 路径覆盖）</div></div>
+          <div class="kv"><div class="k">第 4 天</div><div class="v">P3381 → P4014（费用流）</div></div>
+        </div>
+        <div class="card gold">
+          <div class="ct"><span class="ix">FOCUS</span>每题要看懂什么</div>
+          <ul class="ok" style="margin-top:8px">
+            <li>P3376：<b>Dinic 完整结构</b></li>
+            <li>P2756：<b>二分图建图</b>的固定套路</li>
+            <li>P2764：<b>拆点为什么能变成匹配</b></li>
+            <li>P3381：<b>费用累加</b>为什么乘 d</li>
+          </ul>
+        </div>
+        <div class="card volt">
+          <div class="ct"><span class="ix">MILESTONE</span>过关标准</div>
+          <p>能在 <b class="g">20 分钟内闭卷写出 Dinic</b>，不看提示。</p>
+          <p>做到就可以进 B 级了。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 32 题单 B ==================== -->
+<section class="slide" data-t="题单 B：巩固">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">32</div>
+      <div>
+        <h2>题单 B：<b>巩固与建模</b></h2>
+        <p class="sub"><span class="pill main">MAIN</span>把网络流<b class="g">和别的技巧拼起来</b>。<b>这一档是「会不会用」的分水岭。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="pl">
+          <a href="https://www.luogu.com.cn/problem/P2762" target="_blank" rel="noopener">
+            <div class="no">P2762</div>
+            <div class="ti">太空飞行计划问题<small><b>最大权闭合子图</b></small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P2774" target="_blank" rel="noopener">
+            <div class="no">P2774</div>
+            <div class="ti">方格取数问题<small><b>二分图最小割</b></small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P2765" target="_blank" rel="noopener">
+            <div class="no">P2765</div>
+            <div class="ti">魔术球问题<small>枚举 + 最小路径覆盖</small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P2766" target="_blank" rel="noopener">
+            <div class="no">P2766</div>
+            <div class="ti">最长不下降子序列问题<small><b>拆点 + 最大流</b></small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P4015" target="_blank" rel="noopener">
+            <div class="no">P4015</div>
+            <div class="ti">运输问题<small>费用流</small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P4016" target="_blank" rel="noopener">
+            <div class="no">P4016</div>
+            <div class="ti">负载平衡问题<small>环形均分 + 费用流</small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P1251" target="_blank" rel="noopener">
+            <div class="no">P1251</div>
+            <div class="ti">餐巾计划问题<small><b>费用流经典</b></small></div>
+            <div class="src">洛谷</div><div class="pt">提高+/省选</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card moss">
+          <div class="ct"><span class="ix">SKILL</span>B 级在练什么</div>
+          <div class="kv"><div class="k">建模</div><div class="v">把题目<b>翻译成网络</b>（点/边/容量/费用）</div></div>
+          <div class="kv"><div class="k">组合</div><div class="v">网络流 + <b>二分 / 拆点 / 匹配</b></div></div>
+          <div class="kv"><div class="k">选型</div><div class="v">认清「<b>为什么用最小割不用最大流</b>」</div></div>
+          <p style="margin-top:11px"><b>真正的难度在「翻译」，不在模板。</b></p>
+        </div>
+        <div class="card hot">
+          <div class="ct"><span class="ix">STRUGGLE</span>卡住了怎么办</div>
+          <ol class="steps" style="margin-top:8px">
+            <li>先<b>画一张小图</b>，手工模拟</li>
+            <li>问「<b>一份流是什么</b>」→ 这就是流量的单位</li>
+            <li>问「<b>什么限制了最多</b>」→ 这就是容量</li>
+            <li>最后才问「<b>有没有费用 / 下界</b>」</li>
+          </ol>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="ix">PACE</span>时间与复盘</div>
+          <div class="kv"><div class="k">时间</div><div class="v">每题 <b>60 分钟</b>独立 AC</div></div>
+          <div class="kv"><div class="k">复盘</div><div class="v">写完<b>整理成自己的模板</b>，不要只抄</div></div>
+          <div class="kv"><div class="k">检验</div><div class="v">三天后<b>闭卷重写 P3376</b></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 33 题单 C ==================== -->
+<section class="slide" data-t="题单 C：挑战">
+  <div class="wrap">
+    <div class="s-head">
+      <div class="s-num">33</div>
+      <div>
+        <h2>题单 C：<b>挑战</b>（选做）</h2>
+        <p class="sub"><span class="pill opt">★ OPTIONAL</span>这些题<b class="g">看得懂思路即可</b>。<b>它们展示了网络流的边界。</b></p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="c1-7 rv" style="--d:.08s">
+        <div class="pl">
+          <a href="https://www.luogu.com.cn/problem/P5192" target="_blank" rel="noopener">
+            <div class="no">P5192</div>
+            <div class="ti">有源汇上下界最大流<small><b>上下界模板</b></small></div>
+            <div class="src">洛谷</div><div class="pt">省选/NOI-</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P4843" target="_blank" rel="noopener">
+            <div class="no">P4843</div>
+            <div class="ti">清理雪道<small>上下界最小流</small></div>
+            <div class="src">洛谷</div><div class="pt">省选/NOI-</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P4553" target="_blank" rel="noopener">
+            <div class="no">P4553</div>
+            <div class="ti">80 人环游世界<small>上下界 + 费用流</small></div>
+            <div class="src">洛谷</div><div class="pt">省选/NOI-</div>
+          </a>
+          <a href="https://www.luogu.com.cn/problem/P4043" target="_blank" rel="noopener">
+            <div class="no">P4043</div>
+            <div class="ti">支线剧情<small>上下界最小费用流</small></div>
+            <div class="src">洛谷</div><div class="pt">省选/NOI-</div>
+          </a>
+          <a href="https://leetcode.cn/problems/minimum-cost-to-make-at-least-one-valid-path-in-a-grid/" target="_blank" rel="noopener">
+            <div class="no">LC 1368</div>
+            <div class="ti">使网格至少有一条有效路径<small>0-1 BFS（不是流，但思路相通）</small></div>
+            <div class="src">LeetCode</div><div class="pt">困难</div>
+          </a>
+          <a href="https://leetcode.cn/problems/minimum-cost-to-cut-a-stick/" target="_blank" rel="noopener">
+            <div class="no">LC 1547</div>
+            <div class="ti">切棍子的最小成本<small>区间 DP（对比：不一定要流）</small></div>
+            <div class="src">LeetCode</div><div class="pt">困难</div>
+          </a>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.16s">
+        <div class="card gold">
+          <div class="ct"><span class="ix">PATTERN</span>C 级题的共性</div>
+          <div class="kv"><div class="k">① 下界</div><div class="v">「至少」「必须」→ 上下界</div></div>
+          <div class="kv"><div class="k">② 双目标</div><div class="v">流量 + 费用 → MCMF</div></div>
+          <div class="kv"><div class="k">③ 组合</div><div class="v">流 + 二分 / DP / 拆点</div></div>
+          <p style="margin-top:11px"><b>核心还是流，只是「图长什么样」变了。</b></p>
+        </div>
+        <div class="card moss">
+          <div class="ct"><span class="ix">ADVICE</span>初学者怎么看</div>
+          <ul class="ok" style="margin-top:8px">
+            <li><b>先读懂题解的「建图」部分</b>，代码可以不写</li>
+            <li>想清楚「<b>一份流是什么</b>」比「怎么跑算法」重要</li>
+            <li>遇到不会的，<b class="m">记下关键词</b>（上下界 / 闭合子图）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="ct"><span class="ix">NEXT</span>接下去学什么</div>
+          <div class="kv"><div class="k">同源</div><div class="v">带花树（一般图匹配）</div></div>
+          <div class="kv"><div class="k">图论</div><div class="v">最小生成树 · 拓扑排序 · 差分约束</div></div>
+          <div class="kv"><div class="k">进阶</div><div class="v">网络流的对偶 · 最大密度子图</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== 34 总结 ==================== -->
+<section class="slide" data-t="总结与复习路线">
+  <div class="wrap">
+    <div class="grid">
+      <div class="c1-7">
+        <div class="mono rv" style="--d:.05s;font-size:12px;letter-spacing:.16em;color:var(--volt)">
+          END OF DECK · NETWORK FLOW · 34 SLIDES
+        </div>
+        <h2 class="rv" style="--d:.12s;font-family:var(--disp);font-size:50px;font-weight:700;
+          line-height:1.16;letter-spacing:-.028em;margin-top:16px">
+          「<span class="g">看容量</span>，选算法；<br><span class="a">看约束</span>，换模型。」
+        </h2>
+        <p class="rv" style="--d:.2s;margin-top:18px;font-size:19px;line-height:1.76;max-width:530px;color:var(--ink2)">
+          网络流不难，难在<b>认出它</b>。<br>
+          下次看到「<b class="g">最多运多少</b>」「<b class="a">至少走一次</b>」「<b class="p">还要花钱</b>」，<br>
+          先停下来想一想：<b>这是哪一级阶梯？</b>
+        </p>
+
+        <div class="grid rv" style="--d:.28s;margin-top:26px;grid-template-columns:repeat(3,1fr);gap:16px">
+          <div class="stat"><div class="n g">5</div><div class="l">核心算法</div></div>
+          <div class="stat"><div class="n g">10</div><div class="l">PYTHON 模板</div></div>
+          <div class="stat"><div class="n a">30</div><div class="l">洛谷 + LC 题</div></div>
+        </div>
+
+        <div class="rv" style="--d:.36s;margin-top:26px;display:flex;gap:11px;flex-wrap:wrap">
+          <a class="bigbtn btn-volt" href="https://www.luogu.com.cn/problem/P3376"
+             target="_blank" rel="noopener">先做 P3376</a>
+          <a class="bigbtn btn-hot" href="https://leetcode.cn/problems/maximum-number-of-accepted-invitations/"
+             target="_blank" rel="noopener">或 LC 1820 热身</a>
+        </div>
+      </div>
+
+      <div class="c8-12 rv" style="--d:.22s">
+        <div class="figure">
+          <svg class="dg" viewBox="0 0 420 300">
+            <text class="cap" x="20" y="24">复习路线 · 四天</text>
+            <path class="lead" d="M20 266 L400 266"/>
+            <rect x="30" y="212" width="86" height="54" rx="8" fill="#FFF" stroke="#D6C6A9" stroke-width="1.8"/>
+            <text class="lb" x="73" y="239" style="font-size:12px">FF/EK</text>
+            <rect x="128" y="158" width="86" height="108" rx="8" fill="#FFF4EF" stroke="#D9541F" stroke-width="2"/>
+            <text class="lb volt" x="171" y="186" style="font-size:12px">Dinic</text>
+            <text class="capv" x="171" y="234" text-anchor="middle" style="font-size:11px">必背</text>
+            <rect x="226" y="104" width="86" height="162" rx="8" fill="#FFFBEE" stroke="#B8860B" stroke-width="2"/>
+            <text class="lb gold" x="269" y="132" style="font-size:12px">MCMF</text>
+            <text class="capa" x="269" y="182" text-anchor="middle" style="font-size:11px">SPFA</text>
+            <rect x="324" y="30" width="86" height="236" rx="8" fill="#FDF2F1" stroke="#A32132" stroke-width="2.2"/>
+            <text class="lb hot" x="367" y="58" style="font-size:12px">上下界</text>
+            <text class="caph" x="367" y="108" text-anchor="middle" style="font-size:11px">先可行</text>
+            <text class="caph" x="367" y="128" text-anchor="middle" style="font-size:11px">再调节</text>
+            <text class="cap" x="20" y="292">从左到右，每天复习一级</text>
+          </svg>
+          <div class="fcap">FIG.34 · 四天复习路线</div>
+        </div>
+
+        <div class="card">
+          <div class="ct"><span class="ix">RECAP</span>五个算法一句话</div>
+          <div class="kv"><div class="k">FF / EK</div><div class="v">不断找增广路</div></div>
+          <div class="kv"><div class="k">Dinic</div><div class="v">分层 + 阻塞流 + 当前弧</div></div>
+          <div class="kv"><div class="k">最小割</div><div class="v">max-flow = min-cut</div></div>
+          <div class="kv"><div class="k">MCMF</div><div class="v">费用当边权，SPFA 找最短路</div></div>
+          <div class="kv"><div class="k">上下界</div><div class="v">先扣下界，再补平衡</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+(function(){
+"use strict";
+
+var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+var total = slides.length;
+var current = 0;
+
+var indexOf = new Map();
+slides.forEach(function(s, i){ indexOf.set(s, i); });
+
+var rail = document.getElementById('rail');
+slides.forEach(function(s, i){
+  var b = document.createElement('button');
+  b.innerHTML = '<span>' + (i+1 < 10 ? '0' : '') + (i+1) + '</span><i></i>';
+  b.title = s.dataset.t || '';
+  b.addEventListener('click', function(){ go(i); });
+  rail.appendChild(b);
+});
+var railBtns = Array.prototype.slice.call(rail.children);
+
+function go(i){
+  if(i < 0) i = 0;
+  if(i > total - 1) i = total - 1;
+  slides[i].scrollIntoView({ behavior:'smooth', block:'start' });
+}
+document.getElementById('prevBtn').addEventListener('click', function(){ go(current - 1); });
+document.getElementById('nextBtn').addEventListener('click', function(){ go(current + 1); });
+
+document.addEventListener('keydown', function(e){
+  var tag = (e.target.tagName || '').toLowerCase();
+  if(tag === 'input' || tag === 'textarea' || tag === 'select') return;
+  if(e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' '){
+    e.preventDefault(); go(current + 1);
+  }else if(e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp'){
+    e.preventDefault(); go(current - 1);
+  }else if(e.key === 'Home'){ e.preventDefault(); go(0); }
+  else if(e.key === 'End'){ e.preventDefault(); go(total - 1); }
+});
+
+var prog = document.getElementById('prog');
+var countEl = document.getElementById('count');
+function pad2(n){ return (n < 10 ? '0' : '') + n; }
+
+var io = new IntersectionObserver(function(ents){
+  ents.forEach(function(e){
+    if(e.isIntersecting && e.intersectionRatio > 0.35){
+      var i = indexOf.get(e.target);
+      if(i === undefined) return;
+      current = i;
+      e.target.classList.add('on');
+      countEl.textContent = pad2(i + 1) + ' / ' + pad2(total);
+      prog.style.width = ((i + 1) / total * 100) + '%';
+      railBtns.forEach(function(b, k){ b.classList.toggle('on', k === i); });
+    }
+  });
+}, { threshold: [0, 0.35, 0.7] });
+slides.forEach(function(s){ io.observe(s); });
+slides[0].classList.add('on');
+
+var t0 = Date.now(), clock = document.getElementById('clock');
+setInterval(function(){
+  var s = Math.floor((Date.now() - t0) / 1000);
+  var over = s > 2400;
+  var v = over ? 2400 : s;
+  clock.textContent = pad2(Math.floor(v / 60)) + ':' + pad2(v % 60) + ' / 40:00';
+  if(over) clock.classList.add('done');
+}, 1000);
+
+})();
+</script>
+</body>
+</html>

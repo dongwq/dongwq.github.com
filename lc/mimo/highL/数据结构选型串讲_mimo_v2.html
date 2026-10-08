@@ -1,0 +1,2936 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>数据结构选型串讲：操作语义 → 复杂度形态</title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css">
+<style>
+:root{
+  --paper:#FFF8F0; --card:#FFFFFF;
+  --ink:#2B1D12; --ink2:#6E5842; --line:#EEDCC2;
+  --accent:#E2612F; --amber:#F2A63B; --teal:#0F7B6C; --plum:#A33A64;
+  --code-bg:#2C2117;
+  --serif:"Noto Serif SC","Songti SC",serif;
+  --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#EFE0C8;font-family:var(--sans);color:var(--ink);overflow:hidden}
+body{background:
+  radial-gradient(1200px 700px at 12% -10%, #FBE9CE 0%, rgba(251,233,206,0) 60%),
+  radial-gradient(900px 600px at 105% 110%, #F7DCC0 0%, rgba(247,220,192,0) 55%), #EFE0C8;}
+.stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.deck{width:1280px;height:720px;position:relative;transform-origin:center center;
+  border-radius:20px;overflow:hidden;box-shadow:0 30px 80px rgba(90,52,18,.28),0 4px 12px rgba(90,52,18,.14)}
+
+.slide{position:absolute;inset:0;padding:22px 38px 26px;opacity:0;visibility:hidden;
+  transform:translateX(22px) scale(.996);transition:opacity .38s ease,transform .38s ease,visibility .38s;
+  display:flex;flex-direction:column;gap:10px;
+  background:linear-gradient(160deg,#FFFBF5 0%,#FFF4E6 55%,#FDEBD3 100%)}
+.slide.on{opacity:1;visibility:visible;transform:none}
+.slide::after{content:"";position:absolute;right:-120px;top:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(242,166,59,.18),rgba(242,166,59,0) 70%);pointer-events:none}
+.slide::before{content:"";position:absolute;left:-90px;bottom:-140px;width:260px;height:260px;border-radius:50%;
+  background:radial-gradient(circle at 60% 40%,rgba(226,97,47,.11),rgba(226,97,47,0) 70%);pointer-events:none}
+.slide>*{position:relative;z-index:2}
+
+.kicker{display:inline-flex;align-items:center;gap:7px;font-size:10.6px;font-weight:700;letter-spacing:.13em;
+  color:var(--accent);background:#FFEEDC;border:1px solid #F6D2B2;padding:3px 11px;border-radius:999px}
+.kicker i{width:6px;height:6px;border-radius:50%;background:var(--accent);display:block}
+.kicker.teal{color:var(--teal);background:#E9F7F2;border-color:#BEE6D8}
+.kicker.teal i{background:var(--teal)}
+.kicker.plum{color:var(--plum);background:#FDF1F5;border-color:#EFCBD8}
+.kicker.plum i{background:var(--plum)}
+.kicker.amber{color:#A9700B;background:#FFF3DC;border-color:#F1D6A2}
+.kicker.amber i{background:#F2A63B}
+
+.sl-head{flex:none;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;
+  border-bottom:2px solid var(--line);padding-bottom:8px}
+.sl-head h2{font-family:var(--serif);font-size:28px;font-weight:900;line-height:1.14;margin-top:5px}
+.sl-head h2 em{font-style:normal;color:var(--accent)}
+.sl-head h2 em.t{color:var(--teal)}
+.sl-head h2 em.p{color:var(--plum)}
+.sl-head h2 em.a{color:#C9830F}
+.sl-head .hint{font-size:11.6px;color:var(--ink2);text-align:right;max-width:340px;line-height:1.5}
+.sl-head .hint b{color:#8A5A2C}
+.lead{font-size:15px;line-height:1.66;color:#42301F}
+.muted{color:var(--ink2)}
+
+.cols{display:grid;gap:11px;min-height:0;flex:1 1 auto}
+.c2{grid-template-columns:1fr 1fr}
+.c2a{grid-template-columns:1.08fr .92fr}
+.c2b{grid-template-columns:.92fr 1.08fr}
+.c3{grid-template-columns:repeat(3,1fr)}
+.c4{grid-template-columns:repeat(4,1fr)}
+.cols > div{min-height:0;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:6px}
+.card h3{font-family:var(--serif);font-size:16px;display:flex;align-items:center;gap:8px;flex:none}
+.card h3 .n{width:21px;height:21px;border-radius:7px;background:var(--accent);color:#fff;font-size:11.5px;
+  display:grid;place-items:center;font-family:var(--sans);font-weight:700;flex:none}
+.card h3 .n.t{background:var(--teal)}
+.card h3 .n.p{background:var(--plum)}
+.card h3 .n.a{background:var(--amber)}
+.card p,.card li{font-size:13px;line-height:1.6;color:#4A3722}
+.card ul,ol{padding-left:16px}
+.card li{margin:2px 0}
+.card.tint-teal{background:#F2FBF7;border-color:#BEE6D8}
+.card.tint-amber{background:#FFF7E6;border-color:#F4DCAC}
+.card.tint-plum{background:#FDF1F5;border-color:#EFCBD8}
+.card.tint-rose{background:#FFF1EA;border-color:#F7CDB4}
+
+.formula{font-family:var(--mono);font-size:13.6px;background:#2E2118;color:#FFEBD2;border-radius:11px;
+  padding:9px 13px;line-height:1.55;flex:none;overflow-x:auto}
+.formula .hl{color:#FFB169;font-weight:600}
+.formula .ok{color:#7FE0C2;font-weight:600}
+.formula .dim{color:#A8846A}
+
+.codewrap{display:flex;flex-direction:column;min-height:0;flex:1 1 auto;
+  border:1px solid #4B3823;border-radius:12px;overflow:hidden;background:var(--code-bg)}
+.code-head{flex:none;display:flex;align-items:center;gap:6px;padding:7px 12px;background:#241A12;
+  border-bottom:1px solid #46341F}
+.code-head .dot{width:9px;height:9px;border-radius:50%;background:#6B5238}
+.code-head .dot.r{background:#B9471B}
+.code-head .dot.g{background:#0F7B6C}
+.code-head .dot.p{background:#A33A64}
+.code-head .dot.a{background:#C9830F}
+.code-head em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B29272;letter-spacing:.08em;margin-left:6px}
+.code-head .lang{margin-left:auto;font-family:var(--mono);font-size:10px;color:#7A5F45;letter-spacing:.12em}
+pre.code{margin:0;flex:1 1 auto;min-height:0;overflow:auto;background:var(--code-bg)!important;
+  padding:11px 14px;font-family:var(--mono);font-size:12.2px;line-height:1.55;white-space:pre;tab-size:4}
+pre.code::-webkit-scrollbar{height:8px;width:8px}
+pre.code::-webkit-scrollbar-track{background:#241A12}
+pre.code::-webkit-scrollbar-thumb{background:#6B5238;border-radius:8px}
+pre.code code,code[class*="language-"]{font-family:var(--mono)!important;font-size:inherit;
+  background:transparent!important;color:#F0E0CC!important;text-shadow:none!important}
+pre.code .token.comment,pre.code .token.prolog,pre.code .token.doctype,pre.code .token.cdata{color:#A8846A!important;font-style:italic}
+pre.code .token.punctuation{color:#C0A183!important}
+pre.code .token.keyword,pre.code .token.atrule,pre.code .token.rule,pre.code .token.important{color:#FFB169!important;font-weight:600}
+pre.code .token.string,pre.code .token.char,pre.code .token.attr-value{color:#9BE0BE!important}
+pre.code .token.function,pre.code .token.class-name,pre.code .token.builtin{color:#FFD9A8!important}
+pre.code .token.number,pre.code .token.boolean,pre.code .token.constant,pre.code .token.symbol{color:#F4A9C0!important}
+pre.code .token.operator{color:#FFC98B!important}
+
+.note{border-left:4px solid var(--amber);background:#FFF6E4;padding:8px 12px;border-radius:0 11px 11px 0;
+  font-size:12.6px;line-height:1.58;flex:none}
+.note.warn{border-color:var(--plum);background:#FDF0F4}
+.note.good{border-color:var(--teal);background:#EFF9F5}
+.note b{color:var(--accent)}.note.warn b{color:var(--plum)}.note.good b{color:var(--teal)}
+code:not([class*="language-"]){font-family:var(--mono);font-size:.93em;background:#F6EADA;padding:1px 5px;border-radius:5px}
+
+table{width:100%;border-collapse:collapse;font-size:12.1px;background:#fff;border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 18px rgba(120,70,20,.07);flex:none}
+th,td{padding:5.5px 10px;text-align:left;border-bottom:1px solid var(--line);line-height:1.45}
+th{background:#F7E7CF;font-family:var(--serif);font-size:12.6px;color:#7A4A22}
+tr:last-child td{border-bottom:none}
+td.mono{font-family:var(--mono);font-size:11px}
+td.no{color:#A33A64;font-weight:700}
+td.yes{color:#0F7B6C;font-weight:700}
+td.mid{color:#C9830F;font-weight:700}
+
+.pill-row{display:flex;flex-wrap:wrap;gap:7px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 12px;font-size:12.2px;
+  font-weight:600;color:#5B4429}
+.pill.hot{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pill.tq{background:var(--teal);color:#fff;border-color:var(--teal)}
+.pill.pl{background:var(--plum);color:#fff;border-color:var(--plum)}
+.pill.am{background:var(--amber);color:#fff;border-color:var(--amber)}
+ul.tick{list-style:none;padding:0}
+ul.tick li{position:relative;padding-left:20px;margin:3px 0;font-size:12.8px;line-height:1.55}
+ul.tick li::before{content:"";position:absolute;left:0;top:5px;width:11px;height:11px;border-radius:4px;
+  background:#FFE2C6;border:2px solid var(--accent)}
+ul.tick.ok li::before{background:#CDEEE2;border-color:var(--teal)}
+ul.tick.no li::before{background:#F7D6E1;border-color:var(--plum);border-radius:50%}
+ul.tick.arr li::before{background:#FBD9A2;border-color:var(--amber);border-radius:2px;transform:rotate(45deg);width:9px;height:9px}
+
+.a-link{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:11px;padding:8px 11px;transition:.18s;box-shadow:0 4px 10px rgba(120,70,20,.06);overflow:hidden}
+.a-link:hover{transform:translateY(-2px);border-color:var(--accent);box-shadow:0 9px 20px rgba(226,97,47,.16)}
+.a-link .t{font-size:12.4px;font-weight:700;color:#7A3A12;display:block;margin-bottom:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-link .d{font-size:11px;color:var(--ink2);line-height:1.42;display:-webkit-box;-webkit-line-clamp:2;
+  -webkit-box-orient:vertical;overflow:hidden}
+.a-link .src{font-size:9.6px;font-weight:700;letter-spacing:.05em;color:#fff;background:var(--teal);
+  padding:1px 7px;border-radius:999px;display:inline-block;margin-bottom:4px}
+.a-link .src.crs{background:var(--accent)}
+.a-link .src.hpf{background:var(--plum)}
+.a-link .src.cal{background:var(--amber)}
+.a-link .src.loc{background:#7A4A22}
+
+.step{display:flex;gap:9px;align-items:flex-start}
+.step .idx{flex:none;width:23px;height:23px;border-radius:7px;background:#2E2118;color:#FFD9A8;
+  display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--mono)}
+.split-line{height:2px;background:linear-gradient(90deg,#E2612F,#F2A63B,rgba(242,166,59,0));border-radius:2px;margin:6px 0;flex:none}
+.split-line.t{background:linear-gradient(90deg,#0F7B6C,#7FE0C2,rgba(127,224,194,0))}
+.split-line.p{background:linear-gradient(90deg,#A33A64,#F4A9C0,rgba(244,169,192,0))}
+.num-huge{font-family:var(--serif);font-size:110px;font-weight:900;line-height:.9;
+  background:linear-gradient(160deg,#E2612F,#F2A63B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.t{background:linear-gradient(160deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.num-huge.p{background:linear-gradient(160deg,#A33A64,#F4A9C0);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+svg{display:block;flex:1 1 auto;min-height:0;width:100%;height:100%;overflow:visible}
+.dfnlab{font-family:var(--mono);font-size:11.5px;font-weight:700;fill:#0F7B6C}
+.dfnlab.r{fill:#B9471B}
+.dfnlab.p{fill:#A33A64}
+.dfnlab.g{fill:#8A6A45}
+.dfnlab.a{fill:#C9830F}
+.pulse{animation:pulse 2.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.28;transform:scale(1)}50%{opacity:.62;transform:scale(1.07)}}
+.dash{stroke-dasharray:8 8;animation:dash 1.4s linear infinite}
+@keyframes dash{to{stroke-dashoffset:-32}}
+.float{animation:float 5s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.flow{stroke-dasharray:5 5;animation:dash 1.1s linear infinite}
+
+.cover{background:linear-gradient(150deg,#FFF6E8 0%,#FFE9CD 48%,#FFDCB4 100%)}
+.cover .badge{display:inline-flex;gap:8px;align-items:center;background:#2E2118;color:#FFD9A8;
+  padding:6px 14px;border-radius:999px;font-size:11px;letter-spacing:.14em;font-weight:700}
+.cover h1{font-family:var(--serif);font-size:50px;line-height:1.1;font-weight:900}
+.cover h1 em{font-style:normal;background:linear-gradient(92deg,#E2612F,#F2A63B);-webkit-background-clip:text;
+  background-clip:text;color:transparent}
+.cover h1 em.t{background:linear-gradient(92deg,#0F7B6C,#7FE0C2);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cover .sub{font-size:15.5px;color:#6B4A2C;line-height:1.66;max-width:600px}
+.meta{display:flex;gap:8px;flex-wrap:wrap}
+.meta span{background:rgba(255,255,255,.72);border:1px solid #F0D2AC;padding:5px 12px;border-radius:999px;
+  font-size:12px;font-weight:600;color:#7A4A22}
+.section-slide{background:linear-gradient(150deg,#FFF3E0,#FFE0BC)}
+.section-slide.teal{background:linear-gradient(150deg,#EFF9F4,#CFE9DE)}
+.section-slide.plum{background:linear-gradient(150deg,#FDF0F4,#F5CBD8)}
+.section-slide.amber{background:linear-gradient(150deg,#FFF6E2,#F5DFAE)}
+.section-slide .big{font-family:var(--serif);font-size:40px;font-weight:900;line-height:1.18}
+
+.hud{position:fixed;right:18px;bottom:14px;display:flex;gap:7px;align-items:center;z-index:50}
+.hud button{border:1px solid rgba(120,70,20,.2);background:rgba(255,250,242,.92);color:#7A4A22;
+  width:34px;height:34px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:700;backdrop-filter:blur(6px);transition:.16s}
+.hud button:hover{background:var(--accent);color:#fff;border-color:var(--accent);transform:translateY(-2px)}
+.pgn{background:rgba(255,250,242,.92);border:1px solid rgba(120,70,20,.2);border-radius:10px;height:34px;
+  display:flex;align-items:center;padding:0 13px;font-family:var(--mono);font-size:12.5px;color:#7A4A22;font-weight:600}
+.prog{position:fixed;left:0;top:0;height:4px;background:linear-gradient(90deg,#E2612F,#F2A63B);z-index:60;
+  transition:width .35s ease;box-shadow:0 1px 6px rgba(226,97,47,.5)}
+.brand{position:fixed;left:18px;bottom:14px;z-index:50;background:rgba(255,250,242,.9);border:1px solid rgba(120,70,20,.2);
+  border-radius:10px;padding:8px 13px;font-size:10.5px;color:#7A4A22;letter-spacing:.1em;font-weight:700}
+.toc{position:fixed;inset:0;background:rgba(46,33,24,.82);backdrop-filter:blur(8px);z-index:80;display:none;
+  padding:42px 56px;overflow:auto}
+.toc.on{display:block}
+.toc h4{color:#FFE2BF;font-family:var(--serif);font-size:24px;margin-bottom:16px}
+.toc .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.toc a{background:rgba(255,246,232,.94);border-radius:10px;padding:9px 12px;text-decoration:none;color:#4A3722;
+  font-size:12.2px;line-height:1.4;border:1px solid rgba(255,255,255,.18);transition:.16s}
+.toc a:hover{background:#FFB169;transform:translateY(-2px)}
+.toc a b{display:block;font-family:var(--mono);font-size:10px;color:#B9471B;margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div class="prog" id="prog"></div>
+
+<div class="stage">
+<div class="deck" id="deck">
+
+<!-- ═══ 01 封面 ═══ -->
+<section class="slide cover on" data-title="封面">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">DATA STRUCTURES · SELECTION · 95 MIN</div>
+      <h1>数据结构选型串讲<br><em>把操作语义翻译成复杂度形态</em></h1>
+      <p class="sub">本册是<b>决策层</b>，不是教程。并查集 / 树状数组 / 线段树 / 分块的实现在各自串讲里，<br>
+        这里只回答一个问题：<b>拿到一道题，凭什么选它，凭什么不选别的。</b></p>
+      <div class="meta">
+        <span>49 页 · 约 95 分钟</span><span>横向对比五种解</span>
+        <span>含跨结构交叉对拍</span><span>引回四部结构串讲</span>
+      </div>
+    </div>
+    <div>
+      <svg viewBox="0 0 500 310" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <pattern id="cgrid" width="25" height="25" patternUnits="userSpaceOnUse">
+            <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#E9D5B7" stroke-width="0.7"/>
+          </pattern>
+          <marker id="ca" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+            <path d="M0 0 L9 4.5 L0 9 z" fill="#E2612F"/></marker>
+        </defs>
+        <rect x="0" y="0" width="500" height="310" fill="url(#cgrid)" opacity="0.55"/>
+
+        <!-- 决策矩阵 -->
+        <text x="250" y="26" text-anchor="middle" class="dfnlab r" font-size="12">选型决策矩阵 · 操作语义 × 结构</text>
+
+        <!-- 列标题 -->
+        <g font-family="serif" font-size="11" font-weight="700" text-anchor="middle">
+          <text x="178" y="52" fill="#B9471B">并查集</text>
+          <text x="252" y="52" fill="#B9471B">树状数组</text>
+          <text x="326" y="52" fill="#0B6356">线段树</text>
+          <text x="400" y="52" fill="#8A2A4E">分块</text>
+        </g>
+        <g font-family="monospace" font-size="8.5" text-anchor="middle" fill="#8A6A45">
+          <text x="178" y="64">O(α)</text><text x="252" y="64">O(log)</text>
+          <text x="326" y="64">O(log)</text><text x="400" y="64">O(√n)</text>
+        </g>
+
+        <!-- 行标题 -->
+        <g font-family="sans-serif" font-size="10.5" text-anchor="end" fill="#5B4429" font-weight="600">
+          <text x="136" y="88">连通性（合并+查）</text>
+          <text x="136" y="128">前缀 / 计数</text>
+          <text x="136" y="168">区间改 + 区间查</text>
+          <text x="136" y="208">区间 max / 赋值</text>
+          <text x="136" y="248">有序集（前驱 / k 小）</text>
+        </g>
+
+        <!-- 单元格 -->
+        <g>
+          <!-- row 1 连通性 -->
+          <rect x="156" y="72" width="44" height="24" rx="7" fill="#0F7B6C"/><text x="178" y="88" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">✓</text>
+          <rect x="230" y="72" width="44" height="24" rx="7" fill="#EAD9C2"/><text x="252" y="88" text-anchor="middle" fill="#A8846A" font-family="monospace" font-size="13">✗</text>
+          <rect x="304" y="72" width="44" height="24" rx="7" fill="#EAD9C2"/><text x="326" y="88" text-anchor="middle" fill="#A8846A" font-family="monospace" font-size="13">✗</text>
+          <rect x="378" y="72" width="44" height="24" rx="7" fill="#EAD9C2"/><text x="400" y="88" text-anchor="middle" fill="#A8846A" font-family="monospace" font-size="13">✗</text>
+          <!-- row 2 前缀/计数 -->
+          <rect x="156" y="112" width="44" height="24" rx="7" fill="#EAD9C2"/><text x="178" y="128" text-anchor="middle" fill="#A8846A" font-family="monospace" font-size="13">✗</text>
+          <rect x="230" y="112" width="44" height="24" rx="7" fill="#E2612F"/><text x="252" y="128" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">✓</text>
+          <rect x="304" y="112" width="44" height="24" rx="7" fill="#0F7B6C"/><text x="326" y="128" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">✓</text>
+          <rect x="378" y="112" width="44" height="24" rx="7" fill="#0F7B6C"/><text x="400" y="128" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">✓</text>
+          <!-- row 3 区间改查 -->
+          <rect x="156" y="152" width="44" height="24" rx="7" fill="#EAD9C2"/><text x="178" y="168" text-anchor="middle" fill="#A8846A" font-family="monospace" font-size="13">✗</text>
+          <rect x="230" y="152" width="44" height="24" rx="7" fill="#F2A63B"/><text x="252" y="168" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">~</text>
+          <rect x="304" y="152" width="44" height="24" rx="7" fill="#0F7B6C"/><text x="326" y="168" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">✓</text>
+          <rect x="378" y="152" width="44" height="24" rx="7" fill="#0F7B6C"/><text x="400" y="168" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">✓</text>
+          <!-- row 4 区间 max -->
+          <rect x="156" y="192" width="44" height="24" rx="7" fill="#EAD9C2"/><text x="178" y="208" text-anchor="middle" fill="#A8846A" font-family="monospace" font-size="13">✗</text>
+          <rect x="230" y="192" width="44" height="24" rx="7" fill="#EAD9C2"/><text x="252" y="208" text-anchor="middle" fill="#A8846A" font-family="monospace" font-size="13">✗</text>
+          <rect x="304" y="192" width="44" height="24" rx="7" fill="#0F7B6C"/><text x="326" y="208" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">✓</text>
+          <rect x="378" y="192" width="44" height="24" rx="7" fill="#0F7B6C"/><text x="400" y="208" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">✓</text>
+          <!-- row 5 有序集 -->
+          <rect x="156" y="232" width="44" height="24" rx="7" fill="#EAD9C2"/><text x="178" y="248" text-anchor="middle" fill="#A8846A" font-family="monospace" font-size="13">✗</text>
+          <rect x="230" y="232" width="44" height="24" rx="7" fill="#F2A63B"/><text x="252" y="248" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">~</text>
+          <rect x="304" y="232" width="44" height="24" rx="7" fill="#F2A63B"/><text x="326" y="248" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">~</text>
+          <rect x="378" y="232" width="44" height="24" rx="7" fill="#F2A63B"/><text x="400" y="248" text-anchor="middle" fill="#fff" font-family="monospace" font-size="13">~</text>
+        </g>
+
+        <!-- 图例 -->
+        <g font-family="monospace" font-size="9.5">
+          <rect x="140" y="272" width="34" height="18" rx="6" fill="#0F7B6C"/><text x="157" y="285" text-anchor="middle" fill="#fff">✓ 优</text>
+          <rect x="182" y="272" width="34" height="18" rx="6" fill="#F2A63B"/><text x="199" y="285" text-anchor="middle" fill="#fff">~ 条件</text>
+          <rect x="224" y="272" width="34" height="18" rx="6" fill="#EAD9C2"/><text x="241" y="285" text-anchor="middle" fill="#A8846A">✗ 否</text>
+          <text x="270" y="285" fill="#8A6A45">~ = 需额外条件（值域小 / 可差分 / 主席树）</text>
+        </g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 02 路线图 ═══ -->
+<section class="slide" data-title="路线图">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>ROADMAP</div><h2>七站，一条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>这份讲义怎么走？<br>每站都横向对比，不重复教学。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card"><h3><span class="n">1</span>选型总纲</h3><p>六问 · 系列导航 · 速查表 · 识别信号 · 七类形状</p></div>
+    <div class="card tint-amber"><h3><span class="n a">2</span>四条主线</h3><p>并查集 · 树状数组 · 线段树 · 分块——各自的甜点与失效</p></div>
+    <div class="card tint-teal"><h3><span class="n t">3</span>语义 × 结构</h3><p>七类形状逐一横向对比，看清谁在哪个形状上不可替代</p></div>
+    <div class="card tint-rose"><h3><span class="n">4</span>同题多解</h3><p>五道题的 N 种建模，一致性检查是最强正确性验证</p></div>
+    <div class="card tint-plum"><h3><span class="n p">5</span>归约 · 雷达</h3><p>归约关系 · 六轴雷达 · 不可替代性 · 决策树</p></div>
+    <div class="card tint-amber"><h3><span class="n a">6</span>组合技</h3><p>BIT 套权值线段树 · 线段树合并 / 分治 · 什么时候别用</p></div>
+    <div class="card"><h3><span class="n">7</span>工程</h3><p>正确性 · 易错清单 · API 速查 · 暴力基准 · 跨结构对拍</p></div>
+    <div class="card tint-teal"><h3>验收标准</h3><p class="muted">30 秒内说出<b>操作语义</b>并选对结构；能解释<b>另外三条主线为什么不适用</b>；能写出<b>对拍脚本</b>验证。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>时间分配</h3><p class="muted">总纲 12' · 四主线 14' · 语义形状 12' · 同题多解 20' · 归约雷达 12' · 组合技 10' · 工程 15'</p></div>
+    <div class="card"><h3>本册的硬约束</h3><p class="muted"><b>不重复教学</b>——实现细节引回「并查集 / 树状数组 / 线段树 / 分块」四部串讲；本册只做<b>判断与验证</b>。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 03 钩子 ═══ -->
+<section class="slide" data-title="钩子">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · HOOK</div><h2>一道题<em>五种解法</em>，选错 = TLE / WA</h2></div>
+    <div class="hint"><b>本页回答：</b>选型错在哪？<br>不是"略慢"，是"根本不成立"。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3><span class="n">A</span>区间加 + 区间和</h3>
+      <p><b>题意：</b>数组，区间加值、查询区间和。<code>n, q ≤ 10⁵</code></p>
+      <div class="split-line"></div>
+      <ul class="tick">
+        <li><b>BIT 差分</b> ✅ <code>O(log n)</code>，30 行</li>
+        <li><b>线段树</b> ✅ <code>O(log n)</code>，90 行</li>
+        <li><b>分块</b> ✅ <code>O(√n)</code>，55 行</li>
+      </ul>
+      <p class="muted">三者<b>语义等价</b>，选哪个看<b>规模与常数</b>。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">B</span>区间加 + 区间 max</h3>
+      <p><b>题意：</b>区间加、查询区间最大值。</p>
+      <div class="split-line t"></div>
+      <ul class="tick">
+        <li><b>线段树</b> ✅ <code>O(log n)</code></li>
+        <li><b>分块</b> ✅ <code>O(√n)</code></li>
+        <li><b>BIT</b> ❌ <b>根本表达不了</b></li>
+      </ul>
+      <p class="muted">max <b>不可差分</b>，BIT 直接出局——这是<b>语义错</b>，不是复杂度错。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">C</span>动态第 k 小</h3>
+      <p><b>题意：</b>插入 / 删除元素，求第 k 小。</p>
+      <div class="split-line p"></div>
+      <ul class="tick">
+        <li><b>平衡树</b> ✅ <code>O(log n)</code></li>
+        <li><b>值域 BIT</b> ✅ <code>O(log V)</code>（值域小）</li>
+        <li><b>分块</b> ⚠️ <code>O(√n log)</code>（勉强）</li>
+      </ul>
+      <p class="muted">主席树 <b>静态</b>，动态下<b>必须套娃</b>或换结构。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n a">★</span>三道题的差别在哪</h3>
+      <p class="lead">都在做"把暴力的 <code>O(n)</code> 查询降到 log / √"。差别是<b>操作语义</b>：可差分 / 区间聚合 / 有序集。选错语义不是"略慢"，是<b>根本表达不了</b>（BIT 做不了 max）或<b>代码爆炸</b>（线段树做有序集）。</p>
+      <div class="note"><b>一句话：</b>选型的第一问不是"复杂度多少"，而是<b>"操作语义是什么"</b>。</div>
+    </div>
+    <div class="card">
+      <h3>三个判断题</h3>
+      <div class="pill-row">
+        <span class="pill hot">能差分 / 前缀吗</span>
+        <span class="pill tq">要区间改 + 区间查吗</span>
+        <span class="pill pl">要前驱 / 第 k 小吗</span>
+      </div>
+      <div class="split-line"></div>
+      <p class="muted">答对这三题，结构就定了。<b>剩下的只是常数与代码量。</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 04 选型是什么 ═══ -->
+<section class="slide" data-title="选型六问">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · SIX QUESTIONS</div><h2>数据结构选型是什么：<em>六问</em></h2></div>
+    <div class="hint"><b>本页回答：</b>拿到题该问什么？<br>每一问都决定一个结构。</div>
+  </div>
+  <table>
+    <tr><th style="width:100px">问题</th><th style="width:225px">问的是</th><th style="width:185px">答案指向</th><th>典型陷阱</th></tr>
+    <tr><td><b>① 操作集</b></td><td>单点改 / 区间改 / 区间查 / 第 k 小 / 前驱 / 连通？</td><td class="yes">→ 语义形状</td><td>把"<b>区间 max</b>"当"<b>区间和</b>"，BIT 直接失效</td></tr>
+    <tr><td><b>② 静态 / 动态</b></td><td>有修改吗？离线还是在线？</td><td class="yes">→ ST 表 vs 线段树</td><td>静态 RMQ 上线段树（常数 ×3）</td></tr>
+    <tr><td><b>③ 规模</b></td><td>n、q、值域多大？</td><td>→ log / √ / 常数</td><td><code>n = 10⁵, q = 10⁶</code> 时 √n 太慢</td></tr>
+    <tr><td><b>④ 空间</b></td><td>能开多少内存？</td><td>→ 4n / 2n / n</td><td>线段树 <code>4n</code> 在 <code>n = 10⁷</code> 时爆</td></tr>
+    <tr><td><b>⑤ 常数</b></td><td>时间限制多紧？</td><td>→ BIT vs 线段树</td><td>两者同为 <code>log</code>，常数可差 <b>3~5 倍</b></td></tr>
+    <tr><td><b>⑥ 扩展性</b></td><td>要可持久化 / 合并 / 套娃吗？</td><td class="yes">→ 主席树 / 线段树合并</td><td>BIT <b>不支持可持久化</b>（树结构固定）</td></tr>
+    <tr><td><b>⑦ 是否有序</b></td><td>要前驱后继 / 排名？</td><td>→ 平衡树 / 值域</td><td>数组排序会破坏修改顺序</td></tr>
+    <tr><td><b>⑧ 是否幂等</b></td><td>RMQ 操作可重叠吗？</td><td>→ ST 表可用</td><td>ST 表<b>做不了 sum</b>（不幂等）</td></tr>
+    <tr><td><b>⑨ 是否连通</b></td><td>合并 + 查连通？</td><td>→ 并查集</td><td>用 BFS 每次查连通 <code>O(n+m)</code></td></tr>
+    <tr><td><b>⑩ 是否单调</b></td><td>最近更大 / 滑动窗口？</td><td>→ 单调栈 / 队列</td><td>暴力 <code>O(n²)</code> 在 <code>n = 10⁶</code> TLE</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>三个最常见的错</h3>
+      <ul class="tick no">
+        <li>用 BIT 做<b>区间 max</b>（不可差分）</li>
+        <li>线段树<b>懒标记没下推</b>就查询子区间</li>
+        <li>分块<b>块大小算错</b>，最后一块元素数 <code>&lt; B</code> 时整块懒多算</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>好的选型长什么样</h3>
+      <p>三句话说清：<b>操作集是什么 → 复杂度落在哪档 → 为什么其它结构不合适</b>。说不出来 = 还没想清楚。</p>
+      <div class="note good"><b>习惯：</b>写题解时固定写"<b>操作集 → 结构 → 复杂度 → 空间</b>"四行，一行不能少。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 05 取舍链 ═══ -->
+<section class="slide" data-title="取舍链">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · ROADMAP</div><h2>取舍链：<em>暴力 → 常数 → log → √ → 套娃</em></h2></div>
+    <div class="hint"><b>本页回答：</b>为什么分这么多层？<br>每层的甜点与边界，以及<b>详见哪一部</b>。</div>
+  </div>
+  <table>
+    <tr><th style="width:175px">层级</th><th>时间</th><th>空间</th><th>核心能力</th><th style="width:120px">边界</th><th style="width:140px">详见</th></tr>
+    <tr><td><b>暴力 / 全量重算</b></td><td class="mono">O(n) / O(n²)</td><td>小</td><td>正确性基准</td><td><code>q</code> 大就废</td><td class="mono">本册 P44</td></tr>
+    <tr><td>前缀和 / 差分</td><td class="mono">O(1)</td><td class="mono">O(n)</td><td>静态区间和</td><td>不能改</td><td class="mono">—</td></tr>
+    <tr><td><b>并查集</b></td><td class="mono">O(α(n))</td><td class="mono">O(n)</td><td>合并 + 查连通</td><td>不支持<b>删边</b></td><td class="mono">并查集串讲</td></tr>
+    <tr><td>单调栈 / 队列</td><td class="mono">O(1) 均摊</td><td class="mono">O(n)</td><td>最近更大 / 滑窗</td><td>须单调性</td><td class="mono">本册 P43</td></tr>
+    <tr><td><b>ST 表</b></td><td class="mono">O(1) 查询</td><td class="mono">O(n log n)</td><td>静态 RMQ / LCA</td><td>不能改、只幂等</td><td class="mono">本册 P43</td></tr>
+    <tr><td><b>树状数组</b></td><td class="mono">O(log n)</td><td class="mono">O(n)</td><td>单点改 + 前缀</td><td>做不了 max / 前驱</td><td class="mono">树状数组串讲</td></tr>
+    <tr><td><b>线段树</b></td><td class="mono">O(log n)</td><td class="mono">O(4n)</td><td>区间改 + 区间查</td><td>常数大、空间大</td><td class="mono">线段树串讲</td></tr>
+    <tr><td>平衡树</td><td class="mono">O(log n)</td><td class="mono">O(n)</td><td>有序集 / 前驱后继</td><td>代码长</td><td class="mono">本册 P43</td></tr>
+    <tr><td><b>分块</b></td><td class="mono">O(√n)</td><td class="mono">O(n + n/B)</td><td>万能兜底</td><td>√n 卡不掉</td><td class="mono">分块串讲</td></tr>
+    <tr><td>套娃（BIT 套权值线段树）</td><td class="mono">O(log² n)</td><td class="mono">O(n log n)</td><td>动态第 k 小</td><td>代码量大</td><td class="mono">本册 P37</td></tr>
+    <tr><td>主席树 / 可持久化</td><td class="mono">O(log n)</td><td class="mono">O(n log n)</td><td>历史版本</td><td>空间大</td><td class="mono">线段树串讲</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>四条主线的"不可替代"</h3>
+      <ul class="tick">
+        <li><b>并查集</b>：连通性的 α——<b>唯一接近 O(1)</b></li>
+        <li><b>树状数组</b>：单点改 + 前缀的<b>最小代码量</b></li>
+        <li><b>线段树</b>：区间改 + 区间查的<b>唯一自然解</b></li>
+        <li><b>分块</b>：什么都能做的<b>万能兜底</b></li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>本册的定位</h3>
+      <p>四条主线的<b>实现</b>在各自串讲里。本册只做<b>选型判断 + 跨结构验证</b>——回答"凭什么选它"，并给出能跑的对拍脚本证明选对了。</p>
+      <div class="note good"><b>建议：</b>先练<b>识别操作语义</b>（P12），再练实现。语义选错，代码再漂亮也没用。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 06 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：选型总纲">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 01</div>
+      <div class="big">选型总纲：<em style="color:var(--accent)">六问 · 导航 · 形状</em></div>
+      <p class="lead">系列导航 · 四大工具速查 · 识别信号 · 七类语义形状<br>先把"选结构"这一步变成可操作的流程。</p>
+    </div>
+    <div><div class="num-huge">01</div>
+      <div class="note good"><b>目标：</b>拿到题 30 秒内能说出"操作语义是什么、该用哪条主线"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 07 系列导航 ═══ -->
+<section class="slide" data-title="系列导航">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · SERIES MAP</div><h2>本册与<em>四部结构串讲</em>的关系</h2></div>
+    <div class="hint"><b>本页回答：</b>看完本册该去哪？<br>四部串讲是"实现"，本册是"判断"。</div>
+  </div>
+  <table>
+    <tr><th style="width:175px">串讲</th><th style="width:155px">角色</th><th>甜点区</th><th style="width:175px">本册对应</th></tr>
+    <tr><td><b>并查集串讲</b></td><td>实现 · 连通性</td><td>合并 + 查连通、最小生成树、种类关系</td><td class="yes">主线一（P14）</td></tr>
+    <tr><td><b>树状数组串讲</b></td><td>实现 · 前缀/差分</td><td>单点改 + 前缀、逆序对、二维偏序</td><td class="yes">主线二（P15）</td></tr>
+    <tr><td><b>线段树串讲</b></td><td>实现 · 区间/懒标记</td><td>区间改 + 区间查、可持久化、树链剖分</td><td class="yes">主线三（P16）</td></tr>
+    <tr><td><b>分块串讲</b></td><td>实现 · 根号/兜底</td><td>任意操作、莫队、值域分块、根号分治</td><td class="yes">主线四（P17）</td></tr>
+    <tr><td><b>字符串哈希串讲</b></td><td>实现 · 子串判等</td><td>O(1) 子串比较、双哈希防卡</td><td class="mid">特殊结构（P43）</td></tr>
+    <tr><td><b>二分图串讲</b></td><td>建模 · 二部匹配</td><td>匈牙利 / HK / KM、最小点覆盖</td><td class="mid">相邻建模层</td></tr>
+    <tr><td><b>网络流串讲</b></td><td>建模 · 流与割</td><td>Dinic / 费用流、最小割建模</td><td class="mid">相邻建模层</td></tr>
+    <tr><td><b>图论建模串讲</b></td><td>建模 · 横向对比</td><td>最短路 / 生成树 / 连通性 / 匹配 / 流</td><td class="mid">同一方法论</td></tr>
+    <tr><td><b>几何建模串讲</b></td><td>建模 · 横向对比</td><td>位置关系 / 凸包 / 扫描线 / 数值几何</td><td class="mid">同一方法论</td></tr>
+    <tr><td><b>DP 建模串讲</b></td><td>建模 · 横向对比</td><td>线性 / 背包 / 区间 / 树形 / 状压 / 数位</td><td class="mid">同一方法论</td></tr>
+    <tr><td><b>本册 · 数据结构选型</b></td><td><b>判断 · 决策层</b></td><td>识别语义、选结构、跨结构对拍</td><td class="yes"><b>—</b></td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>三册"建模串讲"共用的方法论</h3>
+      <p><b>速查表 → 识别信号 → 形状 → 三条主线 → 同题三解 → 归约 → 雷达 → 不可替代性 → 工程闭环。</b>本册沿用同一套，只是把"建模"换成"选型"。</p>
+    </div>
+    <div class="card tint-teal"><h3>本册的边界</h3>
+      <p><b>不讲实现</b>（在四部结构串讲里）、<b>不讲建模</b>（在三册建模串讲里）。只讲<b>判断与验证</b>。</p>
+      <div class="note good"><b>怎么读：</b>先读本册定结构，再翻对应串讲抄模板，最后跑本册的对拍脚本验证。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 08 四大工具速查 ═══ -->
+<section class="slide" data-title="四大工具速查">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · CHEAT SHEET</div><h2>四大工具<em>速查表</em>（核心页）</h2></div>
+    <div class="hint"><b>本页回答：</b>一页看懂四条主线。<br>建议打印贴墙上。</div>
+  </div>
+  <table>
+    <tr><th style="width:112px">维度</th><th style="width:175px">并查集</th><th style="width:175px">树状数组</th><th style="width:175px">线段树</th><th>分块</th></tr>
+    <tr><td><b>核心语义</b></td><td>合并 + 查连通</td><td>单点改 + 前缀</td><td>区间改 + 区间查</td><td>万能兜底</td></tr>
+    <tr><td><b>典型操作</b></td><td>union / find / same</td><td>add / sum</td><td>区间加、max、赋值</td><td>任意（慢一点）</td></tr>
+    <tr><td><b>核心原理</b></td><td>路径压缩 + 按秩</td><td><code>lowbit</code> 前缀分解</td><td>懒标记延迟兑现</td><td>整块懒 + 零散暴力</td></tr>
+    <tr><td><b>时间</b></td><td class="mono">O(α(n))</td><td class="mono">O(log n)</td><td class="mono">O(log n)</td><td class="mono">O(√n)</td></tr>
+    <tr><td><b>常数</b></td><td>极小</td><td>极小</td><td>中等（~3× BIT）</td><td>小</td></tr>
+    <tr><td><b>空间</b></td><td class="mono">O(n)</td><td class="mono">O(n)</td><td class="mono">O(4n)</td><td class="mono">O(n + n/B)</td></tr>
+    <tr><td><b>代码量</b></td><td>25 行</td><td>25~35 行</td><td>70~110 行</td><td>45~65 行</td></tr>
+    <tr><td><b>不易写错</b></td><td>★★★★★</td><td>★★★★★</td><td>★★★</td><td>★★★★</td></tr>
+    <tr><td><b>可持久化</b></td><td class="no">不支持</td><td class="no">不支持</td><td class="yes">支持（主席树）</td><td>难</td></tr>
+    <tr><td><b>可合并</b></td><td class="yes">本身即合并</td><td>—</td><td class="yes">支持</td><td>—</td></tr>
+    <tr><td><b>不适用</b></td><td class="no">删边 / 有序查询</td><td class="no">max / 前驱 / 赋值</td><td class="no">空间不够时</td><td class="no">严格 log 要求</td></tr>
+    <tr><td><b>扩展</b></td><td>带权 / 可撤销</td><td>二维、区间加</td><td>树链剖分、合并、分治</td><td>值域分块、莫队</td></tr>
+    <tr><td><b>颜色</b></td><td><span class="pill am">琥珀</span></td><td><span class="pill hot">陶土</span></td><td><span class="pill tq">青绿</span></td><td><span class="pill pl">李子</span></td></tr>
+    <tr><td><b>详见</b></td><td class="mono">并查集串讲</td><td class="mono">树状数组串讲</td><td class="mono">线段树串讲</td><td class="mono">分块串讲</td></tr>
+  </table>
+  <div class="note good"><b>记忆：</b>并查集问"<b>要连通吗</b>"、BIT 问"<b>能差分吗</b>"、线段树问"<b>要区间改吗</b>"、分块问"<b>什么都能做但慢点行吗</b>"。四个问句就是四条主线。</div>
+</section>
+
+<!-- ═══ 09 一句话看懂四条主线 ═══ -->
+<section class="slide" data-title="一句话看懂四条主线">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · ESSENCE</div><h2><em>一句话</em>看懂四条主线</h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记四句话，<br>就记这四句。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-amber">
+      <div class="pill-row"><span class="pill am">并查集</span></div>
+      <p style="font-family:var(--serif);font-size:20px;line-height:1.4;margin:8px 0">"我只管<br><b>连通</b>，<br>不管顺序。"</p>
+      <div class="split-line"></div>
+      <ul class="tick">
+        <li>合并后<b>查不出中间态</b></li>
+        <li>不支持<b>删边</b></li>
+        <li>带权扩展：种类 / 奇偶</li>
+      </ul>
+      <p class="muted" style="margin-top:auto"><b>甜点：</b>Kruskal、连通块、等价类。<b>失效：</b>删边、有序查询。</p>
+    </div>
+    <div class="card tint-rose">
+      <div class="pill-row"><span class="pill hot">树状数组</span></div>
+      <p style="font-family:var(--serif);font-size:20px;line-height:1.4;margin:8px 0">"能<b>差分</b><br>我就<br>最快。"</p>
+      <div class="split-line"></div>
+      <ul class="tick">
+        <li>只支持<b>可差分聚合</b>（sum/xor/cnt）</li>
+        <li>常数是线段树的 <b>1/3</b></li>
+        <li>代码 <b>30 行</b>搞定</li>
+      </ul>
+      <p class="muted" style="margin-top:auto"><b>甜点：</b>前缀和、逆序对、二维偏序。<b>失效：</b>max、赋值、前驱。</p>
+    </div>
+    <div class="card tint-teal">
+      <div class="pill-row"><span class="pill tq">线段树</span></div>
+      <p style="font-family:var(--serif);font-size:20px;line-height:1.4;margin:8px 0">"我管<b>区间</b>，<br>什么聚合<br>都行。"</p>
+      <div class="split-line t"></div>
+      <ul class="tick">
+        <li>只要<b>能合并</b>就能上</li>
+        <li>懒标记 = <b>延迟兑现</b></li>
+        <li>可持久化 / 合并 / 分治的入口</li>
+      </ul>
+      <p class="muted" style="margin-top:auto"><b>甜点：</b>区间改查、历史版本、树上路径。<b>失效：</b>空间不够时。</p>
+    </div>
+    <div class="card tint-plum">
+      <div class="pill-row"><span class="pill pl">分块</span></div>
+      <p style="font-family:var(--serif);font-size:20px;line-height:1.4;margin:8px 0">"我什么<br>都能做，<br>只是<b>慢点</b>。"</p>
+      <div class="split-line p"></div>
+      <ul class="tick">
+        <li><b>万能兜底</b>，几乎不会写错</li>
+        <li>√n 卡不掉时的救命稻草</li>
+        <li>莫队 / 根号分治的载体</li>
+      </ul>
+      <p class="muted" style="margin-top:auto"><b>甜点：</b>复杂操作、离线询问。<b>失效：</b>n、q 都大时。</p>
+    </div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>四句话的共同点</h3>
+      <p>都在做"<b>把暴力的 O(n) 查询降到 log / √</b>"。区别是<b>适用语义</b>——连通 / 前缀 / 区间 / 兜底。</p>
+    </div>
+    <div class="card tint-amber"><h3>四句话的排他性</h3>
+      <p>并查集<b>与其它三条正交</b>（管连通，不管区间）；树状数组 / 线段树 / 分块<b>三者竞争同一片区间语义</b>，按<b>常数 / 功能 / 代码量</b>取舍。</p>
+    </div>
+    <div class="note good"><b>心法：</b>选型 = 先按<b>语义</b>定主线，再按<b>规模与常数</b>在同一主线内取舍。</div>
+  </div>
+</section>
+
+<!-- ═══ 10 识别信号 ═══ -->
+<section class="slide" data-title="识别信号">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · SIGNALS</div><h2>识别信号 <em>→ 结构</em></h2></div>
+    <div class="hint"><b>本页回答：</b>看到这些词就想到那个结构。<br>速查 + 决策口诀。</div>
+  </div>
+  <table>
+    <tr><th style="width:275px">题面关键词</th><th style="width:165px">结构</th><th>关键操作</th></tr>
+    <tr><td>合并集合 / 亲戚 / 同类 / 连通块数量</td><td class="yes">并查集</td><td class="mono">find / union</td></tr>
+    <tr><td>种类 / 奇偶 / 敌人的敌人</td><td class="yes">带权并查集</td><td class="mono">dist[x] mod 2</td></tr>
+    <tr><td>最小生成树 / Kruskal</td><td class="yes">并查集</td><td class="mono">边排序 + union</td></tr>
+    <tr><td>单点修改 + 区间求和 / 前缀</td><td class="yes">树状数组</td><td class="mono">add / sum</td></tr>
+    <tr><td>区间加 + 区间和</td><td class="yes">BIT 差分 / 线段树</td><td class="mono">双 BIT 或懒标记</td></tr>
+    <tr><td>逆序对 / 排名 / 比 x 小的个数</td><td class="yes">树状数组（值域）</td><td class="mono">离散化 + BIT</td></tr>
+    <tr><td>二维偏序（x 小且 y 小的点对）</td><td class="yes">排序 + 树状数组</td><td class="mono">按 x 排序，BIT 管 y</td></tr>
+    <tr><td>区间 max / min / gcd</td><td class="yes">线段树 / ST 表</td><td class="mono">懒标记 / st[k][i]</td></tr>
+    <tr><td>区间赋值 + 区间 max</td><td class="yes">线段树（双懒）</td><td class="mono">assign + add</td></tr>
+    <tr><td>静态 RMQ / LCA</td><td class="yes">ST 表</td><td class="mono">O(1) 查询</td></tr>
+    <tr><td>滑动窗口最大值</td><td class="yes">单调队列</td><td class="mono">deque</td></tr>
+    <tr><td>最近更大 / 更小元素</td><td class="yes">单调栈</td><td class="mono">O(n) 均摊</td></tr>
+    <tr><td>柱状图最大矩形 / 接雨水</td><td class="yes">单调栈</td><td class="mono">left[i] / right[i]</td></tr>
+    <tr><td>插入删除 + 前驱后继 / 第 k 小</td><td class="yes">平衡树</td><td class="mono">Treap / Splay</td></tr>
+    <tr><td>静态区间第 k 小</td><td class="yes">主席树 / 分块</td><td class="mono">可持久化 / 二分</td></tr>
+    <tr><td>动态区间第 k 小</td><td class="yes">BIT 套权值线段树</td><td class="mono">O(log² n)</td></tr>
+    <tr><td>树上路径 / 子树修改查询</td><td class="yes">树链剖分 + 线段树</td><td class="mono">重链</td></tr>
+    <tr><td>区间历史版本</td><td class="yes">主席树</td><td class="mono">root[i]</td></tr>
+    <tr><td>离线区间询问</td><td class="yes">分块 + 莫队</td><td class="mono">O(n√n)</td></tr>
+    <tr><td>区间众数 / mex / 绝对众数</td><td class="yes">分块</td><td class="mono">预处理整块答案</td></tr>
+    <tr><td>子串判等 / 子串比较</td><td class="yes">字符串哈希</td><td class="mono">双哈希防卡</td></tr>
+    <tr><td><b>n、q 都小</b>（&lt; 1000）</td><td class="no">直接暴力</td><td class="mono">—</td></tr>
+    <tr><td><b>能用前缀和</b>就别上 BIT</td><td class="no">前缀和</td><td class="mono">O(1)</td></tr>
+    <tr><td><b>能用 ST 表</b>就别上线段树</td><td class="no">ST 表</td><td class="mono">O(1) 查询</td></tr>
+    <tr><td><b>只能 O(√n) 卡不掉</b></td><td class="yes">分块</td><td class="mono">万能兜底</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>决策口诀</h3>
+      <p><b>先问语义，再问规模，最后问常数。</b>三问问完再下笔。</p>
+    </div>
+    <div class="card tint-plum"><h3>反向检查</h3>
+      <p>如果题目是"<b>静态 RMQ</b>"却上了<b>线段树</b>——常数 ×3，还可能 MLE。<b>杀鸡用牛刀</b>也是选型错。</p>
+    </div>
+    <div class="note"><b>关键：</b>识别不出关键词时，回到<b>P12 的七类语义形状</b>逐个试。</div>
+  </div>
+</section>
+
+<!-- ═══ 11 七类形状 ═══ -->
+<section class="slide" data-title="操作语义的七类形状">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>01 · SHAPES</div><h2>操作语义的<em>七类形状</em></h2></div>
+    <div class="hint"><b>本页回答：</b>操作集长什么样？<br>形状定了，结构就定了。</div>
+  </div>
+  <div class="card" style="flex:none">
+    <svg viewBox="0 0 1140 118" preserveAspectRatio="xMidYMid meet">
+      <!-- ① 连通性型 -->
+      <g>
+        <rect x="4" y="4" width="160" height="108" rx="13" fill="#FFF7E6" stroke="#F4DCAC" stroke-width="2"/>
+        <text x="84" y="26" text-anchor="middle" class="dfnlab a" font-size="11.5">① 连通性型</text>
+        <g stroke="#C9830F" stroke-width="1.8" fill="none">
+          <path d="M32 58 L62 50"/><path d="M62 50 L92 58"/><path d="M92 58 L122 50"/><path d="M32 58 L60 78"/><path d="M92 58 L122 78"/>
+        </g>
+        <g fill="#FFF7E6" stroke="#C9830F" stroke-width="2">
+          <circle cx="32" cy="58" r="5"/><circle cx="62" cy="50" r="5"/><circle cx="92" cy="58" r="5"/><circle cx="122" cy="50" r="5"/>
+          <circle cx="60" cy="78" r="5"/><circle cx="122" cy="78" r="5"/>
+        </g>
+        <text x="84" y="92" text-anchor="middle" class="dfnlab g" font-size="9">合并 + 查连通</text>
+        <text x="84" y="106" text-anchor="middle" class="dfnlab a" font-size="9">→ 并查集 O(α)</text>
+      </g>
+      <!-- ② 前缀和型 -->
+      <g>
+        <rect x="172" y="4" width="160" height="108" rx="13" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+        <text x="252" y="26" text-anchor="middle" class="dfnlab r" font-size="11.5">② 前缀和型</text>
+        <g stroke="#E2612F" stroke-width="2" fill="none">
+          <path d="M196 58 L308 58"/>
+          <path d="M196 52 L196 64"/><path d="M224 52 L224 64"/><path d="M252 52 L252 64"/><path d="M280 52 L280 64"/><path d="M308 52 L308 64"/>
+        </g>
+        <circle cx="252" cy="58" r="7" fill="#E2612F"/>
+        <text x="252" y="92" text-anchor="middle" class="dfnlab g" font-size="9">单点改 + 前缀查</text>
+        <text x="252" y="106" text-anchor="middle" class="dfnlab r" font-size="9">→ BIT O(log n)</text>
+      </g>
+      <!-- ③ 区间型 -->
+      <g>
+        <rect x="340" y="4" width="160" height="108" rx="13" fill="#E9F7F2" stroke="#BEE6D8" stroke-width="2"/>
+        <text x="420" y="26" text-anchor="middle" class="dfnlab" font-size="11.5">③ 区间型</text>
+        <g stroke="#0F7B6C" stroke-width="2" fill="none">
+          <path d="M364 58 L476 58"/>
+          <path d="M364 52 L364 64"/><path d="M392 52 L392 64"/><path d="M420 52 L420 64"/><path d="M448 52 L448 64"/><path d="M476 52 L476 64"/>
+        </g>
+        <rect x="380" y="50" width="68" height="16" rx="5" fill="#0F7B6C" opacity=".75"/>
+        <text x="420" y="92" text-anchor="middle" class="dfnlab g" font-size="9">区间改 + 区间查</text>
+        <text x="420" y="106" text-anchor="middle" class="dfnlab" font-size="9">→ 线段树 O(log n)</text>
+      </g>
+      <!-- ④ 有序集型 -->
+      <g>
+        <rect x="508" y="4" width="160" height="108" rx="13" fill="#FDF0F4" stroke="#EFCBD8" stroke-width="2"/>
+        <text x="588" y="26" text-anchor="middle" class="dfnlab p" font-size="11.5">④ 有序集型</text>
+        <g fill="#A33A64">
+          <circle cx="588" cy="46" r="5"/><circle cx="566" cy="62" r="4.5"/><circle cx="610" cy="62" r="4.5"/>
+          <circle cx="554" cy="78" r="3.5"/><circle cx="578" cy="78" r="3.5"/><circle cx="602" cy="78" r="3.5"/><circle cx="626" cy="78" r="3.5"/>
+        </g>
+        <g stroke="#A33A64" stroke-width="1.5" fill="none">
+          <path d="M588 51 L570 58"/><path d="M588 51 L606 58"/>
+          <path d="M566 66 L558 74"/><path d="M566 66 L576 74"/><path d="M610 66 L598 74"/><path d="M610 66 L622 74"/>
+        </g>
+        <text x="588" y="92" text-anchor="middle" class="dfnlab g" font-size="9">前驱 / 后继 / 第 k 小</text>
+        <text x="588" y="106" text-anchor="middle" class="dfnlab p" font-size="9">→ 平衡树 / 值域</text>
+      </g>
+      <!-- ⑤ 静态查询型 -->
+      <g>
+        <rect x="676" y="4" width="160" height="108" rx="13" fill="#FFF7E6" stroke="#F4DCAC" stroke-width="2"/>
+        <text x="756" y="26" text-anchor="middle" class="dfnlab a" font-size="11.5">⑤ 静态查询型</text>
+        <g fill="#C9830F">
+          <rect x="692" y="68" width="14" height="16" rx="2"/><rect x="710" y="54" width="14" height="30" rx="2"/>
+          <rect x="728" y="44" width="14" height="40" rx="2"/><rect x="746" y="58" width="14" height="26" rx="2"/>
+          <rect x="764" y="48" width="14" height="36" rx="2"/><rect x="782" y="72" width="14" height="12" rx="2"/>
+          <rect x="800" y="60" width="14" height="24" rx="2"/><rect x="818" y="76" width="14" height="8" rx="2"/>
+        </g>
+        <text x="756" y="96" text-anchor="middle" class="dfnlab g" font-size="9">RMQ / LCA / 无修改</text>
+        <text x="756" y="108" text-anchor="middle" class="dfnlab a" font-size="9">→ ST 表 O(1)</text>
+      </g>
+      <!-- ⑥ 单调性型 -->
+      <g>
+        <rect x="844" y="4" width="160" height="108" rx="13" fill="#EFF9F4" stroke="#BEE6D8" stroke-width="2"/>
+        <text x="924" y="26" text-anchor="middle" class="dfnlab" font-size="11.5">⑥ 单调性型</text>
+        <g fill="#0F7B6C">
+          <rect x="860" y="72" width="14" height="12" rx="2"/><rect x="878" y="58" width="14" height="26" rx="2"/>
+          <rect x="896" y="44" width="14" height="40" rx="2"/><rect x="914" y="52" width="14" height="32" rx="2"/>
+          <rect x="932" y="38" width="14" height="46" rx="2"/><rect x="950" y="48" width="14" height="36" rx="2"/>
+          <rect x="968" y="56" width="14" height="28" rx="2"/><rect x="986" y="66" width="14" height="18" rx="2"/>
+        </g>
+        <text x="924" y="98" text-anchor="middle" class="dfnlab g" font-size="9">最近更大 / 滑动窗口</text>
+        <text x="924" y="110" text-anchor="middle" class="dfnlab" font-size="9">→ 单调栈 / 队列</text>
+      </g>
+      <!-- ⑦ 兜底型 -->
+      <g>
+        <rect x="1012" y="4" width="124" height="108" rx="13" fill="#F6EEE2" stroke="#E4D2B8" stroke-width="2"/>
+        <text x="1074" y="26" text-anchor="middle" class="dfnlab g" font-size="11.5">⑦ 兜底型</text>
+        <g fill="#8A6A45" opacity=".8">
+          <rect x="1030" y="48" width="36" height="32" rx="5"/>
+          <rect x="1072" y="48" width="36" height="32" rx="5"/>
+          <rect x="1114" y="48" width="16" height="32" rx="5"/>
+        </g>
+        <text x="1074" y="98" text-anchor="middle" class="dfnlab g" font-size="9">任意操作（慢一点）</text>
+        <text x="1074" y="110" text-anchor="middle" class="dfnlab g" font-size="9">→ 分块 O(√n)</text>
+      </g>
+    </svg>
+  </div>
+  <table>
+    <tr><th style="width:115px">形状</th><th style="width:195px">操作集</th><th style="width:175px">结构</th><th>关键注意</th></tr>
+    <tr><td><b>① 连通性</b></td><td>合并、查连通</td><td class="mono">并查集</td><td>不支持<b>删边</b>；带权扩展看语义</td></tr>
+    <tr><td><b>② 前缀和</b></td><td>单点改、前缀查</td><td class="mono">BIT / 前缀和</td><td>能用前缀和就别上 BIT</td></tr>
+    <tr><td><b>③ 区间</b></td><td>区间改、区间查</td><td class="mono">线段树</td><td>懒标记<b>必须下推</b></td></tr>
+    <tr><td><b>④ 有序集</b></td><td>插入、删除、前驱、第 k 小</td><td class="mono">平衡树 / 值域</td><td>值域小可用值域 BIT</td></tr>
+    <tr><td><b>⑤ 静态查询</b></td><td>RMQ / LCA，无修改</td><td class="mono">ST 表</td><td>只支持<b>幂等</b>操作</td></tr>
+    <tr><td><b>⑥ 单调性</b></td><td>最近更大、滑窗最值</td><td class="mono">单调栈 / 队列</td><td>O(1) 均摊，须单调性</td></tr>
+    <tr><td><b>⑦ 兜底</b></td><td>任意</td><td class="mono">分块</td><td>√n 卡不掉时用</td></tr>
+  </table>
+  <div class="note good"><b>心法：</b>七种形状覆盖 95% 的数据结构题。剩下的 5% 是<b>多种形状的叠加</b>（如"动态第 k 小"= 有序集 + 前缀和，见 P37 组合技）。</div>
+</section>
+
+<!-- ═══ 12 章节 ═══ -->
+<section class="slide section-slide amber" data-title="章节：四条主线">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker amber"><i></i>CHAPTER 02</div>
+      <div class="big">四条主线：<em style="color:#C9830F">各自的甜点与失效</em></div>
+      <p class="lead">并查集 · 树状数组 · 线段树 · 分块<br>每条主线一页：<b>语义 → 甜点 → 失效 → 与其它三条的关系</b>。</p>
+    </div>
+    <div><div class="num-huge p">02</div>
+      <div class="note warn"><b>本章不做教学</b>——实现在四部结构串讲里。这里只回答<b>"什么时候用、什么时候别用"</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 13 主线一：并查集 ═══ -->
+<section class="slide" data-title="主线一：并查集">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>02 · MAINLINE 1</div><h2>并查集：<em class="a">连通性的 α</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么时候必须用并查集？<br>与其它三条的关系。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card tint-amber"><h3><span class="n a">语义</span>合并 + 查连通</h3>
+        <ul class="tick arr">
+          <li>只回答"<b>是否连通</b>"，不回答"路径是什么"</li>
+          <li><b>只增不删</b>——删边直接失效</li>
+          <li>路径压缩 + 按秩合并 → <code>O(α(n))</code></li>
+        </ul>
+        <div class="split-line"></div>
+        <p class="muted">带权扩展：<b>种类 / 奇偶 / 敌人关系</b>；可撤销扩展：<b>线段树分治</b>。</p>
+      </div>
+      <div class="card"><h3>甜点区</h3>
+        <ul class="tick ok">
+          <li>连通块数量 / 大小</li>
+          <li>Kruskal 最小生成树</li>
+          <li>等价类划分、离线最近公共祖先</li>
+          <li>动态连通（只加边）</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>失效区</h3>
+        <ul class="tick no">
+          <li><b>删边</b> → 需 LCT / 可撤销</li>
+          <li><b>路径查询</b> → 树链剖分 + 线段树</li>
+          <li><b>有序查询</b>（前驱 / 第 k 小）→ 平衡树</li>
+          <li><b>区间聚合</b> → 线段树</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>与其它三条的关系</h3>
+        <table style="margin-top:2px">
+          <tr><th>对比</th><th>结论</th></tr>
+          <tr><td>并查集 vs 树状数组</td><td class="yes">正交：连通 vs 前缀</td></tr>
+          <tr><td>并查集 vs 线段树</td><td class="yes">正交：连通 vs 区间</td></tr>
+          <tr><td>并查集 vs 分块</td><td class="yes">正交：连通 vs 兜底</td></tr>
+          <tr><td>并查集 vs BFS 查连通</td><td class="yes">并查集快 <code>O(n)</code> 倍</td></tr>
+          <tr><td>并查集 vs 树链剖分</td><td class="mid">后者能查路径</td></tr>
+        </table>
+      </div>
+      <div class="card tint-teal"><h3>建模案例</h3>
+        <ul class="tick ok">
+          <li><b>亲戚</b>：合并 + 查询是否亲戚 → 并查集</li>
+          <li><b>最小生成树</b>：边排序 + union</li>
+          <li><b>种类并查集</b>：带权 dist mod 2</li>
+          <li><b>可撤销</b>：线段树分治 + 栈</li>
+        </ul>
+      </div>
+      <div class="note good"><b>一句话：</b>看到"<b>合并 / 连通 / 等价类 / 最小生成树</b>"，第一反应是并查集；<b>要删边或查路径</b>，立刻换。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 14 主线二：树状数组 ═══ -->
+<section class="slide" data-title="主线二：树状数组">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · MAINLINE 2</div><h2>树状数组：<em>能差分就最快</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么时候必须用 BIT？<br>与线段树 / 分块怎么取舍。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card tint-rose"><h3><span class="n">语义</span>单点改 + 前缀查</h3>
+        <ul class="tick arr">
+          <li>只支持<b>可差分聚合</b>：sum / xor / cnt</li>
+          <li><code>lowbit(i) = i &amp; -i</code> 前缀分解</li>
+          <li><code>O(log n)</code>，常数是线段树的 <b>1/3</b></li>
+        </ul>
+        <div class="split-line"></div>
+        <p class="muted">扩展：<b>双 BIT</b>（区间加区间和）、<b>二维 BIT</b>、<b>值域 BIT</b>（第 k 小）。</p>
+      </div>
+      <div class="card"><h3>甜点区</h3>
+        <ul class="tick ok">
+          <li>单点改 + 区间和（<b>最小代码量</b>）</li>
+          <li>逆序对、动态排名、二维偏序</li>
+          <li>值域 BIT 做<b>动态第 k 小</b>（值域小时）</li>
+          <li>n 大、空间紧（<code>O(n)</code> 而非 <code>4n</code>）</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>失效区</h3>
+        <ul class="tick no">
+          <li><b>max / min / gcd</b> → 不可差分</li>
+          <li><b>区间赋值</b> → 线段树（双懒）</li>
+          <li><b>前驱后继</b>（值域大）→ 平衡树</li>
+          <li><b>可持久化</b> → 主席树</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>与其它三条的关系</h3>
+        <table style="margin-top:2px">
+          <tr><th>对比</th><th>结论</th></tr>
+          <tr><td>BIT vs 线段树</td><td class="yes">BIT 更快更短，但<b>功能窄</b></td></tr>
+          <tr><td>BIT vs 分块</td><td class="yes">BIT 快 <code>log/√n</code> 倍，但<b>代码略长</b></td></tr>
+          <tr><td>BIT vs 前缀和</td><td class="mid">静态时前缀和 <code>O(1)</code> 更优</td></tr>
+          <tr><td>BIT vs 并查集</td><td class="yes">正交：前缀 vs 连通</td></tr>
+          <tr><td>BIT vs 平衡树</td><td class="mid">值域小时 BIT 更快</td></tr>
+        </table>
+      </div>
+      <div class="card tint-teal"><h3>建模案例</h3>
+        <ul class="tick ok">
+          <li><b>逆序对</b>：离散化 + BIT 计数</li>
+          <li><b>区间加区间和</b>：差分 + 双 BIT</li>
+          <li><b>二维偏序</b>：按 x 排序 + BIT 管 y</li>
+          <li><b>动态排名</b>：值域 BIT + sum</li>
+        </ul>
+      </div>
+      <div class="note good"><b>一句话：</b>看到"<b>能差分 / 能前缀 / 能计数</b>"，第一反应是 BIT；<b>要 max / 赋值 / 前驱</b>，立刻换。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 15 主线三：线段树 ═══ -->
+<section class="slide" data-title="主线三：线段树">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>02 · MAINLINE 3</div><h2>线段树：<em class="t">区间改查的唯一自然解</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么时候必须用线段树？<br>什么时候是杀鸡用牛刀。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card tint-teal"><h3><span class="n t">语义</span>区间改 + 区间查</h3>
+        <ul class="tick arr">
+          <li>只要<b>能合并</b>的聚合都能上（sum/max/gcd/...）</li>
+          <li>懒标记 = <b>延迟兑现</b>，只在穿过时下推</li>
+          <li><code>O(log n)</code>，空间 <code>4n</code>，代码 70~110 行</li>
+        </ul>
+        <div class="split-line t"></div>
+        <p class="muted">扩展：<b>双懒</b>（赋值+加）、<b>主席树</b>（可持久化）、<b>线段树合并 / 分治</b>、<b>树链剖分</b>。</p>
+      </div>
+      <div class="card"><h3>甜点区</h3>
+        <ul class="tick ok">
+          <li>区间加 + 区间 max / 赋值（<b>唯一自然解</b>）</li>
+          <li>区间历史版本（主席树）</li>
+          <li>树上路径 / 子树修改查询（HLD）</li>
+          <li>扫描线（矩形面积并）</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>失效区 / 杀鸡用牛刀</h3>
+        <ul class="tick no">
+          <li><b>静态 RMQ</b> → ST 表 <code>O(1)</code> 更快</li>
+          <li><b>单点改 + 前缀和</b> → BIT 更短更快</li>
+          <li><b>n = 10⁷</b> → 空间 <code>4n</code> 爆</li>
+          <li><b>有序集</b> → 平衡树更自然</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>与其它三条的关系</h3>
+        <table style="margin-top:2px">
+          <tr><th>对比</th><th>结论</th></tr>
+          <tr><td>线段树 vs BIT</td><td class="mid">功能全面，常数 ×3、代码 ×3</td></tr>
+          <tr><td>线段树 vs 分块</td><td class="yes">线段树快，分块<b>更不易写错</b></td></tr>
+          <tr><td>线段树 vs ST 表</td><td class="mid">静态时 ST 表更快</td></tr>
+          <tr><td>线段树 vs 并查集</td><td class="yes">正交：区间 vs 连通</td></tr>
+          <tr><td>线段树 vs 平衡树</td><td class="mid">有序集时平衡树更自然</td></tr>
+        </table>
+      </div>
+      <div class="card tint-teal"><h3>建模案例</h3>
+        <ul class="tick ok">
+          <li><b>区间加区间 max</b>：单懒线段树</li>
+          <li><b>区间赋值区间和</b>：双懒（assign+add）</li>
+          <li><b>区间第 k 小</b>：主席树</li>
+          <li><b>树上路径加求和</b>：HLD + 线段树</li>
+        </ul>
+      </div>
+      <div class="note good"><b>一句话：</b>看到"<b>区间改 + 区间查</b>"或"<b>历史版本</b>"，第一反应是线段树；<b>静态 / 空间紧 / 有序集</b>，立刻换。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 16 主线四：分块 ═══ -->
+<section class="slide" data-title="主线四：分块">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>02 · MAINLINE 4</div><h2>分块：<em class="p">万能兜底</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么时候分块是最佳选择？<br>√n 卡不掉的边界在哪。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card tint-plum"><h3><span class="n p">语义</span>任意操作（慢一点）</h3>
+        <ul class="tick arr">
+          <li><b>整块读懒 + 零散暴力</b>，任何操作都能做</li>
+          <li>块大小 <code>B = ⌊√n⌋ + 1</code>，每次 <code>O(B + n/B) = O(√n)</code></li>
+          <li>代码 ~55 行，<b>几乎不会写错</b></li>
+        </ul>
+        <div class="split-line p"></div>
+        <p class="muted">扩展：<b>值域分块</b>、<b>莫队</b>（离线区间询问）、<b>根号分治</b>。</p>
+      </div>
+      <div class="card"><h3>甜点区</h3>
+        <ul class="tick ok">
+          <li>复杂操作写不动线段树时的<b>救命稻草</b></li>
+          <li>离线区间询问（莫队 <code>O(n√n)</code>）</li>
+          <li>区间众数 / mex / 绝对众数</li>
+          <li>n、q 中等（<code>10⁵</code> 量级）</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>失效区</h3>
+        <ul class="tick no">
+          <li><b>n = 10⁶, q = 10⁶</b> → √n 太慢</li>
+          <li>要<b>严格 log</b> → 主席树 / 线段树</li>
+          <li>要<b>在线动态第 k 小</b> → 套娃 / 平衡树</li>
+          <li><b>块大小算错</b> → 整块懒多算（经典坑）</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>与其它三条的关系</h3>
+        <table style="margin-top:2px">
+          <tr><th>对比</th><th>结论</th></tr>
+          <tr><td>分块 vs BIT</td><td class="mid">分块能做 max，BIT 不能；但 BIT 快</td></tr>
+          <tr><td>分块 vs 线段树</td><td class="yes">分块<b>更不易写错</b>，线段树更快</td></tr>
+          <tr><td>分块 vs 平衡树</td><td class="mid">分块代码短，平衡树快</td></tr>
+          <tr><td>分块 vs 并查集</td><td class="yes">正交：兜底 vs 连通</td></tr>
+          <tr><td>分块 vs 莫队</td><td class="yes">莫队是分块的<b>离线应用</b></td></tr>
+        </table>
+      </div>
+      <div class="card tint-teal"><h3>建模案例</h3>
+        <ul class="tick ok">
+          <li><b>区间第 k 小（静态）</b>：块内排序 + 二分</li>
+          <li><b>区间众数</b>：预处理整块答案</li>
+          <li><b>区间不同数个数</b>：莫队</li>
+          <li><b>根号分治</b>：按规模分类</li>
+        </ul>
+      </div>
+      <div class="note good"><b>一句话：</b>看到"<b>操作复杂 / 线段树写不动 / √n 卡不掉</b>"，第一反应是分块。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 17 四条主线横向对比 ═══ -->
+<section class="slide" data-title="四条主线横向对比">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · HORIZONTAL</div><h2>四条主线<em>横向对比</em></h2></div>
+    <div class="hint"><b>本页回答：</b>四条主线放在一起看，<br>各自的边界在哪。</div>
+  </div>
+  <table>
+    <tr><th style="width:125px">对比维度</th><th style="width:175px">并查集</th><th style="width:175px">树状数组</th><th style="width:175px">线段树</th><th>分块</th></tr>
+    <tr><td><b>操作语义</b></td><td>合并 + 查连通</td><td>单点改 + 前缀</td><td>区间改 + 区间查</td><td>任意</td></tr>
+    <tr><td><b>聚合要求</b></td><td>—（只需等价）</td><td class="no">必须可差分</td><td class="yes">只需可合并</td><td class="yes">无要求</td></tr>
+    <tr><td><b>时间</b></td><td class="mono">O(α(n))</td><td class="mono">O(log n)</td><td class="mono">O(log n)</td><td class="mono">O(√n)</td></tr>
+    <tr><td><b>空间</b></td><td class="mono">O(n)</td><td class="mono">O(n)</td><td class="mono">O(4n)</td><td class="mono">O(n + n/B)</td></tr>
+    <tr><td><b>常数</b></td><td>极小</td><td>极小</td><td>中等</td><td>小</td></tr>
+    <tr><td><b>代码量</b></td><td>25 行</td><td>30 行</td><td>90 行</td><td>55 行</td></tr>
+    <tr><td><b>写错概率</b></td><td>极低</td><td>低</td><td>中</td><td><b>极低</b></td></tr>
+    <tr><td><b>典型操作</b></td><td>union / find</td><td>add / sum</td><td>区间加 / max / 赋值</td><td>任意</td></tr>
+    <tr><td><b>典型应用</b></td><td>MST、等价类、连通块</td><td>逆序对、二维偏序</td><td>区间改查、HLD、主席树</td><td>莫队、众数、mex</td></tr>
+    <tr><td><b>最怕什么</b></td><td class="no">删边、查路径</td><td class="no">max、赋值、前驱</td><td class="no">空间不够、静态 RMQ</td><td class="no">n、q 都大</td></tr>
+    <tr><td><b>什么时候不用</b></td><td>不涉及连通</td><td>不能差分</td><td>静态 / 空间紧</td><td>√n 卡不掉</td></tr>
+    <tr><td><b>扩展能力</b></td><td>带权、可撤销</td><td>二维、区间加</td><td class="yes">持久化 / 合并 / 分治</td><td>值域分块、莫队</td></tr>
+    <tr><td><b>对拍基准</b></td><td>暴力 BFS</td><td>暴力前缀</td><td>暴力区间</td><td>暴力区间</td></tr>
+    <tr><td><b>详见</b></td><td class="mono">并查集串讲</td><td class="mono">树状数组串讲</td><td class="mono">线段树串讲</td><td class="mono">分块串讲</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>横向看出来的三件事</h3>
+      <ul class="tick arr">
+        <li>并查集<b>与其它三条正交</b>（管连通，不管区间）</li>
+        <li>BIT / 线段树 / 分块<b>竞争同一片区间语义</b>，按常数 / 功能 / 代码量取舍</li>
+        <li><b>分块是唯一"无要求"的</b>——任何聚合都能做</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>取舍速记</h3>
+      <p>同为区间语义：<b>能差分 → BIT</b>；<b>要 max / 赋值 → 线段树</b>；<b>写不动 / 兜底 → 分块</b>。</p>
+      <div class="note good"><b>升级路径：</b>暴力 → 前缀和 → BIT → 线段树 → 套娃。每一层只在<b>上一层表达不了</b>时才升。</div>
+    </div>
+    <div class="note"><b>一句话：</b>四条主线不是"谁更好"，而是<b>"谁的语义对上"</b>。</div>
+  </div>
+</section>
+
+<!-- ═══ 18 甜点区边界 ═══ -->
+<section class="slide" data-title="甜点区边界">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>02 · SWEET SPOTS</div><h2>甜点区<em>边界</em>：什么时候切换</h2></div>
+    <div class="hint"><b>本页回答：</b>同一条主线内部，<br>规模怎么决定结构。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>区间语义的三选一</h3>
+        <table style="margin-top:2px">
+          <tr><th>规模</th><th>首选</th><th>理由</th></tr>
+          <tr><td class="mono">n, q ≤ 10³</td><td class="yes">暴力</td><td>写完就过</td></tr>
+          <tr><td class="mono">n, q ≤ 10⁵，能差分</td><td class="yes">BIT</td><td>30 行，常数最小</td></tr>
+          <tr><td class="mono">n, q ≤ 10⁵，要 max/赋值</td><td class="yes">线段树</td><td>唯一自然解</td></tr>
+          <tr><td class="mono">n ≤ 10⁵，q ≤ 10⁶</td><td class="yes">BIT / 线段树</td><td>√n 太慢</td></tr>
+          <tr><td class="mono">n ≤ 10⁶，操作复杂</td><td class="yes">分块</td><td>线段树写不动</td></tr>
+          <tr><td class="mono">n ≤ 10⁷</td><td class="yes">BIT</td><td>线段树 <code>4n</code> 爆</td></tr>
+          <tr><td class="mono">在线动态第 k 小</td><td class="yes">套娃 / 平衡树</td><td>见 P37</td></tr>
+        </table>
+      </div>
+      <div class="card tint-amber"><h3>连通性语义的三选一</h3>
+        <table style="margin-top:2px">
+          <tr><th>需求</th><th>首选</th><th>理由</th></tr>
+          <tr><td>只加边查连通</td><td class="yes">并查集</td><td><code>O(α)</code></td></tr>
+          <tr><td>加边删边查连通</td><td class="yes">LCT / 可撤销</td><td>并查集失效</td></tr>
+          <tr><td>查路径</td><td class="yes">树链剖分</td><td>并查集不管路径</td></tr>
+          <tr><td>离线最近公共祖先</td><td class="yes">Tarjan + 并查集</td><td><code>O(n α)</code></td></tr>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="card tint-teal"><h3>有序集语义的三选一</h3>
+        <table style="margin-top:2px">
+          <tr><th>规模</th><th>首选</th><th>理由</th></tr>
+          <tr><td class="mono">值域 ≤ 10⁵</td><td class="yes">值域 BIT</td><td><code>O(log V)</code>，代码短</td></tr>
+          <tr><td class="mono">值域大、n ≤ 10⁵</td><td class="yes">平衡树</td><td><code>O(log n)</code></td></tr>
+          <tr><td class="mono">静态区间第 k 小</td><td class="yes">主席树</td><td><code>O(log n)</code> 查询</td></tr>
+          <tr><td class="mono">√n 卡不掉</td><td class="yes">分块 + 二分</td><td>代码短</td></tr>
+        </table>
+      </div>
+      <div class="card tint-plum"><h3>静态查询语义</h3>
+        <ul class="tick no">
+          <li><b>幂等</b>（min/max/gcd）→ ST 表 <code>O(1)</code></li>
+          <li><b>非幂等</b>（sum）→ 前缀和 <code>O(1)</code></li>
+          <li><b>要修改</b> → 线段树</li>
+        </ul>
+      </div>
+      <div class="card"><h3>三条边界原则</h3>
+        <ul class="tick arr">
+          <li>能<b>更简单</b>就不上复杂结构</li>
+          <li>能<b>静态</b>就不上线段树</li>
+          <li>能<b>√n 卡不掉</b>就用分块兜底</li>
+        </ul>
+      </div>
+      <div class="note good"><b>心法：</b>同一语义内的切换，本质是<b>"复杂度够不够"</b>；跨语义的切换，本质是<b>"表达得了表达不了"</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 19 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：语义形状">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 03</div>
+      <div class="big">语义形状 <em class="t">× 结构</em></div>
+      <p class="lead">七类形状逐一横向对比：谁在哪个形状上不可替代。<br>看清"<b>语义 → 结构</b>"的翻译规则。</p>
+    </div>
+    <div><div class="num-huge t">03</div>
+      <div class="note good"><b>本章目标：</b>把"看题 → 定结构"这一步，变成<b>可重复的机械流程</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 20 形状①② ═══ -->
+<section class="slide" data-title="形状①②：连通性 / 前缀和">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>03 · SHAPES 1-2</div><h2>形状① 连通性 · 形状② 前缀和</h2></div>
+    <div class="hint"><b>本页回答：</b>这两类形状的候选结构、<br>甜点与失效。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card tint-amber"><h3><span class="n a">①</span>连通性型：合并 + 查连通</h3>
+        <table style="margin-top:2px">
+          <tr><th>候选</th><th>时间</th><th>结论</th></tr>
+          <tr><td class="yes">并查集</td><td class="mono">O(α)</td><td>首选</td></tr>
+          <tr><td>BFS / DFS</td><td class="mono">O(n+m)</td><td>每次查询都跑，慢</td></tr>
+          <tr><td>树链剖分</td><td class="mono">O(log²)</td><td>能查路径，但重</td></tr>
+          <tr><td>LCT</td><td class="mono">O(log)</td><td>支持删边，但代码长</td></tr>
+          <tr><td>可撤销并查集</td><td class="mono">O(log)</td><td>线段树分治用</td></tr>
+        </table>
+        <div class="split-line"></div>
+        <p class="muted"><b>识别信号：</b>合并集合、亲戚、同类、连通块、等价类、最小生成树。<br><b>失效：</b>删边、查路径、有序查询。</p>
+      </div>
+      <div class="card"><h3>形状① 一句话</h3>
+        <p class="lead">"<b>连通</b>"是<b>等价关系</b>，并查集是它的<b>唯一自然实现</b>。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card tint-rose"><h3><span class="n">②</span>前缀和型：单点改 + 前缀查</h3>
+        <table style="margin-top:2px">
+          <tr><th>候选</th><th>时间</th><th>结论</th></tr>
+          <tr><td class="yes">BIT</td><td class="mono">O(log n)</td><td>首选（可修改）</td></tr>
+          <tr><td>前缀和</td><td class="mono">O(1)</td><td><b>静态时更优</b></td></tr>
+          <tr><td>线段树</td><td class="mono">O(log n)</td><td>能做，但常数 ×3</td></tr>
+          <tr><td>分块</td><td class="mono">O(√n)</td><td>兜底</td></tr>
+          <tr><td>值域 BIT</td><td class="mono">O(log V)</td><td>计数 / 排名</td></tr>
+        </table>
+        <div class="split-line"></div>
+        <p class="muted"><b>识别信号：</b>单点改、区间和、逆序对、排名、二维偏序。<br><b>失效：</b>max / min / gcd（不可差分）、区间赋值、前驱后继。</p>
+      </div>
+      <div class="card"><h3>形状② 一句话</h3>
+        <p class="lead">"<b>能差分</b>"是 BIT 的<b>入场券</b>；拿不到就换线段树。</p>
+      </div>
+    </div>
+  </div>
+  <div class="note good"><b>共同点：</b>两类形状的候选结构<b>都包含分块</b>——分块是<b>万能兜底</b>，永远在候选名单末位，只在"√n 卡不掉"时上位。</div>
+</section>
+
+<!-- ═══ 21 形状③④ ═══ -->
+<section class="slide" data-title="形状③④：区间 / 有序集">
+  <div class="sl-head">
+    <div><div class="kicker teal"><i></i>03 · SHAPES 3-4</div><h2>形状③ 区间 · 形状④ 有序集</h2></div>
+    <div class="hint"><b>本页回答：</b>这两类形状的候选结构、<br>甜点与失效。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card tint-teal"><h3><span class="n t">③</span>区间型：区间改 + 区间查</h3>
+        <table style="margin-top:2px">
+          <tr><th>候选</th><th>时间</th><th>结论</th></tr>
+          <tr><td class="yes">线段树</td><td class="mono">O(log n)</td><td>首选</td></tr>
+          <tr><td>BIT（差分）</td><td class="mono">O(log n)</td><td>只限可差分聚合</td></tr>
+          <tr><td>分块</td><td class="mono">O(√n)</td><td>兜底、不易写错</td></tr>
+          <tr><td>ST 表</td><td class="mono">O(1)</td><td>静态幂等时更优</td></tr>
+          <tr><td>树状数组套值域</td><td class="mono">O(log²)</td><td>动态第 k 小</td></tr>
+        </table>
+        <div class="split-line t"></div>
+        <p class="muted"><b>识别信号：</b>区间加、区间 max、区间赋值、历史版本、树上路径。<br><b>失效：</b>空间不够（<code>4n</code>）、静态 RMQ（杀鸡用牛刀）。</p>
+      </div>
+      <div class="card"><h3>形状③ 一句话</h3>
+        <p class="lead">"<b>区间改 + 区间查</b>"是线段树的<b>主场</b>；只在静态 / 空间紧时让位。</p>
+      </div>
+    </div>
+    <div>
+      <div class="card tint-plum"><h3><span class="n p">④</span>有序集型：前驱 / 后继 / 第 k 小</h3>
+        <table style="margin-top:2px">
+          <tr><th>候选</th><th>时间</th><th>结论</th></tr>
+          <tr><td class="yes">平衡树</td><td class="mono">O(log n)</td><td>动态首选</td></tr>
+          <tr><td>值域 BIT</td><td class="mono">O(log V)</td><td>值域小时更优</td></tr>
+          <tr><td>值域线段树</td><td class="mono">O(log V)</td><td>值域大时用</td></tr>
+          <tr><td>主席树</td><td class="mono">O(log n)</td><td>静态区间第 k 小</td></tr>
+          <tr><td>分块 + 二分</td><td class="mono">O(√n log)</td><td>兜底</td></tr>
+        </table>
+        <div class="split-line p"></div>
+        <p class="muted"><b>识别信号：</b>插入、删除、前驱、后继、第 k 小、排名。<br><b>失效：</b>值域大时值域结构失效；静态时别上平衡树。</p>
+      </div>
+      <div class="card"><h3>形状④ 一句话</h3>
+        <p class="lead">"<b>有序集</b>"的实现取决于<b>值域大小与是否动态</b>。</p>
+      </div>
+    </div>
+  </div>
+  <div class="note warn"><b>关键区别：</b>形状③ 的"第 k 小"是<b>静态区间</b>（主席树）；形状④ 的"第 k 小"是<b>动态集合</b>（平衡树 / 套娃）。<b>同一个词，两种语义。</b></div>
+</section>
+
+<!-- ═══ 22 形状⑤⑥⑦ ═══ -->
+<section class="slide" data-title="形状⑤⑥⑦：静态 / 单调 / 兜底">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>03 · SHAPES 5-7</div><h2>形状⑤ 静态 · ⑥ 单调 · ⑦ 兜底</h2></div>
+    <div class="hint"><b>本页回答：</b>剩下三类形状怎么选？<br>各自的边界在哪。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3><span class="n a">⑤</span>静态查询型</h3>
+      <p><b>操作集：</b>RMQ / LCA / 区间 gcd，<b>无修改</b>。</p>
+      <div class="split-line"></div>
+      <table style="margin-top:2px">
+        <tr><th>候选</th><th>查询</th></tr>
+        <tr><td class="yes">ST 表</td><td class="mono">O(1)</td></tr>
+        <tr><td>线段树</td><td class="mono">O(log n)</td></tr>
+        <tr><td>暴力</td><td class="mono">O(n)</td></tr>
+      </table>
+      <div class="split-line"></div>
+      <ul class="tick no">
+        <li>只支持<b>幂等</b>操作（min/max/gcd/AND/OR）</li>
+        <li><b>不支持 sum</b>（不幂等）→ 用前缀和</li>
+        <li><b>不支持修改</b> → 线段树</li>
+      </ul>
+      <p class="muted" style="margin-top:auto"><b>一句话：</b>静态 + 幂等 = ST 表 <code>O(1)</code>。</p>
+    </div>
+    <div class="card tint-teal"><h3><span class="n t">⑥</span>单调性型</h3>
+      <p><b>操作集：</b>最近更大 / 滑动窗口最值。</p>
+      <div class="split-line t"></div>
+      <table style="margin-top:2px">
+        <tr><th>候选</th><th>时间</th></tr>
+        <tr><td class="yes">单调栈 / 队列</td><td class="mono">O(1) 均摊</td></tr>
+        <tr><td>线段树</td><td class="mono">O(log n)</td></tr>
+        <tr><td>暴力</td><td class="mono">O(n²)</td></tr>
+      </table>
+      <div class="split-line t"></div>
+      <ul class="tick ok">
+        <li>柱状图最大矩形 / 接雨水</li>
+        <li>滑动窗口最值</li>
+        <li>子数组最小值之和</li>
+      </ul>
+      <p class="muted" style="margin-top:auto"><b>一句话：</b>看到"<b>最近 / 滑窗 / 单调</b>"，单调栈/队列 <code>O(1)</code> 直接过。</p>
+    </div>
+    <div class="card tint-plum"><h3><span class="n p">⑦</span>兜底型</h3>
+      <p><b>操作集：</b>任意（慢一点）。</p>
+      <div class="split-line p"></div>
+      <table style="margin-top:2px">
+        <tr><th>候选</th><th>时间</th></tr>
+        <tr><td class="yes">分块</td><td class="mono">O(√n)</td></tr>
+        <tr><td>莫队</td><td class="mono">O(n√n)</td></tr>
+        <tr><td>根号分治</td><td class="mono">O(n√n)</td></tr>
+      </table>
+      <div class="split-line p"></div>
+      <ul class="tick no">
+        <li>块大小 <code>B = ⌊√n⌋ + 1</code></li>
+        <li>整块懒用 <b>真实块大小</b></li>
+        <li><b>√n 卡不掉</b>是唯一前提</li>
+      </ul>
+      <p class="muted" style="margin-top:auto"><b>一句话：</b>其它都写不动时，分块兜底。</p>
+    </div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>三类形状的共同点</h3>
+      <p>都是"<b>特定语义的专用解</b>"——语义对上就快一个数量级，语义不对就别用。</p>
+    </div>
+    <div class="card tint-amber"><h3>三类形状的边界</h3>
+      <p>⑤ 静态只幂等；⑥ 单调只管最近；⑦ 兜底只在 √n 卡不掉。<b>越界就换结构。</b></p>
+    </div>
+    <div class="note good"><b>心法：</b>七类形状是<b>互斥的语义分类</b>——一道题归到哪类，结构就定了。</div>
+  </div>
+</section>
+
+<!-- ═══ 23 章节 ═══ -->
+<section class="slide section-slide" data-title="章节：同题多解">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker"><i></i>CHAPTER 04</div>
+      <div class="big">同题多解：<em style="color:var(--accent)">选型正确性的最强检查</em></div>
+      <p class="lead">五道题的 N 种建模横向对比。<br>三者一致 = 选型与实现都对；不一致 = 找出哪个错。</p>
+    </div>
+    <div><div class="num-huge">04</div>
+      <div class="note warn"><b>本章是精华。</b>同题多解既是<b>选型训练</b>，也是<b>对拍方法</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 24 同题三解 A ═══ -->
+<section class="slide" data-title="同题三解 A：区间加区间和">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · CROSS A</div><h2>同题三解 A：<em>区间加 + 区间和</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一道题，三种结构怎么选？<br>为什么能交叉验证。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-rose"><h3><span class="n">A1</span>BIT 差分</h3>
+      <p><b>题意：</b>区间加、区间求和。</p>
+      <div class="split-line"></div>
+      <ul class="tick">
+        <li>双 BIT（<code>b[i]</code> 与 <code>i·b[i]</code>）</li>
+        <li><code>O(log n)</code>，30 行</li>
+        <li>常数最小</li>
+      </ul>
+      <p class="muted"><b>甜点：</b>n、q 都大，只要和。<br><b>失效：</b>要 max / 赋值。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">A2</span>线段树</h3>
+      <p><b>题意：</b>同上。</p>
+      <div class="split-line t"></div>
+      <ul class="tick ok">
+        <li>单懒标记</li>
+        <li><code>O(log n)</code>，90 行</li>
+        <li>可扩展（max / 赋值 / 持久化）</li>
+      </ul>
+      <p class="muted"><b>甜点：</b>要扩展。<br><b>失效：</b>空间紧。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">A3</span>分块</h3>
+      <p><b>题意：</b>同上。</p>
+      <div class="split-line p"></div>
+      <ul class="tick no">
+        <li>块内 + 整块懒</li>
+        <li><code>O(√n)</code>，55 行</li>
+        <li>几乎不会写错</li>
+      </ul>
+      <p class="muted"><b>甜点：</b>√n 卡不掉。<br><b>失效：</b>n、q 都大。</p></div>
+  </div>
+  <div class="cols c2a">
+    <div class="card tint-amber">
+      <h3><span class="n a">★</span>三者的关系</h3>
+      <p class="lead">三者<b>语义等价、复杂度不同</b>——这是<strong>交叉对拍的金矿</strong>。<code>cross_range_add_sum()</code>（P45）会把三者与暴力四方对拍，答案必须完全一致。</p>
+      <div class="note"><b>选型结论：</b>能差分 + 只要和 → <b>BIT</b>；要扩展 → <b>线段树</b>；√n 卡不掉 → <b>分块</b>。</div>
+    </div>
+    <div class="card">
+      <h3>为什么 ST 表 / 单调栈不适用</h3>
+      <ul class="tick no">
+        <li><b>ST 表</b>：不支持修改</li>
+        <li><b>单调栈</b>：不支持区间聚合</li>
+        <li><b>并查集</b>：不支持区间语义</li>
+      </ul>
+      <div class="split-line"></div>
+      <p class="muted">三者在这题上<b>根本表达不了</b>——这是<b>语义错</b>，不是复杂度错。</p>
+    </div>
+    <div class="note good"><b>心法：</b>同题三解的价值不在"都会做"，而在<b>"看出谁在哪个条件下更优"</b>。</div>
+  </div>
+</section>
+
+<!-- ═══ 25 同题三解 B ═══ -->
+<section class="slide" data-title="同题三解 B：区间第 k 小">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · CROSS B</div><h2>同题三解 B：<em>区间第 k 小</em></h2></div>
+    <div class="hint"><b>本页回答：</b>同一道题，三种建模怎么选？<br>甜点区在哪。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-teal"><h3><span class="n t">B1</span>主席树</h3>
+      <p><b>题意：</b>静态区间第 k 小。</p>
+      <div class="split-line t"></div>
+      <ul class="tick ok">
+        <li>可持久化线段树</li>
+        <li><code>O(log n)</code> 查询</li>
+        <li><code>O(n log n)</code> 空间</li>
+      </ul>
+      <p class="muted"><b>甜点：</b>q 大 + n 中等。<br><b>失效：</b>要修改。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">B2</span>分块 + 二分</h3>
+      <p><b>题意：</b>同上。</p>
+      <div class="split-line p"></div>
+      <ul class="tick">
+        <li>块内排序 + 二分答案</li>
+        <li><code>O(√n log V)</code> 查询</li>
+        <li>代码 ~40 行</li>
+      </ul>
+      <p class="muted"><b>甜点：</b>代码短、好调。<br><b>失效：</b>n 大 + q 大。</p></div>
+    <div class="card tint-amber"><h3><span class="n a">B3</span>暴力排序</h3>
+      <p><b>题意：</b>同上。</p>
+      <div class="split-line"></div>
+      <ul class="tick arr">
+        <li><code>sorted(a[L:R+1])[k-1]</code></li>
+        <li><code>O(n log n)</code> 查询</li>
+        <li>一行代码</li>
+      </ul>
+      <p class="muted"><b>甜点：</b>正确性基准。<br><b>失效：</b>任何大数据。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>一句话对照</h3>
+      <p class="lead">"<b>怎么实现第 k 小</b>"取决于<b>规模与操作</b>。静态用<b>主席树</b>，n 小用<b>分块</b>，动态用<b>套娃 / 平衡树</b>。<b>三者必须一致</b>。</p>
+    </div>
+    <div class="card tint-plum"><h3>一致性检查</h3>
+      <p>三种建模<b>答案必须一致</b>——这是最强的正确性检查。<code>cross_kth()</code>（P45）会把三者对拍。</p>
+      <div class="note warn"><b>提醒：</b>主席树<b>必须离散化</b>，否则值域开不下；分块的<b>块内排序</b>只在静态有效。</div>
+    </div>
+    <div class="note good"><b>心法：</b>第 k 小的本质是"<b>值域上的秩</b>"，实现方式取决于<b>是否动态、规模多大</b>。</div>
+  </div>
+</section>
+
+<!-- ═══ 26 同题三解 C ═══ -->
+<section class="slide" data-title="同题三解 C：动态前驱后继">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · CROSS C</div><h2>同题三解 C：<em>动态前驱后继</em></h2></div>
+    <div class="hint"><b>本页回答：</b>"有序集"怎么实现？<br>三个层次。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3><span class="n a">C1</span>平衡树（Treap）</h3>
+      <p><b>题意：</b>插入 / 删除元素，求前驱、后继、第 k 小。</p>
+      <div class="split-line"></div>
+      <ul class="tick arr">
+        <li>BST + 随机优先级</li>
+        <li><code>O(log n)</code> 每次</li>
+        <li>代码 ~140 行</li>
+      </ul>
+      <p class="muted"><b>甜点：</b>值域大、n 大。<br><b>失效：</b>写错难调。</p></div>
+    <div class="card tint-rose"><h3><span class="n">C2</span>值域 BIT + 二分</h3>
+      <p><b>题意：</b>同上，但值域小。</p>
+      <div class="split-line"></div>
+      <ul class="tick">
+        <li>BIT 维护计数</li>
+        <li><code>O(log V)</code> 每次</li>
+        <li>代码 ~40 行</li>
+      </ul>
+      <p class="muted"><b>甜点：</b>值域 ≤ 10⁵。<br><b>失效：</b>值域大。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">C3</span>分块 + 块内排序</h3>
+      <p><b>题意：</b>同上。</p>
+      <div class="split-line p"></div>
+      <ul class="tick ok">
+        <li>块内有序 + 二分</li>
+        <li><code>O(√n log n)</code> 每次</li>
+        <li>代码 ~60 行</li>
+      </ul>
+      <p class="muted"><b>甜点：</b>√n 卡不掉。<br><b>失效：</b>n、q 都大。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>一句话对照</h3>
+      <p class="lead">"<b>有序集</b>"的实现取决于<b>值域大小与操作数</b>。值域小用<b>值域 BIT</b>，值域大用<b>平衡树</b>，√n 卡不掉用<b>分块</b>。</p>
+    </div>
+    <div class="card tint-plum"><h3>规约关系</h3>
+      <p>C2 是 C1 的<b>值域特化</b>——当值域 ≤ n 时，值域 BIT 等价于平衡树但<b>常数小</b>。这是"按规模选结构"的典范。</p>
+      <div class="note warn"><b>提醒：</b>值域 BIT <b>不支持重复元素的"任意删除"</b>（只能减计数），语义上要小心。</div>
+    </div>
+    <div class="note good"><b>心法：</b>看到"<b>前驱 / 后继 / 第 k 小</b>"，先问<b>值域多大、操作多少</b>，再选结构。</div>
+  </div>
+</section>
+
+<!-- ═══ 27 同题三解 D ═══ -->
+<section class="slide" data-title="同题三解 D：连通性 + 路径">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · CROSS D</div><h2>同题三解 D：<em>连通性 + 路径查询</em></h2></div>
+    <div class="hint"><b>本页回答：</b>"连通"与"路径"是两回事。<br>并查集只管前者。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3><span class="n a">D1</span>并查集</h3>
+      <p><b>题意：</b>加边、查连通、查连通块大小。</p>
+      <div class="split-line"></div>
+      <ul class="tick arr">
+        <li>路径压缩 + 按秩</li>
+        <li><code>O(α(n))</code> 每次</li>
+        <li>25 行</li>
+      </ul>
+      <p class="muted"><b>甜点：</b>只要连通。<br><b>失效：</b>查路径、删边。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">D2</span>树链剖分 + 线段树</h3>
+      <p><b>题意：</b>加边、查路径上权值和。</p>
+      <div class="split-line t"></div>
+      <ul class="tick ok">
+        <li>重链剖分 + dfs 序</li>
+        <li><code>O(log² n)</code> 每次</li>
+        <li>代码 ~150 行</li>
+      </ul>
+      <p class="muted"><b>甜点：</b>要查路径。<br><b>失效：</b>代码长、常数大。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">D3</span>暴力 BFS</h3>
+      <p><b>题意：</b>同上。</p>
+      <div class="split-line p"></div>
+      <ul class="tick no">
+        <li>每次查询跑 BFS</li>
+        <li><code>O(n+m)</code> 每次</li>
+        <li>5 行</li>
+      </ul>
+      <p class="muted"><b>甜点：</b>正确性基准。<br><b>失效：</b>q 大。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>一句话对照</h3>
+      <p class="lead">"<b>连通</b>"与"<b>路径</b>"是<b>两个语义</b>。并查集只答"是否连通"，树链剖分答"路径上有什么"。<b>混淆二者是选型的经典错。</b></p>
+    </div>
+    <div class="card tint-plum"><h3>一致性检查</h3>
+      <p>并查集 vs 暴力 BFS 必须一致。<code>cross_connectivity()</code>（P45）会把两者对拍。</p>
+      <div class="note warn"><b>提醒：</b>并查集<b>不支持删边</b>——要删边换 LCT / 可撤销并查集。</div>
+    </div>
+    <div class="note good"><b>心法：</b>看到"<b>连通 / 等价类</b>"用并查集；看到"<b>路径上</b>"用树链剖分。</div>
+  </div>
+</section>
+
+<!-- ═══ 28 同题五解全景 ═══ -->
+<section class="slide" data-title="同题五解全景">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · PANORAMA</div><h2>同题五解<em>全景</em>：一道题的五种建模</h2></div>
+    <div class="hint"><b>本页回答：</b>把上面四组横向拼起来，<br>看清"复杂度阶梯"。</div>
+  </div>
+  <div class="card" style="flex:none">
+    <svg viewBox="0 0 1140 118" preserveAspectRatio="xMidYMid meet">
+      <text x="570" y="18" text-anchor="middle" class="dfnlab r" font-size="11.5">同一道"区间加 + 区间和"题：从暴力到套娃的复杂度阶梯</text>
+      <g>
+        <rect x="20" y="32" width="200" height="72" rx="12" fill="#B8A184"/>
+        <text x="120" y="54" text-anchor="middle" fill="#fff" font-family="serif" font-size="12" font-weight="700">暴力</text>
+        <text x="120" y="72" text-anchor="middle" fill="#fff" font-family="monospace" font-size="10">O(n) / O(n²)</text>
+        <text x="120" y="90" text-anchor="middle" fill="#F5E6CE" font-family="monospace" font-size="8.5">正确性基准</text>
+      </g>
+      <path d="M222 68 L246 68" stroke="#E2612F" stroke-width="2.5" marker-end="url(#ca)" class="flow" fill="none"/>
+      <g>
+        <rect x="248" y="32" width="200" height="72" rx="12" fill="#F2A63B"/>
+        <text x="348" y="54" text-anchor="middle" fill="#fff" font-family="serif" font-size="12" font-weight="700">分块</text>
+        <text x="348" y="72" text-anchor="middle" fill="#fff" font-family="monospace" font-size="10">O(√n)</text>
+        <text x="348" y="90" text-anchor="middle" fill="#FFF3DC" font-family="monospace" font-size="8.5">万能兜底 · 55 行</text>
+      </g>
+      <path d="M450 68 L474 68" stroke="#E2612F" stroke-width="2.5" marker-end="url(#ca)" class="flow" fill="none"/>
+      <g>
+        <rect x="476" y="32" width="200" height="72" rx="12" fill="#E2612F"/>
+        <text x="576" y="54" text-anchor="middle" fill="#fff" font-family="serif" font-size="12" font-weight="700">BIT 差分</text>
+        <text x="576" y="72" text-anchor="middle" fill="#fff" font-family="monospace" font-size="10">O(log n)</text>
+        <text x="576" y="90" text-anchor="middle" fill="#FFE7D3" font-family="monospace" font-size="8.5">可差分 · 30 行</text>
+      </g>
+      <path d="M678 68 L702 68" stroke="#E2612F" stroke-width="2.5" marker-end="url(#ca)" class="flow" fill="none"/>
+      <g>
+        <rect x="704" y="32" width="200" height="72" rx="12" fill="#0F7B6C"/>
+        <text x="804" y="54" text-anchor="middle" fill="#fff" font-family="serif" font-size="12" font-weight="700">线段树</text>
+        <text x="804" y="72" text-anchor="middle" fill="#fff" font-family="monospace" font-size="10">O(log n)</text>
+        <text x="804" y="90" text-anchor="middle" fill="#D6F3EA" font-family="monospace" font-size="8.5">可扩展 · 90 行</text>
+      </g>
+      <path d="M906 68 L930 68" stroke="#E2612F" stroke-width="2.5" marker-end="url(#ca)" class="flow" fill="none"/>
+      <g>
+        <rect x="932" y="32" width="190" height="72" rx="12" fill="#A33A64"/>
+        <text x="1027" y="54" text-anchor="middle" fill="#fff" font-family="serif" font-size="12" font-weight="700">套娃</text>
+        <text x="1027" y="72" text-anchor="middle" fill="#fff" font-family="monospace" font-size="10">O(log² n)</text>
+        <text x="1027" y="90" text-anchor="middle" fill="#F9D9E4" font-family="monospace" font-size="8.5">动态第 k 小 · 200 行</text>
+      </g>
+    </svg>
+  </div>
+  <table>
+    <tr><th style="width:145px">建模</th><th style="width:165px">核心原理</th><th>时间</th><th>代码</th><th>甜点</th><th>失效</th></tr>
+    <tr><td>暴力</td><td>直接算</td><td class="mono">O(n)</td><td>5 行</td><td>正确性基准</td><td class="no">q 大</td></tr>
+    <tr><td>分块</td><td>整块懒 + 零散</td><td class="mono">O(√n)</td><td>55 行</td><td>√n 卡不掉</td><td class="no">n、q 都大</td></tr>
+    <tr><td>BIT 差分</td><td>双 BIT + 差分</td><td class="mono">O(log n)</td><td>30 行</td><td>能差分 + 只要和</td><td class="no">要 max / 赋值</td></tr>
+    <tr><td>线段树</td><td>懒标记</td><td class="mono">O(log n)</td><td>90 行</td><td>要扩展</td><td class="no">空间紧</td></tr>
+    <tr><td>套娃</td><td>BIT 套权值线段树</td><td class="mono">O(log² n)</td><td>200 行</td><td>动态第 k 小</td><td class="no">代码量大</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>复杂度阶梯的规律</h3>
+      <p><b>复杂度越低，代码越长、前提越强。</b>每升一级都是"<b>上一级表达不了</b>"才升。</p>
+    </div>
+    <div class="card tint-teal"><h3>交叉验证的价值</h3>
+      <p>五个建模<b>语义等价</b>，答案必须一致——<code>cross_all()</code>（P45）会跑三方对拍。</p>
+    </div>
+    <div class="note good"><b>心法：</b>选型 = <b>在复杂度阶梯上找到"够用的最低档"</b>，别越级也别降级。</div>
+  </div>
+</section>
+
+<!-- ═══ 29 一致性检查 ═══ -->
+<section class="slide" data-title="一致性检查">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>04 · CONSISTENCY</div><h2><em>一致性检查</em>：最强的正确性验证</h2></div>
+    <div class="hint"><b>本页回答：</b>怎么证明选型对了？<br>三关卡。</div>
+  </div>
+  <div class="cols c3">
+    <div class="card tint-teal"><h3><span class="n t">1</span>跨结构对拍</h3>
+      <p>同一语义用 <b>N 种结构</b>实现，答案必须一致。</p>
+      <div class="split-line t"></div>
+      <ul class="tick ok">
+        <li>BIT vs 线段树 vs 分块</li>
+        <li>并查集 vs 暴力 BFS</li>
+        <li>主席树 vs 分块 vs 暴力</li>
+      </ul>
+      <p class="muted"><b>一致 →</b> 选型与实现都对；<b>不一致 →</b> 找出哪个错。</p>
+    </div>
+    <div class="card tint-amber"><h3><span class="n a">2</span>结构 vs 暴力</h3>
+      <p>随机小数据，结构答案 = 暴力答案。</p>
+      <div class="split-line"></div>
+      <ul class="tick arr">
+        <li>随机 <code>n ≤ 15</code>、<code>q ≤ 30</code></li>
+        <li>每组跑 <code>200~300</code> 次</li>
+        <li>不一致立刻能定位</li>
+      </ul>
+      <p class="muted"><b>暴力是标尺</b>——任何优化上线前必须过这一关。</p>
+    </div>
+    <div class="card tint-plum"><h3><span class="n p">3</span>边界用例</h3>
+      <p>特殊输入，确认边界处理。</p>
+      <div class="split-line p"></div>
+      <ul class="tick no">
+        <li><code>n = 0 / 1 / 2</code></li>
+        <li>全相等、全 0、极值</li>
+        <li>单元素区间、块边界</li>
+        <li>树形：单点 / 链 / 星</li>
+      </ul>
+      <p class="muted"><b>数据结构的 bug 八成在边界</b>，不在核心逻辑。</p>
+    </div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>三关卡的顺序</h3>
+      <p><b>边界 → 暴力 → 跨结构。</b>先确认边界没漏，再确认与暴力一致，最后确认多实现一致。<b>三关全过，选型才算可信。</b></p>
+    </div>
+    <div class="card tint-amber"><h3>一致性检查的额外价值</h3>
+      <p>跨结构对拍不仅验<b>正确性</b>，还验<b>选型</b>——如果三种结构答案不一致，说明<b>至少有一个语义理解错了</b>。</p>
+      <div class="note good"><b>习惯：</b>写完结构先写<b>对拍脚本</b>，再写主程序。对拍过了再优化。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 30 章节 ═══ -->
+<section class="slide section-slide plum" data-title="章节：归约 · 雷达">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker plum"><i></i>CHAPTER 05</div>
+      <div class="big">归约 · 雷达：<em style="color:var(--plum)">谁是谁的特例</em></div>
+      <p class="lead">归约关系 · 六轴雷达 · 不可替代性 · 决策树<br>看清四条主线的<b>包含关系与能力边界</b>。</p>
+    </div>
+    <div><div class="num-huge p">05</div>
+      <div class="note warn"><b>本章重点：</b>知道"<b>什么时候用了就错</b>"，比"都能做"更重要。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 31 归约关系 ═══ -->
+<section class="slide" data-title="归约关系">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>05 · REDUCTION</div><h2><em class="p">归约关系</em>：谁是谁的特例</h2></div>
+    <div class="hint"><b>本页回答：</b>四条主线能互相转化吗？<br>哪些不能。</div>
+  </div>
+  <table>
+    <tr><th style="width:285px">归约</th><th style="width:115px">方向</th><th>说明</th></tr>
+    <tr><td>前缀和 → BIT</td><td class="yes">✅ 成立</td><td>BIT 是<b>可修改的前缀和</b></td></tr>
+    <tr><td>BIT → 线段树</td><td class="yes">✅ 成立</td><td>BIT 是线段树的<b>特例</b>（只支持可差分聚合）</td></tr>
+    <tr><td>线段树 → 分块</td><td class="yes">⚠️ 部分</td><td>分块能做但慢；语义上通用</td></tr>
+    <tr><td>ST 表 → 线段树</td><td class="yes">✅ 成立</td><td>ST 表是<b>静态</b>线段树的 O(1) 优化</td></tr>
+    <tr><td>并查集 → 图连通</td><td class="yes">✅ 成立</td><td>并查集是<b>只增不删</b>的连通性</td></tr>
+    <tr><td>单调栈 → 线段树</td><td class="yes">⚠️ 部分</td><td>能做但慢一个数量级</td></tr>
+    <tr><td>平衡树 → 值域线段树</td><td class="yes">⚠️ 部分</td><td>值域小时更优</td></tr>
+    <tr><td>主席树 → 平衡树</td><td class="yes">⚠️ 部分</td><td>主席树<b>静态</b>，平衡树<b>动态</b></td></tr>
+    <tr><td>套娃 → 单结构</td><td class="yes">⚠️ 部分</td><td>值域小时退化成 BIT</td></tr>
+    <tr><td>分块 → 任意结构</td><td class="yes">✅ 成立</td><td>分块是<b>万能兜底</b>（但慢）</td></tr>
+    <tr><td>树链剖分 → 线段树</td><td class="yes">✅ 成立</td><td>HLD = <b>树上 dfs 序</b> + 线段树</td></tr>
+    <tr><td>BIT → 区间 max</td><td class="no">❌ 不成立</td><td>max 不可差分</td></tr>
+    <tr><td>ST 表 → sum</td><td class="no">❌ 不成立</td><td>sum 不幂等</td></tr>
+    <tr><td>并查集 → 删边</td><td class="no">❌ 不成立</td><td>需 LCT / 可撤销</td></tr>
+    <tr><td>BIT → 可持久化</td><td class="no">❌ 不成立</td><td>树结构固定，改主席树</td></tr>
+    <tr><td>单调栈 → 非单调问题</td><td class="no">❌ 不成立</td><td>须单调性</td></tr>
+    <tr><td>分块 → 严格 log</td><td class="no">❌ 不成立</td><td>√n 是分块的天花板</td></tr>
+  </table>
+  <div class="cols c2">
+    <div class="card tint-amber"><h3>重要结论</h3>
+      <ul class="tick arr">
+        <li>BIT ⊂ 线段树（可差分特例）</li>
+        <li>ST 表 = 静态线段树的 O(1) 化</li>
+        <li>分块 ⊃ 一切（但慢）</li>
+        <li>并查集 ⊥ 其它三条（语义正交）</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>为什么归约有用</h3>
+      <p>把<b>新问题</b>归约到<b>已知结构</b>，就能直接复用复杂度结论。<br>但要先确认<b>归约条件成立</b>（可差分 / 幂等 / 无删边）。</p>
+      <div class="note good"><b>心法：</b>归约前先问"<b>这个转化保不保语义</b>"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 32 六轴雷达 ═══ -->
+<section class="slide" data-title="六轴能力雷达">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>05 · RADAR</div><h2>六轴<em class="p">能力雷达</em></h2></div>
+    <div class="hint"><b>本页回答：</b>四条主线各擅长什么？<br>一图看懂。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>读图方式</h3>
+        <ul class="tick">
+          <li>轴越外 = 越擅长</li>
+          <li><b>琥珀</b> 并查集 · <b>陶土</b> 树状数组 · <b>青绿</b> 线段树 · <b>李子</b> 分块</li>
+          <li>重叠区 = 都能做，选快的</li>
+          <li>单边突出区 = 该主线的<b>主场</b></li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>四个结论</h3>
+        <ul class="tick arr">
+          <li><b>代码简洁 / 常数小 / 不易写错</b> → 并查集 / BIT</li>
+          <li><b>功能全面 / 可扩展</b> → 线段树</li>
+          <li><b>空间省 / 不易写错</b> → 分块</li>
+          <li><b>可扩展</b>几乎只有线段树能做</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 420 320" preserveAspectRatio="xMidYMid meet">
+          <g stroke="#E4CBA3" stroke-width="1.2" fill="none">
+            <polygon points="210,40 309.5,97.5 309.5,212.5 210,270 110.5,212.5 110.5,97.5"/>
+            <polygon points="210,63 289.6,109 289.6,201 210,247 130.4,201 130.4,109"/>
+            <polygon points="210,86 269.7,120.5 269.7,189.5 210,224 150.3,189.5 150.3,120.5"/>
+            <polygon points="210,109 249.8,132 249.8,178 210,201 170.2,178 170.2,132"/>
+            <polygon points="210,132 229.9,143.5 229.9,166.5 210,178 190.1,166.5 190.1,143.5"/>
+          </g>
+          <g stroke="#E4CBA3" stroke-width="1">
+            <path d="M210 155 L210 40"/><path d="M210 155 L309.5 97.5"/><path d="M210 155 L309.5 212.5"/>
+            <path d="M210 155 L210 270"/><path d="M210 155 L110.5 212.5"/><path d="M210 155 L110.5 97.5"/>
+          </g>
+          <g text-anchor="middle" class="dfnlab g" font-size="10">
+            <text x="210" y="26">代码简洁</text>
+            <text x="332" y="92">常数小</text>
+            <text x="332" y="222">功能全面</text>
+            <text x="210" y="292">空间省</text>
+            <text x="88" y="222">可扩展</text>
+            <text x="88" y="92">不易写错</text>
+          </g>
+          <!-- 并查集 5,5,1,5,3,5 -->
+          <polygon points="210,40 309.5,97.5 229.9,166.5 210,270 150.3,189.5 110.5,97.5"
+                   fill="#F2A63B" fill-opacity=".18" stroke="#F2A63B" stroke-width="2.4"/>
+          <!-- 树状数组 5,5,2,5,3,5 -->
+          <polygon points="210,40 309.5,97.5 249.8,178 210,270 150.3,189.5 110.5,97.5"
+                   fill="#E2612F" fill-opacity=".18" stroke="#E2612F" stroke-width="2.4"/>
+          <!-- 线段树 2,3,5,3,5,3 -->
+          <polygon points="210,109 269.7,120.5 309.5,212.5 210,224 110.5,212.5 150.3,120.5"
+                   fill="#0F7B6C" fill-opacity=".20" stroke="#0F7B6C" stroke-width="2.6"/>
+          <!-- 分块 4,4,4,4,4,5 -->
+          <polygon points="210,63 289.6,109 289.6,201 210,247 130.4,201 110.5,97.5"
+                   fill="#A33A64" fill-opacity=".18" stroke="#A33A64" stroke-width="2.4"/>
+          <g font-family="monospace" font-size="9">
+            <rect x="10" y="300" width="112" height="20" rx="7" fill="#F2A63B"/>
+            <text x="66" y="314" text-anchor="middle" fill="#fff">DSU 5/5/1/5/3/5</text>
+            <rect x="128" y="300" width="112" height="20" rx="7" fill="#E2612F"/>
+            <text x="184" y="314" text-anchor="middle" fill="#fff">BIT 5/5/2/5/3/5</text>
+            <rect x="246" y="300" width="76" height="20" rx="7" fill="#0F7B6C"/>
+            <text x="284" y="314" text-anchor="middle" fill="#fff">Seg 2/3/5/3/5/3</text>
+            <rect x="328" y="300" width="82" height="20" rx="7" fill="#A33A64"/>
+            <text x="369" y="314" text-anchor="middle" fill="#fff">Blk 4/4/4/4/4/5</text>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>记忆：</b>并查集问"<b>要连通吗</b>"、BIT 问"<b>能差分吗</b>"、线段树问"<b>要区间改吗</b>"、分块问"<b>什么都能做但慢点行吗</b>"。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 33 不可替代性 ═══ -->
+<section class="slide" data-title="不可替代性">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>05 · IRREPLACEABLE</div><h2>什么时候<em class="p">必须用哪个</em></h2></div>
+    <div class="hint"><b>本页回答：</b>四个"不换不行"的场景。<br>以及换掉会怎样。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-amber"><h3><span class="n a">并查集</span></h3>
+      <ul class="tick">
+        <li><b>连通性</b>的 α——唯一接近 O(1)</li>
+        <li><b>等价类</b>的唯一自然实现</li>
+        <li>Kruskal MST 的<b>标配</b></li>
+      </ul>
+      <div class="split-line"></div>
+      <p class="muted"><b>换掉会：</b>用 BFS 每次查连通 <code>O(n+m)</code>，慢一个量级。</p></div>
+    <div class="card tint-rose"><h3><span class="n">树状数组</span></h3>
+      <ul class="tick">
+        <li><b>能差分</b>问题的<b>最小代码量</b></li>
+        <li>常数是线段树的 <b>1/3</b></li>
+        <li>值域 BIT 做<b>动态排名</b></li>
+      </ul>
+      <div class="split-line"></div>
+      <p class="muted"><b>换掉会：</b>用线段树写 90 行，常数 ×3。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">线段树</span></h3>
+      <ul class="tick ok">
+        <li><b>区间改 + 区间查</b>的唯一自然解</li>
+        <li>懒标记 / 可持久化 / 合并的入口</li>
+        <li>树链剖分的<b>唯一载体</b></li>
+      </ul>
+      <div class="split-line t"></div>
+      <p class="muted"><b>换掉会：</b>BIT 表达不了 max / 赋值。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">分块</span></h3>
+      <ul class="tick no">
+        <li><b>万能兜底</b>，几乎不会写错</li>
+        <li>√n 卡不掉时的救命稻草</li>
+        <li>莫队 / 根号分治的<b>载体</b></li>
+      </ul>
+      <div class="split-line p"></div>
+      <p class="muted"><b>换掉会：</b>复杂操作写不动线段树时无解。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>三种"选错"的后果</h3>
+      <ul class="tick no">
+        <li>用 BIT 做<b>区间 max</b> → 直接 WA（语义错）</li>
+        <li>静态 RMQ 上<b>线段树</b> → 常数 ×3、可能 MLE（杀鸡用牛刀）</li>
+        <li>√n 卡不掉时上<b>分块</b> → TLE（规模错）</li>
+      </ul>
+    </div>
+    <div class="card tint-amber"><h3>决策口诀</h3>
+      <p class="lead"><b>先问语义</b>，再问<b>规模</b>，最后问<b>常数</b>。三问定结构。</p>
+    </div>
+    <div class="note good"><b>升华：</b>数据结构选型能力 = <b>"把操作语义翻译成复杂度形态"</b>，而不是背模板。</div>
+  </div>
+</section>
+
+<!-- ═══ 34 决策树 ═══ -->
+<section class="slide" data-title="决策树">
+  <div class="sl-head">
+    <div><div class="kicker plum"><i></i>05 · DECISION TREE</div><h2>决策树：<em class="p">30 秒定结构</em></h2></div>
+    <div class="hint"><b>本页回答：</b>从题面到结构的机械流程。<br>照着走就行。</div>
+  </div>
+  <div class="card" style="flex:none">
+    <svg viewBox="0 0 1140 195" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <marker id="da" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+          <path d="M0 0 L9 4.5 L0 9 z" fill="#8A6A45"/></marker>
+      </defs>
+      <!-- 根 -->
+      <rect x="440" y="12" width="260" height="32" rx="11" fill="#2E2118"/>
+      <text x="570" y="33" text-anchor="middle" fill="#FFD9A8" font-family="serif" font-size="12.5" font-weight="700">题目操作集是什么？</text>
+
+      <!-- 分支 -->
+      <g stroke="#8A6A45" stroke-width="1.8" fill="none" marker-end="url(#da)">
+        <path d="M480 44 L180 76"/>
+        <path d="M540 44 L440 76"/>
+        <path d="M600 44 L720 76"/>
+        <path d="M660 44 L980 76"/>
+      </g>
+
+      <!-- 四个判定 -->
+      <g>
+        <rect x="40" y="76" width="240" height="30" rx="10" fill="#FFF7E6" stroke="#F4DCAC" stroke-width="2"/>
+        <text x="160" y="96" text-anchor="middle" class="dfnlab a" font-size="11">合并 / 查连通 / 等价类？</text>
+        <rect x="320" y="76" width="240" height="30" rx="10" fill="#FFF3E2" stroke="#F4DCAC" stroke-width="2"/>
+        <text x="440" y="96" text-anchor="middle" class="dfnlab r" font-size="11">单点改 + 前缀？能差分？</text>
+        <rect x="620" y="76" width="200" height="30" rx="10" fill="#E9F7F2" stroke="#BEE6D8" stroke-width="2"/>
+        <text x="720" y="96" text-anchor="middle" class="dfnlab" font-size="11">区间改 + 区间查？</text>
+        <rect x="860" y="76" width="240" height="30" rx="10" fill="#FDF0F4" stroke="#EFCBD8" stroke-width="2"/>
+        <text x="980" y="96" text-anchor="middle" class="dfnlab p" font-size="11">前驱 / 第 k 小 / 插入删除？</text>
+      </g>
+
+      <!-- 结果 -->
+      <g stroke="#8A6A45" stroke-width="1.8" fill="none" marker-end="url(#da)">
+        <path d="M160 106 L160 132"/>
+        <path d="M440 106 L440 132"/>
+        <path d="M720 106 L720 132"/>
+        <path d="M980 106 L980 132"/>
+      </g>
+      <g>
+        <rect x="60" y="134" width="200" height="30" rx="10" fill="#F2A63B"/>
+        <text x="160" y="154" text-anchor="middle" fill="#fff" font-family="serif" font-size="12" font-weight="700">→ 并查集 O(α)</text>
+        <rect x="340" y="134" width="200" height="30" rx="10" fill="#E2612F"/>
+        <text x="440" y="154" text-anchor="middle" fill="#fff" font-family="serif" font-size="12" font-weight="700">→ BIT O(log n)</text>
+        <rect x="620" y="134" width="200" height="30" rx="10" fill="#0F7B6C"/>
+        <text x="720" y="154" text-anchor="middle" fill="#fff" font-family="serif" font-size="12" font-weight="700">→ 线段树 O(log n)</text>
+        <rect x="880" y="134" width="200" height="30" rx="10" fill="#A33A64"/>
+        <text x="980" y="154" text-anchor="middle" fill="#fff" font-family="serif" font-size="12" font-weight="700">→ 平衡树 / 值域</text>
+      </g>
+
+      <!-- 兜底 -->
+      <rect x="320" y="172" width="500" height="20" rx="8" fill="#B8A184"/>
+      <text x="570" y="187" text-anchor="middle" fill="#fff" font-family="monospace" font-size="10">都对不上 / 写不动 / √n 卡不掉 → 分块 O(√n) 兜底</text>
+    </svg>
+  </div>
+  <table>
+    <tr><th style="width:105px">步骤</th><th style="width:285px">问什么</th><th style="width:175px">答案指向</th><th>常见错</th></tr>
+    <tr><td><b>① 语义</b></td><td>连通 / 前缀 / 区间 / 有序？</td><td class="yes">四条主线</td><td>把"区间 max"当"区间和"</td></tr>
+    <tr><td><b>② 规模</b></td><td>n、q、值域多大？</td><td>log / √ / 常数</td><td><code>n = 10⁵, q = 10⁶</code> 上分块</td></tr>
+    <tr><td><b>③ 常数</b></td><td>时间限制多紧？空间多大？</td><td>BIT vs 线段树</td><td>静态 RMQ 上线段树</td></tr>
+    <tr><td><b>④ 扩展</b></td><td>要持久化 / 合并 / 套娃吗？</td><td>线段树 / 主席树</td><td>BIT 想做可持久化</td></tr>
+    <tr><td><b>⑤ 兜底</b></td><td>√n 卡不掉吗？</td><td class="yes">分块</td><td>块大小算错</td></tr>
+    <tr><td><b>⑥ 验证</b></td><td>对拍过了吗？</td><td>cross_all()</td><td>跳过对拍直接交</td></tr>
+  </table>
+  <div class="note good"><b>心法：</b>六步走完，结构就定了。<b>剩下的只是写代码与对拍。</b></div>
+</section>
+
+<!-- ═══ 35 章节 ═══ -->
+<section class="slide section-slide amber" data-title="章节：组合技">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker amber"><i></i>CHAPTER 06</div>
+      <div class="big">组合技：<em style="color:#C9830F">套娃与扩展</em></div>
+      <p class="lead">单结构不够时，用<b>组合</b>拆解。<br>BIT 套权值线段树 · 线段树合并 / 分治 · 什么时候别用。</p>
+    </div>
+    <div><div class="num-huge p">06</div>
+      <div class="note warn"><b>铁律：</b>组合技是<b>最后手段</b>——单结构能解就别上套娃。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 36 组合技速查 ═══ -->
+<section class="slide" data-title="组合技速查">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>06 · NESTED</div><h2>组合技<em class="a">速查表</em></h2></div>
+    <div class="hint"><b>本页回答：</b>什么时候必须套娃？<br>一表看全。</div>
+  </div>
+  <table>
+    <tr><th style="width:235px">组合技</th><th style="width:215px">适用语义</th><th>复杂度</th><th>前提 / 失效</th></tr>
+    <tr><td><b>BIT 套权值线段树</b></td><td>动态区间第 k 小</td><td class="mono">O(log² n)</td><td>代码长；值域小时退化为值域 BIT</td></tr>
+    <tr><td><b>树状数组套权值树状数组</b></td><td>动态二维偏序</td><td class="mono">O(log² n)</td><td>空间 <code>O(n log n)</code></td></tr>
+    <tr><td><b>线段树合并</b></td><td>树上问题合并</td><td class="mono">O(n log n)</td><td>只增不减</td></tr>
+    <tr><td><b>线段树分治</b></td><td>离线带撤销</td><td class="mono">O(n log² n)</td><td>配可撤销并查集</td></tr>
+    <tr><td><b>可撤销并查集</b></td><td>线段树分治</td><td class="mono">O(log n) 撤销</td><td>按秩合并 + 栈</td></tr>
+    <tr><td><b>点分治 / 边分治</b></td><td>树上路径计数</td><td class="mono">O(n log² n)</td><td>离线</td></tr>
+    <tr><td><b>树链剖分 + 线段树</b></td><td>树上路径修改查询</td><td class="mono">O(log² n)</td><td>重链剖分</td></tr>
+    <tr><td><b>主席树 + 树状数组</b></td><td>动态区间第 k 小</td><td class="mono">O(log² n)</td><td>代码量大</td></tr>
+    <tr><td><b>李超线段树</b></td><td>动态直线最值</td><td class="mono">O(log n)</td><td>斜率不单调时</td></tr>
+    <tr><td><b>ST 表 + 并查集</b></td><td>Kruskal 重构树</td><td class="mono">O(n log n)</td><td>经典组合</td></tr>
+    <tr><td><b>平衡树 + 懒标记</b></td><td>区间翻转 / 位移</td><td class="mono">O(log n)</td><td>文艺平衡树</td></tr>
+    <tr><td><b>LCT（动态树）</b></td><td>动态树路径</td><td class="mono">O(log n) 均摊</td><td class="no">代码极长</td></tr>
+    <tr><td><b>KD-Tree</b></td><td>多维最近邻</td><td class="mono">O(√n) 均摊</td><td>随机化</td></tr>
+    <tr><td><b>莫队 + 树状数组</b></td><td>区间逆序对</td><td class="mono">O(n√n log)</td><td>离线</td></tr>
+  </table>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3>三大主力</h3>
+      <ul class="tick arr">
+        <li><b>BIT 套权值线段树</b>：动态第 k 小</li>
+        <li><b>线段树分治</b>：离线带撤销</li>
+        <li><b>树链剖分</b>：树上路径</li>
+      </ul>
+    </div>
+    <div class="card tint-plum"><h3>用前必答</h3>
+      <ul class="tick no">
+        <li>单结构<b>真的不够</b>吗？</li>
+        <li>语义<b>匹配</b>吗？</li>
+        <li>比<b>暴力 / 分块</b>快吗？</li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>什么时候不用</h3>
+      <ul class="tick ok">
+        <li>值域小 → <b>值域 BIT</b> 更快</li>
+        <li>只静态 → <b>主席树</b>更快</li>
+        <li>√n 卡不掉 → <b>分块</b>更简单</li>
+      </ul>
+    </div>
+    <div class="note"><b>心法：</b>组合技是<b>专用工具</b>——语义对上就快一个数量级，语义不对就别用。<b>单结构能解，永远优先单结构。</b></div>
+  </div>
+</section>
+
+<!-- ═══ 37 组合案例 ═══ -->
+<section class="slide" data-title="组合案例">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>06 · CASES</div><h2>组合技<em class="a">建模案例</em></h2></div>
+    <div class="hint"><b>本页回答：</b>哪类题想到套娃？<br>四个典型。</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-amber"><h3><span class="n a">A</span>动态区间第 k 小</h3>
+      <p><b>题意：</b>单点改、查询区间第 k 小。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>BIT 套权值线段树。<br><b>答案：</b><code>O(log² n)</code>。</p>
+      <p class="muted"><b>失效：</b>值域小时退化为值域 BIT。</p></div>
+    <div class="card tint-teal"><h3><span class="n t">B</span>树上路径计数</h3>
+      <p><b>题意：</b>求树上满足条件的路径数。</p>
+      <div class="split-line t"></div>
+      <p class="muted"><b>建模：</b>点分治 + 线段树。<br><b>答案：</b><code>O(n log² n)</code>。</p>
+      <p class="muted"><b>失效：</b>需要在线时。</p></div>
+    <div class="card tint-plum"><h3><span class="n p">C</span>离线带撤销</h3>
+      <p><b>题意：</b>加边删边，查询连通性。</p>
+      <div class="split-line p"></div>
+      <p class="muted"><b>建模：</b>线段树分治 + 可撤销并查集。<br><b>答案：</b><code>O(n log² n)</code>。</p>
+      <p class="muted"><b>失效：</b>必须在线时。</p></div>
+    <div class="card tint-rose"><h3><span class="n">D</span>动态树路径</h3>
+      <p><b>题意：</b>动态加边删边，查路径。</p>
+      <div class="split-line"></div>
+      <p class="muted"><b>建模：</b>LCT。<br><b>答案：</b><code>O(log n)</code> 均摊。</p>
+      <p class="muted"><b>失效：</b>代码极长，慎用。</p></div>
+  </div>
+  <div class="cols c2">
+    <div class="card"><h3>共同结构</h3>
+      <p>都是"<b>单结构表达不了</b>"的语义。识别信号：<b>动态第 k 小、树上路径、带撤销、动态树</b>。</p>
+    </div>
+    <div class="card tint-plum"><h3>什么时候不够用</h3>
+      <ul class="tick no">
+        <li>值域小 → <b>值域 BIT</b></li>
+        <li>只静态 → <b>主席树</b></li>
+        <li>√n 卡不掉 → <b>分块</b></li>
+        <li>n 小 → <b>暴力</b></li>
+      </ul>
+    </div>
+    <div class="note good"><b>心法：</b>组合技是<b>积木</b>——<b>外层管位置、内层管值域</b>，或<b>外层管时间、内层管状态</b>。</div>
+  </div>
+</section>
+
+<!-- ═══ 38 章节 ═══ -->
+<section class="slide section-slide teal" data-title="章节：工程">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:14px">
+      <div class="kicker teal"><i></i>CHAPTER 07</div>
+      <div class="big">工程：<em style="color:var(--teal)">验证 · 避坑 · API</em></div>
+      <p class="lead">正确性 · 易错清单 · API 速查 · 暴力基准 · 跨结构对拍<br>把选型写成"永不写错"。</p>
+    </div>
+    <div><div class="num-huge t">07</div>
+      <div class="note good"><b>要领：</b>数据结构的 bug <b>八成在边界与懒标记</b>，不在核心逻辑。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 39 正确性与复杂度 ═══ -->
+<section class="slide" data-title="正确性与复杂度">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · CORRECTNESS</div><h2>正确性与<em>复杂度</em></h2></div>
+    <div class="hint"><b>本页回答：</b>数据结构为什么对？<br>怎么算复杂度。</div>
+  </div>
+  <div class="cols c2">
+    <div>
+      <div class="card"><h3>复杂度怎么算</h3>
+        <ul class="tick arr">
+          <li><b>并查集</b>：路径压缩 + 按秩 → <code>O(α(n))</code></li>
+          <li><b>BIT</b>：<code>lowbit</code> 每次至少减半 → <code>O(log n)</code></li>
+          <li><b>线段树</b>：每次操作走 <code>O(log n)</code> 层</li>
+          <li><b>分块</b>：<code>O(B + n/B)</code>，<code>B = √n</code> 时最优</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>正确性三问</h3>
+        <ul class="tick">
+          <li><b>不变量</b>：每个节点存的是它覆盖区间的真实值吗？</li>
+          <li><b>懒标记</b>：下推后子区间拿到正确值了吗？</li>
+          <li><b>边界</b>：空区间、单元素、越界处理对吗？</li>
+        </ul>
+      </div>
+      <div class="card tint-plum"><h3>常见漏点</h3>
+        <ul class="tick no">
+          <li>线段树<b>懒标记没下推</b></li>
+          <li>分块<b>块大小算错</b></li>
+          <li>BIT <b>下标从 0 开始</b> → 死循环</li>
+          <li>并查集<b>递归 find</b> 爆栈</li>
+        </ul>
+      </div>
+    </div>
+    <div>
+      <div class="card"><h3>证明手法</h3>
+        <ul class="tick ok">
+          <li><b>不变量归纳</b>：操作后不变量仍成立</li>
+          <li><b>对拍</b>：小数据与暴力一致（最实用）</li>
+          <li><b>边界用例</b>：n = 0 / 1 / 2、全相等、单元素区间</li>
+          <li><b>随机化</b>：随机数据跑 300 次</li>
+        </ul>
+      </div>
+      <div class="card tint-teal"><h3>验证三层</h3>
+        <ul class="tick">
+          <li><b>边界</b>：空区间、单元素、块边界</li>
+          <li><b>不变量</b>：答案与暴力一致</li>
+          <li><b>跨结构</b>：N 种实现答案一致</li>
+        </ul>
+      </div>
+      <div class="card"><h3>优化前后的对拍</h3>
+        <p>朴素版与优化版<b>必须对拍</b>——优化只改实现，不改语义。任何结构上线前都应通过 <code>stress()</code> 与 <code>cross_all()</code>。</p>
+      </div>
+      <div class="note good"><b>心法：</b>数据结构的正确性是<strong>设计出来的</strong>——不变量写清，边界覆盖，对拍通过。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 40 易错清单 ═══ -->
+<section class="slide" data-title="易错清单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · PITFALLS</div><h2>易错清单 <em>Checklist</em></h2></div>
+    <div class="hint"><b>本页回答：</b>提交前自检什么？<br>（每条都对应本讲义的坑）</div>
+  </div>
+  <div class="cols c4">
+    <div class="card tint-amber"><h3>并查集</h3>
+      <ul class="tick no">
+        <li>递归 <code>find</code> 爆栈</li>
+        <li>带权版<b>忘了同步 dist</b></li>
+        <li>想支持<b>删边</b>（不支持）</li>
+        <li>用它<b>查路径</b>（不管）</li>
+      </ul>
+    </div>
+    <div class="card tint-rose"><h3>树状数组</h3>
+      <ul class="tick no">
+        <li>数组<b>从 0 开始</b> → 死循环</li>
+        <li>试图做 <b>max</b>（不可差分）</li>
+        <li>区间加忘<b>配第二个 BIT</b></li>
+        <li>二维容斥<b>符号写反</b></li>
+        <li>离散化<b>漏了重复元素</b></li>
+      </ul>
+    </div>
+    <div class="card tint-teal"><h3>线段树</h3>
+      <ul class="tick ok">
+        <li>查询子区间前<b>忘了 _push</b></li>
+        <li>双懒时<b>赋值后没清 add</b></li>
+        <li>空间开 <code>2n</code> 而非 <code>4n</code></li>
+        <li><code>pull</code> 写漏</li>
+        <li>递归 <b>RE</b>（栈溢出）</li>
+      </ul>
+    </div>
+    <div class="card tint-plum"><h3>分块 / 特殊</h3>
+      <ul class="tick no">
+        <li>块索引 <code>i // B</code> → 幽灵元素</li>
+        <li>整块懒 <code>+= delta * B</code> 算多</li>
+        <li>零散修改没先 <code>_push_block</code></li>
+        <li>ST 表用在 <b>sum</b> 上</li>
+        <li>单调栈<b>相等元素</b>处理不一致</li>
+        <li>Treap <b>旋转后忘了 pull</b></li>
+      </ul>
+    </div>
+  </div>
+  <div class="note"><b>提交前 30 秒四连问：</b>① <b>语义对吗</b>（BIT 做不了 max） ② <b>边界对吗</b>（块大小 / 空间 / 越界） ③ <b>懒标记下推了吗</b> ④ <b>对拍通过了吗</b>。</div>
+</section>
+
+<!-- ═══ 41 API 速查 ═══ -->
+<section class="slide" data-title="核心 API 速查">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · API</div><h2>四条主线<em>核心 API 速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>选完结构，API 长什么样。<br>实现细节见对应串讲。</div>
+  </div>
+  <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>api_core.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="api_core"></code></pre></pre>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3>DSU</h3><p><code>find</code> / <code>union</code> / <code>same</code> / <code>size</code>。<b>只增不删</b>，带权扩展见「并查集串讲」。</p></div>
+    <div class="card tint-rose"><h3>BIT / BIT2</h3><p><code>add</code> / <code>sum</code> / <code>range_sum</code>；BIT2 支持<b>区间加</b>。1-indexed。</p></div>
+    <div class="card tint-teal"><h3>SegTree / Block</h3><p>都是<b>区间加区间和</b>，前者 <code>O(log n)</code> 后者 <code>O(√n)</code>。<b>可对拍验证。</b></p></div>
+  </div>
+</section>
+
+<!-- ═══ 42 特殊结构 API ═══ -->
+<section class="slide" data-title="特殊结构 API 速查">
+  <div class="sl-head">
+    <div><div class="kicker amber"><i></i>07 · API</div><h2>特殊结构<em class="a">API 速查</em></h2></div>
+    <div class="hint"><b>本页回答：</b>特殊结构的最小 API。<br>选型后直接抄。</div>
+  </div>
+  <pre class="codewrap"><div class="code-head"><span class="dot a"></span><span class="dot"></span><span class="dot"></span><em>api_special.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="api_special"></code></pre></pre>
+  <div class="cols c3">
+    <div class="card tint-amber"><h3>ST 表</h3><p>静态 RMQ，<b>只幂等</b>。<code>query(l, r)</code> <code>O(1)</code>。</p></div>
+    <div class="card tint-teal"><h3>单调栈 / 队列</h3><p><code>next_greater</code> / <code>max_sliding_window</code>。<b>须单调性</b>。</p></div>
+    <div class="card tint-plum"><h3>Treap</h3><p><code>insert</code> / <code>kth</code> / <code>rank</code> / <code>pred</code> / <code>succ</code>。期望 <code>O(log n)</code>。</p></div>
+  </div>
+</section>
+
+<!-- ═══ 43 暴力基准 ═══ -->
+<section class="slide" data-title="暴力基准">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · BRUTE FORCE</div><h2><em>暴力基准</em>：所有优化的正确性标尺</h2></div>
+    <div class="hint"><b>本页回答：</b>对拍用的暴力怎么写？<br>覆盖常见语义。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>四个关键点</h3>
+        <ul class="tick">
+          <li>暴力是<b>唯一可信的标尺</b></li>
+          <li>覆盖<b>所有语义</b>：区间 / 第 k 小 / 连通 / 逆序对</li>
+          <li>复杂度<b>故意慢</b>，但<b>必须正确</b></li>
+          <li>小数据 <code>n ≤ 15</code> 时与结构对拍</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>使用方式</h3>
+        <div class="formula" style="font-size:11.4px">
+          <code>stress()</code> 随机小数据对拍<br>
+          <code>cross_all()</code> 跨结构对拍<br>
+          <code>edge_cases()</code> 边界用例<br>
+          <b>三关全过</b>才算可信
+        </div>
+      </div>
+      <div class="note good"><b>心法：</b>写结构前先写<b>暴力</b>——暴力是设计出来的，不是事后补的。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot"></span><span class="dot"></span><span class="dot"></span><em>brute.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="brute"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 44 跨结构对拍 ═══ -->
+<section class="slide" data-title="跨结构交叉对拍">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · CROSS VERIFY</div><h2><em>跨结构交叉对拍</em>：选型正确性的最强检查</h2></div>
+    <div class="hint"><b>本页回答：</b>三种结构怎么互相对拍？<br>能跑的脚本。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card tint-teal"><h3>对拍 A：区间加区间和</h3>
+        <p><b>BIT2（差分双 BIT）/ SegTree（懒标记）/ Block（块内 + 整块懒）</b> + 暴力，四方一致。</p>
+      </div>
+      <div class="card tint-amber"><h3>对拍 B：单点改区间和</h3>
+        <p><b>BIT / SegTree / Block</b> + 暴力，四方一致。</p>
+      </div>
+      <div class="card tint-plum"><h3>对拍 C：连通性</h3>
+        <p><b>DSU / 暴力 BFS</b> 一致。</p>
+      </div>
+      <div class="note good"><b>价值：</b>一致 = 选型与实现都对；不一致 = <b>至少有一个语义理解错了</b>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot r"></span><span class="dot"></span><span class="dot"></span><em>cross.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="cross"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 45 对拍主入口 ═══ -->
+<section class="slide" data-title="对拍主入口">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · MAIN</div><h2>对拍<em>主入口</em> + 边界用例</h2></div>
+    <div class="hint"><b>本页回答：</b>三关卡怎么跑？<br>边界用例有哪些。</div>
+  </div>
+  <div class="cols c2b">
+    <div>
+      <div class="card"><h3>三关卡</h3>
+        <ul class="tick ok">
+          <li><b>cross_all()</b>：跨结构对拍</li>
+          <li><b>stress()</b>：结构 vs 暴力</li>
+          <li><b>edge_cases()</b>：边界用例</li>
+        </ul>
+      </div>
+      <div class="card tint-amber"><h3>边界用例清单</h3>
+        <ul class="tick arr">
+          <li><code>n = 0 / 1 / 2</code></li>
+          <li>全相等、全 0、极值</li>
+          <li>单元素区间（<code>l == r</code>）</li>
+          <li>块边界（<code>l, r</code> 恰在块交界）</li>
+          <li>值域边界（最小 / 最大值）</li>
+          <li>树形：单点 / 链 / 星</li>
+        </ul>
+      </div>
+      <div class="note warn"><b>最强自检：</b>能用两种结构的题，<b>一定对拍</b>；不能的题，<b>用暴力小数据对拍</b>。</div>
+    </div>
+    <pre class="codewrap"><div class="code-head"><span class="dot g"></span><span class="dot"></span><span class="dot"></span><em>verify.py</em><span class="lang">PYTHON</span></div><pre class="code"><code class="language-python" data-src="verify"></code></pre></pre>
+  </div>
+</section>
+
+<!-- ═══ 46 题单 ═══ -->
+<section class="slide" data-title="练习题单">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>07 · PRACTICE</div><h2>练习题单（洛谷 / 本地）</h2></div>
+    <div class="hint"><b>本页回答：</b>课后练什么？<br>按选型维度分组，每张卡都写了<b>题意</b>。</div>
+  </div>
+  <div class="cols c3" style="gap:8px">
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3374" target="_blank"><span class="src crs">洛谷 · BIT</span><span class="t">P3374 【模板】树状数组 1</span><span class="d">题意：单点加、区间求和。<b>选型练习：</b>能差分 → BIT。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3368" target="_blank"><span class="src crs">洛谷 · BIT</span><span class="t">P3368 【模板】树状数组 2</span><span class="d">题意：区间加、单点查。<b>选型练习：</b>差分 + BIT。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1908" target="_blank"><span class="src crs">洛谷 · BIT</span><span class="t">P1908 逆序对</span><span class="d">题意：求序列逆序对。<b>选型练习：</b>值域 BIT 计数。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3372" target="_blank"><span class="src cal">洛谷 · 线段树</span><span class="t">P3372 【模板】线段树 1</span><span class="d">题意：区间加、区间求和。<b>选型练习：</b>单懒线段树 vs BIT 差分。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3373" target="_blank"><span class="src cal">洛谷 · 线段树</span><span class="t">P3373 【模板】线段树 2</span><span class="d">题意：区间加、区间乘、区间求和。<b>选型练习：</b>双懒标记。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3865" target="_blank"><span class="src cal">洛谷 · ST 表</span><span class="t">P3865 【模板】ST 表</span><span class="d">题意：静态区间最大值。<b>选型练习：</b>静态 + 幂等 → ST 表 O(1)。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3379" target="_blank"><span class="src cal">洛谷 · LCA</span><span class="t">P3379 【模板】最近公共祖先</span><span class="d">题意：求树上两点 LCA。<b>选型练习：</b>树链剖分 / 倍增 / ST 表三解对照。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1551" target="_blank"><span class="src hpf">洛谷 · 并查集</span><span class="t">P1551 亲戚</span><span class="d">题意：合并亲戚关系、查询是否亲戚。<b>选型练习：</b>连通性 → 并查集。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3367" target="_blank"><span class="src hpf">洛谷 · 并查集</span><span class="t">P3367 【模板】并查集</span><span class="d">题意：合并集合、查询连通。<b>选型练习：</b>并查集 vs BFS。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1637" target="_blank"><span class="src pl">洛谷 · 值域</span><span class="t">P1637 三元上升子序列</span><span class="d">题意：求三元上升子序列数量。<b>选型练习：</b>值域计数 vs 平衡树。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P3385" target="_blank"><span class="src pl">洛谷 · 综合</span><span class="t">P3385 【模板】负环</span><span class="d">题意：判负环。<b>选型练习：</b>理解"什么不是数据结构"。</span></a>
+    <a class="a-link" href="https://www.luogu.com.cn/problem/P1494" target="_blank"><span class="src loc">洛谷 · 莫队</span><span class="t">P1494 岳泽的袜子</span><span class="d">题意：区间询问。<b>选型练习：</b>离线区间询问 → 莫队。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">跨结构交叉对拍</span><span class="d">跑 cross_all()：BIT / 线段树 / 分块三方一致；并查集 vs BFS 一致。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">同题五解横向对比</span><span class="d">同一道"区间加区间和"用暴力 / 分块 / BIT / 线段树 / 套娃五种实现，对拍 + 比常数。</span></a>
+    <a class="a-link" href="#" onclick="return false"><span class="src loc">本地练习</span><span class="t">边界用例自检</span><span class="d">n = 0 / 1 / 2、全相等、单元素区间、块边界、值域极值。</span></a>
+  </div>
+  <div class="note"><b>节奏建议：</b>BIT 3 题 → 线段树 2 题 → 并查集 2 题 → ST 表 / LCA 2 题 → 综合 2 题 → 本地 3 题。每题写 100 字题解：<b>操作语义是什么 → 为什么选这个结构 → 为什么不选其它</b>。</div>
+</section>
+
+<!-- ═══ 47 总结 ═══ -->
+<section class="slide" data-title="总结">
+  <div class="sl-head">
+    <div><div class="kicker"><i></i>08 · SUMMARY</div><h2>带走这 <em>五句话</em></h2></div>
+    <div class="hint"><b>本页回答：</b>如果只能记住一页，<br>就记这一页。</div>
+  </div>
+  <div class="cols c2a">
+    <div>
+      <div class="card"><div class="step"><div class="idx">1</div><div><b>数据结构选型 = 把操作语义翻译成复杂度形态。</b>先问语义，再问规模，最后问常数。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">2</div><div><b>并查集管连通、BIT 管前缀、线段树管区间、分块兜底。</b>语义对不上就别硬套。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">3</div><div><b>BIT ⊂ 线段树 ⊃ ST 表；分块 ⊃ 一切（但慢）。</b>归约前先确认<b>语义保不保</b>。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">4</div><div><b>同题多解是一致性检查的金矿。</b>三者一致 = 选型与实现都对。</div></div></div>
+      <div class="card"><div class="step"><div class="idx">5</div><div><b>朴素与优化必须对拍。</b>cross_all() + stress() + edge_cases()，三关全过才算可信。</div></div></div>
+    </div>
+    <div>
+      <div class="card">
+        <svg viewBox="0 0 350 262" preserveAspectRatio="xMidYMid meet">
+          <circle cx="175" cy="130" r="115" fill="#E2612F" opacity=".12" class="pulse"/>
+          <circle cx="175" cy="130" r="52" fill="#2E2118"/>
+          <text x="175" y="122" text-anchor="middle" fill="#FFD9A8" font-family="serif" font-size="13" font-weight="700">数据结构</text>
+          <text x="175" y="141" text-anchor="middle" fill="#FFB169" font-family="monospace" font-size="9.5">语义 → 复杂度</text>
+          <g font-family="monospace" font-size="10" fill="#7A4A22">
+            <rect x="112" y="10" width="126" height="30" rx="11" fill="#FFF7E6" stroke="#F4DCAC"/><text x="175" y="30" text-anchor="middle">连通 → 并查集</text>
+            <rect x="240" y="58" width="102" height="30" rx="11" fill="#FFF3E2" stroke="#F4DCAC"/><text x="291" y="78" text-anchor="middle">前缀 → BIT</text>
+            <rect x="248" y="170" width="94" height="30" rx="11" fill="#E9F7F2" stroke="#BEE6D8"/><text x="295" y="190" text-anchor="middle">区间 → 线段树</text>
+            <rect x="100" y="216" width="150" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="175" y="236" text-anchor="middle">兜底 → 分块</text>
+            <rect x="8" y="170" width="112" height="30" rx="11" fill="#FFF7E6" stroke="#F4DCAC"/><text x="64" y="190" text-anchor="middle">静态 → ST 表</text>
+            <rect x="14" y="58" width="110" height="30" rx="11" fill="#FDF0F4" stroke="#EFCBD8"/><text x="69" y="78" text-anchor="middle">有序 → 平衡树</text>
+          </g>
+          <g stroke="#E2612F" stroke-width="2.5" class="dash" fill="none">
+            <path d="M175 78 L175 42"/><path d="M224 110 L242 82"/><path d="M224 154 L250 184"/>
+            <path d="M175 182 L175 216"/><path d="M126 154 L118 184"/><path d="M126 110 L122 82"/>
+          </g>
+        </svg>
+      </div>
+      <div class="note good"><b>升华：</b>数据结构最值得学的不是模板，而是"<b>把操作语义翻译成复杂度形态</b>"的判断力——<strong>语义、规模、常数</strong>，三个词定一切。这一条判断力，比任何单个模板都值钱。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 48 结语 ═══ -->
+<section class="slide cover" data-title="结语 Q&A">
+  <div class="cols c2a" style="align-items:center">
+    <div style="justify-content:center;gap:15px">
+      <div class="badge">THANKS · Q&A</div>
+      <h1>谢谢！<br><em class="t">开始提问</em></h1>
+      <p class="sub">课后三步：<br>
+        ① 10 分钟默写<b>四条主线的语义边界</b>（并查集 / BIT / 线段树 / 分块各管什么）<br>
+        ② 手推 <code>n = 9, B = 4</code> 的分块分组与 <code>range_add(2, 8, 10)</code> 后的块和，确认 <code>block_size</code> 的用法<br>
+        ③ 跑一遍 <code>cross_all() / stress() / edge_cases()</code>，三关全过再刷 15 题</p>
+      <div class="meta"><span>语义</span><span>规模</span><span>常数</span></div>
+    </div>
+    <div>
+      <svg viewBox="0 0 460 300" preserveAspectRatio="xMidYMid meet">
+        <circle cx="230" cy="150" r="145" fill="#E2612F" opacity=".16" class="pulse"/>
+        <g stroke="#E2612F" stroke-width="3" fill="none">
+          <path d="M230 236 L158 158"/><path d="M230 236 L302 158"/><path d="M230 236 L230 118"/>
+        </g>
+        <path d="M302 158 L230 236" stroke="#A33A64" stroke-width="3" stroke-dasharray="7 7" fill="none"/>
+        <g class="float">
+          <g><circle cx="230" cy="236" r="32" fill="#E2612F" stroke="#B9471B" stroke-width="3"/><text x="230" y="244" font-size="12" text-anchor="middle" fill="#fff" font-family="serif">选型</text></g>
+          <g><circle cx="158" cy="158" r="26" fill="#E9F7F2" stroke="#0F7B6C" stroke-width="3"/><text x="158" y="165" font-size="11" text-anchor="middle" fill="#0B6356" font-family="monospace">区间</text></g>
+          <g><circle cx="302" cy="158" r="26" fill="#FDF0F4" stroke="#A33A64" stroke-width="3"/><text x="302" y="165" font-size="11" text-anchor="middle" fill="#8A2A4E" font-family="monospace">兜底</text></g>
+          <g><circle cx="230" cy="118" r="26" fill="#FFF7E6" stroke="#C9830F" stroke-width="3"/><text x="230" y="125" font-size="11" text-anchor="middle" fill="#C9830F" font-family="monospace">前缀</text></g>
+        </g>
+      </svg>
+      <div class="note"><b>快捷键：</b><code>O</code> 目录 · <code>←/→</code> 翻页 · <code>⛶</code> 全屏</div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<div class="brand">DATA STRUCTURES · SELECTION · 95MIN</div>
+<div class="hud">
+  <button id="tocBtn" title="目录">☰</button>
+  <button id="prevBtn" title="上一页">←</button>
+  <div class="pgn"><span id="cur">1</span> / <span id="tot">48</span></div>
+  <button id="nextBtn" title="下一页">→</button>
+  <button id="fullBtn" title="全屏">⛶</button>
+</div>
+
+<div class="toc" id="toc"><h4>目录 · 48 页</h4><div class="grid" id="tocGrid"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+<script>
+const CODE = {
+
+api_core: `
+# ============================================================
+# 四条主线 · 核心 API 速查
+#   实现细节见对应串讲：并查集 / 树状数组 / 线段树 / 分块
+#   这里只保留【能跑】的最小 API，方便对拍与移植
+# ============================================================
+
+
+# ---------- ① 并查集（连通性）：O(α(n)) ----------
+class DSU:
+    """合并 + 查连通 + 连通块数 / 大小
+       不支持删边；带权版本见「并查集串讲」"""
+
+    def __init__(self, n):
+        self.p = list(range(n)); self.r = [0] * n
+        self.sz = [1] * n; self.cnt = n
+
+    def find(self, x):
+        while self.p[x] != x:
+            self.p[x] = self.p[self.p[x]]      # 路径压缩
+            x = self.p[x]
+        return x
+
+    def union(self, a, b):
+        ra, rb = self.find(a), self.find(b)
+        if ra == rb: return False
+        if self.r[ra] < self.r[rb]: ra, rb = rb, ra
+        self.p[rb] = ra; self.sz[ra] += self.sz[rb]
+        if self.r[ra] == self.r[rb]: self.r[ra] += 1
+        self.cnt -= 1; return True
+
+    def same(self, a, b): return self.find(a) == self.find(b)
+    def size(self, x): return self.sz[self.find(x)]
+
+
+# ---------- ② 树状数组（前缀 / 差分）：O(log n) ----------
+class BIT:
+    """单点加 + 前缀和；只支持【可差分聚合】（sum / xor / cnt）
+       不支持 max / min；1-indexed"""
+
+    def __init__(self, n):
+        self.n = n; self.t = [0] * (n + 1)
+
+    def add(self, i, d):
+        while i <= self.n:
+            self.t[i] += d; i += i & -i
+
+    def sum(self, i):
+        s = 0
+        while i > 0:
+            s += self.t[i]; i -= i & -i
+        return s
+
+    def range_sum(self, l, r): return self.sum(r) - self.sum(l - 1)
+
+
+class BIT2:
+    """区间加 + 区间和，双 BIT（差分）
+       Σa[1..x] = (x+1)·Σb - Σ(i·b[i])"""
+
+    def __init__(self, n):
+        self.n = n; self.B1 = BIT(n); self.B2 = BIT(n)
+
+    def _add(self, i, d):
+        self.B1.add(i, d); self.B2.add(i, i * d)
+
+    def range_add(self, l, r, d):
+        self._add(l, d); self._add(r + 1, -d)
+
+    def prefix_sum(self, x):
+        return (x + 1) * self.B1.sum(x) - self.B2.sum(x)
+
+    def range_sum(self, l, r):
+        return self.prefix_sum(r) - self.prefix_sum(l - 1)
+
+
+# ---------- ③ 线段树（区间 / 懒标记）：O(log n) ----------
+class SegTree:
+    """区间加 + 区间和，空间 4n
+       懒标记 = 延迟兑现；只在【穿过节点】时 _push"""
+
+    def __init__(self, a):
+        self.n = len(a) - 1
+        self.s = [0] * (4 * self.n); self.z = [0] * (4 * self.n)
+        self._b(1, 1, self.n, a)
+
+    def _b(self, u, l, r, a):
+        if l == r: self.s[u] = a[l]; return
+        m = (l + r) // 2
+        self._b(u * 2, l, m, a); self._b(u * 2 + 1, m + 1, r, a)
+        self.s[u] = self.s[u * 2] + self.s[u * 2 + 1]
+
+    def _p(self, u, l, r):
+        if self.z[u]:
+            m = (l + r) // 2
+            self.s[u * 2]     += self.z[u] * (m - l + 1)
+            self.s[u * 2 + 1] += self.z[u] * (r - m)
+            self.z[u * 2] += self.z[u]; self.z[u * 2 + 1] += self.z[u]
+            self.z[u] = 0
+
+    def range_add(self, ql, qr, d): self._a(1, 1, self.n, ql, qr, d)
+    def _a(self, u, l, r, ql, qr, d):
+        if ql <= l and r <= qr:
+            self.s[u] += d * (r - l + 1); self.z[u] += d; return
+        self._p(u, l, r); m = (l + r) // 2
+        if ql <= m: self._a(u * 2, l, m, ql, qr, d)
+        if qr > m:  self._a(u * 2 + 1, m + 1, r, ql, qr, d)
+        self.s[u] = self.s[u * 2] + self.s[u * 2 + 1]
+
+    def range_sum(self, ql, qr): return self._q(1, 1, self.n, ql, qr)
+    def _q(self, u, l, r, ql, qr):
+        if ql <= l and r <= qr: return self.s[u]
+        self._p(u, l, r); m = (l + r) // 2; s = 0
+        if ql <= m: s += self._q(u * 2, l, m, ql, qr)
+        if qr > m:  s += self._q(u * 2 + 1, m + 1, r, ql, qr)
+        return s
+
+
+# ---------- ④ 分块（根号 / 兜底）：O(√n) ----------
+class Block:
+    """区间加 + 区间和；万能兜底
+       块索引 (i-1) // B；整块懒用 block_size[b]（最后一块可能 < B）"""
+
+    def __init__(self, a):
+        self.n = len(a) - 1; self.B = int(self.n ** 0.5) + 1
+        self.nb = (self.n + self.B - 1) // self.B
+        self.a = a[:]; self.bs = [0] * self.nb
+        self.sz = [0] * self.nb; self.lz = [0] * self.nb
+        for i in range(1, self.n + 1):
+            b = (i - 1) // self.B
+            self.bs[b] += a[i]; self.sz[b] += 1
+
+    def _pb(self, b):
+        if self.lz[b]:
+            l = b * self.B + 1; r = min((b + 1) * self.B, self.n)
+            for i in range(l, r + 1): self.a[i] += self.lz[b]
+            self.lz[b] = 0
+
+    def range_add(self, l, r, d):
+        bl = (l - 1) // self.B; br = (r - 1) // self.B
+        if bl == br:
+            self._pb(bl)
+            for i in range(l, r + 1):
+                self.a[i] += d; self.bs[bl] += d
+            return
+        self._pb(bl)
+        for i in range(l, min((bl + 1) * self.B, self.n) + 1):
+            self.a[i] += d; self.bs[bl] += d
+        for b in range(bl + 1, br):
+            self.lz[b] += d; self.bs[b] += d * self.sz[b]
+        self._pb(br)
+        for i in range(br * self.B + 1, r + 1):
+            self.a[i] += d; self.bs[br] += d
+
+    def range_sum(self, l, r):
+        bl = (l - 1) // self.B; br = (r - 1) // self.B
+        if bl == br:
+            self._pb(bl); return sum(self.a[l:r + 1])
+        s = 0; self._pb(bl)
+        s += sum(self.a[l:min((bl + 1) * self.B, self.n) + 1])
+        for b in range(bl + 1, br): s += self.bs[b]
+        self._pb(br); s += sum(self.a[br * self.B + 1:r + 1])
+        return s
+`,
+
+api_special: `
+# ============================================================
+# 特殊结构 · 核心 API 速查
+#   ST 表       O(1) 查询   静态 RMQ（只幂等）
+#   单调栈/队列 O(1) 均摊   最近更大 / 滑窗
+#   Treap       O(log n)    有序集 / 前驱后继
+# ============================================================
+
+
+class SparseTable:
+    """ST 表：静态 RMQ，O(n log n) 预处理 + O(1) 查询
+       只支持【幂等】操作：min / max / gcd / AND / OR
+       不支持 sum（不幂等）；不支持修改"""
+
+    def __init__(self, a, op=min):
+        self.n = len(a) - 1; self.op = op
+        self.lg = [0] * (self.n + 2)
+        for i in range(2, self.n + 2):
+            self.lg[i] = self.lg[i // 2] + 1
+        K = self.lg[self.n] + 1
+        self.st = [[0] * (self.n + 1) for _ in range(K)]
+        self.st[0] = a[:]
+        for k in range(1, K):
+            h = 1 << (k - 1)
+            for i in range(1, self.n - (1 << k) + 2):
+                self.st[k][i] = op(self.st[k - 1][i], self.st[k - 1][i + h])
+
+    def query(self, l, r):
+        k = self.lg[r - l + 1]
+        return self.op(self.st[k][l], self.st[k][r - (1 << k) + 1])
+
+
+def next_greater(a):
+    """每个元素右边第一个比它大的下标，O(n) 均摊
+       栈里保持【严格递减】"""
+    res = [-1] * len(a); st = []
+    for i, x in enumerate(a):
+        while st and a[st[-1]] < x: res[st.pop()] = i
+        st.append(i)
+    return res
+
+
+def max_sliding_window(a, k):
+    """滑动窗口最大值，O(n) 均摊
+       单调队列：队头是当前窗口最大值"""
+    from collections import deque
+    dq = deque(); out = []
+    for i, x in enumerate(a):
+        while dq and a[dq[-1]] <= x: dq.pop()
+        dq.append(i)
+        if dq[0] <= i - k: dq.popleft()
+        if i >= k - 1: out.append(a[dq[0]])
+    return out
+
+
+import random
+
+
+class Treap:
+    """Treap：BST + 随机堆。插入/删除/第k小/排名/前驱/后继
+       期望 O(log n)"""
+
+    class Node:
+        __slots__ = ('key', 'pri', 'sz', 'cnt', 'l', 'r')
+        def __init__(self, key):
+            self.key = key; self.pri = random.random()
+            self.sz = 1; self.cnt = 1; self.l = None; self.r = None
+
+    def __init__(self): self.root = None
+
+    @staticmethod
+    def _sz(u): return u.sz if u else 0
+
+    @staticmethod
+    def _pull(u):
+        if u: u.sz = u.cnt + Treap._sz(u.l) + Treap._sz(u.r)
+
+    @staticmethod
+    def _rot_r(u):
+        v = u.l; u.l = v.r; v.r = u
+        Treap._pull(u); Treap._pull(v); return v
+
+    @staticmethod
+    def _rot_l(u):
+        v = u.r; u.r = v.l; v.l = u
+        Treap._pull(u); Treap._pull(v); return v
+
+    def insert(self, key): self.root = self._ins(self.root, key)
+    def _ins(self, u, key):
+        if u is None: return Treap.Node(key)
+        if key == u.key: u.cnt += 1
+        elif key < u.key:
+            u.l = self._ins(u.l, key)
+            if u.l.pri < u.pri: u = Treap._rot_r(u)
+        else:
+            u.r = self._ins(u.r, key)
+            if u.r.pri < u.pri: u = Treap._rot_l(u)
+        Treap._pull(u); return u
+
+    def kth(self, k):
+        u = self.root
+        while u:
+            ls = Treap._sz(u.l)
+            if k <= ls: u = u.l
+            elif k <= ls + u.cnt: return u.key
+            else: k -= ls + u.cnt; u = u.r
+        raise IndexError
+
+    def rank(self, key):
+        u = self.root; r = 0
+        while u:
+            if key <= u.key: u = u.l
+            else: r += Treap._sz(u.l) + u.cnt; u = u.r
+        return r
+
+    def pred(self, key):
+        u = self.root; best = None
+        while u:
+            if u.key < key: best = u.key; u = u.r
+            else: u = u.l
+        return best
+
+    def succ(self, key):
+        u = self.root; best = None
+        while u:
+            if u.key > key: best = u.key; u = u.l
+            else: u = u.r
+        return best
+`,
+
+brute: `
+# ============================================================
+# 暴力基准：所有优化结构的正确性标尺
+#   对拍时先跑暴力，再跑结构；不一致就是结构错了
+# ============================================================
+
+
+def brute_range_sum(a, l, r):
+    """区间和，O(n)"""
+    return sum(a[l:r + 1])
+
+
+def brute_range_add(a, l, r, d):
+    """区间加，O(n)"""
+    for i in range(l, r + 1):
+        a[i] += d
+
+
+def brute_kth(a, l, r, k):
+    """区间第 k 小，O(n log n)"""
+    return sorted(a[l:r + 1])[k - 1]
+
+
+def brute_rank(a, l, r, x):
+    """区间内严格小于 x 的个数，O(n)"""
+    return sum(1 for v in a[l:r + 1] if v < x)
+
+
+def brute_pred_succ(a, l, r, x):
+    """区间内 < x 的最大值、> x 的最小值"""
+    sub = a[l:r + 1]
+    pred = max((v for v in sub if v < x), default=None)
+    succ = min((v for v in sub if v > x), default=None)
+    return pred, succ
+
+
+def brute_inversions(a):
+    """逆序对，O(n^2)"""
+    n = len(a)
+    return sum(1 for i in range(n) for j in range(i + 1, n) if a[i] > a[j])
+
+
+def brute_max_subarray(a, l, r):
+    """区间最大子段和，O(n^2)"""
+    best = float('-inf')
+    for i in range(l, r + 1):
+        s = 0
+        for j in range(i, r + 1):
+            s += a[j]; best = max(best, s)
+    return best
+
+
+def brute_connectivity(n, edges, queries):
+    """连通性查询，O((n+m)q)
+       edges: 初始边
+       queries: [('u', x, y) 合并 | ('q', x, y) 查询]
+       返回所有查询结果"""
+    g = [[] for _ in range(n)]
+    for x, y in edges:
+        g[x].append(y); g[y].append(x)
+    out = []
+    for op, x, y in queries:
+        if op == 'u':
+            g[x].append(y); g[y].append(x)
+        else:
+            seen = [False] * n; st = [x]; seen[x] = True
+            while st:
+                u = st.pop()
+                for v in g[u]:
+                    if not seen[v]:
+                        seen[v] = True; st.append(v)
+            out.append(seen[y])
+    return out
+`,
+
+cross: `
+# ============================================================
+# 跨结构交叉对拍：选型正确性的最强检查
+#   同一语义用 N 种结构实现，答案必须一致
+#   一致 -> 选型与实现都对；不一致 -> 找出哪个错
+# ============================================================
+
+
+def cross_range_add_sum(n=60, q=120, seed=1):
+    """对拍 A：区间加 + 区间和
+       BIT2（差分双 BIT）/ SegTree（懒标记）/ Block（块内 + 整块懒）
+       复杂度 O(log n) / O(log n) / O(√n) -> 语义等价"""
+    import random
+    rnd = random.Random(seed)
+    a = [0] + [rnd.randint(-30, 30) for _ in range(n)]
+    b2 = BIT2(n); sg = SegTree(a[:]); bk = Block(a[:])
+    for i in range(1, n + 1):
+        b2.range_add(i, i, a[i])
+    for _ in range(q):
+        if rnd.random() < 0.5:
+            l = rnd.randint(1, n); r = rnd.randint(l, n); d = rnd.randint(-25, 25)
+            b2.range_add(l, r, d); sg.range_add(l, r, d); bk.range_add(l, r, d)
+            for i in range(l, r + 1): a[i] += d
+        else:
+            l = rnd.randint(1, n); r = rnd.randint(l, n)
+            x = b2.range_sum(l, r); y = sg.range_sum(l, r); z = bk.range_sum(l, r)
+            brute = sum(a[l:r + 1])
+            assert x == y == z == brute, (l, r, x, y, z, brute)
+    print(f"cross_range_add_sum: {q} ops ok")
+
+
+def cross_single_point_sum(n=60, q=120, seed=2):
+    """对拍 B：单点改 + 区间和
+       BIT（前缀）/ SegTree（区间）/ Block（块内）
+       复杂度 O(log n) / O(log n) / O(√n)"""
+    import random
+    rnd = random.Random(seed)
+    a = [0] + [rnd.randint(-30, 30) for _ in range(n)]
+    bit = BIT(n); sg = SegTree(a[:]); bk = Block(a[:])
+    for i in range(1, n + 1): bit.add(i, a[i])
+    for _ in range(q):
+        if rnd.random() < 0.5:
+            i = rnd.randint(1, n); d = rnd.randint(-25, 25)
+            bit.add(i, d); sg.range_add(i, i, d); bk.range_add(i, i, d)
+            a[i] += d
+        else:
+            l = rnd.randint(1, n); r = rnd.randint(l, n)
+            x = bit.range_sum(l, r); y = sg.range_sum(l, r); z = bk.range_sum(l, r)
+            assert x == y == z == sum(a[l:r + 1]), (l, r, x, y, z)
+    print(f"cross_single_point_sum: {q} ops ok")
+
+
+def cross_connectivity(n=25, q=60, seed=3):
+    """对拍 C：连通性
+       DSU（路径压缩）/ 暴力 BFS
+       复杂度 O(α(n)) / O(n+m)"""
+    import random
+    rnd = random.Random(seed)
+    d = DSU(n)
+    queries = []
+    for _ in range(q):
+        if rnd.random() < 0.6:
+            x = rnd.randint(0, n - 1); y = rnd.randint(0, n - 1)
+            d.union(x, y); queries.append(('u', x, y))
+        else:
+            x = rnd.randint(0, n - 1); y = rnd.randint(0, n - 1)
+            queries.append(('q', x, y))
+    brute_out = brute_connectivity(n, [], queries)
+    k = 0
+    for op, x, y in queries:
+        if op == 'q':
+            assert d.same(x, y) == brute_out[k], (x, y, d.same(x, y), brute_out[k])
+            k += 1
+    print(f"cross_connectivity: {k} queries ok")
+
+
+def cross_all():
+    cross_range_add_sum()
+    cross_single_point_sum()
+    cross_connectivity()
+    print("all cross checks passed")
+`,
+
+verify: `
+# ============================================================
+# 对拍主入口 + 边界用例
+#   1) cross_all()   跨结构对拍（结构 vs 结构）
+#   2) stress()      结构 vs 暴力
+#   3) edge_cases()  边界用例
+#   三关全过，选型与实现才算"可信"
+# ============================================================
+
+
+def stress(trials=300, seed=1):
+    """随机小数据对拍：BIT / SegTree / Block vs 暴力"""
+    import random
+    rnd = random.Random(seed)
+    for _ in range(trials):
+        n = rnd.randint(1, 15)
+        a = [0] + [rnd.randint(-20, 20) for _ in range(n)]
+
+        # --- BIT vs 暴力 ---
+        bit = BIT(n)
+        for i in range(1, n + 1): bit.add(i, a[i])
+        for _ in range(10):
+            l = rnd.randint(1, n); r = rnd.randint(l, n)
+            assert bit.range_sum(l, r) == brute_range_sum(a, l, r)
+
+        # --- SegTree vs 暴力（含区间加） ---
+        sg = SegTree(a[:]); b = a[:]
+        for _ in range(10):
+            if rnd.random() < 0.5:
+                l = rnd.randint(1, n); r = rnd.randint(l, n); d = rnd.randint(-10, 10)
+                sg.range_add(l, r, d); brute_range_add(b, l, r, d)
+            else:
+                l = rnd.randint(1, n); r = rnd.randint(l, n)
+                assert sg.range_sum(l, r) == brute_range_sum(b, l, r)
+
+        # --- Block vs 暴力（含区间加） ---
+        bk = Block(a[:]); c = a[:]
+        for _ in range(10):
+            if rnd.random() < 0.5:
+                l = rnd.randint(1, n); r = rnd.randint(l, n); d = rnd.randint(-10, 10)
+                bk.range_add(l, r, d); brute_range_add(c, l, r, d)
+            else:
+                l = rnd.randint(1, n); r = rnd.randint(l, n)
+                assert bk.range_sum(l, r) == brute_range_sum(c, l, r)
+    print(f"stress: {trials} trials ok")
+
+
+def edge_cases():
+    """边界用例：n = 1、全相等、单元素区间、块边界、值域极值"""
+
+    # --- n = 1 ---
+    a = [0, 7]
+    bit = BIT(1); bit.add(1, 7)
+    assert bit.range_sum(1, 1) == 7
+    assert SegTree(a[:]).range_sum(1, 1) == 7
+    assert Block(a[:]).range_sum(1, 1) == 7
+
+    # --- 全相等 + 区间加 ---
+    n = 9
+    bk = Block([0] + [5] * n)
+    bk.range_add(1, n, 3)
+    assert bk.range_sum(1, n) == 8 * n
+
+    # --- 单元素区间 ---
+    bk = Block([0] + list(range(1, 10)))
+    for i in range(1, 10):
+        assert bk.range_sum(i, i) == i
+
+    # --- 块边界（跨块加值） ---
+    n = 12
+    bk = Block([0] + [1] * n)
+    B = bk.B
+    bk.range_add(B, B + 1, 5)
+    assert bk.range_sum(B, B + 1) == 12
+
+    # --- 值域极值 ---
+    a = [0] + [-(10 ** 9)] * 5
+    bit = BIT(5)
+    for i in range(1, 6): bit.add(i, a[i])
+    assert bit.range_sum(1, 5) == -5 * (10 ** 9)
+
+    # --- DSU 单点 ---
+    d = DSU(1)
+    assert d.same(0, 0) and d.cnt == 1
+
+    print("edge_cases: all ok")
+
+
+if __name__ == '__main__':
+    cross_all()
+    stress()
+    edge_cases()
+    print("ALL PASSED")
+`
+};
+
+function applyCode(){
+  document.querySelectorAll('code[data-src]').forEach(el => {
+    const raw = CODE[el.dataset.src];
+    if (typeof raw === 'string') {
+      el.textContent = raw.replace(/^\n+/, '').replace(/\s+$/, '');
+    }
+  });
+  if (window.Prism && Prism.highlightAll) { Prism.highlightAll(); }
+}
+
+const deck = document.getElementById('deck');
+function fit(){
+  const s = Math.min(window.innerWidth / 1320, window.innerHeight / 780);
+  deck.style.transform = 'scale(' + s + ')';
+}
+function fitCode(){
+  document.querySelectorAll('pre.code').forEach(pre => {
+    pre.style.fontSize = '';
+    let fs = 12.2, guard = 0;
+    while (pre.scrollHeight > pre.clientHeight + 2 && fs > 10.2 && guard < 40) {
+      fs -= 0.15;
+      pre.style.fontSize = fs.toFixed(2) + 'px';
+      guard++;
+    }
+  });
+}
+function relayout(){ fit(); requestAnimationFrame(fitCode); }
+window.addEventListener('resize', relayout);
+window.addEventListener('load', relayout);
+
+const slides = Array.from(document.querySelectorAll('.slide'));
+const total = slides.length;
+let idx = 0;
+document.getElementById('tot').textContent = total;
+
+function show(n){
+  idx = Math.max(0, Math.min(total - 1, n));
+  slides.forEach((s, i) => s.classList.toggle('on', i === idx));
+  document.getElementById('cur').textContent = idx + 1;
+  document.getElementById('prog').style.width = ((idx + 1) / total * 100) + '%';
+  if (location.hash !== '#' + (idx + 1)) history.replaceState(null, '', '#' + (idx + 1));
+  requestAnimationFrame(fitCode);
+}
+document.getElementById('nextBtn').onclick = () => show(idx + 1);
+document.getElementById('prevBtn').onclick = () => show(idx - 1);
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(idx + 1); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+  else if (e.key === 'Home') show(0);
+  else if (e.key === 'End') show(total - 1);
+  else if (e.key.toLowerCase() === 'o') document.getElementById('toc').classList.toggle('on');
+  else if (e.key === 'Escape') document.getElementById('toc').classList.remove('on');
+});
+document.getElementById('fullBtn').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+const tocGrid = document.getElementById('tocGrid');
+slides.forEach((s, i) => {
+  const a = document.createElement('a');
+  a.href = '#' + (i + 1);
+  a.innerHTML = '<b>' + String(i + 1).padStart(2, '0') + '</b>' + (s.dataset.title || '');
+  a.onclick = e => { e.preventDefault(); show(i); document.getElementById('toc').classList.remove('on'); };
+  tocGrid.appendChild(a);
+});
+document.getElementById('tocBtn').onclick = () => document.getElementById('toc').classList.toggle('on');
+document.getElementById('toc').onclick = e => { if (e.target.id === 'toc') e.classList.remove('on'); };
+
+applyCode();
+const h = parseInt(location.hash.replace('#', ''), 10);
+show(isNaN(h) ? 0 : h - 1);
+relayout();
+</script>
+</body>
+</html>
